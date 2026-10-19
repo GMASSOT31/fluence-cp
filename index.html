@@ -447,7 +447,15 @@
   @media (max-width: 650px) { header .zoo-hero { padding: 19px 17px; min-height: 153px; } header .zoo-hero-art { flex-basis: 92px; height: 115px; } header .zoo-mascot { width: 55px; height: 55px; font-size: 2.15rem; border-radius: 16px; } header .zoo-bee { left: 0; top: 3px; } header .zoo-llama { left: 30px; top: 50px; } header .zoo-owl { right: -7px; top: 0; } header .zoo-pad { display: none; } header .zoo-kicker { font-size: .59rem; } header .zoo-hero-tag { font-size: .68rem; padding: 5px 8px; } }
   @media (max-width: 390px) { header .zoo-hero-art { display: none; } }
   @media (prefers-reduced-motion: no-preference) { header .zoo-bee { animation: zoo-float 3s ease-in-out infinite; } header .zoo-llama { animation: zoo-float 3.6s ease-in-out -1.2s infinite; } @keyframes zoo-float { 0%,100% { translate: 0 0; } 50% { translate: 0 -8px; } } }
-  .safari-wrap { max-width: 760px; margin: 0 auto; }\n  .safari-canvas { display: block; width: 100%; height: auto; border: 4px solid #263475; border-radius: 17px; background: #a1ecff; }\n  .safari-controls { display: flex; justify-content: space-between; gap: 12px; margin: 12px 0; touch-action: none; user-select: none; }\n  .safari-control { min-width: 72px; min-height: 60px; font-size: 1.3rem; touch-action: none; }\n</style>
+  /* Safari : le canvas reste dans la largeur de la carte, y compris sur mobile. */
+  #v-jeu, #v-jeu .arcade-screen, #game-area { min-width: 0; max-width: 100%; }
+  #v-jeu .arcade-screen { overflow: hidden; }
+  .safari-wrap { width: 100%; max-width: 100%; min-width: 0; margin: 0 auto; }
+  .safari-canvas { display: block; box-sizing: border-box; width: 100%; max-width: 100%; height: auto; aspect-ratio: 9 / 4; border: 4px solid #263475; border-radius: 17px; background: #a1ecff; }
+  .safari-controls { display: flex; justify-content: space-between; gap: 12px; margin: 12px 0; touch-action: none; user-select: none; }
+  .safari-control { min-width: 60px; min-height: 56px; font-size: 1.2rem; touch-action: none; }
+  @media (max-width: 600px) { .safari-controls { gap: 6px; } .safari-control { min-width: 54px; } }
+</style>
 </head>
 <body>
 <main>
