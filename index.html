@@ -2013,6 +2013,9 @@
     var doneSteps = allSteps.filter(function (x) { return isValid(sid, x.sound, x.kind); }).length;
     $("pr-prog").textContent = doneSteps + " sur " + allSteps.length + " étapes";
     $("pl-level").textContent = "N" + doneSteps;
+    var animalStep = nx || (allSteps.length ? allSteps[allSteps.length - 1] : null);
+    var animal = animalStep ? charFor(animalStep.sound) : null;
+    $("st-level").querySelector(".sym").textContent = animal ? animal.e : "🥚";
     $("st-level").setAttribute("aria-label", "Niveau de lecture " + doneSteps + " : " + nb(doneSteps, "étape validée", "étapes validées"));
     $("st-level").title = "Niveau de lecture : " + nb(doneSteps, "étape validée", "étapes validées");
   }
