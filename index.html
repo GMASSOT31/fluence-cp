@@ -570,6 +570,13 @@
     body.mode-student .zoo-top-stat strong { font-size: .85rem; }
     body.mode-student .zoo-top-stat .gold-coin { width: 18px; height: 18px; }
   }
+
+  /* Correction : les mascottes décoratives ne passent plus sous les compteurs. */
+  body.mode-student header .zoo-hero-art { display: none !important; }
+  body.mode-student header .zoo-hero { padding-right: 315px; }
+  @media (max-width: 600px) {
+    body.mode-student header .zoo-hero { padding-right: 154px; }
+  }
 </style>
 </head>
 <body>
