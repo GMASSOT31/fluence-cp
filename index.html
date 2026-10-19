@@ -447,7 +447,7 @@
   @media (max-width: 650px) { header .zoo-hero { padding: 19px 17px; min-height: 153px; } header .zoo-hero-art { flex-basis: 92px; height: 115px; } header .zoo-mascot { width: 55px; height: 55px; font-size: 2.15rem; border-radius: 16px; } header .zoo-bee { left: 0; top: 3px; } header .zoo-llama { left: 30px; top: 50px; } header .zoo-owl { right: -7px; top: 0; } header .zoo-pad { display: none; } header .zoo-kicker { font-size: .59rem; } header .zoo-hero-tag { font-size: .68rem; padding: 5px 8px; } }
   @media (max-width: 390px) { header .zoo-hero-art { display: none; } }
   @media (prefers-reduced-motion: no-preference) { header .zoo-bee { animation: zoo-float 3s ease-in-out infinite; } header .zoo-llama { animation: zoo-float 3.6s ease-in-out -1.2s infinite; } @keyframes zoo-float { 0%,100% { translate: 0 0; } 50% { translate: 0 -8px; } } }
-</style>
+  .safari-wrap { max-width: 760px; margin: 0 auto; }\n  .safari-canvas { display: block; width: 100%; height: auto; border: 4px solid #263475; border-radius: 17px; background: #a1ecff; }\n  .safari-controls { display: flex; justify-content: space-between; gap: 12px; margin: 12px 0; touch-action: none; user-select: none; }\n  .safari-control { min-width: 72px; min-height: 60px; font-size: 1.3rem; touch-action: none; }\n</style>
 </head>
 <body>
 <main>
@@ -1231,6 +1231,7 @@
     show("login");
   }
   function backToTeacher() {
+    if (!ses.teacherAuth) { toast("La maîtresse doit saisir son code pour revenir."); return; }
     stopEverything();
     ses.role = "teacher"; ses.sid = null; ses.viaTeacher = false; ses.unlocked = false;
     setMode();
@@ -1765,6 +1766,15 @@
       else zooNote = "Étape validée !";
     }
     save();
+    /* Une évaluation en direct consomme l’autorisation de la maîtresse. */
+    if (ses.viaTeacher || ses.unlocked) {
+      ses.unlocked = false;
+      ses.teacherAuth = false;
+      ses.viaTeacher = false;
+      ses.goal = "train";
+      ses.mode = "live";
+      setMode();
+    }
     toast(newly ? "Enregistré : étape validée" : "Résultat enregistré");
     leaveSession(true);
     renderPanels();
@@ -1948,7 +1958,8 @@
     { id: "catch", name: "Attrape-les", ico: "🎯", neon: "#2de2e6", tag: "Touche vite les animaux", mode: "max", fmt: function (v) { return nb(v, "animal", "animaux"); } },
     { id: "count", name: "Compte les animaux", ico: "🔢", neon: "#ffe66d", tag: "Combien y en a-t-il ? Vite !", mode: "max", fmt: countFmt },
     { id: "order", name: "Dans l’ordre", ico: "⏱️", neon: "#3dff8b", tag: "Touche 1, 2, 3… le plus vite", mode: "min", fmt: function (v) { return v + " s"; } },
-    { id: "simon", name: "Répète les animaux", ico: "🧠", neon: "#a78bfa", tag: "Retiens la suite", mode: "max", fmt: function (v) { return nb(v, "animal", "animaux"); } }
+    { id: "simon", name: "Répète les animaux", ico: "🧠", neon: "#a78bfa", tag: "Retiens la suite", mode: "max", fmt: function (v) { return nb(v, "animal", "animaux"); } },
+    { id: "safari", name: "Safari des animaux", ico: "🦁", neon: "#ffcf4b", tag: "Saute et ramasse 10 étoiles !", mode: "max", fmt: function (v) { return nb(v, "étoile", "étoiles"); } }
   ];
   /* Score du comptage : bonnes réponses × 1000 − secondes (plus grand = meilleur), donc à 6 sur 6 c’est le temps qui départage */
   function countFmt(v) {
@@ -2434,6 +2445,7 @@
   function stopGame() {
     G.timers.forEach(function (t) { clearInterval(t); clearTimeout(t); });
     G.timers = [];
+    if (G.safariCleanup) { var cleanup = G.safariCleanup; G.safariCleanup = null; cleanup(); }
   }
   function gamePool(sid) {
     var mine = [], extra = [];
@@ -2454,9 +2466,144 @@
     else if (gameId === "count") startCount(sid);
     else if (gameId === "order") startOrder(sid);
     else if (gameId === "simon") startSimon(sid);
+    else if (gameId === "safari") startSafari(sid);
     else startMemory(sid);
   }
   $("game-back").addEventListener("click", function () { show("jeux"); });
+
+
+  /* Safari des animaux : plateforme 2D, clavier et commandes tactiles. */
+  function startSafari(sid) {
+    var area = $("game-area");
+    area.innerHTML = "";
+    var animalSound = null;
+    data.sounds.forEach(function (snd) { if (soundValidated(sid, snd.id)) animalSound = snd.id; });
+    var avatar = animalSound ? charFor(animalSound).e : "🐝";
+    var wrap = el("div", "safari-wrap");
+    var canvas = document.createElement("canvas");
+    canvas.width = 720; canvas.height = 320; canvas.className = "safari-canvas";
+    canvas.setAttribute("role", "img");
+    canvas.setAttribute("aria-label", "Jeu de plateforme : avance avec les flèches et saute avec la flèche haut ou espace");
+    wrap.appendChild(canvas);
+    var controls = el("div", "safari-controls");
+    var left = el("button", "secondary safari-control", "◀");
+    var jump = el("button", "primary safari-control", "⬆ SAUT");
+    var right = el("button", "secondary safari-control", "▶");
+    [left, jump, right].forEach(function (b) { b.type = "button"; controls.appendChild(b); });
+    wrap.appendChild(controls);
+    wrap.appendChild(el("p", "muted", "Clavier : ← → pour avancer, espace ou ↑ pour sauter. Sur tablette : utilise les boutons."));
+    area.appendChild(wrap);
+    var ctx = canvas.getContext("2d");
+    if (!ctx) { $("game-msg").textContent = "Ce navigateur ne peut pas lancer le Safari."; return; }
+    var world = 2450, floorY = 272, goal = 10, got = 0, duration = 60, start = performance.now();
+    var player = { x: 38, y: 224, w: 36, h: 44, vx: 0, vy: 0, ground: false };
+    var keys = { left: false, right: false, jump: false }, prevJump = false, camera = 0, ended = false, raf = null;
+    var platforms = [{ x: 0, y: floorY, w: world, h: 48 }];
+    [245,460,680,900,1120,1350,1570,1790,2010,2230].forEach(function (x,i) {
+      platforms.push({ x: x, y: 204 - (i % 3) * 17, w: 112, h: 17 });
+    });
+    var stars = [];
+    for (var i=0;i<20;i++) {
+      var x = 140 + i * 112;
+      stars.push({ x: x, y: i % 2 === 0 ? 236 : 162 - (i % 3) * 15, taken: false });
+    }
+    var obstacles = [360,790,1240,1680,2110].map(function (x) { return { x:x, y: floorY-24, w: 28, h:24 }; });
+    function keydown(e) {
+      var k=e.key;
+      if (["ArrowLeft","ArrowRight","ArrowUp"," ","Spacebar","a","d"].indexOf(k)<0) return;
+      if (document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) return;
+      e.preventDefault();
+      if (k==="ArrowLeft" || k==="a") keys.left=true;
+      if (k==="ArrowRight" || k==="d") keys.right=true;
+      if (k==="ArrowUp" || k===" " || k==="Spacebar") keys.jump=true;
+    }
+    function keyup(e) {
+      if (e.key==="ArrowLeft" || e.key==="a") keys.left=false;
+      if (e.key==="ArrowRight" || e.key==="d") keys.right=false;
+      if (e.key==="ArrowUp" || e.key===" " || e.key==="Spacebar") keys.jump=false;
+    }
+    window.addEventListener("keydown",keydown);
+    window.addEventListener("keyup",keyup);
+    function bindHold(button, prop) {
+      function down(e) { e.preventDefault(); keys[prop]=true; }
+      function up(e) { e.preventDefault(); keys[prop]=false; }
+      button.addEventListener("pointerdown",down);
+      button.addEventListener("pointerup",up);
+      button.addEventListener("pointercancel",up);
+      button.addEventListener("pointerleave",up);
+      button.addEventListener("lostpointercapture",up);
+    }
+    bindHold(left,"left"); bindHold(right,"right"); bindHold(jump,"jump");
+    G.safariCleanup = function () {
+      ended=true; if (raf!==null) cancelAnimationFrame(raf);
+      window.removeEventListener("keydown",keydown);
+      window.removeEventListener("keyup",keyup);
+    };
+    function rectHit(a,b) { return a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y; }
+    function finish(won) {
+      if (ended) return;
+      ended=true;
+      if (won) {
+        $("game-msg").textContent = "Safari réussi ! " + got + " étoiles récupérées !";
+        winCoin(sid,area);
+      } else $("game-msg").textContent = "Fin du Safari ! Tu as récupéré " + got + " étoiles sur " + goal + ".";
+      stopGame();
+      finishScore(sid,area,"safari",got);
+    }
+    function drawStar(x,y) {
+      ctx.beginPath();
+      for (var j=0;j<10;j++) {
+        var a=-Math.PI/2+j*Math.PI/5, rad=j%2?7:15;
+        var px=x+Math.cos(a)*rad, py=y+Math.sin(a)*rad;
+        if (!j) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+      }
+      ctx.closePath();ctx.fillStyle="#ffe35b";ctx.fill();ctx.lineWidth=2;ctx.strokeStyle="#b77613";ctx.stroke();
+    }
+    var last=performance.now();
+    function frame(now) {
+      if (ended) return;
+      var dt=Math.min((now-last)/16.6667,2);last=now;
+      var leftSec=Math.max(0,Math.ceil(duration-(now-start)/1000));
+      player.vx=(Number(keys.right)-Number(keys.left))*4.2;
+      if (keys.jump && !prevJump && player.ground) { player.vy=-11.5; player.ground=false; }
+      prevJump=keys.jump;
+      var oldBottom=player.y+player.h;
+      player.x=Math.max(0,Math.min(world-player.w,player.x+player.vx*dt));
+      player.vy=Math.min(13,player.vy+.55*dt);
+      player.y+=player.vy*dt;
+      player.ground=false;
+      platforms.forEach(function (p) {
+        if (player.vy>=0 && oldBottom<=p.y+6 && player.y+player.h>=p.y && player.x+player.w>p.x && player.x<p.x+p.w) {
+          player.y=p.y-player.h;player.vy=0;player.ground=true;
+        }
+      });
+      if (player.y>canvas.height) { player.x=Math.max(0,player.x-100);player.y=170;player.vy=0; }
+      obstacles.forEach(function (o) { if (rectHit(player,o)) { player.x=Math.max(0,o.x-58);player.y=150;player.vy=-5; } });
+      stars.forEach(function (star) {
+        if (!star.taken && Math.abs(player.x+player.w/2-star.x)<30 && Math.abs(player.y+player.h/2-star.y)<32) {
+          star.taken=true;got++;tone(800,0,.08,"sine",.09);
+        }
+      });
+      camera=Math.max(0,Math.min(world-canvas.width,player.x-165));
+      var sky=ctx.createLinearGradient(0,0,0,320);sky.addColorStop(0,"#70d9fa");sky.addColorStop(1,"#dbf9ff");
+      ctx.fillStyle=sky;ctx.fillRect(0,0,720,320);
+      ctx.fillStyle="#b5ecad";
+      for(var h=0;h<10;h++){var hx=h*280-camera*.25;ctx.beginPath();ctx.arc(hx,285,115,Math.PI,0);ctx.fill();}
+      ctx.fillStyle="#58b66b";
+      platforms.forEach(function(p){var x=p.x-camera;if(x+p.w<0||x>720)return;ctx.fillStyle="#a46a38";ctx.fillRect(x,p.y,p.w,p.h);ctx.fillStyle="#5acb64";ctx.fillRect(x,p.y,p.w,9);});
+      obstacles.forEach(function(o){var x=o.x-camera;ctx.fillStyle="#e85d70";ctx.fillRect(x,o.y,o.w,o.h);ctx.fillStyle="#fff";ctx.font="19px sans-serif";ctx.fillText("⚠",x+3,o.y+20);});
+      stars.forEach(function(star){if(!star.taken && star.x-camera>-20 && star.x-camera<740)drawStar(star.x-camera,star.y);});
+      ctx.font="37px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(avatar,player.x-camera+player.w/2,player.y+player.h/2);
+      ctx.textAlign="left";ctx.textBaseline="alphabetic";
+      ctx.fillStyle="rgba(25,25,65,.8)";ctx.fillRect(12,12,245,35);
+      ctx.fillStyle="#fff";ctx.font="bold 18px system-ui";ctx.fillText("⭐ "+got+"/"+goal+"     ⏱ "+leftSec+" s",22,36);
+      $("game-msg").textContent="Ramasse 10 étoiles avant la fin du temps !";
+      if(got>=goal){finish(true);return;}
+      if(leftSec<=0){finish(false);return;}
+      raf=requestAnimationFrame(frame);
+    }
+    raf=requestAnimationFrame(frame);
+  }
 
   var CATCH_GOAL = 11;
   var MEMORY_MAX = 14;
