@@ -1178,7 +1178,11 @@
     if (!keepSel) applySuggestion();
     save();
     setMode();
-    show("home");
+    if (data.reward && pendingWheels(sid).length > 0) {
+      openWheel(sid, "Bravo ! Tu as des tours de roue à utiliser.");
+    } else {
+      show("home");
+    }
   }
   function enterTeacher() {
     ses.role = "teacher"; ses.teacherAuth = true; ses.sid = null; ses.viaTeacher = false; ses.unlocked = false;
