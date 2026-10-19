@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Espace enseignant | Zoo de Lecture</title>
+<style>
+:root{font-family:system-ui,-apple-system,sans-serif;color:#242044;background:#f6f3ff}*{box-sizing:border-box}body{margin:0}main{max-width:790px;margin:35px auto;padding:18px}.hero{text-align:center}.hero h1{font-size:clamp(28px,5vw,43px);margin:8px}.hero p{color:#69627b}.panel{background:white;border:1px solid #e8e1fa;border-radius:20px;padding:25px;margin-top:23px;box-shadow:0 8px 25px #2d17500e}h2{margin:0 0 17px}label{display:block;font-weight:650;margin:13px 0 6px}input{display:block;width:100%;padding:13px;border:1px solid #c9bfdf;border-radius:10px;font:inherit}button{border:0;border-radius:11px;background:#7046ce;color:white;padding:12px 16px;font:inherit;font-weight:700;cursor:pointer}button.secondary{background:#eee9fb;color:#503292}button:disabled{opacity:.5;cursor:wait}.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:17px}.hidden{display:none!important}.msg{margin:15px 0;white-space:pre-wrap;color:#3c3472}.err{color:#a52239}.muted{color:#6a6479;font-size:.93rem}.row{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid #f1edfa}.tag{background:#eee9fb;border-radius:9px;padding:6px 9px}.toplink{display:inline-block;margin:10px 0;color:#7046ce}.warn{padding:12px;border-radius:10px;background:#fff6dc;color:#6e5114}
+</style></head><body><main><header class="hero"><div style="font-size:45px">🦁📚🎮</div><h1>Zoo de Lecture</h1><p>Espace des enseignantes et enseignants</p><a class="toplink" href="./">← Retour au Zoo</a></header>
+<section class="panel" id="auth"><h2>Créer un compte ou se connecter</h2><p class="muted">Inscription libre. Chaque compte dispose de 10 places d'élèves par défaut.</p>
+<form id="authForm"><label for="email">Adresse e-mail professionnelle ou personnelle</label><input id="email" type="email" autocomplete="email" required maxlength="254"><label for="password">Mot de passe (au moins 8 caractères)</label><input id="password" type="password" autocomplete="new-password" minlength="8" required><div class="actions"><button id="signup" type="button">Créer mon compte</button><button id="signin" type="submit" class="secondary">Me connecter</button><button id="reset" type="button" class="secondary">Mot de passe oublié</button></div></form><p class="msg" id="authMsg" role="status"></p></section>
+<section class="panel hidden" id="space"><div class="row"><div><h2 style="margin-bottom:3px">Mon espace enseignant</h2><span id="who" class="muted"></span></div><button id="logout" class="secondary">Déconnexion</button></div><p id="quota" class="tag"></p><p id="spaceMsg" class="msg" role="status"></p>
+<h3>Mes classes</h3><div id="classes"></div><form id="classForm"><label for="className">Créer une classe</label><input id="className" required maxlength="80" placeholder="Ex. CP A"><div class="actions"><button>Ajouter la classe</button></div></form>
+<h3>Ajouter un élève</h3><p class="muted">Pour protéger les enfants, utilise un pseudonyme ou un prénom abrégé plutôt qu'un nom complet.</p><form id="studentForm"><label for="classSelect">Classe</label><select id="classSelect" required style="width:100%;padding:13px;border:1px solid #c9bfdf;border-radius:10px"></select><label for="nickname">Pseudonyme de l'élève</label><input id="nickname" required maxlength="60" placeholder="Ex. Léa C."><div class="actions"><button id="addStudent">Ajouter l'élève</button></div></form><h3>Élèves inscrits</h3><div id="students"></div><p class="warn">Cette page configure les comptes et les classes. La connexion des jeux et la synchronisation des progressions seront ajoutées ensuite. Les données locales de l'ancien Zoo restent inchangées.</p></section>
+</main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script><script>
+(function(){
+"use strict";
+const client=window.supabase.createClient("https://pcxpazpflnlwmhyuozdx.supabase.co","sb_publishable_j65mDpDNsuwwaL6uRjsMtA_U_OXQXlL");
+const $=id=>document.getElementById(id);let currentUser=null;
+function msg(id,text,error){$(id).textContent=text||"";$(id).classList.toggle("err",!!error)}
+function errorText(e){return e&&e.message?e.message:"Une erreur est survenue."}
+async function refresh(){
+ const {data:{user},error}=await client.auth.getUser();currentUser=error?null:user;
+ $("auth").classList.toggle("hidden",!!currentUser);$("space").classList.toggle("hidden",!currentUser);
+ if(!currentUser)return;
+ $("who").textContent=currentUser.email||"";
+ const [profile,classes,students]=await Promise.all([
+ client.from("teachers").select("student_limit,role").eq("id",currentUser.id).single(),
+ client.from("classes").select("id,name,school_year").order("created_at"),
+ client.from("students").select("id,nickname,class_id").order("created_at")]);
+ if(profile.error||classes.error||students.error){msg("spaceMsg","Impossible de charger les données : "+errorText(profile.error||classes.error||students.error),true);return;}
+ msg("spaceMsg","");
+ const limit=profile.data.student_limit;const used=students.data.length;
+ $("quota").textContent=used+" / "+limit+" élèves inscrits"+(profile.data.role==="admin"?" · Administrateur":"");
+ $("addStudent").disabled=used>=limit||classes.data.length===0;
+ $("classSelect").replaceChildren();
+ $("classes").replaceChildren();
+ classes.data.forEach(c=>{const opt=document.createElement("option");opt.value=c.id;opt.textContent=c.name;$("classSelect").append(opt);const d=document.createElement("div");d.className="row";d.textContent="📚 "+c.name;$("classes").append(d)});
+ if(!classes.data.length)$("classes").textContent="Aucune classe pour le moment.";
+ $("students").replaceChildren();
+ students.data.forEach(s=>{const c=classes.data.find(x=>x.id===s.class_id);const d=document.createElement("div");d.className="row";d.textContent="🧒 "+s.nickname+" · "+(c?c.name:"Classe inconnue");$("students").append(d)});
+ if(!students.data.length)$("students").textContent="Aucun élève pour le moment.";
+}
+async function busy(id,action){const b=$(id);b.disabled=true;try{await action()}catch(e){msg("authMsg",errorText(e),true);msg("spaceMsg",errorText(e),true)}finally{b.disabled=false}}
+$("signup").onclick=()=>busy("signup",async()=>{
+ const email=$("email").value.trim(),password=$("password").value;
+ if(!email||password.length<8){msg("authMsg","Saisis un e-mail et un mot de passe d'au moins 8 caractères.",true);return;}
+ const {data,error}=await client.auth.signUp({email,password,options:{emailRedirectTo:location.origin+location.pathname}});
+ if(error){msg("authMsg",errorText(error),true);return;}
+ msg("authMsg",data.session?"Compte créé, connexion en cours.":"Vérifie ta boîte mail pour confirmer ton inscription. Pense aussi aux courriers indésirables.");if(data.session)await refresh();
+});
+$("authForm").onsubmit=e=>{e.preventDefault();busy("signin",async()=>{const {error}=await client.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});if(error)msg("authMsg",errorText(error),true);else await refresh()})};
+$("reset").onclick=()=>busy("reset",async()=>{const email=$("email").value.trim();if(!email){msg("authMsg","Indique d'abord ton adresse e-mail.",true);return;}const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});msg("authMsg",error?errorText(error):"Si ce compte existe, un e-mail de réinitialisation sera envoyé.",!!error)});
+$("logout").onclick=async()=>{await client.auth.signOut();await refresh()};
+$("classForm").onsubmit=e=>{e.preventDefault();busy("classForm",async()=>{const name=$("className").value.trim();if(!name||!currentUser)return;const {error}=await client.from("classes").insert({teacher_id:currentUser.id,name});if(error)msg("spaceMsg",errorText(error),true);else{$("className").value="";await refresh()}})};
+$("studentForm").onsubmit=e=>{e.preventDefault();busy("addStudent",async()=>{if(!currentUser)return;const {error}=await client.from("students").insert({teacher_id:currentUser.id,class_id:$("classSelect").value,nickname:$("nickname").value.trim()});if(error)msg("spaceMsg",errorText(error),true);else{$("nickname").value="";await refresh()}})};
+client.auth.onAuthStateChange(()=>{setTimeout(refresh,0)});refresh();
+})();
+</script></body></html>
