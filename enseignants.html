@@ -7,7 +7,7 @@
 <form id="authForm"><label for="email">Adresse e-mail professionnelle ou personnelle</label><input id="email" type="email" autocomplete="email" required maxlength="254"><label for="password">Mot de passe (au moins 8 caractères)</label><input id="password" type="password" autocomplete="new-password" minlength="8" required><div class="actions"><button id="signup" type="button">Créer mon compte</button><button id="signin" type="submit" class="secondary">Me connecter</button><button id="reset" type="button" class="secondary">Mot de passe oublié</button></div></form><p class="msg" id="authMsg" role="status"></p></section>
 <section class="panel hidden" id="space"><div class="row"><div><h2 style="margin-bottom:3px">Mon espace enseignant</h2><span id="who" class="muted"></span></div><button id="logout" class="secondary">Déconnexion</button></div><p id="quota" class="tag"></p><a class="toplink" href="#pinSettings" style="font-weight:800;background:#eee9fb;padding:12px 15px;border-radius:12px">🔐 Configurer les PIN des élèves ↓</a><a id="adminShortcut" class="toplink hidden" href="#adminPanel" style="font-weight:800;background:#eee9fb;padding:12px 15px;border-radius:12px">🛡️ Gérer les quotas des enseignants ↓</a><p id="spaceMsg" class="msg" role="status"></p>
 <h3>Mes classes</h3><div id="classes"></div><form id="classForm"><label for="className">Créer une classe</label><input id="className" required maxlength="80" placeholder="Ex. CP A"><div class="actions"><button>Ajouter la classe</button></div></form>
-<h3>Ajouter un élève</h3><p class="muted">Pour protéger les enfants, utilise un pseudonyme ou un prénom abrégé plutôt qu'un nom complet.</p><form id="studentForm"><label for="classSelect">Classe</label><select id="classSelect" required style="width:100%;padding:13px;border:1px solid #c9bfdf;border-radius:10px"></select><label for="nickname">Pseudonyme de l'élève</label><input id="nickname" required maxlength="60" placeholder="Ex. Léa C."><div class="actions"><button id="addStudent">Ajouter l'élève</button></div></form><h3 id="pinSettings">🔐 Élèves inscrits et codes PIN</h3><p class="muted">Clique sur « Définir PIN » à droite du prénom de chaque élève. Choisis 4 à 8 chiffres et transmets-les individuellement.</p><div id="students"></div><p class="warn">Cette page configure les comptes et les classes. La connexion des jeux et la synchronisation des progressions seront ajoutées ensuite. Les données locales de l'ancien Zoo restent inchangées.</p></section>
+<h3>Ajouter un élève</h3><p class="muted">Pour protéger les enfants, utilise un pseudonyme ou un prénom abrégé plutôt qu'un nom complet.</p><form id="studentForm"><label for="classSelect">Classe</label><select id="classSelect" required style="width:100%;padding:13px;border:1px solid #c9bfdf;border-radius:10px"></select><label for="nickname">Pseudonyme de l'élève</label><input id="nickname" required maxlength="60" placeholder="Ex. Léa C."><div class="actions"><button id="addStudent">Ajouter l'élève</button></div></form><h3 id="progressSettings">📊 Progressions et jeux des élèves</h3><p class="muted">Données enregistrées sur Supabase, accessibles uniquement à l'enseignante de la classe.</p><div class="actions"><button type="button" class="secondary" id="reloadProgress">↻ Actualiser les progressions</button></div><p id="progressMsg" class="msg" role="status"></p><div id="progressList"></div><h3 id="pinSettings">🔐 Élèves inscrits et codes PIN</h3><p class="muted">Clique sur « Définir PIN » à droite du prénom de chaque élève. Choisis 4 à 8 chiffres et transmets-les individuellement.</p><div id="students"></div><p class="warn">Cette page configure les comptes et les classes. La connexion des jeux et la synchronisation des progressions seront ajoutées ensuite. Les données locales de l'ancien Zoo restent inchangées.</p></section>
 <section class="panel hidden" id="adminPanel"><h2>🛡️ Administration de Zoo de Lecture</h2><p class="muted">Comptes enseignants inscrits et quotas d'élèves. Les modifications sont enregistrées sur le serveur.</p><div id="adminList"></div><p id="adminMsg" class="msg" role="status"></p></section></main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script><script>
 (function(){
 "use strict";
@@ -36,10 +36,44 @@ async function refresh(){
  $("classes").replaceChildren();
  classes.data.forEach(c=>{const opt=document.createElement("option");opt.value=c.id;opt.textContent=c.name;$("classSelect").append(opt);const d=document.createElement("div");d.className="row";d.textContent="📚 "+c.name+" · Code de classe : "+(c.access_code||"à actualiser");$("classes").append(d)});
  if(!classes.data.length)$("classes").textContent="Aucune classe pour le moment.";
+ await renderProgress(students.data,classes.data);
  $("students").replaceChildren();
  students.data.forEach(s=>{const c=classes.data.find(x=>x.id===s.class_id);const d=document.createElement("div");d.className="row";d.textContent="🧒 "+s.nickname+" · "+(c?c.name:"Classe inconnue")+" · "+(s.pin_hash?"PIN défini":"PIN à définir");const btn=document.createElement("button");btn.className="secondary";btn.style.marginLeft="12px";btn.textContent=s.pin_hash?"Changer PIN":"Définir PIN";btn.onclick=async()=>{const pin=prompt("PIN de 4 à 8 chiffres pour "+s.nickname+" :");if(pin===null)return;if(!/^[0-9]{4,8}$/.test(pin)){msg("spaceMsg","Le PIN doit contenir 4 à 8 chiffres.",true);return;}const {error}=await client.rpc("set_student_pin",{p_student:s.id,p_pin:pin});if(error)msg("spaceMsg",errorText(error),true);else{msg("spaceMsg","PIN enregistré pour "+s.nickname+".");await refresh()}};d.append(btn);$("students").append(d)});
  if(!students.data.length)$("students").textContent="Aucun élève pour le moment.";
 }
+async function renderProgress(students,classes){
+ const container=$("progressList");container.replaceChildren();
+ const {data:rows,error}=await client.from("student_progress").select("student_id,progress,updated_at").eq("teacher_id",currentUser.id);
+ if(error){msg("progressMsg","Impossible de charger les progressions : "+errorText(error),true);return;}
+ msg("progressMsg","");
+ const progressMap=new Map((rows||[]).map(r=>[r.student_id,r]));
+ const fmt=n=>Number.isFinite(Number(n))?Number(n):0;
+ const grouped=classes.map(c=>({c,students:students.filter(s=>s.class_id===c.id)}));
+ grouped.forEach(({c,students:group})=>{
+  const title=document.createElement("h4");title.textContent="📚 "+c.name;container.append(title);
+  group.forEach(s=>{
+   const row=progressMap.get(s.id),p=row&&row.progress||{};
+   const readings=Array.isArray(p.results)?p.results:[];
+   const games=p.hi&&typeof p.hi==="object"?Object.entries(p.hi):[];
+   const wrap=document.createElement("div");wrap.className="row";
+   const info=document.createElement("div");const name=document.createElement("strong");name.textContent=s.nickname;
+   const summary=document.createElement("div");summary.className="muted";summary.textContent=readings.length+" lecture(s) · "+fmt(p.coins)+" pièce(s) · "+fmt(p.credits)+" crédit(s) · "+games.length+" jeu(x) avec record";
+   info.append(name,summary);wrap.append(info);
+   const btn=document.createElement("button");btn.type="button";btn.className="secondary";btn.textContent="Voir les détails";
+   const details=document.createElement("div");details.className="muted hidden";details.style.cssText="width:100%;padding:10px 0;white-space:pre-wrap";
+   const lines=[];
+   if(row)lines.push("Dernière sauvegarde : "+new Date(row.updated_at).toLocaleString("fr-FR"));
+   else lines.push("Aucune progression enregistrée sur le Zoo connecté.");
+   readings.slice(-12).reverse().forEach(r=>{lines.push("Lecture : "+(r.sound||"?")+" · "+(r.k||"")+" · "+fmt(r.n)+" lu(s) · "+fmt(r.e)+" erreur(s)")});
+   games.forEach(([game,h])=>{lines.push("Jeu "+game+" : record "+(h&&h.best!=null?h.best:"non défini"))});
+   details.textContent=lines.join("\n");
+   btn.onclick=()=>{details.classList.toggle("hidden");btn.textContent=details.classList.contains("hidden")?"Voir les détails":"Masquer les détails"};
+   wrap.append(btn,details);container.append(wrap);
+  });
+ });
+ if(!students.length)container.textContent="Aucun élève inscrit.";
+}
+$("reloadProgress").onclick=()=>refresh();
 async function busy(id,action){const b=$(id);b.disabled=true;try{await action()}catch(e){msg("authMsg",errorText(e),true);msg("spaceMsg",errorText(e),true)}finally{b.disabled=false}}
 $("signup").onclick=()=>busy("signup",async()=>{
  const email=$("email").value.trim(),password=$("password").value;
