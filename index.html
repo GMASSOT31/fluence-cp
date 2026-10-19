@@ -488,6 +488,22 @@
   #panel-right .play-cta-hook { font: 600 12px/1.2 "Fredoka",sans-serif; color: #fff; }
   #panel-right .play-cta-spark { position: absolute; right: 10px; top: 7px; color: #fff0a4; font-size: 15px; pointer-events: none; }
   @media (prefers-reduced-motion: reduce) { #panel-right .play-cta { transition: none; } }
+
+  .avatar-profile { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; min-width: 0; }
+  .avatar-profile-name { min-width: 0; flex: 1; }
+  .avatar-profile-name .who-name { overflow-wrap: anywhere; }
+  .avatar-hint { display: block; font-size: 11px; line-height: 1.3; color: var(--muted); margin-top: 3px; }
+  .avatar-trigger { position: relative; flex: 0 0 76px; width: 76px; height: 76px; border: 3px solid #f8c74b; border-radius: 22px; background: linear-gradient(145deg,#fff0a8,#ffc0e7); font-size: 43px; display: grid; place-items: center; cursor: pointer; box-shadow: 0 4px 0 #b874aa; transition: transform .15s; }
+  .avatar-trigger:hover { transform: translateY(-3px) rotate(-3deg); }
+  .avatar-edit { position: absolute; right: -7px; bottom: -6px; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: #7428c4; color: #fff; font-size: 16px; border: 2px solid #fff; }
+  .avatar-overlay { position: fixed; z-index: 99999; inset: 0; background: rgba(12,9,34,.78); display: grid; place-items: center; padding: 15px; }
+  .avatar-dialog { width: min(570px,100%); max-height: min(85vh,740px); overflow-y: auto; background: var(--card); color: var(--ink); border-radius: 24px; padding: 23px; border: 4px solid #d69aff; box-shadow: 0 16px 65px rgba(0,0,0,.35); }
+  .avatar-dialog h2 { margin: 0 0 8px; font-family: "Fredoka",sans-serif; }
+  .avatar-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(72px,1fr)); gap: 10px; margin: 18px 0; }
+  .avatar-choice { min-height: 77px; border-radius: 17px; background: #f7ecff; border: 3px solid #e5cbff; font-size: 40px; cursor: pointer; transition: transform .15s, border-color .15s; }
+  .avatar-choice:hover,.avatar-choice:focus-visible { transform: scale(1.07); border-color: #9a43d7; }
+  .avatar-choice.selected { border-color: #f4af24; background: #fff1a5; }
+  @media (prefers-reduced-motion: reduce) { .avatar-trigger,.avatar-choice { transition: none; } }
 </style>
 </head>
 <body>
@@ -513,7 +529,7 @@
   <div class="layout" id="layout">
     <aside class="panel left" id="panel-left" aria-label="Mon espace" hidden>
       <div class="pcard">
-        <div class="who-name" id="pl-name"></div>
+        <div class="avatar-profile"><button type="button" class="avatar-trigger" id="btn-avatar" aria-label="Choisir mon avatar" title="Personnaliser mon avatar"><span id="pl-avatar" aria-hidden="true">🧑</span><span class="avatar-edit" aria-hidden="true">✎</span></button><div class="avatar-profile-name"><div class="who-name" id="pl-name"></div><span class="avatar-hint">Touche ton avatar pour le changer</span></div></div>
         <div class="row">
           <button type="button" class="ghost-sm" id="btn-logout">Me déconnecter</button>
           <button type="button" class="ghost-sm" id="btn-back-teacher" hidden>Retour à la maîtresse</button>
@@ -2084,12 +2100,65 @@
     if (kind) openStep(sid, soundId, kind);
   }
 
+  /* Avatars personnalisables, enregistrés dans la fiche de chaque élève. */
+  var AVATARS = [
+    { icon: "👧🏻", name: "Fille cheveux bruns" }, { icon: "👦🏻", name: "Garçon cheveux bruns" },
+    { icon: "👧🏼", name: "Fille cheveux clairs" }, { icon: "👦🏼", name: "Garçon cheveux clairs" },
+    { icon: "👧🏽", name: "Fille peau mate" }, { icon: "👦🏽", name: "Garçon peau mate" },
+    { icon: "👧🏾", name: "Fille peau foncée" }, { icon: "👦🏾", name: "Garçon peau foncée" },
+    { icon: "👧🏿", name: "Fille peau très foncée" }, { icon: "👦🏿", name: "Garçon peau très foncée" },
+    { icon: "👩🏻‍🦰", name: "Cheveux roux" }, { icon: "👨🏻‍🦰", name: "Garçon roux" },
+    { icon: "👩🏽‍🦱", name: "Cheveux bouclés" }, { icon: "👨🏽‍🦱", name: "Garçon bouclé" },
+    { icon: "👩🏼‍🦳", name: "Cheveux blancs" }, { icon: "🧑🏾‍🦱", name: "Boucles" },
+    { icon: "🦸", name: "Super-héros" }, { icon: "🦸‍♀️", name: "Super-héroïne" },
+    { icon: "🧙", name: "Magicien" }, { icon: "🧚", name: "Fée" },
+    { icon: "🧑‍🚀", name: "Astronaute" }, { icon: "🥷", name: "Ninja" },
+    { icon: "👑", name: "Roi ou reine" }, { icon: "🤖", name: "Robot" }
+  ];
+  function openAvatarPicker() {
+    if (ses.role !== "student" || !studentById(ses.sid)) return;
+    var existing = document.getElementById("avatar-overlay");
+    if (existing) existing.remove();
+    var overlay = el("div", "avatar-overlay"); overlay.id = "avatar-overlay";
+    var dialog = el("div", "avatar-dialog");
+    dialog.setAttribute("role", "dialog"); dialog.setAttribute("aria-modal", "true"); dialog.setAttribute("aria-label", "Choisis ton avatar");
+    dialog.appendChild(el("h2", "", "🎨 Choisis ton personnage !"));
+    dialog.appendChild(el("p", "muted", "Touche la tête qui te plaît. Tu peux changer quand tu veux !"));
+    var grid = el("div", "avatar-grid");
+    AVATARS.forEach(function (av) {
+      var btn = el("button", "avatar-choice", av.icon);
+      btn.type = "button"; btn.title = av.name; btn.setAttribute("aria-label", av.name);
+      if (studentById(ses.sid).avatar === av.icon) btn.classList.add("selected");
+      btn.addEventListener("click", function () {
+        var student = studentById(ses.sid);
+        if (!student) return;
+        student.avatar = av.icon;
+        save(); renderPanels(); close();
+        toast("Ton avatar est enregistré !");
+      });
+      grid.appendChild(btn);
+    });
+    dialog.appendChild(grid);
+    var cancel = el("button", "secondary", "Fermer");
+    cancel.type = "button"; cancel.addEventListener("click", close);
+    dialog.appendChild(cancel);
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+    function onKey(ev) { if (ev.key === "Escape") close(); }
+    function close() { document.removeEventListener("keydown", onKey); overlay.remove(); }
+    overlay.addEventListener("click", function (ev) { if (ev.target === overlay) close(); });
+    document.addEventListener("keydown", onKey);
+    cancel.focus();
+  }
+  $("btn-avatar").addEventListener("click", openAvatarPicker);
+
   /* Panneaux latéraux : pièces, parties, accès à la boutique, aux cartes, aux jeux et à la lecture */
   function renderPanels() {
     if (ses.role !== "student") return;
     var sid = ses.sid, st = studentById(sid);
     if (!st) return;
     $("pl-name").textContent = st.name;
+    $("pl-avatar").textContent = AVATARS.some(function (a) { return a.icon === st.avatar; }) ? st.avatar : "🧑";
     var cn = coins(sid), cr = credits(sid), pw = pendingWheels(sid).length;
     $("pl-coins").textContent = String(cn);
     $("pl-games").textContent = String(cr);
