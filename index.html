@@ -595,6 +595,18 @@
       pointer-events: none;
     }
   }
+
+  /* Recentrer le groupe de mascottes dans sa zone, sans déborder du bandeau. */
+  @media (min-width: 1150px) {
+    body.mode-student header .zoo-hero-art {
+      left: 50%;
+      top: 50%;
+      width: 190px;
+      height: 90px;
+      transform: translate(-50%, -50%) scale(.47);
+      transform-origin: center center;
+    }
+  }
 </style>
 </head>
 <body>
