@@ -725,6 +725,17 @@
     body.mode-student .cab-ctl { display: none; }
     body.mode-student .cab-play { padding: 10px 8px; font-size: 1.08rem; min-height: 42px; }
   }
+
+  /* Compactage structurel de la salle de jeux, ciblé sans dépendre de la largeur. */
+  #v-jeux .arcade-sign { padding: 6px 10px !important; margin-bottom: 5px !important; }
+  #v-jeux .arcade-sign .a-bulbs { display: none !important; }
+  #v-jeux .tokens { margin: 0 0 5px !important; }
+  #v-jeux .cab { gap: 4px !important; padding-bottom: 8px !important; }
+  #v-jeux .cab-screen { min-height: 74px !important; padding: 5px !important; }
+  #v-jeux .cab-ico { font-size: 2rem !important; }
+  #v-jeux .cab-hi { padding: 4px 6px !important; gap: 1px !important; }
+  #v-jeux .cab-ctl { display: none !important; }
+  #v-jeux .cab-play { padding: 9px 8px !important; min-height: 43px; }
 </style>
 </head>
 <body>
@@ -2530,9 +2541,7 @@
     var crown = el("span", "crown", "👑"); crown.setAttribute("aria-hidden", "true");
     ab.appendChild(crown); ab.appendChild(document.createTextNode(absText(g.id, sid)));
     cab.appendChild(ab);
-    var ctl = el("div", "cab-ctl"); ctl.setAttribute("aria-hidden", "true");
-    ctl.appendChild(el("i", "stick")); ctl.appendChild(el("i", "bt b1")); ctl.appendChild(el("i", "bt b2")); ctl.appendChild(el("i", "bt b3"));
-    cab.appendChild(ctl);
+    /* Les commandes décoratives ont été retirées pour libérer la place des boutons Jouer. */
     var b = el("button", "cab-play", off ? (lim ? "Reviens demain" : "Il te faut une partie") : "Jouer !"); b.type = "button";
     b.disabled = off;
     b.setAttribute("aria-label", g.name + " : " + (h.best !== null ? "record " + g.fmt(h.best) : "pas encore de record") + (off ? ", indisponible" : ", jouer"));
