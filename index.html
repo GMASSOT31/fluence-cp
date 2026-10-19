@@ -539,6 +539,37 @@
     body.mode-student .zoo-top-stat > span { font-size: 1.05rem; }
     body.mode-student .zoo-top-stat small { font-size: .66rem; }
   }
+
+  /* Barre unique : logo à gauche, ressources à droite, sans doublons. */
+  body.mode-student main { max-width: 1560px; }
+  body.mode-student header { width: 100%; display: flex; flex-direction: row; align-items: stretch; gap: 0; margin-bottom: 14px; }
+  body.mode-student header .zoo-hero { flex: 1; min-width: 0; min-height: 76px; padding: 10px 310px 10px 20px; border-radius: 18px; }
+  body.mode-student header .zoo-hero-art { position: absolute; right: 282px; top: 50%; transform: translateY(-50%) scale(.55); transform-origin: center right; }
+  body.mode-student .zoo-top-stats { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); z-index: 3; display: flex; flex-direction: row; gap: 7px; margin: 0; }
+  body.mode-student .zoo-top-stat { flex-direction: row; gap: 5px; min-width: 0; padding: 8px 9px; border: 1px solid #d5b1ff; border-radius: 12px; background: rgba(34,17,81,.88); color: #fff; box-shadow: none; }
+  body.mode-student .zoo-top-stat strong { font-size: 1.15rem; color: #fff; }
+  body.mode-student .zoo-top-stat small { color: #e9d6ff; font-size: .7rem; }
+  body.mode-student .zoo-top-stat.zoo-top-gold { border-color: #f5c644; background: linear-gradient(145deg,#60340b,#895014); }
+  body.mode-student .zoo-top-stat.zoo-top-gold strong { color: #ffdc51; }
+  body.mode-student .zoo-top-stat .gold-coin { display: inline-block; width: 25px; height: 25px; flex-shrink: 0; }
+  body.mode-student #panel-left .pcard.stats > .stat { display: none; }
+  body.mode-student #panel-left .pcard.stats:has(#btn-panel-wheel[hidden]) { display: none; }
+  @media (max-width: 1000px) {
+    body.mode-student header .zoo-hero { padding-right: 265px; }
+    body.mode-student header .zoo-hero-art { display: none; }
+    body.mode-student .zoo-top-stats { right: 10px; }
+    body.mode-student .zoo-top-stat small { display: none; }
+  }
+  @media (max-width: 600px) {
+    body.mode-student header .zoo-hero { min-height: 70px; padding: 8px 154px 8px 10px; }
+    body.mode-student header .zoo-hero h1 { font-size: clamp(1rem,4vw,1.35rem); }
+    body.mode-student header .zoo-hero .brand .sub { font-size: .65rem; }
+    body.mode-student .zoo-top-stats { gap: 3px; right: 5px; }
+    body.mode-student .zoo-top-stat { padding: 5px 4px; gap: 2px; border-radius: 8px; }
+    body.mode-student .zoo-top-stat > span { font-size: .95rem; }
+    body.mode-student .zoo-top-stat strong { font-size: .85rem; }
+    body.mode-student .zoo-top-stat .gold-coin { width: 18px; height: 18px; }
+  }
 </style>
 </head>
 <body>
@@ -553,7 +584,7 @@
       <div class="zoo-hero-art" aria-hidden="true"><span class="zoo-star zoo-star-one">✦</span><span class="zoo-mascot zoo-bee">🐝</span><span class="zoo-mascot zoo-llama">🦙</span><span class="zoo-mascot zoo-owl">🦉</span><span class="zoo-star zoo-star-two">✧</span><span class="zoo-pad">✚ <span>● ●</span></span></div>
     </div>
     <div class="zoo-top-stats needs-reward" id="zoo-top-stats" hidden aria-label="Mes récompenses et mon niveau">
-      <div class="zoo-top-stat"><span aria-hidden="true">🪙</span><strong id="top-coins">0</strong><small>Pièces</small></div>
+      <div class="zoo-top-stat zoo-top-gold"><span class="gold-coin" aria-hidden="true"></span><strong id="top-coins">0</strong><small>Pièces</small></div>
       <div class="zoo-top-stat"><span aria-hidden="true">🎮</span><strong id="top-games">0</strong><small>Parties</small></div>
       <div class="zoo-top-stat"><span id="top-animal" aria-hidden="true">🥚</span><strong id="top-level">N0</strong><small>Niveau</small></div>
     </div>
