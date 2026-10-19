@@ -1339,6 +1339,7 @@
     var asStudent = ses.role === "student";
     $("fld-student").hidden = asStudent;
     $("setup-title").textContent = asStudent ? "Ma lecture" : "Qui lit ?";
+    $("btn-open").textContent = ses.goal === "eval" ? "Passer l’évaluation" : "Préparer la lecture";
     $("btn-back").textContent = asStudent ? "Changer d’étape" : "Changer d’élève ou d’étape";
     var picker = asStudent && !ses.viaTeacher;
     $("fld-goal").hidden = !picker;
