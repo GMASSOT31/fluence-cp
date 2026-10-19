@@ -26,6 +26,7 @@ async function refresh(){
  client.from("students").select("id,nickname,class_id").order("created_at")]);
  if(profile.error||classes.error||students.error){msg("spaceMsg","Impossible de charger les données : "+errorText(profile.error||classes.error||students.error),true);return;}
  msg("spaceMsg","");
+ await renderAdmin(profile.data.role);
  const limit=profile.data.student_limit;const used=students.data.length;
  $("quota").textContent=used+" / "+limit+" élèves inscrits"+(profile.data.role==="admin"?" · Administrateur":"");
  $("addStudent").disabled=used>=limit||classes.data.length===0;
