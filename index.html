@@ -1959,7 +1959,7 @@
     { id: "count", name: "Compte les animaux", ico: "🔢", neon: "#ffe66d", tag: "Combien y en a-t-il ? Vite !", mode: "max", fmt: countFmt },
     { id: "order", name: "Dans l’ordre", ico: "⏱️", neon: "#3dff8b", tag: "Touche 1, 2, 3… le plus vite", mode: "min", fmt: function (v) { return v + " s"; } },
     { id: "simon", name: "Répète les animaux", ico: "🧠", neon: "#a78bfa", tag: "Retiens la suite", mode: "max", fmt: function (v) { return nb(v, "animal", "animaux"); } },
-    { id: "safari", name: "Safari des animaux", ico: "🦁", neon: "#ffcf4b", tag: "Saute et ramasse 10 étoiles !", mode: "max", fmt: function (v) { return nb(v, "étoile", "étoiles"); } }
+    { id: "safari", name: "Safari des animaux", ico: "🦁", neon: "#ffcf4b", tag: "10 étoiles en moins de 30 secondes !", mode: "min", fmt: function (v) { return (v / 1000).toFixed(2).replace(".", ",") + " s"; } }
   ];
   /* Score du comptage : bonnes réponses × 1000 − secondes (plus grand = meilleur), donc à 6 sur 6 c’est le temps qui départage */
   function countFmt(v) {
@@ -2495,7 +2495,7 @@
     area.appendChild(wrap);
     var ctx = canvas.getContext("2d");
     if (!ctx) { $("game-msg").textContent = "Ce navigateur ne peut pas lancer le Safari."; return; }
-    var world = 2450, floorY = 272, goal = 10, got = 0, duration = 60, start = performance.now();
+    var world = 2450, floorY = 272, goal = 10, got = 0, duration = 30, start = performance.now();
     var player = { x: 38, y: 224, w: 36, h: 44, vx: 0, vy: 0, ground: false };
     var keys = { left: false, right: false, jump: false }, prevJump = false, camera = 0, ended = false, raf = null;
     var platforms = [{ x: 0, y: floorY, w: world, h: 48 }];
@@ -2540,15 +2540,16 @@
       window.removeEventListener("keyup",keyup);
     };
     function rectHit(a,b) { return a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y; }
+    function nowElapsed() { return performance.now() - start; }
     function finish(won) {
       if (ended) return;
       ended=true;
       if (won) {
-        $("game-msg").textContent = "Safari réussi ! " + got + " étoiles récupérées !";
+        $("game-msg").textContent = "Safari réussi en " + (Math.round(nowElapsed()) / 1000).toFixed(2).replace(".", ",") + " secondes !";
         winCoin(sid,area);
       } else $("game-msg").textContent = "Fin du Safari ! Tu as récupéré " + got + " étoiles sur " + goal + ".";
       stopGame();
-      finishScore(sid,area,"safari",got);
+      if (won) finishScore(sid,area,"safari",Math.max(1,Math.round(nowElapsed())));
     }
     function drawStar(x,y) {
       ctx.beginPath();
@@ -2598,8 +2599,8 @@
       ctx.fillStyle="rgba(25,25,65,.8)";ctx.fillRect(12,12,245,35);
       ctx.fillStyle="#fff";ctx.font="bold 18px system-ui";ctx.fillText("⭐ "+got+"/"+goal+"     ⏱ "+leftSec+" s",22,36);
       $("game-msg").textContent="Ramasse 10 étoiles avant la fin du temps !";
+      if(now-start>=duration*1000){finish(false);return;}
       if(got>=goal){finish(true);return;}
-      if(leftSec<=0){finish(false);return;}
       raf=requestAnimationFrame(frame);
     }
     raf=requestAnimationFrame(frame);
