@@ -65,8 +65,7 @@ main{max-width:950px}
  <section class="panel feature-card progress-card" id="progressSettings">
   <div class="section-head"><div class="section-icon">📊</div><div><h2>Progressions et résultats</h2><p class="muted">Lectures, récompenses et records sauvegardés sur Supabase.</p></div></div>
   <div class="actions section-actions"><button type="button" class="secondary" id="reloadProgress">↻ Actualiser les résultats</button></div>
-  <p id="progressMsg" class="msg" role="status"></p><div id="progressList" class="content-list"></div><div id="evaluationPanel" class="form-zone hidden"><h3>📝 Saisir une évaluation</h3><p id="evaluationStudent" class="muted"></p><form id="evaluationForm"><input id="evaluationStudentId" type="hidden"><label for="evaluationSound">Son ou étape évaluée</label><input id="evaluationSound" maxlength="80" required placeholder="Ex. ch, m, ou étape 8"><label for="evaluationKind">Type de lecture</label><select id="evaluationKind"><option value="s">Syllabes</option><option value="m">Mots</option><option value="t">Texte</option></select><div class="eval-grid"><div><label for="evaluationRead">Éléments lus</label><input id="evaluationRead" type="number" min="0" max="10000" required value="40"></div><div><label for="evaluationErrors">Erreurs</label><input id="evaluationErrors" type="number" min="0" max="10000" required value="0"></div><div><label for="evaluationSeconds">Durée (secondes)</label><input id="evaluationSeconds" type="number" min="1" max="3600" required value="60"></div></div><p class="muted">Le score est calculé sur les éléments lus correctement, rapportés à une minute.</p><div class="actions"><button id="saveEvaluation">Enregistrer l’évaluation</button><button id="cancelEvaluation" type="button" class="secondary">Annuler</button></div></form><p id="evaluationMsg" class="msg" role="status"></p></div>
- </section>
+  <p id="progressMsg" class="msg" role="status"></p><div id="progressList" class="content-list"></div></section>
  <section class="panel feature-card pin-card" id="pinSettings">
   <div class="section-head"><div class="section-icon">🔐</div><div><h2>Gestion des codes PIN</h2><p class="muted">Crée ou modifie le code secret de chaque élève.</p></div></div>
   <p class="muted privacy-note">Choisis 4 à 8 chiffres et transmets le code individuellement à l'élève ou à sa famille.</p>
@@ -125,7 +124,7 @@ async function renderProgress(students,classes){
    const info=document.createElement("div");const name=document.createElement("strong");name.textContent=s.nickname;
    const summary=document.createElement("div");summary.className="muted";summary.textContent=readings.length+" lecture(s) · "+fmt(p.coins)+" pièce(s) · "+fmt(p.credits)+" crédit(s) · "+games.length+" jeu(x) avec record";
    info.append(name,summary);wrap.append(info);
-   const evalBtn=document.createElement("button");evalBtn.type="button";evalBtn.textContent="📝 Évaluer";evalBtn.onclick=()=>openEvaluation(s.id,s.nickname,c.name);wrap.append(evalBtn);const btn=document.createElement("button");btn.type="button";btn.className="secondary";btn.textContent="Voir les détails";
+   const btn=document.createElement("button");btn.type="button";btn.className="secondary";btn.textContent="Voir les détails";
    const details=document.createElement("div");details.className="muted hidden";details.style.cssText="width:100%;padding:10px 0;white-space:pre-wrap";
    const lines=[];
    if(row)lines.push("Dernière sauvegarde : "+new Date(row.updated_at).toLocaleString("fr-FR"));
@@ -140,34 +139,7 @@ async function renderProgress(students,classes){
  if(!students.length)container.textContent="Aucun élève inscrit.";
 }
 $("reloadProgress").onclick=()=>refresh();
-function openEvaluation(id,name,classe){
- $("evaluationStudentId").value=id;
- $("evaluationStudent").textContent="Élève : "+name+" · "+classe;
- $("evaluationPanel").classList.remove("hidden");
- msg("evaluationMsg","");
- $("evaluationPanel").scrollIntoView({behavior:"smooth",block:"start"});
-}
-$("cancelEvaluation").onclick=()=>{$("evaluationPanel").classList.add("hidden");msg("evaluationMsg","")};
-$("evaluationForm").onsubmit=async e=>{
- e.preventDefault();
- const read=Number($("evaluationRead").value),errors=Number($("evaluationErrors").value),seconds=Number($("evaluationSeconds").value);
- if(!Number.isInteger(read)||!Number.isInteger(errors)||!Number.isInteger(seconds)||read<0||errors<0||errors>read||seconds<1){msg("evaluationMsg","Vérifie les nombres : les erreurs ne peuvent pas dépasser les éléments lus.",true);return;}
- const btn=$("saveEvaluation");btn.disabled=true;
- try{
-  const {data,error}=await client.rpc("teacher_record_reading",{p_student:$("evaluationStudentId").value,p_sound:$("evaluationSound").value.trim(),p_kind:$("evaluationKind").value,p_read:read,p_errors:errors,p_seconds:seconds});
-  if(error)throw error;
-  msg("evaluationMsg","Évaluation enregistrée : "+data.mclm+" éléments corrects par minute.");
-  await renderProgressFromServer();
- }catch(err){msg("evaluationMsg",errorText(err),true)}
- finally{btn.disabled=false}
-};
-async function renderProgressFromServer(){
- const [classes,students]=await Promise.all([
- client.from("classes").select("id,name").order("created_at"),
- client.from("students").select("id,nickname,class_id").order("created_at")]);
- if(classes.error||students.error){msg("progressMsg",errorText(classes.error||students.error),true);return;}
- await renderProgress(students.data,classes.data);
-}
+
 
 async function busy(id,action){const b=$(id);b.disabled=true;try{await action()}catch(e){msg("authMsg",errorText(e),true);msg("spaceMsg",errorText(e),true)}finally{b.disabled=false}}
 $("signup").onclick=()=>busy("signup",async()=>{
