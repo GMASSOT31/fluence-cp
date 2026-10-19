@@ -22,8 +22,8 @@ async function refresh(){
  $("who").textContent=currentUser.email||"";
  const [profile,classes,students]=await Promise.all([
  client.from("teachers").select("student_limit,role").eq("id",currentUser.id).single(),
- client.from("classes").select("id,name,school_year").order("created_at"),
- client.from("students").select("id,nickname,class_id").order("created_at")]);
+ client.from("classes").select("id,name,school_year,access_code").order("created_at"),
+ client.from("students").select("id,nickname,class_id,pin_hash").order("created_at")]);
  if(profile.error||classes.error||students.error){msg("spaceMsg","Impossible de charger les données : "+errorText(profile.error||classes.error||students.error),true);return;}
  msg("spaceMsg","");
  $("adminPanel").classList.toggle("hidden",profile.data.role!=="admin");
@@ -34,10 +34,10 @@ async function refresh(){
  $("addStudent").disabled=used>=limit||classes.data.length===0;
  $("classSelect").replaceChildren();
  $("classes").replaceChildren();
- classes.data.forEach(c=>{const opt=document.createElement("option");opt.value=c.id;opt.textContent=c.name;$("classSelect").append(opt);const d=document.createElement("div");d.className="row";d.textContent="📚 "+c.name;$("classes").append(d)});
+ classes.data.forEach(c=>{const opt=document.createElement("option");opt.value=c.id;opt.textContent=c.name;$("classSelect").append(opt);const d=document.createElement("div");d.className="row";d.textContent="📚 "+c.name+" · Code de classe : "+(c.access_code||"à actualiser");$("classes").append(d)});
  if(!classes.data.length)$("classes").textContent="Aucune classe pour le moment.";
  $("students").replaceChildren();
- students.data.forEach(s=>{const c=classes.data.find(x=>x.id===s.class_id);const d=document.createElement("div");d.className="row";d.textContent="🧒 "+s.nickname+" · "+(c?c.name:"Classe inconnue");$("students").append(d)});
+ students.data.forEach(s=>{const c=classes.data.find(x=>x.id===s.class_id);const d=document.createElement("div");d.className="row";d.textContent="🧒 "+s.nickname+" · "+(c?c.name:"Classe inconnue")+" · "+(s.pin_hash?"PIN défini":"PIN à définir");const btn=document.createElement("button");btn.className="secondary";btn.textContent=s.pin_hash?"Changer PIN":"Définir PIN";btn.onclick=async()=>{const pin=prompt("PIN de 4 à 8 chiffres pour "+s.nickname+" :");if(pin===null)return;if(!/^[0-9]{4,8}$/.test(pin)){msg("spaceMsg","Le PIN doit contenir 4 à 8 chiffres.",true);return;}const {error}=await client.rpc("set_student_pin",{p_student:s.id,p_pin:pin});if(error)msg("spaceMsg",errorText(error),true);else{msg("spaceMsg","PIN enregistré pour "+s.nickname+".");await refresh()}};d.append(btn);$("students").append(d)});
  if(!students.data.length)$("students").textContent="Aucun élève pour le moment.";
 }
 async function busy(id,action){const b=$(id);b.disabled=true;try{await action()}catch(e){msg("authMsg",errorText(e),true);msg("spaceMsg",errorText(e),true)}finally{b.disabled=false}}
