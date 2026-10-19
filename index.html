@@ -504,6 +504,41 @@
   .avatar-choice:hover,.avatar-choice:focus-visible { transform: scale(1.07); border-color: #9a43d7; }
   .avatar-choice.selected { border-color: #f4af24; background: #fff1a5; }
   @media (prefers-reduced-motion: reduce) { .avatar-trigger,.avatar-choice { transition: none; } }
+
+  /* Test ergonomique : bandeau compact pour les élèves, accueil conservé. */
+  body.mode-student header { position: sticky; top: 0; z-index: 35; background: var(--bg); padding: 5px 0 9px; }
+  body.mode-student header .zoo-hero {
+    min-height: 76px; padding: 10px 18px; border-radius: 17px;
+    border-width: 2px; box-shadow: 0 3px 0 #161044, 0 7px 18px rgba(32,17,80,.17);
+  }
+  body.mode-student header .zoo-hero h1 { font-size: clamp(1.4rem,2.5vw,2rem); line-height: 1.1; }
+  body.mode-student header .zoo-hero .brand .sub { font-size: .78rem; }
+  body.mode-student header .zoo-kicker, body.mode-student header .zoo-hero-tag, body.mode-student header .zoo-pad, body.mode-student header .zoo-star { display: none; }
+  body.mode-student header .zoo-hero-art { min-width: 125px; min-height: 52px; height: 52px; width: 145px; transform: scale(.68); transform-origin: center right; }
+  body.mode-student .zoo-top-stats { display: flex; justify-content: center; gap: 9px; margin: 9px auto 0; }
+  body.mode-student .zoo-top-stats[hidden] { display: none; }
+  body.mode-student .zoo-top-stat { display: flex; align-items: center; gap: 7px; min-width: 0; border: 1px solid #d7c6ee; background: var(--card); color: var(--ink); border-radius: 12px; padding: 6px 13px; box-shadow: 0 2px 0 #d7c6ee; }
+  body.mode-student .zoo-top-stat > span { font-size: 1.35rem; line-height: 1; }
+  body.mode-student .zoo-top-stat strong { font: 800 1.1rem/1 "Fredoka",sans-serif; }
+  body.mode-student .zoo-top-stat small { font-size: .75rem; color: var(--muted); }
+  body.mode-student.no-reward #zoo-top-stats { display: flex; }
+  body.mode-student.no-reward #zoo-top-stats .zoo-top-stat:not(:last-child) { display: none; }
+  @media (min-width: 901px) {
+    body.mode-student header { display: flex; align-items: center; gap: 12px; }
+    body.mode-student header .zoo-hero { flex: 1; min-width: 0; }
+    body.mode-student .zoo-top-stats { margin: 0; flex-shrink: 0; }
+    body.mode-student .zoo-top-stat { flex-direction: column; gap: 3px; min-width: 72px; padding: 5px 8px; }
+    body.mode-student .zoo-top-stat small { font-size: .68rem; }
+  }
+  @media (max-width: 600px) {
+    body.mode-student header .zoo-hero { min-height: 65px; padding: 7px 12px; }
+    body.mode-student header .zoo-hero h1 { font-size: 1.35rem; }
+    body.mode-student header .zoo-hero-art { display: none; }
+    body.mode-student .zoo-top-stats { gap: 5px; margin-top: 7px; }
+    body.mode-student .zoo-top-stat { flex: 1; justify-content: center; gap: 4px; padding: 6px 4px; }
+    body.mode-student .zoo-top-stat > span { font-size: 1.05rem; }
+    body.mode-student .zoo-top-stat small { font-size: .66rem; }
+  }
 </style>
 </head>
 <body>
@@ -516,6 +551,11 @@
         <span class="zoo-hero-tag">⭐ Lis · 🏆 Progresse · 🎮 Joue !</span>
       </div>
       <div class="zoo-hero-art" aria-hidden="true"><span class="zoo-star zoo-star-one">✦</span><span class="zoo-mascot zoo-bee">🐝</span><span class="zoo-mascot zoo-llama">🦙</span><span class="zoo-mascot zoo-owl">🦉</span><span class="zoo-star zoo-star-two">✧</span><span class="zoo-pad">✚ <span>● ●</span></span></div>
+    </div>
+    <div class="zoo-top-stats needs-reward" id="zoo-top-stats" hidden aria-label="Mes récompenses et mon niveau">
+      <div class="zoo-top-stat"><span aria-hidden="true">🪙</span><strong id="top-coins">0</strong><small>Pièces</small></div>
+      <div class="zoo-top-stat"><span aria-hidden="true">🎮</span><strong id="top-games">0</strong><small>Parties</small></div>
+      <div class="zoo-top-stat"><span id="top-animal" aria-hidden="true">🥚</span><strong id="top-level">N0</strong><small>Niveau</small></div>
     </div>
     <nav id="nav" aria-label="Espace de la maîtresse" hidden>
       <button type="button" data-view="eleves">Élèves</button>
@@ -1256,6 +1296,7 @@
     var st = r === "student";
     $("panel-left").hidden = !st; $("panel-right").hidden = !st; $("bottom-nav").hidden = !st;
     $("btn-back-teacher").hidden = !(st && ses.viaTeacher);
+    $("zoo-top-stats").hidden = !st;
   }
   function enterStudent(sid, viaTeacher, keepSel) {
     ses.role = "student"; ses.sid = sid; ses.viaTeacher = !!viaTeacher; ses.unlocked = !!viaTeacher; ses.mode = "live"; ses.goal = "train";
@@ -2162,6 +2203,8 @@
     var cn = coins(sid), cr = credits(sid), pw = pendingWheels(sid).length;
     $("pl-coins").textContent = String(cn);
     $("pl-games").textContent = String(cr);
+    $("top-coins").textContent = String(cn);
+    $("top-games").textContent = String(cr);
     $("st-coins").setAttribute("aria-label", nb(cn, "pièce d’or", "pièces d’or")); $("st-coins").title = "Pièces d’or";
     $("st-games").setAttribute("aria-label", nb(cr, "partie de jeu", "parties de jeu")); $("st-games").title = "Parties de jeu";
     var wb = $("btn-panel-wheel");
@@ -2176,6 +2219,7 @@
     var doneSteps = allSteps.filter(function (x) { return isValid(sid, x.sound, x.kind); }).length;
     $("pr-prog").textContent = doneSteps + " sur " + allSteps.length + " étapes";
     $("pl-level").textContent = "N" + doneSteps;
+    $("top-level").textContent = "N" + doneSteps;
     /* Afficher le dernier son atteint, pas la première étape encore à faire. */
     var animalSound = null;
     data.sounds.forEach(function (sound) {
@@ -2183,6 +2227,7 @@
     });
     var animal = animalSound ? charFor(animalSound) : null;
     $("st-level").querySelector(".sym").textContent = animal ? animal.e : "🥚";
+    $("top-animal").textContent = animal ? animal.e : "🥚";
     $("st-level").setAttribute("aria-label", "Niveau de lecture " + doneSteps + " : " + nb(doneSteps, "étape validée", "étapes validées"));
     $("st-level").title = "Niveau de lecture : " + nb(doneSteps, "étape validée", "étapes validées");
   }
