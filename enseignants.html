@@ -5,7 +5,7 @@
 </style></head><body><main><header class="hero"><div style="font-size:45px">🦁📚🎮</div><h1>Zoo de Lecture</h1><p>Espace des enseignantes et enseignants</p><a class="toplink" href="./">← Retour au Zoo</a></header>
 <section class="panel" id="auth"><h2>Créer un compte ou se connecter</h2><p class="muted">Inscription libre. Chaque compte dispose de 10 places d'élèves par défaut.</p>
 <form id="authForm"><label for="email">Adresse e-mail professionnelle ou personnelle</label><input id="email" type="email" autocomplete="email" required maxlength="254"><label for="password">Mot de passe (au moins 8 caractères)</label><input id="password" type="password" autocomplete="new-password" minlength="8" required><div class="actions"><button id="signup" type="button">Créer mon compte</button><button id="signin" type="submit" class="secondary">Me connecter</button><button id="reset" type="button" class="secondary">Mot de passe oublié</button></div></form><p class="msg" id="authMsg" role="status"></p></section>
-<section class="panel hidden" id="space"><div class="row"><div><h2 style="margin-bottom:3px">Mon espace enseignant</h2><span id="who" class="muted"></span></div><button id="logout" class="secondary">Déconnexion</button></div><p id="quota" class="tag"></p><p id="spaceMsg" class="msg" role="status"></p>
+<section class="panel hidden" id="space"><div class="row"><div><h2 style="margin-bottom:3px">Mon espace enseignant</h2><span id="who" class="muted"></span></div><button id="logout" class="secondary">Déconnexion</button></div><p id="quota" class="tag"></p><a id="adminShortcut" class="toplink hidden" href="#adminPanel" style="font-weight:800;background:#eee9fb;padding:12px 15px;border-radius:12px">🛡️ Gérer les quotas des enseignants ↓</a><p id="spaceMsg" class="msg" role="status"></p>
 <h3>Mes classes</h3><div id="classes"></div><form id="classForm"><label for="className">Créer une classe</label><input id="className" required maxlength="80" placeholder="Ex. CP A"><div class="actions"><button>Ajouter la classe</button></div></form>
 <h3>Ajouter un élève</h3><p class="muted">Pour protéger les enfants, utilise un pseudonyme ou un prénom abrégé plutôt qu'un nom complet.</p><form id="studentForm"><label for="classSelect">Classe</label><select id="classSelect" required style="width:100%;padding:13px;border:1px solid #c9bfdf;border-radius:10px"></select><label for="nickname">Pseudonyme de l'élève</label><input id="nickname" required maxlength="60" placeholder="Ex. Léa C."><div class="actions"><button id="addStudent">Ajouter l'élève</button></div></form><h3>Élèves inscrits</h3><div id="students"></div><p class="warn">Cette page configure les comptes et les classes. La connexion des jeux et la synchronisation des progressions seront ajoutées ensuite. Les données locales de l'ancien Zoo restent inchangées.</p></section>
 <section class="panel hidden" id="adminPanel"><h2>🛡️ Administration de Zoo de Lecture</h2><p class="muted">Comptes enseignants inscrits et quotas d'élèves. Les modifications sont enregistrées sur le serveur.</p><div id="adminList"></div><p id="adminMsg" class="msg" role="status"></p></section></main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script><script>
@@ -26,9 +26,11 @@ async function refresh(){
  client.from("students").select("id,nickname,class_id").order("created_at")]);
  if(profile.error||classes.error||students.error){msg("spaceMsg","Impossible de charger les données : "+errorText(profile.error||classes.error||students.error),true);return;}
  msg("spaceMsg","");
- await renderAdmin(profile.data.role);
+ $("adminPanel").classList.toggle("hidden",profile.data.role!=="admin");
+ renderAdmin(profile.data.role).catch(e=>msg("adminMsg",errorText(e),true));
  const limit=profile.data.student_limit;const used=students.data.length;
  $("quota").textContent=used+" / "+limit+" élèves inscrits"+(profile.data.role==="admin"?" · Administrateur":"");
+ $("adminShortcut").classList.toggle("hidden",profile.data.role!=="admin");
  $("addStudent").disabled=used>=limit||classes.data.length===0;
  $("classSelect").replaceChildren();
  $("classes").replaceChildren();
