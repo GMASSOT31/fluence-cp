@@ -2,12 +2,77 @@
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Espace enseignant · Suivi des progressions | Zoo de Lecture</title>
 <style>
 :root{font-family:system-ui,-apple-system,sans-serif;color:#242044;background:#f6f3ff}*{box-sizing:border-box}body{margin:0}main{max-width:790px;margin:35px auto;padding:18px}.hero{text-align:center}.hero h1{font-size:clamp(28px,5vw,43px);margin:8px}.hero p{color:#69627b}.panel{background:white;border:1px solid #e8e1fa;border-radius:20px;padding:25px;margin-top:23px;box-shadow:0 8px 25px #2d17500e}h2{margin:0 0 17px}label{display:block;font-weight:650;margin:13px 0 6px}input{display:block;width:100%;padding:13px;border:1px solid #c9bfdf;border-radius:10px;font:inherit}button{border:0;border-radius:11px;background:#7046ce;color:white;padding:12px 16px;font:inherit;font-weight:700;cursor:pointer}button.secondary{background:#eee9fb;color:#503292}button:disabled{opacity:.5;cursor:wait}.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:17px}.hidden{display:none!important}.msg{margin:15px 0;white-space:pre-wrap;color:#3c3472}.err{color:#a52239}.muted{color:#6a6479;font-size:.93rem}.row{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid #f1edfa}.tag{background:#eee9fb;border-radius:9px;padding:6px 9px}.toplink{display:inline-block;margin:10px 0;color:#7046ce}.warn{padding:12px;border-radius:10px;background:#fff6dc;color:#6e5114}
+
+/* Tableau de bord enseignant : quatre espaces clairement séparés */
+main{max-width:950px}
+.teacher-space{display:grid;gap:20px;margin-top:22px}
+.teacher-space>.panel{margin:0}
+.teacher-header{padding:23px 26px}
+.teacher-header>.row{border-bottom:0;padding:0}
+.quota-tag{display:inline-flex;font-weight:750;margin:12px 0 17px;padding:10px 14px;border-radius:12px}
+.teacher-nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+.teacher-nav a{text-decoration:none;text-align:center;background:#f3efff;color:#4e3486;border:1px solid #e7defd;border-radius:12px;padding:12px 8px;font-weight:700;font-size:.9rem;transition:background .15s,transform .15s}
+.teacher-nav a:hover{background:#e7dcff;transform:translateY(-1px)}
+.teacher-nav a#adminShortcut{grid-column:1/-1;background:#e9e5f9}
+.feature-card{padding:27px 30px 30px;scroll-margin-top:18px;border-top:5px solid var(--accent)}
+.classes-card{--accent:#7960d4;--soft:#f4f0ff}
+.student-card{--accent:#2e9b91;--soft:#eaf8f5}
+.progress-card{--accent:#367bc4;--soft:#ecf5ff}
+.pin-card{--accent:#d48b2d;--soft:#fff6e7}
+.section-head{display:flex;gap:15px;align-items:center;margin-bottom:20px}
+.section-head h2{margin:0 0 4px;font-size:1.45rem}
+.section-head p{margin:0}
+.section-icon{width:52px;height:52px;flex:0 0 52px;display:grid;place-items:center;border-radius:16px;background:var(--soft);font-size:25px}
+.feature-card h3{margin:0 0 12px;font-size:1.05rem}
+.feature-card label{margin-top:13px}
+.feature-card input,.feature-card select{width:100%;padding:13px;border:1px solid #c9bfdf;border-radius:10px;font:inherit;background:white;color:#242044}
+.feature-card .row{gap:12px;padding:14px 4px}
+.feature-card .row:last-child{border-bottom:0}
+.feature-card .row button{flex-shrink:0}
+.content-list:empty:before{content:"Aucune donnée pour le moment";display:block;color:#827c92;padding:12px}
+.form-zone{margin-top:20px;padding:20px;background:var(--soft);border-radius:15px}
+.privacy-note{background:var(--soft);border-radius:12px;padding:12px 14px;line-height:1.5}
+.section-actions{margin:0 0 15px}
+.teacher-footnote{margin:0 0 10px;color:#746e86;font-size:.86rem;text-align:center;line-height:1.5}
+@media(max-width:650px){main{padding:12px;margin:16px auto}.teacher-nav{grid-template-columns:repeat(2,minmax(0,1fr))}.feature-card,.teacher-header{padding:19px}.section-head h2{font-size:1.2rem}.section-icon{width:44px;height:44px;flex-basis:44px;font-size:21px}.feature-card .row{align-items:flex-start}.feature-card .row button{font-size:.9rem}}
 </style></head><body><main><header class="hero"><div style="font-size:45px">🦁📚🎮</div><h1>Zoo de Lecture</h1><p>Espace des enseignantes et enseignants</p><a class="toplink" href="./">← Retour au Zoo</a></header>
 <section class="panel" id="auth"><h2>Créer un compte ou se connecter</h2><p class="muted">Inscription libre. Chaque compte dispose de 10 places d'élèves par défaut.</p>
 <form id="authForm"><label for="email">Adresse e-mail professionnelle ou personnelle</label><input id="email" type="email" autocomplete="email" required maxlength="254"><label for="password">Mot de passe (au moins 8 caractères)</label><input id="password" type="password" autocomplete="new-password" minlength="8" required><div class="actions"><button id="signup" type="button">Créer mon compte</button><button id="signin" type="submit" class="secondary">Me connecter</button><button id="reset" type="button" class="secondary">Mot de passe oublié</button></div></form><p class="msg" id="authMsg" role="status"></p></section>
-<section class="panel hidden" id="space"><div class="row"><div><h2 style="margin-bottom:3px">Mon espace enseignant</h2><span id="who" class="muted"></span></div><button id="logout" class="secondary">Déconnexion</button></div><p id="quota" class="tag"></p><a class="toplink" href="#progressSettings" style="font-weight:800;background:#e6f4ed;padding:12px 15px;border-radius:12px;color:#205b45">📊 Voir les progressions des élèves ↓</a><a class="toplink" href="#pinSettings" style="font-weight:800;background:#eee9fb;padding:12px 15px;border-radius:12px">🔐 Configurer les PIN des élèves ↓</a><a id="adminShortcut" class="toplink hidden" href="#adminPanel" style="font-weight:800;background:#eee9fb;padding:12px 15px;border-radius:12px">🛡️ Gérer les quotas des enseignants ↓</a><p id="spaceMsg" class="msg" role="status"></p>
-<h3>Mes classes</h3><div id="classes"></div><form id="classForm"><label for="className">Créer une classe</label><input id="className" required maxlength="80" placeholder="Ex. CP A"><div class="actions"><button>Ajouter la classe</button></div></form>
-<h3>Ajouter un élève</h3><p class="muted">Pour protéger les enfants, utilise un pseudonyme ou un prénom abrégé plutôt qu'un nom complet.</p><form id="studentForm"><label for="classSelect">Classe</label><select id="classSelect" required style="width:100%;padding:13px;border:1px solid #c9bfdf;border-radius:10px"></select><label for="nickname">Pseudonyme de l'élève</label><input id="nickname" required maxlength="60" placeholder="Ex. Léa C."><div class="actions"><button id="addStudent">Ajouter l'élève</button></div></form><h3 id="progressSettings">📊 Progressions et jeux des élèves</h3><p class="muted">Données enregistrées sur Supabase, accessibles uniquement à l'enseignante de la classe.</p><div class="actions"><button type="button" class="secondary" id="reloadProgress">↻ Actualiser les progressions</button></div><p id="progressMsg" class="msg" role="status"></p><div id="progressList"></div><h3 id="pinSettings">🔐 Élèves inscrits et codes PIN</h3><p class="muted">Clique sur « Définir PIN » à droite du prénom de chaque élève. Choisis 4 à 8 chiffres et transmets-les individuellement.</p><div id="students"></div><p class="warn">Les élèves utilisent désormais le Zoo connecté. Les progressions enregistrées sur Supabase apparaissent dans la section « Progressions et jeux » ci-dessus. Les anciennes données locales ne sont pas importées automatiquement.</p></section>
+<section class="hidden teacher-space" id="space">
+ <div class="panel teacher-header">
+  <div class="row"><div><h2 style="margin-bottom:3px">👩‍🏫 Mon espace enseignant</h2><span id="who" class="muted"></span></div><button id="logout" class="secondary" type="button">Déconnexion</button></div>
+  <p id="quota" class="tag quota-tag"></p>
+  <nav class="teacher-nav" aria-label="Navigation de l'espace enseignant">
+   <a href="#classesSettings">📚 Mes classes</a>
+   <a href="#addStudentSettings">➕ Ajouter un élève</a>
+   <a href="#progressSettings">📊 Progressions</a>
+   <a href="#pinSettings">🔐 Codes PIN</a>
+   <a id="adminShortcut" class="hidden" href="#adminPanel">🛡️ Administration</a>
+  </nav>
+  <p id="spaceMsg" class="msg" role="status"></p>
+ </div>
+ <section class="panel feature-card classes-card" id="classesSettings">
+  <div class="section-head"><div class="section-icon">📚</div><div><h2>Mes classes</h2><p class="muted">Retrouve tes classes et leur code de connexion.</p></div></div>
+  <div id="classes" class="content-list"></div>
+  <div class="form-zone"><h3>Créer une classe</h3><form id="classForm"><label for="className">Nom de la classe</label><input id="className" required maxlength="80" placeholder="Ex. CP A"><div class="actions"><button>+ Ajouter la classe</button></div></form></div>
+ </section>
+ <section class="panel feature-card student-card" id="addStudentSettings">
+  <div class="section-head"><div class="section-icon">🧒</div><div><h2>Ajouter un élève</h2><p class="muted">Inscris un élève dans la classe de ton choix.</p></div></div>
+  <p class="muted privacy-note">🔒 Privilégie un pseudonyme ou un prénom abrégé plutôt qu'un nom complet.</p>
+  <form id="studentForm"><label for="classSelect">Choisir sa classe</label><select id="classSelect" required></select><label for="nickname">Pseudonyme de l'élève</label><input id="nickname" required maxlength="60" placeholder="Ex. Léa C."><div class="actions"><button id="addStudent">+ Ajouter l'élève</button></div></form>
+ </section>
+ <section class="panel feature-card progress-card" id="progressSettings">
+  <div class="section-head"><div class="section-icon">📊</div><div><h2>Progressions et résultats</h2><p class="muted">Lectures, récompenses et records sauvegardés sur Supabase.</p></div></div>
+  <div class="actions section-actions"><button type="button" class="secondary" id="reloadProgress">↻ Actualiser les résultats</button></div>
+  <p id="progressMsg" class="msg" role="status"></p><div id="progressList" class="content-list"></div>
+ </section>
+ <section class="panel feature-card pin-card" id="pinSettings">
+  <div class="section-head"><div class="section-icon">🔐</div><div><h2>Gestion des codes PIN</h2><p class="muted">Crée ou modifie le code secret de chaque élève.</p></div></div>
+  <p class="muted privacy-note">Choisis 4 à 8 chiffres et transmets le code individuellement à l'élève ou à sa famille.</p>
+  <div id="students" class="content-list"></div>
+ </section>
+ <p class="teacher-footnote">☁️ Les progressions du Zoo connecté sont enregistrées sur Supabase. Les anciennes données locales ne sont pas importées automatiquement.</p>
+</section>
 <section class="panel hidden" id="adminPanel"><h2>🛡️ Administration de Zoo de Lecture</h2><p class="muted">Comptes enseignants inscrits et quotas d'élèves. Les modifications sont enregistrées sur le serveur.</p><div id="adminList"></div><p id="adminMsg" class="msg" role="status"></p></section></main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script><script>
 (function(){
 "use strict";
