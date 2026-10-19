@@ -455,6 +455,39 @@
   .safari-controls { display: flex; justify-content: space-between; gap: 12px; margin: 12px 0; touch-action: none; user-select: none; }
   .safari-control { min-width: 60px; min-height: 56px; font-size: 1.2rem; touch-action: none; }
   @media (max-width: 600px) { .safari-controls { gap: 6px; } .safari-control { min-width: 54px; } }
+
+  /* Grand bouton d'accès à l'arcade dans le panneau droit */
+  #panel-right .play-cta {
+    position: relative; isolation: isolate; overflow: hidden; width: 100%;
+    display: flex; align-items: center; gap: 13px; text-align: left;
+    padding: 21px 16px; border: 3px solid #ffdd58; border-radius: 23px;
+    background: linear-gradient(135deg, #7129d8 0%, #b22ed7 52%, #ed4789 100%);
+    color: #fff; box-shadow: 0 6px 0 #522086, 0 13px 24px rgba(99,38,164,.27);
+    transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+  }
+  #panel-right .play-cta:hover, #panel-right .play-cta:focus-visible {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 9px 0 #522086, 0 17px 30px rgba(99,38,164,.38);
+    filter: saturate(1.14);
+  }
+  #panel-right .play-cta:active { transform: translateY(3px); box-shadow: 0 2px 0 #522086; }
+  #panel-right .play-cta::before {
+    content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+    background: radial-gradient(circle at 85% 5%, rgba(255,255,255,.28), transparent 38%);
+  }
+  #panel-right .play-cta .play-cta-icon {
+    flex: 0 0 62px; display: grid; place-items: center; width: 62px; height: 62px;
+    border-radius: 19px; font-size: 35px; background: rgba(255,255,255,.19);
+    border: 2px solid rgba(255,255,255,.4); box-shadow: inset 0 2px 6px rgba(255,255,255,.15);
+  }
+  #panel-right .play-cta-copy { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+  #panel-right .play-cta-kicker { font: 700 10px/1.3 "Fredoka", sans-serif; letter-spacing: 1.4px; color: #fff0a4; }
+  #panel-right .play-cta-title { font: 700 clamp(24px,2.3vw,32px)/1.1 "Fredoka",sans-serif; color: #fff; letter-spacing: 1px; text-shadow: 0 3px 0 #64239b; }
+  #panel-right .play-cta-title span { color: #ffeb74; }
+  #panel-right .play-cta .play-cta-count { display: inline-flex; align-self: flex-start; padding: 4px 11px; border-radius: 99px; background: #ffdf60; color: #4a2479; font-weight: 800; font-size: 13px; }
+  #panel-right .play-cta-hook { font: 600 12px/1.2 "Fredoka",sans-serif; color: #fff; }
+  #panel-right .play-cta-spark { position: absolute; right: 10px; top: 7px; color: #fff0a4; font-size: 15px; pointer-events: none; }
+  @media (prefers-reduced-motion: reduce) { #panel-right .play-cta { transition: none; } }
 </style>
 </head>
 <body>
@@ -882,7 +915,7 @@
 
     <aside class="panel right" id="panel-right" aria-label="Lire et jouer" hidden>
       <button type="button" class="panel-nav big" data-go="lecture"><span class="pn-ico" aria-hidden="true">📖</span><span>Lire<span class="pn-sub" id="pr-next"></span></span></button>
-      <button type="button" class="panel-nav big needs-reward" data-go="jeux"><span class="pn-ico" aria-hidden="true">🎮</span><span>Jouer<span class="pn-sub" id="pr-games"></span></span></button>
+      <button type="button" class="panel-nav big needs-reward play-cta" data-go="jeux"><span class="play-cta-spark" aria-hidden="true">✦ ✧ ✦</span><span class="pn-ico play-cta-icon" aria-hidden="true">🎮</span><span class="play-cta-copy"><span class="play-cta-kicker">LA SALLE D’ARCADE</span><span class="play-cta-title">JOUER <span aria-hidden="true">➜</span></span><span class="pn-sub play-cta-count" id="pr-games"></span><span class="play-cta-hook">🏆 Relève les défis !</span></span></button>
     </aside>
   </div>
 
