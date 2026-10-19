@@ -607,6 +607,26 @@
       transform-origin: center center;
     }
   }
+
+  /* Vraie correction : cartes redimensionnées pour tenir dans les 76 px du bandeau. */
+  @media (min-width: 1150px) {
+    body.mode-student header .zoo-hero-art {
+      display: block !important;
+      left: 50%;
+      top: 50%;
+      width: 156px;
+      height: 64px;
+      transform: translate(-50%, -50%);
+      transform-origin: center;
+    }
+    body.mode-student header .zoo-mascot {
+      width: 54px; height: 54px; border-radius: 15px;
+      border-width: 2px; font-size: 2rem; box-shadow: 0 3px 0 rgba(15,8,65,.5);
+    }
+    body.mode-student header .zoo-bee { top: 5px; left: 10px; }
+    body.mode-student header .zoo-llama { top: 7px; left: 57px; }
+    body.mode-student header .zoo-owl { top: 3px; right: 4px; }
+  }
 </style>
 </head>
 <body>
