@@ -557,6 +557,7 @@
   .listen-play { display: block; margin: 8px auto; min-height: 64px; padding: 12px 26px; font-size: 1.3rem; font-weight: 800; border-radius: 18px; border: 0; background: #3a9d8c; color: #fff; }
   .listen-choices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 14px 0; }
   .listen-choice { min-height: 84px; font-size: 2.2rem; font-weight: 800; border-radius: 18px; background: var(--card); color: var(--ink); border: 2px solid var(--line); }
+  .listen-choice.word { font-size: 1.55rem; padding: 6px 4px; overflow-wrap: anywhere; }
   .listen-choice.good { background: var(--ok-bg); border-color: var(--ok); }
   .listen-choice.bad { background: #fde3e3; border-color: var(--bad); }
   .listen-choice:disabled { opacity: 1; }
@@ -2664,7 +2665,7 @@
     }
     return out;
   }
-  function listenDone(sid, id) { var L = listenMine(sid); return !!L.done[id] || (L.passes[id] || 0) >= data.listenCfg.passes; }
+  function listenDone(sid, id) { var L = listenMine(sid); return !!L.done[id] || (L.passes[id] || 0) >= listenNeed(id); }
   function listenPrev(id) {
     var ls = listenSounds(), i = -1;
     ls.forEach(function (s, k) { if (s.id === id) i = k; });
@@ -2848,6 +2849,110 @@
   }
   function listenUsesSyl(sid, sound) { return !!listenSylItems(sid, sound); }
 
+  /* ---------- Écouter : à partir de « r », 3 réussites dont la dernière avec des mots ---------- */
+  /* Mots courants qui contiennent le son (la voix les dit, l’élève retrouve leur écriture parmi des pseudo-mots) */
+  var LISTEN_WORDS = {
+    r: ["rame", "rire", "lire", "mare", "riche", "rafale"], n: ["lune", "fine", "mine", "narine", "farine", "menu"],
+    v: ["vélo", "vache", "lave", "navire", "olive", "valise"], j: ["joli", "jus", "juge", "jour", "jamais", "jupe"],
+    z: ["zéro", "zébu", "zoo", "lézard", "zèbre", "bizou"], p: ["papa", "pomme", "pile", "purée", "pirate", "lapin"],
+    t: ["tomate", "tortue", "tête", "tapis", "patate", "moto"], c: ["café", "cube", "carotte", "canard", "école", "coco"],
+    b: ["bébé", "banane", "robe", "bulle", "bateau", "cabane"], d: ["dodo", "dame", "malade", "radis", "salade", "domino"],
+    g: ["gare", "gomme", "légume", "figure", "garage", "gâteau"], ou: ["loup", "roue", "poule", "mouche", "soupe", "bouche"],
+    au: ["auto", "sauce", "chaud", "taupe", "bateau", "château"], on: ["mouton", "bonbon", "ballon", "savon", "melon", "pont"],
+    oi: ["roi", "moi", "toit", "poisson", "étoile", "voiture"], an: ["maman", "ruban", "orange", "tante", "pantalon", "chanter"],
+    en: ["dent", "vent", "tente", "enfant", "menton", "serpent"], ai: ["lait", "maison", "balai", "fraise", "reine", "neige"],
+    er: ["rocher", "panier", "dîner", "chanter", "danser", "goûter"], fr: ["frite", "fraise", "fromage", "prune", "prince", "prêt"],
+    fl: ["fleur", "flûte", "flamme", "plume", "pluie", "planète"], in: ["lapin", "sapin", "matin", "jardin", "dindon", "timbre"],
+    ain: ["pain", "main", "bain", "train", "peinture", "plein"], oin: ["loin", "coin", "point", "moins", "foin", "pointu"],
+    ian: ["viande", "triangle", "riant", "pliant", "étudiant", "friand"], eu: ["feu", "jeu", "bleu", "cheveu", "neveu", "nœud"],
+    k: ["kiwi", "koala", "kayak", "quatre", "bouquet", "kilo"], gn: ["ligne", "vigne", "montagne", "peigne", "agneau", "cygne"],
+    ph: ["phare", "photo", "dauphin", "éléphant", "phoque", "alphabet"], gj: ["girafe", "genou", "page", "bougie", "manège", "gilet"],
+    cs: ["cerise", "citron", "glace", "ciel", "police", "racine"], es: ["veste", "bec", "sel", "merci", "escalier", "perle"],
+    elle: ["vaisselle", "échelle", "chaussette", "baguette", "poubelle", "lunette"], ill: ["fille", "bille", "feuille", "papillon", "grenouille", "maillot"],
+    y: ["pyjama", "stylo", "cycliste", "bicyclette", "rugby", "gymnase"], ti: ["potion", "addition", "natation", "récréation", "opération", "émotion"],
+    w: ["kiwi", "wapiti", "sandwich", "western", "tramway"], x: ["taxi", "boxe", "saxo", "texte", "luxe", "index"],
+    un: ["lundi", "brun", "parfum", "chacun", "aucun", "emprunt"]
+  };
+  /* Graphies lues d’un bloc, de la plus longue à la plus courte */
+  var WORD_GRAPHS = ["eau", "ain", "ein", "oin", "ill", "ch", "ph", "gn", "qu", "ou", "on", "om", "an", "am", "en", "em", "in", "im", "un", "oi", "ai", "ei", "au", "eu", "œu"];
+  /* Graphies qui se confondent à l’oreille (ou à l’œil : b / d / p) */
+  var WORD_CONFUS = {
+    r: ["l"], l: ["r"], m: ["n"], n: ["m"], p: ["b", "t"], b: ["d", "p"], d: ["b", "t"], t: ["d", "p"], f: ["v"], v: ["f"],
+    s: ["z", "ch"], z: ["s"], ch: ["j", "s"], j: ["ch"], c: ["g"], g: ["c"], k: ["g"], gn: ["n"], ph: ["v"], qu: ["g"],
+    a: ["o"], o: ["a", "ou"], i: ["u", "é"], u: ["ou", "i"], "é": ["è", "i"], "è": ["é"], ou: ["on", "u", "o"],
+    on: ["an", "ou", "in"], an: ["on", "in"], en: ["on", "in"], in: ["an", "on"], oi: ["ou", "on"], eu: ["ou", "o"],
+    ai: ["é", "a"], ei: ["é", "a"], "œu": ["ou", "o"], ill: ["il", "ail", "euil"], au: ["ou", "on"], eau: ["ou", "on"], ain: ["an", "on"], oin: ["on", "in"], un: ["on", "an"]
+  };
+  /* Même son, autre écriture : ces remplacements donneraient un « faux » qui se lit pareil */
+  var WORD_SAME = [["o", "au", "eau"], ["an", "am", "en", "em"], ["in", "im", "ain", "ein", "un"], ["é", "er", "ez"], ["è", "ai", "ei", "ê"], ["c", "k", "qu"], ["f", "ph"], ["eu", "œu"]];
+  function wordTokens(w) {
+    var out = [], i = 0;
+    while (i < w.length) {
+      var g = null;
+      for (var k = 0; k < WORD_GRAPHS.length; k++) {
+        var cand = WORD_GRAPHS[k], nxt = w.charAt(i + cand.length);
+        if (w.substr(i, cand.length) !== cand) continue;
+        if (/[nm]$/.test(cand) && cand !== "gn" && nxt && /[aeiouyéèêàâîôûnm]/.test(nxt)) continue;   /* « rame », « reine », « gomme » : pas de son nasal */
+        g = cand; break;
+      }
+      g = g || w.charAt(i);
+      out.push(g); i += g.length;
+    }
+    return out;
+  }
+  function wordCanon(w) {   /* forme « à l’oreille » : les écritures d’un même son sont ramenées à une seule */
+    return wordTokens(w).map(function (t) {
+      for (var i = 0; i < WORD_SAME.length; i++) if (WORD_SAME[i].indexOf(t) >= 0) return WORD_SAME[i][0];
+      return t;
+    }).join("");
+  }
+  /* 5 pseudo-mots : une ou deux graphies remplacées par une qui se confond ; jamais la dernière lettre muette */
+  function wordFakes(word) {
+    var toks = wordTokens(word), canon = wordCanon(word), fakes = [], tries = 0;
+    var spots = [];
+    toks.forEach(function (t, i) {
+      var last = i === toks.length - 1;
+      if (WORD_CONFUS[t] && !(last && /^[edgpstxzh]$/.test(t))) spots.push(i);
+    });
+    while (fakes.length < 5 && tries < 300 && spots.length) {
+      tries++;
+      var t2 = toks.slice(), n = spots.length > 1 && Math.random() < 0.35 ? 2 : 1, used = [];
+      for (var k = 0; k < n; k++) {
+        var i = spots[Math.floor(Math.random() * spots.length)];
+        if (used.indexOf(i) >= 0) continue;
+        used.push(i);
+        var alts = WORD_CONFUS[toks[i]];
+        t2[i] = alts[Math.floor(Math.random() * alts.length)];
+      }
+      var f = t2.join("");
+      if (f !== word && wordCanon(f) !== canon && fakes.indexOf(f) < 0 && !fakes.some(function (x) { return wordCanon(x) === wordCanon(f); })) fakes.push(f);
+    }
+    return fakes;
+  }
+  function wordItem(w) { return { key: "mot:" + w, g: [w], say: w, dsay: w, word: true }; }
+  function listenBuildWord(item) {
+    var w = item.g[0], fakes = wordFakes(w);
+    if (fakes.length < 5) {
+      var same = [];
+      Object.keys(LISTEN_WORDS).forEach(function (id) { if (LISTEN_WORDS[id].indexOf(w) >= 0) same = same.concat(LISTEN_WORDS[id]); });
+      shuffle(same.filter(function (x) { return x !== w; })).forEach(function (o) {
+        wordFakes(o).forEach(function (f) { if (fakes.length < 5 && f !== w && fakes.indexOf(f) < 0 && wordCanon(f) !== wordCanon(w)) fakes.push(f); });
+      });
+    }
+    var all = [{ g: w, good: true }].concat(fakes.map(function (f) { return { g: f, good: false }; }));
+    return { item: item, goods: [w], cands: [], choices: shuffle(all) };
+  }
+  /* Nombre de réussites demandées : une de plus à partir du son « r » (la dernière se fait avec des mots) */
+  function listenNeed(id) {
+    var ls = listenSounds(), ir = -1, is = -1;
+    ls.forEach(function (s, k) { if (s.id === "r") ir = k; if (s.id === id) is = k; });
+    return data.listenCfg.passes + (ir >= 0 && is >= ir ? 1 : 0);
+  }
+  function listenWordTurn(sid, id) {   /* vrai si le prochain exercice de ce son se fait avec des mots */
+    var need = listenNeed(id);
+    return need > data.listenCfg.passes && !!LISTEN_WORDS[id] && !listenDone(sid, id) && (listenMine(sid).passes[id] || 0) === need - 1;
+  }
+
   /* Voix : fichier sons/<clé>.mp3 s’il existe, sinon synthèse vocale en français (texte réglable) */
   function listenStopVoice() {
     try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}
@@ -2912,7 +3017,7 @@
     ls.forEach(function (s) {
       var o = document.createElement("option"), unl = listenUnlocked(sid, s.id), pv = listenPrev(s.id);
       o.value = s.id; o.disabled = !unl;
-      o.textContent = unl ? s.label + (listenDone(sid, s.id) ? "  ✓ réussi" : "  (" + (L.passes[s.id] || 0) + " sur " + cfg.passes + ")")
+      o.textContent = unl ? s.label + (listenDone(sid, s.id) ? "  ✓ réussi" : "  (" + (L.passes[s.id] || 0) + " sur " + listenNeed(s.id) + ")")
                           : s.label + "  (verrouillé : réussis " + (pv ? pv.label : "le son d’avant") + ")";
       sel.appendChild(o);
     });
@@ -2921,14 +3026,14 @@
     field.appendChild(lab); field.appendChild(sel); card.appendChild(field);
     var cur = soundById(LS.sound);
     card.appendChild(el("p", "hint", listenDone(sid, LS.sound) ? "Ce son est réussi. Tu peux t’entraîner encore, sans nouvelle pièce."
-      : "Réussites : " + (L.passes[LS.sound] || 0) + " sur " + cfg.passes + ". " + cfg.questions + " questions, " + nb(cfg.maxErrors, "erreur permise", "erreurs permises") + "."));
+      : "Réussites : " + (L.passes[LS.sound] || 0) + " sur " + listenNeed(LS.sound) + ". " + cfg.questions + " questions, " + nb(cfg.maxErrors, "erreur permise", "erreurs permises") + "." + (listenWordTurn(sid, LS.sound) ? " Cette fois, ce sont des mots à retrouver !" : "")));
     var go = el("button", "primary big-btn", "Commencer"); go.type = "button"; go.disabled = !cur;
     go.addEventListener("click", function () { listenStart(sid, LS.sound); });
     card.appendChild(go);
     body.appendChild(card);
   }
   function listenStart(sid, soundId) {
-    var sound = soundById(soundId), items = sound ? (listenSylItems(sid, sound) || listenItems(sound)) : [];
+    var sound = soundById(soundId), items = !sound ? [] : (listenWordTurn(sid, soundId) ? LISTEN_WORDS[soundId].map(wordItem) : (listenSylItems(sid, sound) || listenItems(sound)));
     if (!sound || !items.length) { toast("Ce son n’a pas encore d’exercice."); return; }
     listenClear();
     LS.run = { sid: sid, sound: sound, items: items, order: [], n: 0, failed: 0, q: null };
@@ -2942,7 +3047,7 @@
     var R = LS.run, cfg = data.listenCfg, body = $("audition-body");
     if (R.n >= cfg.questions) { listenEnd(); return; }
     var it = R.order[R.n];
-    var q = it.syl ? listenBuildSyl(R.sid, it) : listenBuild(R.sid, R.sound, it);
+    var q = it.word ? listenBuildWord(it) : (it.syl ? listenBuildSyl(R.sid, it) : listenBuild(R.sid, R.sound, it));
     q.found = []; q.bad = false; q.over = false; R.q = q; R.n++;
     body.innerHTML = "";
     var card = el("div", "card listen-card");
@@ -2958,13 +3063,13 @@
     var again = el("button", "listen-play", "🔊 Écouter le son"); again.type = "button";
     again.addEventListener("click", function () { listenSay(q.item); });
     card.appendChild(again);
-    var msg = el("p", "instruction listen-msg", it.syl ? "Touche la syllabe que tu entends. Il y a 1 ou 2 bonnes réponses." : "Touche ce que tu entends. Il y a 1 ou 2 bonnes réponses.");
+    var msg = el("p", "instruction listen-msg", it.word ? "Touche le mot que tu entends." : (it.syl ? "Touche la syllabe que tu entends. Il y a 1 ou 2 bonnes réponses." : "Touche ce que tu entends. Il y a 1 ou 2 bonnes réponses."));
     msg.setAttribute("role", "status"); msg.id = "listen-msg";
     card.appendChild(msg);
     var grid = el("div", "listen-choices");
     q.btns = [];
     q.choices.forEach(function (c) {
-      var b = el("button", "listen-choice", c.g); b.type = "button";
+      var b = el("button", "listen-choice" + (it.word ? " word" : ""), c.g); b.type = "button";
       b.addEventListener("click", function () { listenPick(q, c, b); });
       grid.appendChild(b); q.btns.push(b);
     });
@@ -3015,7 +3120,7 @@
     L.tries++;
     if (ok && !wasDone) {
       L.passes[id] = (L.passes[id] || 0) + 1;
-      if (L.passes[id] >= cfg.passes) {
+      if (L.passes[id] >= listenNeed(id)) {
         L.done[id] = true; nowDone = true;
         if (data.reward && cfg.coins > 0) { data.coins[sid] = coins(sid) + cfg.coins; gained = cfg.coins; }
       }
@@ -3031,7 +3136,7 @@
       confetti(70, gained > 0);
       if (data.sfx) [523, 659, 784, 1047, 1319].forEach(function (f, k) { tone(f, k * 0.1, 0.28, "triangle", 0.16); });
     } else if (ok && !wasDone) {
-      card.appendChild(el("p", "instruction", "Encore " + nb(cfg.passes - (L.passes[id] || 0), "réussite", "réussites") + " pour valider ce son."));
+      card.appendChild(el("p", "instruction", "Encore " + nb(listenNeed(id) - (L.passes[id] || 0), "réussite", "réussites") + " pour valider ce son." + (listenWordTurn(sid, id) ? " La prochaine fois : des mots à retrouver !" : "")));
     } else if (!ok) {
       card.appendChild(el("p", "instruction", "Il faut au plus " + nb(cfg.maxErrors, "erreur", "erreurs") + ". Écoute bien et recommence, tu vas y arriver !"));
     }
@@ -3177,23 +3282,23 @@
     var won = ls.filter(function (x) { return listenDone(sid, x.id); }).length;
     var head = el("div", "card");
     head.appendChild(el("h2", "", "Mes cartes reconnues"));
-    head.appendChild(el("p", "muted", nb(won, "son reconnu", "sons reconnus") + " sur " + ls.length + ". Réussis l’exercice ÉCOUTER " + nb(cfg.passes, "fois", "fois") + " sur un son pour gagner sa carte."));
+    head.appendChild(el("p", "muted", nb(won, "son reconnu", "sons reconnus") + " sur " + ls.length + ". Réussis l’exercice ÉCOUTER " + nb(cfg.passes, "fois", "fois") + " sur un son (une fois de plus, avec des mots, à partir de « r ») pour gagner sa carte."));
     var toRead = el("button", "secondary", "🐾 Voir mes cartes lues"); toRead.type = "button";
     toRead.addEventListener("click", function () { goTo("cartes"); });
     head.appendChild(toRead);
     body.appendChild(head);
     var grid = el("div", "zoo-grid");
     ls.forEach(function (x) {
-      var done = listenDone(sid, x.id), unl = listenUnlocked(sid, x.id), n = Math.min(L.passes[x.id] || 0, cfg.passes), ch = charFor(x.id);
+      var done = listenDone(sid, x.id), unl = listenUnlocked(sid, x.id), need = listenNeed(x.id), n = Math.min(L.passes[x.id] || 0, need), ch = charFor(x.id);
       var b = el("button", "zoo-card" + (done ? " heard" : "")); b.type = "button";
       b.disabled = !unl;
       b.appendChild(buildPet(done ? { got: 1, total: 1, locked: false } : { got: 0, total: 1, locked: !unl }, ch));
       b.appendChild(el("div", "son", x.label));
       var stars = el("div", "mini-stars"); stars.setAttribute("aria-hidden", "true");
-      for (var i = 0; i < cfg.passes; i++) stars.appendChild(el("span", "star " + (done || i < n ? "on" : "off"), "★"));
+      for (var i = 0; i < need; i++) stars.appendChild(el("span", "star " + (done || i < n ? "on" : "off"), "★"));
       b.appendChild(stars);
-      b.appendChild(el("div", "cap", !unl ? "verrouillé" : (done ? "👂 " + cap(ch.nom) : (n ? n + " sur " + cfg.passes : "à écouter"))));
-      b.setAttribute("aria-label", x.label + " : " + (!unl ? "verrouillé" : (done ? "son reconnu" : n + " réussite" + (n > 1 ? "s" : "") + " sur " + cfg.passes)));
+      b.appendChild(el("div", "cap", !unl ? "verrouillé" : (done ? "👂 " + cap(ch.nom) : (n ? n + " sur " + need : "à écouter"))));
+      b.setAttribute("aria-label", x.label + " : " + (!unl ? "verrouillé" : (done ? "son reconnu" : n + " réussite" + (n > 1 ? "s" : "") + " sur " + need)));
       b.addEventListener("click", function () { LS.sound = x.id; goTo("audition"); });
       grid.appendChild(b);
     });
