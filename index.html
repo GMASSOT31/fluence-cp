@@ -2855,7 +2855,10 @@
       var u = new window.SpeechSynthesisUtterance(text);
       u.lang = "fr-FR"; u.rate = 0.8; u.pitch = 1; u.volume = 1;
       var voices = window.speechSynthesis.getVoices ? window.speechSynthesis.getVoices() : [];
-      var fr = voices.filter(function (v) { return /^fr/i.test(v.lang); })[0];
+      /* Voix de France d’abord (Thomas sur Mac et iPad, puis toute voix fr-FR) ; une voix canadienne seulement à défaut */
+      var frs = voices.filter(function (v) { return /^fr/i.test(v.lang); });
+      var frFR = frs.filter(function (v) { return /^fr[-_]FR/i.test(v.lang); });
+      var fr = frFR.filter(function (v) { return /thomas|audrey|aurélie|marie|google/i.test(v.name); })[0] || frFR[0] || frs[0];
       if (fr) u.voice = fr;
       window.speechSynthesis.cancel();
       window.speechSynthesis.speak(u);
@@ -3297,7 +3300,10 @@
       var u = new window.SpeechSynthesisUtterance(text);
       u.lang = "fr-FR"; u.rate = 0.95; u.pitch = 1.1; u.volume = 1;
       var voices = window.speechSynthesis.getVoices ? window.speechSynthesis.getVoices() : [];
-      var fr = voices.filter(function (v) { return /^fr/i.test(v.lang); })[0];
+      /* Voix de France d’abord (Thomas sur Mac et iPad, puis toute voix fr-FR) ; une voix canadienne seulement à défaut */
+      var frs = voices.filter(function (v) { return /^fr/i.test(v.lang); });
+      var frFR = frs.filter(function (v) { return /^fr[-_]FR/i.test(v.lang); });
+      var fr = frFR.filter(function (v) { return /thomas|audrey|aurélie|marie|google/i.test(v.name); })[0] || frFR[0] || frs[0];
       if (fr) u.voice = fr;
       window.speechSynthesis.cancel();
       window.speechSynthesis.speak(u);
