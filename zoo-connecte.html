@@ -1718,13 +1718,16 @@
   });
 
   /* La lecture se fait avec la maîtresse : son code débloque la lecture pour la durée de la connexion */
-  function gateTry() {
-    var msg = $("gate-msg");
-    if (!data.teacher) { msg.textContent = "La maîtresse n’a pas encore créé son code."; return; }
-    checkSecret(data.teacher, normSecret($("in-gate").value)).then(function (ok) {
-      if (ok) { ses.unlocked = true; $("in-gate").value = ""; msg.textContent = ""; renderSetup(); }
-      else { msg.textContent = "Code incorrect."; $("in-gate").value = ""; }
-    });
+  async function gateTry() {
+    var message=$("gate-msg"),code=normSecret($("in-gate").value);
+    if(!code){message.textContent="Saisis le code de la maîtresse.";return;}
+    message.textContent="Vérification du code…";
+    try {
+      var result=await cloudClient.rpc("verify_evaluation_code",{p_token:cloudToken,p_code:code});
+      if(result.error)throw result.error;
+      if(result.data){ses.unlocked=true;$("in-gate").value="";message.textContent="";renderSetup();}
+      else{message.textContent="Code incorrect ou non défini. La maîtresse peut le configurer dans son espace enseignant.";$("in-gate").value="";}
+    } catch(err){message.textContent="Vérification impossible. Réessaie lorsque la connexion fonctionne.";}
   }
   $("seg-goal").addEventListener("click", function (ev) {
     var b = ev.target.closest("button");
