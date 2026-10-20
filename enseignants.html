@@ -262,7 +262,7 @@ async function renderRecordings(){
 
 async function renderProgress(students,classes){
  const container=$("progressList");container.replaceChildren();
- const {data:rows,error}=await client.from("student_progress").select("student_id,progress,updated_at").eq("teacher_id",currentUser.id);
+ const {data:rows,error}=await client.from("student_progress").select("student_id,progress,updated_at,pending_coins").eq("teacher_id",currentUser.id);
  if(error){msg("progressMsg","Impossible de charger les progressions : "+errorText(error),true);return;}
  msg("progressMsg","");
  const progressMap=new Map((rows||[]).map(r=>[r.student_id,r]));
@@ -279,7 +279,7 @@ async function renderProgress(students,classes){
    const latestEval=evaluations.slice().sort((a,b)=>(Number(b.ts)||0)-(Number(a.ts)||0))[0];
    const wrap=document.createElement("div");wrap.className="row";
    const info=document.createElement("div");const name=document.createElement("strong");name.textContent=s.nickname;
-   const summary=document.createElement("div");summary.className="muted";summary.textContent=evaluations.length+" évaluation(s) · "+training.length+" entraînement(s)"+(latestEval?" · Dernière fluence : "+fmt(latestEval.mclm)+" corrects/min":"")+" · "+fmt(p.coins)+" pièce(s) · "+games.length+" jeu(x)";
+   const summary=document.createElement("div");summary.className="muted";summary.textContent=evaluations.length+" évaluation(s) · "+training.length+" entraînement(s)"+(latestEval?" · Dernière fluence : "+fmt(latestEval.mclm)+" corrects/min":"")+" · "+fmt(p.coins)+" pièce(s)"+(row&&row.pending_coins>0?" (+"+row.pending_coins+" en attente)":"")+" · "+games.length+" jeu(x)";
    info.append(name,summary);wrap.append(info);
    const btn=document.createElement("button");btn.type="button";btn.className="secondary";btn.textContent="Voir les détails";
    const details=document.createElement("div");details.className="muted hidden";details.style.cssText="width:100%;padding:10px 0;white-space:pre-wrap";
@@ -290,6 +290,12 @@ async function renderProgress(students,classes){
    games.forEach(([game,h])=>{lines.push("Jeu "+game+" : record "+(h&&h.best!=null?h.best:"non défini"))});
    details.textContent=lines.join("\n");
    btn.onclick=()=>{details.classList.toggle("hidden");btn.textContent=details.classList.contains("hidden")?"Voir les détails":"Masquer les détails"};
+   if(s.teacher_id===currentUser.id){const gift=document.createElement("button");gift.type="button";gift.textContent="🎁 +10 pièces";gift.style.marginRight="8px";
+    gift.onclick=async()=>{if(!confirm("Donner 10 pièces d’or à "+s.nickname+" ?"))return;gift.disabled=true;
+     const {error}=await client.rpc("teacher_give_coins",{p_student:s.id,p_amount:10});gift.disabled=false;
+     if(error){msg("progressMsg",errorText(error),true);return;}
+     await renderProgress(students,classes);msg("progressMsg","🎁 10 pièces envoyées à "+s.nickname+". Elles arriveront dans son Zoo dès sa prochaine ouverture.");};
+    wrap.append(gift);}
    wrap.append(btn,details);container.append(wrap);
   });
  });
