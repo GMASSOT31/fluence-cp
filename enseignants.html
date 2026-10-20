@@ -63,7 +63,7 @@ main{max-width:950px}
   <form id="studentForm"><label for="classSelect">Choisir sa classe</label><select id="classSelect" required></select><label for="nickname">Pseudonyme de l'élève</label><input id="nickname" required maxlength="60" placeholder="Ex. Léa C."><div class="actions"><button id="addStudent">+ Ajouter l'élève</button></div></form>
  </section>
  <section class="panel feature-card progress-card" id="progressSettings">
-  <div class="section-head"><div class="section-icon">📊</div><div><h2>Progressions et résultats</h2><p class="muted">Lectures, récompenses et records sauvegardés sur Supabase.</p></div></div>
+  <div class="section-head"><div class="section-icon">📊</div><div><h2>Progressions et résultats</h2><p class="muted">Évaluations du Zoo, entraînements, scores de fluence et jeux sauvegardés sur Supabase.</p></div></div>
   <div class="actions section-actions"><button type="button" class="secondary" id="reloadProgress">↻ Actualiser les résultats</button></div>
   <p id="progressMsg" class="msg" role="status"></p><div id="progressList" class="content-list"></div></section>
  <section class="panel feature-card pin-card" id="pinSettings">
@@ -120,16 +120,19 @@ async function renderProgress(students,classes){
    const row=progressMap.get(s.id),p=row&&row.progress||{};
    const readings=Array.isArray(p.results)?p.results:[];
    const games=p.hi&&typeof p.hi==="object"?Object.entries(p.hi):[];
+   const evaluations=readings.filter(r=>r&&r.src!=="train");
+   const training=readings.filter(r=>r&&r.src==="train");
+   const latestEval=evaluations.slice().sort((a,b)=>(Number(b.ts)||0)-(Number(a.ts)||0))[0];
    const wrap=document.createElement("div");wrap.className="row";
    const info=document.createElement("div");const name=document.createElement("strong");name.textContent=s.nickname;
-   const summary=document.createElement("div");summary.className="muted";summary.textContent=readings.length+" lecture(s) · "+fmt(p.coins)+" pièce(s) · "+fmt(p.credits)+" crédit(s) · "+games.length+" jeu(x) avec record";
+   const summary=document.createElement("div");summary.className="muted";summary.textContent=evaluations.length+" évaluation(s) · "+training.length+" entraînement(s)"+(latestEval?" · Dernière fluence : "+fmt(latestEval.mclm)+" corrects/min":"")+" · "+fmt(p.coins)+" pièce(s) · "+games.length+" jeu(x)";
    info.append(name,summary);wrap.append(info);
    const btn=document.createElement("button");btn.type="button";btn.className="secondary";btn.textContent="Voir les détails";
    const details=document.createElement("div");details.className="muted hidden";details.style.cssText="width:100%;padding:10px 0;white-space:pre-wrap";
    const lines=[];
    if(row)lines.push("Dernière sauvegarde : "+new Date(row.updated_at).toLocaleString("fr-FR"));
    else lines.push("Aucune progression enregistrée sur le Zoo connecté.");
-   readings.slice(-12).reverse().forEach(r=>{lines.push("Lecture : "+(r.sound||"?")+" · "+(r.k||"")+" · "+fmt(r.n)+" lu(s) · "+fmt(r.e)+" erreur(s)")});
+   readings.slice().sort((a,b)=>(Number(b.ts)||0)-(Number(a.ts)||0)).slice(0,20).forEach(r=>{if(!r)return;const kind=r.k==="s"?"syllabes":r.k==="m"?"mots":r.k==="t"?"texte":"lecture";const when=Number.isFinite(Number(r.ts))?new Date(Number(r.ts)).toLocaleDateString("fr-FR"):"date inconnue";lines.push((r.src==="train"?"🟡 Entraînement":"🟢 Évaluation")+" · "+when+" · "+(r.sound||"son non précisé")+" · "+kind+" · "+fmt(r.n)+" lu(s) · "+fmt(r.e)+" erreur(s) · "+fmt(r.mclm)+" corrects/min")});
    games.forEach(([game,h])=>{lines.push("Jeu "+game+" : record "+(h&&h.best!=null?h.best:"non défini"))});
    details.textContent=lines.join("\n");
    btn.onclick=()=>{details.classList.toggle("hidden");btn.textContent=details.classList.contains("hidden")?"Voir les détails":"Masquer les détails"};
