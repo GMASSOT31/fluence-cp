@@ -1369,10 +1369,10 @@
     ["v", "v", "veu"], ["j", "j", "jeu"], ["z", "z", "zeu"], ["p", "p", "peu"], ["t", "t", "teu"], ["c", "c", "keu"], ["b", "b", "beu"],
     ["d", "d", "deu"], ["g", "g", "gueu"], ["ou", "ou", "ou"], ["au", "au,eau", "o"], ["on", "on,om", "on"], ["oi", "oi", "oua"],
     ["an", "an,am", "an"], ["en", "en,em", "an"], ["ai", "ai,ei,ê,et", "est"], ["er", "er,ez,es", "et"], ["fr", "fr", "freu"], ["fr", "pr", "preu"],
-    ["fl", "fl", "fleu"], ["fl", "pl", "pleu"], ["in", "in,im", "in"], ["ain", "ain,ein", "in"], ["oin", "oin", "ouin"], ["ian", "ian", "ian"],
+    ["fl", "fl", "fleu"], ["fl", "pl", "pleu"], ["in", "in,im", "hein"], ["ain", "ain,ein", "hein"], ["oin", "oin", "ouin"], ["ian", "ian", "iant"],
     ["eu", "eu,oeu", "euh"], ["k", "k,qu", "keu"], ["gn", "gn", "gneu"], ["ph", "ph", "feu"], ["gj", "ge,gi", "jeu"], ["cs", "ce,ci", "seu"],
-    ["es", "es,el,ec", "est"], ["elle", "elle,ette", "elle"], ["ill", "ill", "ye"], ["y", "y,ii", "i"], ["ti", "ti", "si"], ["w", "w", "oué"],
-    ["x", "x", "ks"], ["un", "un,yn", "un"]
+    ["es", "es,el,ec", "est"], ["elle", "elle,ette", "elle"], ["ill", "ill", "ille"], ["y", "y,ii", "i"], ["ti", "ti", "scie"], ["w", "w", "ouais"],
+    ["x", "x", "ksse"], ["un", "un,yn", "un"]
   ];
   var LISTEN_SKIP = { h: 1, sz: 1 };   /* « h » est muet, « s qui se lit z » ne se reconnaît pas à l’oreille seule */
   function listenInt(v, lo, hi, dflt) { if (v === null || v === undefined || String(v).trim() === "") return dflt; v = Math.floor(Number(v)); return v >= lo && v <= hi ? v : dflt; }
@@ -2753,10 +2753,17 @@
     Object.keys(LISTEN_SYL_VOW).forEach(function (id) { LISTEN_SYL_VOW[id].forEach(function (e) { if (e[0] === v) out = e[1]; }); });
     return out || v;
   }
+  /* Textes que la voix lit mal (épelés, lus comme une abréviation ou en anglais), mesurés sur une voix française :
+     on les remplace par un mot qui se prononce pareil */
+  var SYL_SAY_FIX = { chu: "chue", "ché": "chez", zi: "zie", za: "zat", zo: "zot", vo: "vos", ba: "bas", jon: "jont", rain: "rin", zain: "zin", jain: "geint" };
   function sylSay(cg, v) {
     var c = sylConsByG(cg), cs = c ? c.say : cg;
     if (v === "e") return SYL_E_WORDS[cg] ? cg + "e" : cs + "eu";
-    return cs + sylVowSay(v);
+    var vs = sylVowSay(v);
+    if (vs === "an") vs = cs === "k" ? "an" : "ant";             /* « fan », « man », « van » étaient lus en anglais */
+    else if (vs === "in" || vs === "un") vs = "ain";             /* « min » était lu « minute », « fun » en anglais */
+    var t = cs + vs;
+    return SYL_SAY_FIX[t] || t;
   }
   function sylItem(cg, v, target) { var w = cg + v; return { key: "syl:" + w, g: [w], say: sylSay(cg, v), dsay: sylSay(cg, v), syl: { c: cg, v: v, target: target } }; }
   /* Consonnes et voyelles connues de l’élève (sons débloqués en écoute) */
