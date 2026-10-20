@@ -827,6 +827,7 @@
       <p class="bad-msg" id="login-msg" role="alert"></p>
       <button type="button" class="primary big-btn" id="btn-login">Entrer</button>
       <p style="margin: 18px 0 0"><button type="button" class="link" id="btn-show-teacher">Espace maîtresse</button></p>
+      <p class="hint" style="margin: 14px 0 0" id="connected-links">Zoo connecté (sauvegarde sur serveur) : <a href="eleve.html">espace élève</a> · <a href="enseignants.html">espace enseignant</a></p>
     </div>
     <div class="card login-card" id="login-teacher" hidden>
       <h2 id="teacher-title">Espace maîtresse</h2>
@@ -2307,6 +2308,7 @@
   function betterThan(g, a, b) { return g.mode === "min" ? a < b : a > b; }
   /* Le record absolu : le meilleur score de toute la classe, avec le nom de celui qui le détient (à égalité, le premier arrivé) */
   function absRecord(id) {
+    if (data.students.length < 2) return null;   /* un record « absolu » n’a de sens qu’avec au moins 2 élèves à comparer */
     var g = gameInfo(id), best = null;
     data.students.forEach(function (st) {
       var h = data.hi[st.id] && data.hi[st.id][id];
@@ -2318,13 +2320,14 @@
   }
   function absText(id, sid) {
     var g = gameInfo(id), a = absRecord(id);
-    if (!a) return "Record absolu : à établir";
+    if (!a) return data.students.length < 2 ? "" : "Record absolu : à établir";
     return "Record absolu : " + g.fmt(a.value) + (a.sid === sid ? ", c’est toi !" : ", " + a.name);
   }
   function setGameRecordLine(sid, id) {
     var h = hiOf(sid, id), g = gameInfo(id);
     $("game-record").textContent = h.best !== null ? "Record à battre : " + g.fmt(h.best) : "Établis ton premier record !";
-    $("game-abs").textContent = "👑 " + absText(id, sid);
+    var at = absText(id, sid);
+    $("game-abs").textContent = at ? "👑 " + at : "";
   }
   /* À la fin d’une partie : on enregistre le score, on fête un record et on donne des pièces d’or
      (1 pour un record personnel, 5 pour battre le record absolu de la classe) */
@@ -2563,10 +2566,13 @@
     hi.appendChild(el("b", "", h.best !== null ? g.fmt(h.best) : "—"));
     hi.appendChild(el("span", "last", h.n ? "Dernier score : " + g.fmt(h.last) : "Établis ton premier record !"));
     cab.appendChild(hi);
-    var ab = el("div", "cab-abs");
-    var crown = el("span", "crown", "👑"); crown.setAttribute("aria-hidden", "true");
-    ab.appendChild(crown); ab.appendChild(document.createTextNode(absText(g.id, sid)));
-    cab.appendChild(ab);
+    var absTxt = absText(g.id, sid);
+    if (absTxt) {
+      var ab = el("div", "cab-abs");
+      var crown = el("span", "crown", "👑"); crown.setAttribute("aria-hidden", "true");
+      ab.appendChild(crown); ab.appendChild(document.createTextNode(absTxt));
+      cab.appendChild(ab);
+    }
     /* Les commandes décoratives ont été retirées pour libérer la place des boutons Jouer. */
     var b = el("button", "cab-play", off ? (lim ? "Reviens demain" : "Il te faut une partie") : "Jouer !"); b.type = "button";
     b.disabled = off;

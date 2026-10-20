@@ -39,4 +39,4 @@ $("openZoo").onclick=()=>{location.href="zoo-connecte.html"};
 $("logout").onclick=()=>{sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");token=null;$("connected").hidden=true;$("login").hidden=false};
 const existing=sessionStorage.getItem("zoo_student_token");if(existing)openSession(existing,sessionStorage.getItem("zoo_student_name")||"").catch(()=>{sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name")});
 })();
-</script></body></html>
+</script><script>(function(){var q=new URLSearchParams(location.search).get("code");var c=document.getElementById("code");if(q&&c){c.value=q.replace(/[^0-9a-fA-F]/g,"").slice(0,10).toUpperCase();var n=document.getElementById("nickname");if(n)n.focus()}})();</script></body></html>
