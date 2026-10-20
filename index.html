@@ -1951,12 +1951,15 @@
     $("btn-validate").hidden = p !== "ending";
     $("btn-validate").disabled = S.endIdx < 0;
     $("btn-back").hidden = p === "running" || p === "result" || p === "saving" || p === "recdone";
-    $("text-card").hidden = (p === "ready" || p === "idle" || p === "saving" || p === "recdone");
+    $("text-card").hidden = (p === "ready" || p === "idle" || p === "saving" || p === "recdone" || p === "result");
+    /* Au résultat, seul le bilan reste affiché (le minuteur et le texte lu ne servent plus) */
+    $("session").firstElementChild.hidden = p === "result";
     $("text-card").firstElementChild.classList.toggle("tap", !S.rec && (p === "running" || p === "ending"));
     $("result").hidden = p !== "result";
     $("rec-done").hidden = p !== "recdone";
     setInstruction();
     setReadingFocus(p);
+    if (p === "result") setTimeout(function () { var s = $("session"); if (!s) return; var h = document.querySelector("header"); var top = s.getBoundingClientRect().top + window.pageYOffset - (h && getComputedStyle(h).position === "sticky" ? h.offsetHeight + 8 : 8); window.scrollTo(0, Math.max(0, top)); }, 30);
   }
 
   $("btn-open").addEventListener("click", function () {
