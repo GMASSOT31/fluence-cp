@@ -523,7 +523,7 @@
   body.mode-student .zoo-top-stat strong { font: 800 1.1rem/1 "Fredoka",sans-serif; }
   body.mode-student .zoo-top-stat small { font-size: .75rem; color: var(--muted); }
   body.mode-student.no-reward #zoo-top-stats { display: flex; }
-  body.mode-student.no-reward #zoo-top-stats .zoo-top-stat:not(:last-child) { display: none; }
+  body.mode-student.no-reward #zoo-top-stats .zoo-top-stat:not(.zoo-top-keep) { display: none; }
   @media (min-width: 901px) {
     body.mode-student header { display: flex; align-items: center; gap: 12px; }
     body.mode-student header .zoo-hero { flex: 1; min-width: 0; }
@@ -540,6 +540,29 @@
     body.mode-student .zoo-top-stat > span { font-size: 1.05rem; }
     body.mode-student .zoo-top-stat small { font-size: .66rem; }
   }
+
+  /* Écouter : choix écrits, gros et tactiles */
+  .panel-nav.listen-cta { background: linear-gradient(145deg,#d9f3ee,#b7e6dc); border-color: #3a9d8c; color: #0f4a40; }
+  .panel-nav.listen-cta .pn-sub { color: #0f4a40; }
+  .panel-nav.listen-cta[aria-current="page"] { background: #0f4a40; color: #fff; border-color: #0f4a40; }
+  .panel-nav.listen-cta[aria-current="page"] .pn-sub { color: #fff; }
+  .listen-card { max-width: 760px; margin: 0 auto; }
+  .listen-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .listen-count { font-weight: 800; }
+  .listen-dots { display: flex; gap: 6px; margin: 10px 0; }
+  .listen-dots span { flex: 1; height: 8px; border-radius: 99px; background: var(--line); }
+  .listen-dots span.done { background: var(--ok); }
+  .listen-dots span.now { background: var(--focus); }
+  .listen-play { display: block; margin: 8px auto; min-height: 64px; padding: 12px 26px; font-size: 1.3rem; font-weight: 800; border-radius: 18px; border: 0; background: #3a9d8c; color: #fff; }
+  .listen-choices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 14px 0; }
+  .listen-choice { min-height: 84px; font-size: 2.2rem; font-weight: 800; border-radius: 18px; background: var(--card); color: var(--ink); border: 2px solid var(--line); }
+  .listen-choice.good { background: var(--ok-bg); border-color: var(--ok); }
+  .listen-choice.bad { background: #fde3e3; border-color: var(--bad); }
+  .listen-choice:disabled { opacity: 1; }
+  .listen-done { display: block; margin: 0 auto; min-height: 56px; }
+  .listen-msg { text-align: center; min-height: 1.6em; }
+  @media (max-width: 480px) { .listen-choices { grid-template-columns: repeat(2, 1fr); } .listen-choice { min-height: 72px; font-size: 1.9rem; } }
+  @media (max-width: 880px) { body.mode-student .bottom-nav { gap: 3px; padding-left: 4px; padding-right: 4px; } body.mode-student .bottom-nav .panel-nav { font-size: 0.74rem; padding: 8px 2px; } }
 
   /* Barre unique : logo à gauche, ressources à droite, sans doublons. */
   body.mode-student main { max-width: 1560px; }
@@ -792,6 +815,7 @@
   @media (max-width: 880px) {
     #cloud-status { bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !important; left: 8px !important; font-size: 11px !important; padding: 5px 9px !important; border-radius: 10px !important; opacity: .92; }
   }
+  @media (max-width: 880px) { #cloud-status.cs-ok { display: none !important; } }
   .quote-card { text-align: center; padding: 16px 20px; }
   .quote-card blockquote { margin: 0; font-size: 1.15rem; font-weight: 700; line-height: 1.45; color: var(--ink); font-style: italic; }
 </style>
@@ -810,7 +834,8 @@
     <div class="zoo-top-stats needs-reward" id="zoo-top-stats" hidden aria-label="Mes récompenses et mon niveau">
       <div class="zoo-top-stat zoo-top-gold"><span class="gold-coin" aria-hidden="true"></span><strong id="top-coins">0</strong><small>Pièces</small></div>
       <div class="zoo-top-stat"><span aria-hidden="true">🎮</span><strong id="top-games">0</strong><small>Parties</small></div>
-      <div class="zoo-top-stat"><span id="top-animal" aria-hidden="true">🥚</span><strong id="top-level">N0</strong><small>Niveau</small></div>
+      <div class="zoo-top-stat zoo-top-keep"><span id="top-animal" aria-hidden="true">🥚</span><strong id="top-level">N0</strong><small>Niveau</small></div>
+      <div class="zoo-top-stat zoo-top-keep" id="top-listen-box" title="Niveau d’écoute"><span aria-hidden="true">👂</span><strong id="top-listen">E0</strong><small>Écoute</small></div>
     </div>
     <nav id="nav" aria-label="Espace du maître(sse)" hidden>
       <button type="button" data-view="eleves">Élèves</button>
@@ -1071,6 +1096,9 @@
     </div>
   </section>
 
+  <!-- ÉCOUTER : reconnaissance des sons (élève) -->
+  <section id="v-audition" hidden><div id="audition-body"></div></section>
+
   <!-- LECTURES À ÉCOUTER (maître(sse)) -->
   <section id="v-ecoute" hidden><div id="ecoute-body"></div></section>
 
@@ -1221,17 +1249,33 @@
       </div>
       <p class="hint">Les contenus fournis sont des brouillons : relis-les avant de les utiliser avec ta classe. Sépare les éléments par des espaces et les groupes par un retour à la ligne. Un son sans contenu n’apparaît pas dans l’écran Lecture.</p>
     </div>
+      <div class="card" id="listen-settings">
+      <h2>Écouter les sons</h2>
+      <div class="row" style="align-items:flex-start">
+        <div class="field"><label for="in-lq">Questions par exercice</label><input type="number" id="in-lq" min="3" max="20" inputmode="numeric"></div>
+        <div class="field"><label for="in-le">Erreurs permises</label><input type="number" id="in-le" min="0" max="10" inputmode="numeric"></div>
+        <div class="field"><label for="in-lp">Réussites pour valider un son</label><input type="number" id="in-lp" min="1" max="10" inputmode="numeric"></div>
+        <div class="field"><label for="in-lc">Pièces d’or par son validé</label><input type="number" id="in-lc" min="0" max="50" inputmode="numeric"></div>
+      </div>
+      <div class="field"><label for="ta-lsay">Texte à prononcer par la voix (clé : texte)</label><textarea id="ta-lsay" spellcheck="false" rows="6"></textarea>
+        <p class="hint">Les voix de synthèse disent souvent le nom de la lettre. Pour une vraie voix, dépose un fichier sons/&lt;clé&gt;.mp3 (par exemple sons/ou.mp3) : il est lu en priorité.</p></div>
+      <div class="field"><label for="ta-leq">Graphèmes équivalents (un groupe par ligne)</label><textarea id="ta-leq" spellcheck="false" rows="4"></textarea></div>
+      <div class="field"><label for="ta-lco">Confusions classiques (une paire par ligne)</label><textarea id="ta-lco" spellcheck="false" rows="4"></textarea></div>
+      <div class="row"><button type="button" class="primary" id="btn-lsave">Enregistrer</button><button type="button" class="secondary" id="btn-lreset">Rétablir les réglages d’origine</button></div>
+    </div>
   </section>
     </div>
 
     <aside class="panel right" id="panel-right" aria-label="Lire et jouer" hidden>
       <button type="button" class="panel-nav big" data-go="lecture"><span class="pn-ico" aria-hidden="true">📖</span><span>Lire<span class="pn-sub" id="pr-next"></span></span></button>
+      <button type="button" class="panel-nav big listen-cta" data-go="audition"><span class="pn-ico" aria-hidden="true">👂</span><span>ÉCOUTER<span class="pn-sub" id="pr-listen"></span></span></button>
       <button type="button" class="panel-nav big needs-reward play-cta" data-go="jeux"><span class="play-cta-spark" aria-hidden="true">✦ ✧ ✦</span><span class="pn-ico play-cta-icon" aria-hidden="true">🎮</span><span class="play-cta-copy"><span class="play-cta-kicker">LA SALLE D’ARCADE</span><span class="play-cta-title">JOUER <span aria-hidden="true">➜</span></span><span class="pn-sub play-cta-count" id="pr-games"></span><span class="play-cta-hook">🏆 Relève les défis !</span></span></button>
     </aside>
   </div>
 
   <nav class="bottom-nav" id="bottom-nav" aria-label="Mon espace" hidden>
     <button type="button" class="panel-nav" data-go="lecture"><span class="pn-ico" aria-hidden="true">📖</span><span>Lire</span></button>
+    <button type="button" class="panel-nav" data-go="audition"><span class="pn-ico" aria-hidden="true">👂</span><span>Écouter</span></button>
     <button type="button" class="panel-nav needs-reward" data-go="jeux"><span class="pn-ico" aria-hidden="true">🎮</span><span>Jouer</span></button>
     <button type="button" class="panel-nav needs-reward" data-go="boutique"><span class="pn-ico" aria-hidden="true">🛍️</span><span>Boutique</span></button>
     <button type="button" class="panel-nav" data-go="cartes"><span class="pn-ico" aria-hidden="true">🐾</span><span>Cartes</span></button>
@@ -1308,6 +1352,58 @@
   };
 
   /* Données */
+  /* ---------- Écouter : reconnaissance des sons (vue « audition ») ---------- */
+  /* Réglages par défaut, modifiables : seuils, texte à prononcer par son, graphèmes équivalents, confusions classiques */
+  var LISTEN_DEF = {
+    questions: 8, maxErrors: 1, passes: 2, coins: 2,
+    say: {},
+    equiv: [["an", "am", "en", "em"], ["in", "im", "ain", "ein", "un", "yn"], ["on", "om"], ["o", "au", "eau"], ["è", "ai", "ei", "ê", "et", "es"],
+      ["é", "er", "ez", "es", "et"], ["e", "eu", "oeu"], ["c", "k", "qu"], ["f", "ph"], ["s", "ce", "ci"], ["j", "ge", "gi"], ["i", "y", "ii"]],
+    confus: [["b", "d"], ["p", "t"], ["p", "b"], ["t", "d"], ["m", "n"], ["f", "v"], ["s", "z"], ["ch", "j"], ["c", "g"], ["ou", "on"],
+      ["ou", "u"], ["on", "an"], ["an", "in"], ["on", "in"], ["oi", "on"], ["eu", "ou"], ["a", "o"], ["é", "è"], ["un", "on"]]
+  };
+  /* Graphèmes à reconnaître et à prononcer, par son : [id, "graphèmes séparés par des virgules", texte à dire]
+     (les voix de synthèse disent souvent le nom de la lettre : on leur donne une syllabe proche du son) */
+  var LISTEN_ITEMS = [
+    ["voy", "a", "a"], ["voy", "e", "eu"], ["voy", "i", "i"], ["voy", "o", "o"], ["voy", "u", "u"], ["voy", "é", "é"], ["voy", "è", "è"],
+    ["l", "l", "leu"], ["f", "f", "feu"], ["ch", "ch", "cheu"], ["s", "s", "seu"], ["m", "m", "meu"], ["r", "r", "reu"], ["n", "n", "neu"],
+    ["v", "v", "veu"], ["j", "j", "jeu"], ["z", "z", "zeu"], ["p", "p", "peu"], ["t", "t", "teu"], ["c", "c", "keu"], ["b", "b", "beu"],
+    ["d", "d", "deu"], ["g", "g", "gueu"], ["ou", "ou", "ou"], ["au", "au,eau", "o"], ["on", "on,om", "on"], ["oi", "oi", "oua"],
+    ["an", "an,am", "an"], ["en", "en,em", "an"], ["ai", "ai,ei,ê,et", "è"], ["er", "er,ez,es", "é"], ["fr", "fr", "freu"], ["fr", "pr", "preu"],
+    ["fl", "fl", "fleu"], ["fl", "pl", "pleu"], ["in", "in,im", "in"], ["ain", "ain,ein", "in"], ["oin", "oin", "ouin"], ["ian", "ian", "ian"],
+    ["eu", "eu,oeu", "eu"], ["k", "k,qu", "keu"], ["gn", "gn", "gneu"], ["ph", "ph", "feu"], ["gj", "ge,gi", "jeu"], ["cs", "ce,ci", "seu"],
+    ["es", "es,el,ec", "è"], ["elle", "elle,ette", "èle"], ["ill", "ill", "ye"], ["y", "y,ii", "i"], ["ti", "ti", "si"], ["w", "w", "oué"],
+    ["x", "x", "ks"], ["un", "un,yn", "un"]
+  ];
+  var LISTEN_SKIP = { h: 1, sz: 1 };   /* « h » est muet, « s qui se lit z » ne se reconnaît pas à l’oreille seule */
+  function listenInt(v, lo, hi, dflt) { if (v === null || v === undefined || String(v).trim() === "") return dflt; v = Math.floor(Number(v)); return v >= lo && v <= hi ? v : dflt; }
+  function listenGroups(a) {
+    return (Array.isArray(a) ? a : []).map(function (g) {
+      return (Array.isArray(g) ? g : []).map(function (x) { return String(x).trim(); }).filter(Boolean).slice(0, 12);
+    }).filter(function (g) { return g.length > 1; }).slice(0, 60);
+  }
+  function listenCfgClean(o) {
+    o = o && typeof o === "object" ? o : {};
+    var c = {
+      questions: listenInt(o.questions, 3, 20, LISTEN_DEF.questions), maxErrors: listenInt(o.maxErrors, 0, 10, LISTEN_DEF.maxErrors),
+      passes: listenInt(o.passes, 1, 10, LISTEN_DEF.passes), coins: listenInt(o.coins, 0, 50, LISTEN_DEF.coins),
+      say: {}, equiv: o.equiv ? listenGroups(o.equiv) : LISTEN_DEF.equiv.slice(), confus: o.confus ? listenGroups(o.confus) : LISTEN_DEF.confus.slice()
+    };
+    if (o.say && typeof o.say === "object") Object.keys(o.say).slice(0, 200).forEach(function (k) {
+      if (typeof o.say[k] === "string" && o.say[k].trim()) c.say[k] = o.say[k].trim().slice(0, 40);
+    });
+    if (c.maxErrors >= c.questions) c.maxErrors = c.questions - 1;
+    return c;
+  }
+  function listenClean(o) {
+    var r = { passes: {}, done: {}, tries: 0 };
+    if (!o || typeof o !== "object") return r;
+    if (o.passes && typeof o.passes === "object") Object.keys(o.passes).forEach(function (k) { r.passes[k] = listenInt(o.passes[k], 0, 99, 0); });
+    if (o.done && typeof o.done === "object") Object.keys(o.done).forEach(function (k) { if (o.done[k]) r.done[k] = true; });
+    r.tries = listenInt(o.tries, 0, 99999, 0);
+    return r;
+  }
+
   var data = {
     students: [], results: [],
     thr: { s: 25, m: 20, t: 15 },
@@ -1328,6 +1424,8 @@
     hiv: 2,
     reviews: [],
     notes: [],
+    listen: {},
+    listenCfg: listenCfgClean(null),
     v: 3,
     sel: { sid: null, sound: null, kind: "s" }
   };
@@ -1335,7 +1433,7 @@
   var cloudBusy = false, cloudDirty = false, cloudTimer = null, cloudStudentId = null, cloudVersion = 0, cloudConflict = false, cloudStatusNode = null;
   /* Records de la classe, calculés par le serveur (student_get_class_records) */
   var classRecords = {}, classSize = 1, classRecordsRefreshing = false, classRecordsChecked = 0;
-  function cloudStatus(label){if(cloudStatusNode)cloudStatusNode.firstChild.textContent=label+" · "+(cloudStatusNode.dataset.nickname||"");}
+  function cloudStatus(label){if(cloudStatusNode){cloudStatusNode.firstChild.textContent=label+" · "+(cloudStatusNode.dataset.nickname||"");cloudStatusNode.classList.toggle("cs-ok",/^☁️/.test(label));}}
   var loaded = false;
   if (!cloudMode) try {
     var raw = localStorage.getItem(KEY);
@@ -1369,6 +1467,8 @@
         });
         if (Array.isArray(d.reviews)) data.reviews = d.reviews;
         if (Array.isArray(d.notes)) data.notes = d.notes;
+        if (d.listen && typeof d.listen === "object") Object.keys(d.listen).forEach(function (k) { data.listen[k] = listenClean(d.listen[k]); });
+        if (d.listenCfg) data.listenCfg = listenCfgClean(d.listenCfg);
         /* anciens jeux gagnés : repris sous forme de parties à jouer */
         if (Array.isArray(d.tickets)) d.tickets.forEach(function (t) { data.credits[t.sid] = (data.credits[t.sid] || 0) + (t.left || 0); });
         if ((d.v || 0) < 3 && !data.sounds.some(function (x) { return x.id === "voy"; })) data.sounds.unshift({ id: "voy", label: "voyelles", only: ["s"] });
@@ -1415,6 +1515,7 @@
       playLog:data.playLog.filter(function(x){return x.sid===sid}),
       hi:data.hi[sid]||{}, vouchers:data.vouchers.filter(function(x){return x.sid===sid}),
       reviews:data.reviews.filter(function(x){return x.sid===sid}),
+      listen:data.listen[sid]||{},
       notes:data.notes.filter(function(x){return x.sid===sid}),
       avatar:(studentById(sid)||{}).avatar||null,
       selSound:data.sel.sound||null, selKind:data.sel.kind||"s",
@@ -1712,7 +1813,7 @@
     if (S.timerId) { clearInterval(S.timerId); S.timerId = null; }
     S.phase = "idle"; current = null;
     $("session").hidden = true; $("setup").hidden = false;
-    stopGame(); wheelCleanup(); abortRecording();
+    stopGame(); wheelCleanup(); abortRecording(); listenStop();
   }
   function logout() {
     if(cloudMode){
@@ -1735,10 +1836,10 @@
   }
 
   /* ---------- Navigation ---------- */
-  var STUDENT_VIEWS = ["home", "lecture", "cartes", "boutique", "jeux", "progres", "roue", "jeu"];
+  var STUDENT_VIEWS = ["home", "lecture", "audition", "cartes", "boutique", "jeux", "progres", "roue", "jeu"];
   var TEACHER_VIEWS = ["eleves", "ecoute", "progression", "reglages"];
   var VIEWS = ["login"].concat(STUDENT_VIEWS, TEACHER_VIEWS);
-  var GO_GROUP = { lecture: "lecture", jeux: "jeux", jeu: "jeux", roue: "jeux", boutique: "boutique", cartes: "cartes", progres: "progres" };
+  var GO_GROUP = { lecture: "lecture", audition: "audition", jeux: "jeux", jeu: "jeux", roue: "jeux", boutique: "boutique", cartes: "cartes", progres: "progres" };
   function show(v) {
     if (STUDENT_VIEWS.indexOf(v) >= 0 && ses.role !== "student") v = "login";
     if (TEACHER_VIEWS.indexOf(v) >= 0 && ses.role !== "teacher") v = "login";
@@ -1746,6 +1847,7 @@
     if (v !== "roue") wheelCleanup();
     if (v !== "eleves") $("codes-out").innerHTML = "";
     if (v !== "ecoute") closeReviewMedia();
+    if (v !== "audition") listenStop();
     VIEWS.forEach(function (name) { $("v-" + name).hidden = (name !== v); });
     Array.prototype.forEach.call($("nav").querySelectorAll("button"), function (b) {
       if (b.getAttribute("data-view") === v) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
@@ -1758,6 +1860,8 @@
     if (v === "lecture") renderSetup();
     if (v === "cartes") renderCartes();
     if (v === "boutique") renderBoutique();
+    if (v === "audition") renderAudition();
+    if (v === "reglages") listenSettingsFill();
     if (v === "jeux") renderJeux();
     if (v === "progres") renderMyProgress();
     if (v === "eleves") renderStudents();
@@ -1783,6 +1887,8 @@
     if (!b || b.disabled) return;
     goTo(b.getAttribute("data-go"));
   });
+  $("btn-lsave").addEventListener("click", listenSettingsSave);
+  $("btn-lreset").addEventListener("click", listenSettingsReset);
   $("btn-logout").addEventListener("click", logout);
   $("btn-back-teacher").addEventListener("click", backToTeacher);
   $("btn-panel-wheel").addEventListener("click", function () { openWheel(ses.sid); });
@@ -2693,6 +2799,11 @@
     $("pr-prog").textContent = doneSteps + " sur " + allSteps.length + " étapes";
     $("pl-level").textContent = "N" + doneSteps;
     $("top-level").textContent = "N" + doneSteps;
+    var lvl = listenLevel(sid), lnx = listenNext(sid);
+    $("top-listen").textContent = "E" + lvl;
+    $("top-listen-box").setAttribute("aria-label", "Niveau d’écoute " + lvl + " : " + nb(lvl, "son validé", "sons validés"));
+    $("top-listen-box").title = "Niveau d’écoute : " + nb(lvl, "son validé", "sons validés");
+    $("pr-listen").textContent = lnx ? "son : " + lnx.label : "tout est validé";
     /* Afficher le dernier son atteint, pas la première étape encore à faire. */
     var animalSound = null;
     data.sounds.forEach(function (sound) {
@@ -2704,6 +2815,310 @@
     $("st-level").setAttribute("aria-label", "Niveau de lecture " + doneSteps + " : " + nb(doneSteps, "étape validée", "étapes validées"));
     $("st-level").title = "Niveau de lecture : " + nb(doneSteps, "étape validée", "étapes validées");
   }
+
+  /* ---------- Écouter : progression, questions, voix ---------- */
+  var LS = { phase: "menu", sound: null, timers: [], audio: null, files: {} };
+  function listenMine(sid) { if (!data.listen[sid]) data.listen[sid] = listenClean(null); return data.listen[sid]; }
+  /* Mêmes sons, même ordre que « Lire » ; on ne garde que ceux qui s’entendent */
+  function listenSounds() { return data.sounds.filter(function (s) { return !LISTEN_SKIP[s.id]; }); }
+  function listenItems(sound) {
+    var out = LISTEN_ITEMS.filter(function (r) { return r[0] === sound.id; });
+    var multi = out.length > 1;
+    out = out.map(function (r) {
+      var key = multi ? r[0] + ":" + r[1].split(",")[0] : r[0];
+      return { key: key, g: r[1].split(","), say: data.listenCfg.say[key] || r[2], dsay: r[2] };
+    });
+    if (!out.length) {   /* son ajouté par le maître(sse) : graphèmes déduits de l’étiquette */
+      var g = String(sound.label).split(",").map(function (x) { return x.replace(/…/g, "").trim(); }).filter(function (x) { return x && x.indexOf(" ") < 0; });
+      if (g.length) out.push({ key: sound.id, g: g, say: data.listenCfg.say[sound.id] || g[0], dsay: g[0] });
+    }
+    return out;
+  }
+  function listenDone(sid, id) { var L = listenMine(sid); return !!L.done[id] || (L.passes[id] || 0) >= data.listenCfg.passes; }
+  function listenPrev(id) {
+    var ls = listenSounds(), i = -1;
+    ls.forEach(function (s, k) { if (s.id === id) i = k; });
+    return i > 0 ? ls[i - 1] : null;
+  }
+  function listenUnlocked(sid, id) {
+    if (!data.lock) return true;
+    var p = listenPrev(id);
+    return !p || listenDone(sid, p.id);
+  }
+  function listenLevel(sid) { return listenSounds().filter(function (s) { return listenDone(sid, s.id); }).length; }
+  function listenNext(sid) {
+    var ls = listenSounds();
+    for (var i = 0; i < ls.length; i++) if (listenUnlocked(sid, ls[i].id) && !listenDone(sid, ls[i].id)) return ls[i];
+    return null;
+  }
+  function equivOf(g) {
+    var out = [g];
+    data.listenCfg.equiv.forEach(function (grp) { if (grp.indexOf(g) >= 0) grp.forEach(function (x) { if (out.indexOf(x) < 0) out.push(x); }); });
+    return out;
+  }
+  function uniq(a) { return a.filter(function (x, i) { return a.indexOf(x) === i; }); }
+  /* Une question : 1 ou 2 bons choix, le reste vient des sons déjà débloqués (confusions classiques d’abord) */
+  function listenBuild(sid, sound, item) {
+    var pool = [], later = [], seen = false;
+    listenSounds().forEach(function (s) {
+      var gs = [];
+      listenItems(s).forEach(function (it) { gs = gs.concat(it.g); });
+      if (s.id === sound.id) seen = true;
+      if (listenUnlocked(sid, s.id) || s.id === sound.id) pool = pool.concat(gs); else if (seen) later = later.concat(gs);
+    });
+    pool = uniq(pool); later = uniq(later);
+    var cands = [];
+    item.g.forEach(function (g) { equivOf(g).forEach(function (x) { if (item.g.indexOf(x) >= 0 || pool.indexOf(x) >= 0) cands.push(x); }); });
+    cands = uniq(cands);
+    var goods = [item.g[Math.floor(Math.random() * item.g.length)]];
+    var rest = cands.filter(function (x) { return goods.indexOf(x) < 0; });
+    if (rest.length && Math.random() < 0.5) goods.push(rest[Math.floor(Math.random() * rest.length)]);
+    var banned = cands.slice();
+    item.g.concat(goods).forEach(function (g) { equivOf(g).forEach(function (x) { if (banned.indexOf(x) < 0) banned.push(x); }); });
+    var nBad = 6 - goods.length, bad = [];
+    var prio = [];
+    data.listenCfg.confus.forEach(function (pr) {
+      goods.forEach(function (g) {
+        pr.forEach(function (x, i) { if (x === g) pr.forEach(function (y, j) { if (j !== i) prio.push(y); }); });
+      });
+    });
+    function take(list) {
+      shuffle(uniq(list)).forEach(function (x) {
+        if (bad.length < nBad && banned.indexOf(x) < 0 && bad.indexOf(x) < 0) bad.push(x);
+      });
+    }
+    take(prio.filter(function (x) { return pool.indexOf(x) >= 0; }));
+    take(pool);
+    take(later);
+    take(prio);
+    var all = goods.map(function (g) { return { g: g, good: true }; }).concat(bad.map(function (g) { return { g: g, good: false }; }));
+    return { item: item, goods: goods, cands: cands, choices: shuffle(all) };
+  }
+
+  /* Voix : fichier sons/<clé>.mp3 s’il existe, sinon synthèse vocale en français (texte réglable) */
+  function listenStopVoice() {
+    try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}
+    if (LS.audio) { try { LS.audio.pause(); } catch (e) {} LS.audio = null; }
+  }
+  function listenSpeak(text) {
+    try {
+      if (!window.speechSynthesis || !window.SpeechSynthesisUtterance) return;
+      var u = new window.SpeechSynthesisUtterance(text);
+      u.lang = "fr-FR"; u.rate = 0.8; u.pitch = 1; u.volume = 1;
+      var voices = window.speechSynthesis.getVoices ? window.speechSynthesis.getVoices() : [];
+      var fr = voices.filter(function (v) { return /^fr/i.test(v.lang); })[0];
+      if (fr) u.voice = fr;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(u);
+    } catch (e) {}
+  }
+  function listenSay(item) {
+    listenStopVoice();
+    var url = "sons/" + item.key.replace(/[^a-z0-9:éèêàùôîû-]/gi, "").replace(":", "-") + ".mp3";
+    if (LS.files[url] === false) { listenSpeak(item.say); return; }
+    try {
+      var a = new Audio(url);
+      LS.audio = a;
+      var fallback = function () { if (LS.audio === a) { LS.files[url] = false; LS.audio = null; listenSpeak(item.say); } };
+      a.addEventListener("error", fallback);
+      var pr = a.play();
+      if (pr && pr.then) pr.then(function () { LS.files[url] = true; }, function (err) { if (!err || err.name !== "NotAllowedError") fallback(); });
+    } catch (e) { listenSpeak(item.say); }
+  }
+  function listenClear() { LS.timers.forEach(clearTimeout); LS.timers = []; }
+  function listenStop() { listenClear(); listenStopVoice(); LS.phase = "menu"; }
+
+  /* ---------- Écouter : écrans ---------- */
+  function listenSelOk(sid) {
+    var ls = listenSounds();
+    if (LS.sound && ls.some(function (s) { return s.id === LS.sound; }) && listenUnlocked(sid, LS.sound)) return LS.sound;
+    var nx = listenNext(sid);
+    return nx ? nx.id : (ls.length ? ls[ls.length - 1].id : null);
+  }
+  function listenCoinBox(area, n) {
+    var box = el("div", "coin-win");
+    box.appendChild(coinEl());
+    box.appendChild(el("div", "", "+" + n + " pièces d’or ! Tu en as maintenant " + coins(ses.sid) + "."));
+    area.appendChild(box);
+  }
+  function renderAudition() {
+    if (ses.role !== "student") return;
+    listenStop();
+    var sid = ses.sid, body = $("audition-body"), cfg = data.listenCfg, ls = listenSounds(), L = listenMine(sid);
+    body.innerHTML = "";
+    var card = el("div", "card");
+    card.appendChild(el("h2", "", "👂 Écouter les sons"));
+    if (!ls.length) { card.appendChild(el("p", "instruction", "Aucun son disponible pour le moment.")); body.appendChild(card); return; }
+    card.appendChild(el("p", "instruction", "Une voix dit un son. Touche les façons de l’écrire : il y en a une ou deux. Réussis " + nb(cfg.passes, "fois", "fois") + " pour passer au son suivant."));
+    LS.sound = listenSelOk(sid);
+    var field = el("div", "field"), lab = el("label", "", "Son"), sel = document.createElement("select");
+    lab.setAttribute("for", "sel-listen"); sel.id = "sel-listen";
+    ls.forEach(function (s) {
+      var o = document.createElement("option"), unl = listenUnlocked(sid, s.id), pv = listenPrev(s.id);
+      o.value = s.id; o.disabled = !unl;
+      o.textContent = unl ? s.label + (listenDone(sid, s.id) ? "  ✓ réussi" : "  (" + (L.passes[s.id] || 0) + " sur " + cfg.passes + ")")
+                          : s.label + "  (verrouillé : réussis " + (pv ? pv.label : "le son d’avant") + ")";
+      sel.appendChild(o);
+    });
+    sel.value = LS.sound;
+    sel.addEventListener("change", function () { LS.sound = sel.value; renderAudition(); });
+    field.appendChild(lab); field.appendChild(sel); card.appendChild(field);
+    var cur = soundById(LS.sound);
+    card.appendChild(el("p", "hint", listenDone(sid, LS.sound) ? "Ce son est réussi. Tu peux t’entraîner encore, sans nouvelle pièce."
+      : "Réussites : " + (L.passes[LS.sound] || 0) + " sur " + cfg.passes + ". " + cfg.questions + " questions, " + nb(cfg.maxErrors, "erreur permise", "erreurs permises") + "."));
+    var go = el("button", "primary big-btn", "Commencer"); go.type = "button"; go.disabled = !cur;
+    go.addEventListener("click", function () { listenStart(sid, LS.sound); });
+    card.appendChild(go);
+    body.appendChild(card);
+  }
+  function listenStart(sid, soundId) {
+    var sound = soundById(soundId), items = listenItems(sound);
+    if (!sound || !items.length) { toast("Ce son n’a pas encore d’exercice."); return; }
+    listenClear();
+    LS.run = { sid: sid, sound: sound, items: items, order: [], n: 0, failed: 0, q: null };
+    for (var i = 0; i < data.listenCfg.questions; i++) {
+      if (i % items.length === 0) LS.run.order = LS.run.order.concat(shuffle(items.slice()));
+    }
+    LS.phase = "run";
+    listenQuestion();
+  }
+  function listenQuestion() {
+    var R = LS.run, cfg = data.listenCfg, body = $("audition-body");
+    if (R.n >= cfg.questions) { listenEnd(); return; }
+    var q = listenBuild(R.sid, R.sound, R.order[R.n]);
+    q.found = []; q.bad = false; q.over = false; R.q = q; R.n++;
+    body.innerHTML = "";
+    var card = el("div", "card listen-card");
+    var top = el("div", "listen-top");
+    top.appendChild(el("span", "listen-count", "Question " + R.n + " sur " + cfg.questions));
+    var quit = el("button", "secondary", "Arrêter"); quit.type = "button";
+    quit.addEventListener("click", function () { renderAudition(); });
+    top.appendChild(quit);
+    card.appendChild(top);
+    var bar = el("div", "listen-dots"); bar.setAttribute("aria-hidden", "true");
+    for (var i = 0; i < cfg.questions; i++) bar.appendChild(el("span", i < R.n - 1 ? "done" : (i === R.n - 1 ? "now" : ""), ""));
+    card.appendChild(bar);
+    var again = el("button", "listen-play", "🔊 Écouter le son"); again.type = "button";
+    again.addEventListener("click", function () { listenSay(q.item); });
+    card.appendChild(again);
+    var msg = el("p", "instruction listen-msg", "Touche ce que tu entends. Il y a 1 ou 2 bonnes réponses.");
+    msg.setAttribute("role", "status"); msg.id = "listen-msg";
+    card.appendChild(msg);
+    var grid = el("div", "listen-choices");
+    q.btns = [];
+    q.choices.forEach(function (c) {
+      var b = el("button", "listen-choice", c.g); b.type = "button";
+      b.addEventListener("click", function () { listenPick(q, c, b); });
+      grid.appendChild(b); q.btns.push(b);
+    });
+    card.appendChild(grid);
+    var done = el("button", "secondary listen-done", "Il n’y en a pas d’autre"); done.type = "button"; done.hidden = true;
+    done.addEventListener("click", function () { listenFinishQ(q, "Il y en avait une autre."); });
+    q.doneBtn = done;
+    card.appendChild(done);
+    body.appendChild(card);
+    if (window.innerWidth <= 880) card.scrollIntoView({ block: "start" });
+    LS.timers.push(setTimeout(function () { listenSay(q.item); }, 250));
+  }
+  function listenReveal(q) {
+    q.btns.forEach(function (b, i) { if (q.choices[i].good) b.classList.add("good"); b.disabled = true; });
+    q.doneBtn.hidden = true;
+  }
+  function listenFinishQ(q, why) {
+    if (q.over) return;
+    q.over = true;
+    var R = LS.run, ok = !q.bad && q.found.length === q.goods.length, msg = $("listen-msg");
+    if (!ok) {
+      R.failed++;
+      listenReveal(q);
+      msg.textContent = (why ? why + " " : "") + "On écrivait : " + q.goods.join(" ou ") + ".";
+      LS.timers.push(setTimeout(listenQuestion, 2600));
+    } else {
+      q.doneBtn.hidden = true;
+      msg.textContent = praise() + " !";
+      LS.timers.push(setTimeout(listenQuestion, 900));
+    }
+  }
+  function listenPick(q, c, b) {
+    if (q.over || b.disabled) return;
+    if (c.good) {
+      b.classList.add("good"); b.disabled = true; q.found.push(c.g);
+      $("listen-msg").textContent = "Oui !";
+      if (q.found.length === q.goods.length) listenFinishQ(q, "");
+      else q.doneBtn.hidden = false;
+    } else {
+      b.classList.add("bad"); q.bad = true;
+      listenFinishQ(q, "Oups, ce n’est pas ça.");
+    }
+  }
+  function listenEnd() {
+    var R = LS.run, cfg = data.listenCfg, sid = R.sid, id = R.sound.id, L = listenMine(sid), body = $("audition-body");
+    LS.phase = "end";
+    var ok = R.failed <= cfg.maxErrors, wasDone = listenDone(sid, id), gained = 0, nowDone = false;
+    L.tries++;
+    if (ok && !wasDone) {
+      L.passes[id] = (L.passes[id] || 0) + 1;
+      if (L.passes[id] >= cfg.passes) {
+        L.done[id] = true; nowDone = true;
+        if (data.reward && cfg.coins > 0) { data.coins[sid] = coins(sid) + cfg.coins; gained = cfg.coins; }
+      }
+    }
+    save(); renderPanels();
+    body.innerHTML = "";
+    var card = el("div", "card listen-card");
+    card.appendChild(el("h2", "", nowDone ? "Niveau réussi ! 🎉" : (ok ? "Bravo ! 👏" : "Presque !")));
+    card.appendChild(el("p", "instruction", "Tu as réussi " + nb(cfg.questions - R.failed, "question", "questions") + " sur " + cfg.questions + "."));
+    if (nowDone) {
+      card.appendChild(el("p", "instruction", "Le son " + q(R.sound.label) + " est validé. Niveau d’écoute : E" + listenLevel(sid) + "."));
+      if (gained) listenCoinBox(card, gained);
+      confetti(70, gained > 0);
+      if (data.sfx) [523, 659, 784, 1047, 1319].forEach(function (f, k) { tone(f, k * 0.1, 0.28, "triangle", 0.16); });
+    } else if (ok && !wasDone) {
+      card.appendChild(el("p", "instruction", "Encore " + nb(cfg.passes - (L.passes[id] || 0), "réussite", "réussites") + " pour valider ce son."));
+    } else if (!ok) {
+      card.appendChild(el("p", "instruction", "Il faut au plus " + nb(cfg.maxErrors, "erreur", "erreurs") + ". Écoute bien et recommence, tu vas y arriver !"));
+    }
+    var row = el("div", "row");
+    var again = el("button", "primary big-btn", "Rejouer"); again.type = "button";
+    again.addEventListener("click", function () { listenStart(sid, id); });
+    row.appendChild(again);
+    var nx = nowDone ? listenNext(sid) : null;
+    if (nx) {
+      var nb2 = el("button", "secondary big-btn", "Son suivant : " + nx.label); nb2.type = "button";
+      nb2.addEventListener("click", function () { LS.sound = nx.id; listenStart(sid, nx.id); });
+      row.appendChild(nb2);
+    }
+    var back = el("button", "secondary", "Choisir un son"); back.type = "button";
+    back.addEventListener("click", function () { LS.sound = id; renderAudition(); });
+    row.appendChild(back);
+    card.appendChild(row);
+    body.appendChild(card);
+  }
+  /* Réglages de l’écoute (maître(sse)) : seuils, texte à prononcer, équivalences, confusions */
+  function listenSettingsFill() {
+    var c = data.listenCfg;
+    $("in-lq").value = c.questions; $("in-le").value = c.maxErrors; $("in-lp").value = c.passes; $("in-lc").value = c.coins;
+    var say = [];
+    listenSounds().forEach(function (s) { listenItems(s).forEach(function (it) { say.push(it.key + " : " + it.say); }); });
+    $("ta-lsay").value = say.join("\n");
+    $("ta-leq").value = c.equiv.map(function (g) { return g.join(", "); }).join("\n");
+    $("ta-lco").value = c.confus.map(function (g) { return g.join(" / "); }).join("\n");
+  }
+  function listenSettingsSave() {
+    var say = {}, def = {};
+    listenSounds().forEach(function (s) { listenItems(s).forEach(function (it) { def[it.key] = it.dsay; }); });
+    $("ta-lsay").value.split("\n").forEach(function (ln) {
+      var sep = ln.indexOf(" : "), i = sep >= 0 ? sep : ln.indexOf(":"), k = ln.slice(0, i).trim(), v = ln.slice(i + (sep >= 0 ? 3 : 1)).trim();
+      if (i > 0 && v && v !== def[k]) say[k] = v;
+    });
+    function groups(t, sep) { return t.split("\n").map(function (ln) { return ln.split(sep); }); }
+    data.listenCfg = listenCfgClean({
+      questions: $("in-lq").value, maxErrors: $("in-le").value, passes: $("in-lp").value, coins: $("in-lc").value, say: say,
+      equiv: groups($("ta-leq").value, ","), confus: groups($("ta-lco").value, "/")
+    });
+    save(); listenSettingsFill(); toast("Réglages de l’écoute enregistrés");
+  }
+  function listenSettingsReset() { data.listenCfg = listenCfgClean(null); save(); listenSettingsFill(); toast("Réglages d’origine rétablis"); }
 
   function wheelCard(body, sid) {
     var pend = pendingWheels(sid);
@@ -4401,6 +4816,8 @@
       data.vouchers=Array.isArray(p.vouchers)?p.vouchers:[];
       data.reviews=Array.isArray(p.reviews)?p.reviews:[];
       data.notes=Array.isArray(p.notes)?p.notes:[];
+      data.listen={};data.listen[st.student_id]=listenClean(p.listen);
+      data.listenCfg=listenCfgClean(teacherSettings.listenCfg);
       if(p.shop&&typeof p.shop==="object"&&Array.isArray(p.shop.rewards)&&!Array.isArray(teacherSettings.rewards))data.shop=p.shop;
       if(Array.isArray(teacherSettings.rewards))data.shop.rewards=teacherSettings.rewards;
       if(Number.isInteger(teacherSettings.packPrice)&&teacherSettings.packPrice>0)data.shop.packPrice=teacherSettings.packPrice;
@@ -4413,7 +4830,7 @@
       ses.role="student";ses.sid=st.student_id;ses.viaTeacher=false;ses.unlocked=false;ses.teacherAuth=false;
       setMode();show("home");
       var bar=document.createElement("div");
-      bar.id="cloud-status";bar.style.cssText="position:fixed;bottom:10px;left:10px;z-index:9999;background:#372465;color:white;border-radius:12px;padding:8px 12px;font:13px system-ui;box-shadow:0 3px 12px #0005";
+      bar.id="cloud-status";bar.className="cs-ok";bar.style.cssText="position:fixed;bottom:10px;left:10px;z-index:9999;background:#372465;color:white;border-radius:12px;padding:8px 12px;font:13px system-ui;box-shadow:0 3px 12px #0005";
       bar.append(document.createTextNode("☁️ Profil connecté · "+st.nickname));cloudStatusNode=bar;bar.dataset.nickname=st.nickname;
       refreshClassRecords(true);claimGifts(true);
       var link=document.createElement("a");link.href="eleve.html";link.textContent=" · Déconnexion";link.style.color="#ffe37c";link.onclick=function(ev){ev.preventDefault();logout()};bar.append(link);document.body.append(bar);
