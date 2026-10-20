@@ -11,7 +11,7 @@ main{max-width:950px}
 .teacher-header{padding:23px 26px}
 .teacher-header>.row{border-bottom:0;padding:0}
 .quota-tag{display:inline-flex;font-weight:750;margin:12px 0 17px;padding:10px 14px;border-radius:12px}
-.teacher-nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+.teacher-nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
 .teacher-nav a{text-decoration:none;text-align:center;background:#f3efff;color:#4e3486;border:1px solid #e7defd;border-radius:12px;padding:12px 8px;font-weight:700;font-size:.9rem;transition:background .15s,transform .15s}
 .teacher-nav a:hover{background:#e7dcff;transform:translateY(-1px)}
 .teacher-nav a#adminShortcut{grid-column:1/-1;background:#e9e5f9}
@@ -47,7 +47,7 @@ main{max-width:950px}
    <a href="#classesSettings">📚 Mes classes</a>
    <a href="#addStudentSettings">➕ Ajouter un élève</a>
    <a href="#progressSettings">📊 Progressions</a>
-   <a href="#pinSettings">🔐 Codes PIN</a>
+   <a href="#pinSettings">🔐 Codes PIN</a><a href="#evaluationCodeSettings">🔑 Code maîtresse</a>
    <a id="adminShortcut" class="hidden" href="#adminPanel">🛡️ Administration</a>
   </nav>
   <p id="spaceMsg" class="msg" role="status"></p>
@@ -66,7 +66,8 @@ main{max-width:950px}
   <div class="section-head"><div class="section-icon">📊</div><div><h2>Progressions et résultats</h2><p class="muted">Évaluations du Zoo, entraînements, scores de fluence et jeux sauvegardés sur Supabase.</p></div></div>
   <div class="actions section-actions"><button type="button" class="secondary" id="reloadProgress">↻ Actualiser les résultats</button></div>
   <p id="progressMsg" class="msg" role="status"></p><div id="progressList" class="content-list"></div></section>
- <section class="panel feature-card pin-card" id="pinSettings">
+ <section class="panel feature-card pin-card" id="evaluationCodeSettings"><div class="section-head"><div class="section-icon">🔑</div><div><h2>Code d'évaluation de la maîtresse</h2><p class="muted">Un seul code pour autoriser les évaluations de tous tes élèves.</p></div></div><form id="evalCodeForm"><label for="evalCode">Choisir ou changer mon code</label><input id="evalCode" type="password" minlength="4" maxlength="64" autocomplete="new-password" required placeholder="Au moins 4 caractères"><div class="actions"><button type="submit">Enregistrer mon code d'évaluation</button></div></form><p class="msg" id="evalCodeMsg" role="status"></p></section>
+<section class="panel feature-card pin-card" id="pinSettings">
   <div class="section-head"><div class="section-icon">🔐</div><div><h2>Gestion des codes PIN</h2><p class="muted">Crée ou modifie le code secret de chaque élève.</p></div></div>
   <p class="muted privacy-note">Choisis 4 à 8 chiffres et transmets le code individuellement à l'élève ou à sa famille.</p>
   <div id="students" class="content-list"></div>
@@ -142,6 +143,12 @@ async function renderProgress(students,classes){
  if(!students.length)container.textContent="Aucun élève inscrit.";
 }
 $("reloadProgress").onclick=()=>refresh();
+$("evalCodeForm").onsubmit=async ev=>{
+ ev.preventDefault();const btn=ev.target.querySelector("button");btn.disabled=true;
+ try{const {error}=await client.rpc("set_evaluation_code",{p_code:$("evalCode").value});if(error)throw error;$("evalCode").value="";msg("evalCodeMsg","Code enregistré sur le serveur. Il fonctionne désormais pour les élèves de tes classes.");}
+ catch(e){msg("evalCodeMsg",errorText(e),true)}finally{btn.disabled=false}
+};
+
 
 
 async function busy(id,action){const b=$(id);b.disabled=true;try{await action()}catch(e){msg("authMsg",errorText(e),true);msg("spaceMsg",errorText(e),true)}finally{b.disabled=false}}
