@@ -38,7 +38,7 @@ main{max-width:1050px}
 .feature-card .row button{flex-shrink:0}
 .content-list:empty:before{content:"Aucune donnée pour le moment";display:block;color:#827c92;padding:12px}
 .form-zone{margin-top:20px;padding:20px;background:var(--soft);border-radius:15px}
-.privacy-note{background:var(--soft);border-radius:12px;padding:12px 14px;line-height:1.5}
+.auth-title{font-size:2rem;margin-bottom:10px} .auth-actions{align-items:center} .signup-note{color:#746e86;font-size:.8rem;line-height:1.35;max-width:260px} .seat-request{margin-top:22px;padding:16px 18px;background:var(--soft);border-radius:15px} .seat-request label{display:block;font-weight:800;margin:0 0 8px} .seat-row{display:flex;flex-wrap:wrap;align-items:center;gap:9px} .seat-row input{width:95px;margin:0} .seat-alert{margin-top:4px;color:#a3480b;font-weight:700} .privacy-note{background:var(--soft);border-radius:12px;padding:12px 14px;line-height:1.5}
 .section-actions{margin:0 0 15px}
 .teacher-footnote{margin:0 0 10px;color:#746e86;font-size:.86rem;text-align:center;line-height:1.5}
 @media(max-width:650px){main{padding:12px;margin:16px auto}.teacher-nav{grid-template-columns:repeat(2,minmax(0,1fr))}.feature-card,.teacher-header{padding:19px}.section-head h2{font-size:1.2rem}.section-icon{width:44px;height:44px;flex-basis:44px;font-size:21px}.feature-card .row{align-items:flex-start}.feature-card .row button{font-size:.9rem}}
@@ -170,8 +170,7 @@ body.teacher-mode .quota-tag{display:block;margin:14px 2px 0;font-size:.85rem;te
       <div class="banner-user" id="bannerUser"><span id="who"></span><a href="eleve.html" id="toStudent" title="Espace élève"><span aria-hidden="true">🎒</span><span class="bu-label">&nbsp;Espace élève</span></a><button id="logout" class="secondary" type="button">Déconnexion</button></div>
     </div>
 </header>
-<section class="panel" id="auth"><h2>Créer un compte ou se connecter</h2><p class="muted"><strong>Tu es élève ?</strong> <a href="eleve.html" id="authToStudent">Entre ici avec ton code de classe et ton PIN.</a></p><p class="muted">Inscription libre. Chaque compte dispose de 10 places d'élèves par défaut.</p>
-<form id="authForm"><label for="email">Adresse e-mail professionnelle ou personnelle</label><input id="email" type="email" autocomplete="email" required maxlength="254"><label for="password">Mot de passe (au moins 8 caractères)</label><input id="password" type="password" autocomplete="new-password" minlength="8" required><div class="actions"><button id="signup" type="button">Créer mon compte</button><button id="signin" type="submit" class="secondary">Me connecter</button><button id="reset" type="button" class="secondary">Mot de passe oublié</button></div></form><p class="msg" id="authMsg" role="status"></p></section>
+<section class="panel" id="auth"><h2 class="auth-title">Se connecter</h2><p class="muted"><strong>Tu es élève ?</strong> <a href="eleve.html" id="authToStudent">Entre ici avec ton code de classe et ton PIN.</a></p><form id="authForm"><label for="email">Adresse e-mail professionnelle ou personnelle</label><input id="email" type="email" autocomplete="email" required maxlength="254"><label for="password">Mot de passe (au moins 8 caractères)</label><input id="password" type="password" autocomplete="current-password" minlength="8" required><div class="actions auth-actions"><button id="signin" type="submit">Me connecter</button><button id="reset" type="button" class="secondary">Mot de passe oublié</button><button id="signup" type="button" class="secondary">Créer un compte</button><small class="signup-note">Inscription libre. Chaque compte dispose de 10 places d'élèves par défaut.</small></div></form><p class="msg" id="authMsg" role="status"></p></section>
 <section class="panel hidden" id="recovery"><h2>🔒 Choisis ton nouveau mot de passe</h2><p class="muted" id="recoveryWho">Tu es arrivée ici par le lien de l’e-mail « Mot de passe oublié ».</p><form id="recoveryForm"><label for="newPassword">Nouveau mot de passe (au moins 8 caractères)</label><input id="newPassword" type="password" autocomplete="new-password" minlength="8" maxlength="72" required><label for="newPassword2">Écris-le une deuxième fois</label><input id="newPassword2" type="password" autocomplete="new-password" minlength="8" maxlength="72" required><div class="actions"><button id="recoverySave" type="submit">Enregistrer mon nouveau mot de passe</button></div></form><p class="msg" id="recoveryMsg" role="status"></p></section>
 <section class="hidden teacher-space" id="space">
  <aside class="panel teacher-header" aria-label="Menu de l’espace enseignant">
@@ -182,7 +181,7 @@ body.teacher-mode .quota-tag{display:block;margin:14px 2px 0;font-size:.85rem;te
    <button type="button" data-tab="progression"><span class="nav-ico" aria-hidden="true">📈</span><span class="nav-label">Progression</span></button>
    <button type="button" data-tab="reglages"><span class="nav-ico" aria-hidden="true">✏️</span><span class="nav-label">Réglages péda</span></button>
    <button type="button" data-tab="general"><span class="nav-ico" aria-hidden="true">⚙️</span><span class="nav-label">Réglages généraux</span></button>
-   <button type="button" data-tab="enseignants" id="teachersAdminTab"><span class="nav-ico" aria-hidden="true">🛡️</span><span class="nav-label">Enseignants</span></button>
+   <button type="button" data-tab="enseignants" id="teachersAdminTab"><span class="nav-ico" aria-hidden="true">🛡️</span><span class="nav-label">Enseignants</span><span class="nav-badge hidden" id="adminBadge"></span></button>
   </nav>
   <p id="quota" class="tag quota-tag"></p>
  </aside>
@@ -198,6 +197,7 @@ body.teacher-mode .quota-tag{display:block;margin:14px 2px 0;font-size:.85rem;te
   <div class="section-head"><div class="section-icon">🧒</div><div><h2>Ajouter un élève</h2><p class="muted">Inscris un élève dans la classe de ton choix.</p></div></div>
   <p class="muted privacy-note">🔒 Privilégie un pseudonyme ou un prénom abrégé plutôt qu'un nom complet.</p>
   <form id="studentForm"><label for="classSelect">Choisir sa classe</label><select id="classSelect" required></select><label for="nickname">Pseudonyme de l'élève</label><input id="nickname" required maxlength="60" placeholder="Ex. Léa C."><div class="actions"><button id="addStudent">+ Ajouter l'élève</button></div></form>
+  <div class="seat-request" id="seatRequestBox"><form id="seatRequestForm"><label for="seatCount">Demande de plus d'élèves :</label><div class="seat-row"><input id="seatCount" type="number" min="1" max="500" step="1" value="10" required><span>élève(s) en plus</span><button id="seatSend">Envoyer la demande</button><button type="button" id="seatCancel" class="secondary hidden">Annuler la demande</button></div></form><p class="muted" id="seatInfo"></p><p class="msg" id="seatMsg" role="status"></p></div>
  </section>
  <section class="panel feature-card progress-card" id="progressSettings" data-section="progression">
   <div class="section-head"><div class="section-icon">📊</div><div><h2>Progressions et résultats</h2><p class="muted">Évaluations du Zoo, entraînements, scores de fluence et jeux sauvegardés sur Supabase.</p></div></div>
@@ -281,7 +281,7 @@ async function refresh(){
  if(!currentUser)return;
  $("who").textContent=currentUser.email||"";
  const [profile,classes,students]=await Promise.all([
- client.from("teachers").select("student_limit,role").eq("id",currentUser.id).single(),
+ client.from("teachers").select("student_limit,role,seat_request,seat_request_at").eq("id",currentUser.id).single(),
  client.from("classes").select("id,name,school_year,access_code,teacher_id").order("created_at"),
  client.from("students").select("id,nickname,class_id,pin_hash,teacher_id").order("created_at")]);
  if(profile.error||classes.error||students.error){const reason=errorText(profile.error||classes.error||students.error);msg("spaceMsg","Impossible de charger les données : "+reason,true);$("classRoster").textContent="Erreur de chargement : "+reason;return;}
@@ -294,7 +294,7 @@ async function refresh(){
  if(!settings.error&&settings.data){const cfg=settings.data.settings||{};cfgSounds=Array.isArray(cfg.sounds)&&cfg.sounds.length?cfg.sounds:structuredClone(ORIGINAL_SOUNDS);cfgTexts=cfg.texts||{};cfgRewards=Array.isArray(cfg.rewards)?cfg.rewards:[];const t=cfg.thr||{};$("thrS").value=t.s??25;$("thrM").value=t.m??20;$("thrT").value=t.t??15;$("lockSounds").checked=cfg.lock??true;$("rewardMode").checked=cfg.reward??true;$("soundEffects").checked=cfg.sfx??true;$("allowRec").checked=cfg.allowRec??true;$("maxPlays").value=cfg.maxPlays??6;$("packPrice").value=cfg.packPrice??10;}
  renderSoundOrder();renderExercise();renderRewards();
  const limit=profile.data.student_limit;const used=students.data.filter(s=>s.teacher_id===currentUser.id).length;const ownClasses=classes.data.filter(c=>c.teacher_id===currentUser.id);
- $("quota").textContent=used+" / "+limit+" élèves inscrits"+(profile.data.role==="admin"?" · Administrateur":"");
+ $("quota").textContent=used+" / "+limit+" élèves inscrits"+(profile.data.role==="admin"?" · Administrateur":"");renderSeatRequest(profile.data);
 
  $("addStudent").disabled=used>=limit||ownClasses.length===0;
  $("classSelect").replaceChildren();
@@ -482,13 +482,22 @@ $("passwordForm").onsubmit=e=>{e.preventDefault();const a=$("changePassword").va
 $("logout").onclick=async()=>{await client.auth.signOut();await refresh()};
 $("classForm").onsubmit=e=>{e.preventDefault();busy("classForm",async()=>{const name=$("className").value.trim();if(!name||!currentUser)return;const code=$("classCode").value.trim();if(code&&!validClassCode(code)){msg("spaceMsg",CLASS_CODE_RULE,true);return;}const {data:created,error}=await client.from("classes").insert(code?{teacher_id:currentUser.id,name,access_code:code}:{teacher_id:currentUser.id,name}).select("access_code").single();if(error)msg("spaceMsg",errorText(error),true);else{$("className").value="";$("classCode").value="";await refresh();msg("spaceMsg","Classe créée. Code à donner aux élèves : "+created.access_code)}})};
 $("studentForm").onsubmit=e=>{e.preventDefault();busy("addStudent",async()=>{if(!currentUser)return;const {error}=await client.from("students").insert({teacher_id:currentUser.id,class_id:$("classSelect").value,nickname:$("nickname").value.trim()});if(error)msg("spaceMsg",errorText(error),true);else{$("nickname").value="";await refresh()}})};
+function frDate(v){const d=new Date(v);return isNaN(d)?"":d.toLocaleDateString("fr-FR",{day:"numeric",month:"long"})}
+function renderSeatRequest(p){const n=p&&p.seat_request;$("seatInfo").textContent=n?"⏳ Demande en cours : +"+n+" élève(s)"+(p.seat_request_at?", envoyée le "+frDate(p.seat_request_at):"")+". L’administrateur va la traiter.":"Toutes tes places sont prises ? Demande des places en plus à l’administrateur.";$("seatCancel").classList.toggle("hidden",!n);$("seatSend").textContent=n?"Modifier la demande":"Envoyer la demande";if(n)$("seatCount").value=String(n)}
+async function sendSeatRequest(count){const {data,error}=await client.rpc("teacher_request_seats",{p_count:count});if(error){msg("seatMsg",errorText(error),true);return;}renderSeatRequest(data);msg("seatMsg",count?"Demande envoyée : +"+count+" élève(s).":"Demande annulée.")}
+$("seatRequestForm").onsubmit=e=>{e.preventDefault();const n=Number($("seatCount").value);if(!Number.isSafeInteger(n)||n<1||n>500){msg("seatMsg","Indique un nombre d’élèves entre 1 et 500.",true);return;}busy("seatSend",()=>sendSeatRequest(n))};
+$("seatCancel").onclick=()=>busy("seatCancel",()=>sendSeatRequest(0));
+let adminNotice="";
+function setAdminBadge(n){const b=$("adminBadge");if(!b)return;b.textContent="⚠️ "+(n>99?"99+":String(n));b.classList.toggle("hidden",!n);b.setAttribute("aria-label",n+" demande(s) de places d’élèves")}
 async function renderAdmin(role){
- const panel=$("adminPanel");if(role!=="admin"){$("adminList").textContent="La gestion des comptes enseignants est réservée à l’administrateur.";return;}
- const {data:teachers,error}=await client.from("teachers").select("id,email,display_name,student_limit,role").order("created_at",{ascending:false});
+ const panel=$("adminPanel");if(role!=="admin"){setAdminBadge(0);$("adminList").textContent="La gestion des comptes enseignants est réservée à l’administrateur.";return;}
+ const {data:teachers,error}=await client.from("teachers").select("id,email,display_name,student_limit,role,seat_request,seat_request_at").order("created_at",{ascending:false});
  if(error){msg("adminMsg",errorText(error),true);return;}
  const {data:counts,error:countError}=await client.from("students").select("teacher_id");
  if(countError){msg("adminMsg",errorText(countError),true);return;}
- msg("adminMsg","");$("adminList").replaceChildren();
+ msg("adminMsg",adminNotice);adminNotice="";$("adminList").replaceChildren();
+ setAdminBadge(teachers.filter(t=>t.seat_request>0).length);
+ teachers.sort((a,b)=>(b.seat_request>0)-(a.seat_request>0));
  teachers.forEach(t=>{
   const used=counts.filter(x=>x.teacher_id===t.id).length;
   const wrap=document.createElement("div");wrap.className="row";
@@ -497,16 +506,26 @@ async function renderAdmin(role){
   const detail=document.createElement("div");detail.className="muted";detail.textContent=used+" élève(s) · "+(t.role==="admin"?"Administrateur":"Enseignant");
   info.append(name,detail);
   const actions=document.createElement("div");actions.className="actions";actions.style.marginTop="0";
+  if(t.seat_request>0){
+   const alert=document.createElement("div");alert.className="seat-alert";alert.textContent="⚠️ Demande : +"+t.seat_request+" élève(s)"+(t.seat_request_at?" (le "+frDate(t.seat_request_at)+")":"")+" · quota actuel "+t.student_limit;info.append(alert);
+   const grant=document.createElement("button");grant.textContent="Accorder +"+t.seat_request;
+   const refuse=document.createElement("button");refuse.className="secondary";refuse.textContent="Refuser";
+   const decide=async(ok)=>{const limit=ok?Math.min(10000,t.student_limit+t.seat_request):t.student_limit;grant.disabled=refuse.disabled=true;
+    const {error}=await client.from("teachers").update({student_limit:limit,seat_request:null,seat_request_at:null}).eq("id",t.id);
+    grant.disabled=refuse.disabled=false;
+    if(error)msg("adminMsg",errorText(error),true);else{adminNotice=ok?"Demande accordée : "+(t.email||"ce compte")+" passe à "+limit+" élèves.":"Demande refusée pour "+(t.email||"ce compte")+".";await refresh();}};
+   grant.onclick=()=>decide(true);refuse.onclick=()=>decide(false);actions.append(grant,refuse);
+  }
   const input=document.createElement("input");input.type="number";input.min=String(used);input.max="10000";input.step="1";input.value=String(t.student_limit);input.setAttribute("aria-label","Quota pour "+(t.email||"ce compte"));input.style.width="95px";
   const button=document.createElement("button");button.textContent="Enregistrer";
   button.onclick=async()=>{
    const limit=Number(input.value);
    if(!Number.isSafeInteger(limit)||limit<used||limit>10000){msg("adminMsg","Le quota doit être un entier entre "+used+" et 10 000.",true);return;}
    button.disabled=true;
-   const {error}=await client.from("teachers").update({student_limit:limit}).eq("id",t.id);
+   const {error}=await client.from("teachers").update({student_limit:limit,seat_request:null,seat_request_at:null}).eq("id",t.id);
    button.disabled=false;
    if(error)msg("adminMsg",errorText(error),true);
-   else{msg("adminMsg","Quota enregistré pour "+(t.email||"ce compte")+".");await refresh();}
+   else{adminNotice="Quota enregistré pour "+(t.email||"ce compte")+".";await refresh();}
   };
   actions.append(input,button);wrap.append(info,actions);$("adminList").append(wrap);
  });
