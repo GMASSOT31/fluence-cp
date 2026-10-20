@@ -77,6 +77,7 @@ main{max-width:1050px}
    <button type="button" data-tab="ecouter">À écouter</button>
    <button type="button" data-tab="progression">Progression</button>
    <button type="button" data-tab="reglages">Réglages</button>
+   <button type="button" data-tab="enseignants" id="teachersAdminTab" class="hidden">Enseignants</button>
    <button type="button" id="navQuit">Quitter</button>
   </nav>
   <p id="spaceMsg" class="msg" role="status"></p>
@@ -117,8 +118,8 @@ main{max-width:1050px}
  <h3 style="margin-top:24px">Boutique des pièces d'or</h3><label>Prix de trois parties supplémentaires<input id="packPrice" type="number" min="1" max="500" value="10" required></label>
  <div class="actions"><button type="submit">Enregistrer les réglages</button></div></form><p id="settingsMsg" class="msg"></p></section>
  <p class="teacher-footnote">☁️ Les progressions du Zoo connecté sont enregistrées sur Supabase. Les anciennes données locales ne sont pas importées automatiquement.</p>
-</section>
-<section class="panel hidden" id="adminPanel"><h2>🛡️ Administration de Zoo de Lecture</h2><p class="muted">Comptes enseignants inscrits et quotas d'élèves. Les modifications sont enregistrées sur le serveur.</p><div id="adminList"></div><p id="adminMsg" class="msg" role="status"></p></section></main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script><script>
+<section class="panel hidden" data-section="enseignants" id="adminPanel"><h2>🛡️ Administration de Zoo de Lecture</h2><p class="muted">Comptes enseignants inscrits et quotas d'élèves. Les modifications sont enregistrées sur le serveur.</p><div id="adminList"></div><p id="adminMsg" class="msg" role="status"></p></section>
+</section></main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script><script>
 (function(){
 "use strict";
 const client=window.supabase.createClient("https://pcxpazpflnlwmhyuozdx.supabase.co","sb_publishable_j65mDpDNsuwwaL6uRjsMtA_U_OXQXlL");
@@ -140,7 +141,8 @@ async function refresh(){
  client.from("students").select("id,nickname,class_id,pin_hash").order("created_at")]);
  if(profile.error||classes.error||students.error){const reason=errorText(profile.error||classes.error||students.error);msg("spaceMsg","Impossible de charger les données : "+reason,true);$("classRoster").textContent="Erreur de chargement : "+reason;return;}
  msg("spaceMsg","");
- $("adminPanel").classList.toggle("hidden",profile.data.role!=="admin");
+ $("teachersAdminTab").classList.toggle("hidden",profile.data.role!=="admin");
+ if(profile.data.role!=="admin"&&activeTab==="enseignants")activeTab="eleves";
  renderAdmin(profile.data.role).catch(e=>msg("adminMsg",errorText(e),true));
  allStudents=students.data;allClasses=classes.data;
  const settings=await client.from("teacher_zoo_settings").select("settings").eq("teacher_id",currentUser.id).maybeSingle();
@@ -282,7 +284,7 @@ $("logout").onclick=async()=>{await client.auth.signOut();await refresh()};
 $("classForm").onsubmit=e=>{e.preventDefault();busy("classForm",async()=>{const name=$("className").value.trim();if(!name||!currentUser)return;const {error}=await client.from("classes").insert({teacher_id:currentUser.id,name});if(error)msg("spaceMsg",errorText(error),true);else{$("className").value="";await refresh()}})};
 $("studentForm").onsubmit=e=>{e.preventDefault();busy("addStudent",async()=>{if(!currentUser)return;const {error}=await client.from("students").insert({teacher_id:currentUser.id,class_id:$("classSelect").value,nickname:$("nickname").value.trim()});if(error)msg("spaceMsg",errorText(error),true);else{$("nickname").value="";await refresh()}})};
 async function renderAdmin(role){
- const panel=$("adminPanel");panel.classList.toggle("hidden",role!=="admin");if(role!=="admin")return;
+ const panel=$("adminPanel");if(role!=="admin")return;
  const {data:teachers,error}=await client.from("teachers").select("id,email,display_name,student_limit,role").order("created_at",{ascending:false});
  if(error){msg("adminMsg",errorText(error),true);return;}
  const {data:counts,error:countError}=await client.from("students").select("teacher_id");
