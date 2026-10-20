@@ -63,6 +63,56 @@ main{max-width:1050px}
   @media (max-width: 650px) { header .zoo-hero { padding: 19px 17px; min-height: 153px; } header .zoo-hero-art { flex-basis: 92px; height: 115px; } header .zoo-mascot { width: 55px; height: 55px; font-size: 2.15rem; border-radius: 16px; } header .zoo-bee { left: 0; top: 3px; } header .zoo-llama { left: 30px; top: 50px; } header .zoo-owl { right: -7px; top: 0; } header .zoo-pad { display: none; } header .zoo-kicker { font-size: .59rem; } header .zoo-hero-tag { font-size: .68rem; padding: 5px 8px; } }
   @media (max-width: 390px) { header .zoo-hero-art { display: none; } }
   @media (prefers-reduced-motion: no-preference) { header .zoo-bee { animation: zoo-float 3s ease-in-out infinite; } header .zoo-llama { animation: zoo-float 3.6s ease-in-out -1.2s infinite; } @keyframes zoo-float { 0%,100% { translate: 0 0; } 50% { translate: 0 -8px; } } }
+
+/* Mode enseignant : bandeau fin + menu latéral (comme l'espace élève) */
+.banner-user{display:none}
+body.teacher-mode main{max-width:1240px;margin:0 auto;padding:0 18px 30px}
+body.teacher-mode header.hero{position:sticky;top:0;z-index:30;background:#f2f4f8;padding:8px 0 10px}
+body.teacher-mode header .zoo-hero{min-height:0;padding:9px 18px;border-radius:18px;gap:14px}
+body.teacher-mode header .zoo-hero h1{font-size:clamp(1.35rem,2.4vw,1.9rem);line-height:1.1}
+body.teacher-mode header .zoo-hero .brand .sub{font-size:.76rem;margin-top:2px}
+body.teacher-mode header .zoo-kicker,body.teacher-mode header .zoo-hero-tag,body.teacher-mode header .zoo-pad,body.teacher-mode header .zoo-star{display:none}
+body.teacher-mode header .zoo-hero-art{flex:0 0 230px;height:150px;transform:scale(.46);margin:-40px -62px}
+body.teacher-mode .banner-user{display:flex;align-items:center;gap:10px;position:relative;z-index:2;min-width:0}
+.banner-user #who{color:#e9e4ff;font-size:.85rem;font-weight:700;max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.banner-user a,.banner-user button{display:inline-flex;align-items:center;padding:9px 13px;border-radius:12px;font-weight:800;font-size:.88rem;text-decoration:none;white-space:nowrap}
+.banner-user a{background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.45)}
+.banner-user button{background:#fff;color:#2b1f5c;border:0}
+body.teacher-mode .teacher-space{grid-template-columns:272px minmax(0,1fr);align-items:start;margin-top:14px}
+.teacher-content{display:grid;gap:20px;min-width:0}
+.teacher-content>.msg:empty{display:none}
+body.teacher-mode .teacher-header{position:sticky;top:126px;padding:16px;border:2px solid #dfe3ec;border-radius:20px;background:#fff}
+.side-title{font:700 .78rem/1.2 Figtree,system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#7b8394;margin:2px 4px 10px}
+body.teacher-mode .teacher-header .teacher-nav{display:flex;flex-direction:column;gap:6px;margin:0}
+body.teacher-mode .teacher-header .teacher-nav button{display:flex;align-items:center;gap:11px;width:100%;text-align:left;padding:11px 12px;border-radius:14px;font-weight:750;font-size:1rem;color:#1b2433;background:transparent;border:2px solid transparent}
+body.teacher-mode .teacher-header .teacher-nav button:hover:not(.active){background:#f2f4f8}
+body.teacher-mode .teacher-header .teacher-nav button.active{background:#1b2433;color:#fff}
+.nav-ico{display:grid;place-items:center;width:34px;height:34px;flex:0 0 34px;border-radius:11px;background:#f2eefe;font-size:1.15rem}
+.teacher-nav button.active .nav-ico{background:rgba(255,255,255,.14)}
+.nav-label{flex:1;min-width:0}
+.nav-badge{min-width:22px;height:22px;padding:0 7px;border-radius:999px;background:#e5484d;color:#fff;font-size:.78rem;font-weight:800;display:inline-grid;place-items:center}
+.nav-badge.hidden{display:none}
+body.teacher-mode .quota-tag{display:block;margin:14px 2px 0;font-size:.85rem;text-align:center}
+@media(max-width:900px){
+ body.teacher-mode .teacher-space{grid-template-columns:minmax(0,1fr)}
+ body.teacher-mode .teacher-header{position:sticky;top:84px;z-index:20;padding:8px;border-radius:16px}
+ body.teacher-mode .side-title,body.teacher-mode .quota-tag{display:none}
+ body.teacher-mode .teacher-header .teacher-nav{flex-direction:row;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+ body.teacher-mode .teacher-header .teacher-nav::-webkit-scrollbar{display:none}
+ body.teacher-mode .teacher-header .teacher-nav button{width:auto;flex:0 0 auto;padding:8px 12px;font-size:.92rem}
+ body.teacher-mode .nav-ico{width:28px;height:28px;flex-basis:28px;font-size:1rem}
+ body.teacher-mode header .zoo-hero-art{display:none}
+ .banner-user #who{display:none}
+}
+@media(max-width:560px){
+ body.teacher-mode header .zoo-hero .brand .sub{display:none}
+ body.teacher-mode .teacher-header .teacher-nav{flex-wrap:nowrap}
+ body.teacher-mode .teacher-header .teacher-nav .nav-ico{display:none}
+ .banner-user a,.banner-user button{padding:8px 10px;font-size:.8rem}
+ .banner-user .bu-label{display:none}
+ body.teacher-mode header .zoo-hero{padding:8px 12px}
+ body.teacher-mode header .zoo-hero h1{font-size:1.2rem;white-space:nowrap}
+}
 </style></head><body><main><header class="hero">    <div class="zoo-hero">
       <div class="zoo-hero-copy">
         <span class="zoo-kicker">✦ LE GRAND JEU DE LA LECTURE ✦</span>
@@ -70,26 +120,27 @@ main{max-width:1050px}
         <span class="zoo-hero-tag">⭐ Lis · 🏆 Progresse · 🎮 Joue !</span>
       </div>
       <div class="zoo-hero-art" aria-hidden="true"><span class="zoo-star zoo-star-one">✦</span><span class="zoo-mascot zoo-bee">🐝</span><span class="zoo-mascot zoo-llama">🦙</span><span class="zoo-mascot zoo-owl">🦉</span><span class="zoo-star zoo-star-two">✧</span><span class="zoo-pad">✚ <span>● ●</span></span></div>
+      <div class="banner-user" id="bannerUser"><span id="who"></span><a href="eleve.html" id="toStudent" title="Espace élève"><span aria-hidden="true">🎒</span><span class="bu-label">&nbsp;Espace élève</span></a><button id="logout" class="secondary" type="button">Déconnexion</button></div>
     </div>
 </header>
 <section class="panel" id="auth"><h2>Créer un compte ou se connecter</h2><p class="muted"><strong>Tu es élève ?</strong> <a href="eleve.html" id="authToStudent">Entre ici avec ton code de classe et ton PIN.</a></p><p class="muted">Inscription libre. Chaque compte dispose de 10 places d'élèves par défaut.</p>
 <form id="authForm"><label for="email">Adresse e-mail professionnelle ou personnelle</label><input id="email" type="email" autocomplete="email" required maxlength="254"><label for="password">Mot de passe (au moins 8 caractères)</label><input id="password" type="password" autocomplete="new-password" minlength="8" required><div class="actions"><button id="signup" type="button">Créer mon compte</button><button id="signin" type="submit" class="secondary">Me connecter</button><button id="reset" type="button" class="secondary">Mot de passe oublié</button></div></form><p class="msg" id="authMsg" role="status"></p></section>
 <section class="panel hidden" id="recovery"><h2>🔒 Choisis ton nouveau mot de passe</h2><p class="muted" id="recoveryWho">Tu es arrivée ici par le lien de l’e-mail « Mot de passe oublié ».</p><form id="recoveryForm"><label for="newPassword">Nouveau mot de passe (au moins 8 caractères)</label><input id="newPassword" type="password" autocomplete="new-password" minlength="8" maxlength="72" required><label for="newPassword2">Écris-le une deuxième fois</label><input id="newPassword2" type="password" autocomplete="new-password" minlength="8" maxlength="72" required><div class="actions"><button id="recoverySave" type="submit">Enregistrer mon nouveau mot de passe</button></div></form><p class="msg" id="recoveryMsg" role="status"></p></section>
 <section class="hidden teacher-space" id="space">
- <div class="panel teacher-header">
-  <div class="row"><div><h2 style="margin-bottom:3px">👩‍🏫 Mon espace enseignant</h2><span id="who" class="muted"></span></div><span><a href="eleve.html" id="toStudent" style="display:inline-block;padding:10px 14px;margin-right:8px;border-radius:12px;text-decoration:none;font-weight:700;background:#ede9fe;color:#5b21b6">🎒 Espace élève</a><button id="logout" class="secondary" type="button">Déconnexion</button></span></div>
-  <p id="quota" class="tag quota-tag"></p>
+ <aside class="panel teacher-header" aria-label="Menu de l’espace enseignant">
+  <div class="side-title">👩‍🏫 Espace enseignant</div>
   <nav class="teacher-nav" aria-label="Rubriques de l'espace enseignant">
-   <button type="button" class="active" data-tab="eleves">Mes classes</button>
-   <button type="button" data-tab="ecouter">À écouter</button>
-   <button type="button" data-tab="progression">Progression</button>
-   <button type="button" data-tab="reglages">Réglages péda</button>
-   <button type="button" data-tab="general">Réglages généraux</button>
-   <button type="button" data-tab="enseignants" id="teachersAdminTab">Enseignants</button>
-   <button type="button" id="navQuit">Quitter</button>
+   <button type="button" class="active" data-tab="eleves"><span class="nav-ico" aria-hidden="true">📚</span><span class="nav-label">Mes classes</span></button>
+   <button type="button" data-tab="ecouter"><span class="nav-ico" aria-hidden="true">🎧</span><span class="nav-label">À écouter</span><span class="nav-badge hidden" id="listenBadge"></span></button>
+   <button type="button" data-tab="progression"><span class="nav-ico" aria-hidden="true">📈</span><span class="nav-label">Progression</span></button>
+   <button type="button" data-tab="reglages"><span class="nav-ico" aria-hidden="true">✏️</span><span class="nav-label">Réglages péda</span></button>
+   <button type="button" data-tab="general"><span class="nav-ico" aria-hidden="true">⚙️</span><span class="nav-label">Réglages généraux</span></button>
+   <button type="button" data-tab="enseignants" id="teachersAdminTab"><span class="nav-ico" aria-hidden="true">🛡️</span><span class="nav-label">Enseignants</span></button>
   </nav>
+  <p id="quota" class="tag quota-tag"></p>
+ </aside>
+ <div class="teacher-content">
   <p id="spaceMsg" class="msg" role="status"></p>
- </div>
 <section class="panel feature-card classes-card" id="classesSettings" data-section="eleves">
   <div class="section-head"><div class="section-icon">📚</div><div><h2>Mes classes</h2><p class="muted">Retrouve tes classes et leur code de connexion.</p></div></div>
   <div id="classes" class="content-list"></div>
@@ -129,6 +180,7 @@ main{max-width:1050px}
  </section>
  <p class="teacher-footnote">☁️ Les progressions du Zoo connecté sont enregistrées sur Supabase. Les anciennes données locales ne sont pas importées automatiquement.</p>
 <section class="panel hidden" data-section="enseignants" id="adminPanel"><h2>🛡️ Administration de Zoo de Lecture</h2><p class="muted">Comptes enseignants inscrits et quotas d'élèves. Les modifications sont enregistrées sur le serveur.</p><div id="adminList"></div><p id="adminMsg" class="msg" role="status"></p></section>
+</div>
 </section></main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script><script>
 (function(){
 "use strict";
@@ -174,7 +226,7 @@ async function refresh(){
  const {data:{user},error}=await client.auth.getUser();currentUser=error?null:user;
  $("recovery").classList.toggle("hidden",!(recoveryMode&&currentUser));
  if(recoveryMode&&currentUser){$("auth").classList.add("hidden");$("space").classList.add("hidden");$("recoveryWho").textContent="Compte : "+(currentUser.email||"")+". Choisis un nouveau mot de passe pour pouvoir te reconnecter.";return;}
- $("auth").classList.toggle("hidden",!!currentUser);$("space").classList.toggle("hidden",!currentUser);
+ $("auth").classList.toggle("hidden",!!currentUser);$("space").classList.toggle("hidden",!currentUser);document.body.classList.toggle("teacher-mode",!!currentUser);
  if(!currentUser)return;
  $("who").textContent=currentUser.email||"";
  const [profile,classes,students]=await Promise.all([
@@ -210,7 +262,7 @@ async function refresh(){
  $("students").replaceChildren();
  students.data.forEach(s=>{const c=classes.data.find(x=>x.id===s.class_id);const d=document.createElement("div");d.className="row";d.textContent="🧒 "+s.nickname+" · "+(c?c.name:"Classe inconnue")+" · "+(s.pin_hash?"PIN défini":"PIN à définir");if(s.teacher_id!==currentUser.id){d.textContent+=" · géré par un autre enseignant";$("students").append(d);return}const btn=document.createElement("button");btn.className="secondary";btn.style.marginLeft="12px";btn.textContent=s.pin_hash?"Changer PIN":"Définir PIN";btn.onclick=async()=>{const pin=prompt("PIN de 4 à 8 chiffres pour "+s.nickname+" :");if(pin===null)return;if(!/^[0-9]{4,8}$/.test(pin)){msg("spaceMsg","Le PIN doit contenir 4 à 8 chiffres.",true);return;}const {error}=await client.rpc("set_student_pin",{p_student:s.id,p_pin:pin});if(error)msg("spaceMsg",errorText(error),true);else{msg("spaceMsg","PIN enregistré pour "+s.nickname+".");await refresh()}};d.append(btn);$("students").append(d)});
  if(!students.data.length)$("students").textContent="Aucun élève pour le moment.";
- showTab(activeTab);
+ showTab(activeTab);refreshListenBadge().catch(()=>{});
  msg("spaceMsg",students.data.length+" élève(s) retrouvé(s) dans "+classes.data.length+" classe(s) pour ce compte enseignant.");
  }catch(e){msg("spaceMsg","Erreur technique pendant le chargement : "+errorText(e),true);console.error("Zoo enseignant refresh",e);}
 }
@@ -238,7 +290,6 @@ function showTab(tab){
  if(tab==="ecouter")renderRecordings();if(tab==="general"&&currentUser)loadPendingRewards();
 }
 document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
-$("navQuit").onclick=()=>client.auth.signOut().then(refresh);
 $("generatePins").onclick=async()=>{
  const missing=allStudents.filter(s=>!s.pin_hash);if(!missing.length){$("generatedPins").textContent="Tous les élèves possèdent déjà un PIN.";return;}
  if(!confirm("Créer "+missing.length+" codes PIN ? Note-les avant de quitter cette page."))return;
@@ -257,13 +308,15 @@ $("zooSettingsForm").onsubmit=async ev=>{
  const {error}=await client.from("teacher_zoo_settings").upsert({teacher_id:currentUser.id,settings,updated_at:new Date().toISOString()});
  msg("settingsMsg",error?errorText(error):"Réglages enregistrés. Ils seront appliqués à la prochaine connexion des élèves.",!!error);
 };
+function setListenBadge(n){const b=$("listenBadge");if(!b)return;b.textContent=n>99?"99+":String(n);b.classList.toggle("hidden",!n);b.setAttribute("aria-label",n+" lecture(s) à écouter")}
+async function refreshListenBadge(){const {data,error}=await client.from("student_progress").select("progress");if(error)return;setListenBadge((data||[]).reduce((n,row)=>n+(Array.isArray(row.progress?.reviews)?row.progress.reviews.length:0),0))}
 async function renderRecordings(){
  const list=$("recordingsList");list.textContent="Chargement…";
  const {data,error}=await client.from("student_progress").select("student_id,progress");
  if(error){list.textContent=errorText(error);return;}
  const recordings=[];
  (data||[]).forEach(row=>{const student=allStudents.find(s=>s.id===row.student_id);const p=row.progress||{};(Array.isArray(p.reviews)?p.reviews:[]).forEach(review=>recordings.push({student:student?.nickname||"Élève",review}))});
- list.replaceChildren();
+ list.replaceChildren();setListenBadge(recordings.length);
  if(!recordings.length){list.textContent="Aucune lecture à écouter enregistrée sur le serveur.";return;}
  recordings.forEach(({student,review})=>{const line=document.createElement("div");line.className="row";line.textContent=student+" · "+({s:"syllabes",m:"mots",t:"texte"}[review.kind]||"lecture")+" du son « "+(review.sound||"?")+" »"+(review.secs?" · "+review.secs+" s":"")+" · "+(review.ts?new Date(review.ts).toLocaleDateString("fr-FR"):"");list.append(line)});
 }
