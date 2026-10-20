@@ -4339,6 +4339,7 @@
       var link=document.createElement("a");link.href="eleve.html";link.textContent=" · Déconnexion";link.style.color="#ffe37c";link.onclick=function(ev){ev.preventDefault();logout()};bar.append(link);document.body.append(bar);
     } catch(e) {
       alert("Impossible de charger ton Zoo : "+(e.message||"session expirée")+". Reconnecte-toi.");
+      try{sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}catch(ignored){}
       location.replace("eleve.html");
     }
   }
