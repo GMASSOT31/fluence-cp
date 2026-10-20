@@ -1598,12 +1598,18 @@
     stopGame(); wheelCleanup(); abortRecording();
   }
   function logout() {
+    if(cloudMode){
+      if(cloudDirty&&!cloudConflict&&!cloudBusy)cloudFlush();
+      sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");
+      location.href="eleve.html";return;
+    }
     stopEverything();
     ses = { role: "none", sid: null, viaTeacher: false, unlocked: false, teacherAuth: false, mode: "live", goal: "train" };
     setMode();
     show("login");
   }
   function backToTeacher() {
+    if(cloudMode){location.href="enseignants.html";return;}
     if (!ses.teacherAuth) { toast("La maîtresse doit saisir son code pour revenir."); return; }
     stopEverything();
     ses.role = "teacher"; ses.sid = null; ses.viaTeacher = false; ses.unlocked = false;
@@ -1688,6 +1694,7 @@
     $(id).addEventListener("keydown", function (ev) { if (ev.key === "Enter") studentLogin(); });
   });
   $("btn-show-teacher").addEventListener("click", function () {
+    if(cloudMode){location.href="enseignants.html";return;}
     var create = !data.teacher;
     $("login-student").hidden = true; $("login-teacher").hidden = false;
     $("teacher-title").textContent = create ? "Crée ton code de maîtresse" : "Espace maîtresse";
@@ -4180,13 +4187,13 @@
       var bar=document.createElement("div");
       bar.id="cloud-status";bar.style.cssText="position:fixed;bottom:10px;left:10px;z-index:9999;background:#372465;color:white;border-radius:12px;padding:8px 12px;font:13px system-ui;box-shadow:0 3px 12px #0005";
       bar.append(document.createTextNode("☁️ Profil connecté · "+st.nickname));cloudStatusNode=bar;bar.dataset.nickname=st.nickname;
-      var link=document.createElement("a");link.href="eleve.html";link.textContent=" · Déconnexion";link.style.color="#ffe37c";link.onclick=function(){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name")};bar.append(link);document.body.append(bar);
+      var link=document.createElement("a");link.href="eleve.html";link.textContent=" · Déconnexion";link.style.color="#ffe37c";link.onclick=function(ev){ev.preventDefault();logout()};bar.append(link);document.body.append(bar);
     } catch(e) {
       alert("Impossible de charger ton Zoo : "+(e.message||"session expirée")+". Reconnecte-toi.");
       location.replace("eleve.html");
     }
   }
-  setMode();show("login");bootCloud();
+  if(!cloudMode){setMode();show("login");}bootCloud();
 })();
 </script>
 </body>
