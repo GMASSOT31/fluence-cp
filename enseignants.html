@@ -122,6 +122,7 @@ const $=id=>document.getElementById(id);let currentUser=null,allStudents=[],allC
 function msg(id,text,error){$(id).textContent=text||"";$(id).classList.toggle("err",!!error)}
 function errorText(e){return e&&e.message?e.message:"Une erreur est survenue."}
 async function refresh(){
+ try{
  const {data:{user},error}=await client.auth.getUser();currentUser=error?null:user;
  $("auth").classList.toggle("hidden",!!currentUser);$("space").classList.toggle("hidden",!currentUser);
  if(!currentUser)return;
@@ -130,7 +131,7 @@ async function refresh(){
  client.from("teachers").select("student_limit,role").eq("id",currentUser.id).single(),
  client.from("classes").select("id,name,school_year,access_code").order("created_at"),
  client.from("students").select("id,nickname,class_id,pin_hash").order("created_at")]);
- if(profile.error||classes.error||students.error){msg("spaceMsg","Impossible de charger les données : "+errorText(profile.error||classes.error||students.error),true);$("classRoster").textContent="Erreur de chargement. "+errorText(profile.error||classes.error||students.error);return;}
+ if(profile.error||classes.error||students.error){const reason=errorText(profile.error||classes.error||students.error);msg("spaceMsg","Impossible de charger les données : "+reason,true);$("classRoster").textContent="Erreur de chargement : "+reason;return;}
  msg("spaceMsg","");
  $("adminPanel").classList.toggle("hidden",profile.data.role!=="admin");
  renderAdmin(profile.data.role).catch(e=>msg("adminMsg",errorText(e),true));
@@ -153,12 +154,13 @@ async function refresh(){
    members.forEach(st=>{const line=document.createElement("div");line.className="row";const info=document.createElement("div");const strong=document.createElement("strong");strong.textContent=st.nickname;const status=document.createElement("div");status.className="muted";status.textContent=st.pin_hash?"Mot de passe défini":"Mot de passe à définir";info.append(strong,status);line.append(info);const change=document.createElement("button");change.type="button";change.className="secondary";change.textContent=st.pin_hash?"Changer PIN":"Définir PIN";change.onclick=async()=>{const pin=prompt("PIN de 4 à 8 chiffres pour "+st.nickname+" :");if(pin===null)return;if(!/^[0-9]{4,8}$/.test(pin)){msg("spaceMsg","PIN de 4 à 8 chiffres requis.",true);return;}const {error}=await client.rpc("set_student_pin",{p_student:st.id,p_pin:pin});if(error)msg("spaceMsg",errorText(error),true);else{msg("spaceMsg","PIN enregistré pour "+st.nickname);await refresh();}};line.append(change);roster.append(line);});
  });
  if(!classes.data.length)roster.textContent="Aucune classe créée.";
- await renderProgress(students.data,classes.data);
+ renderProgress(students.data,classes.data).catch(e=>msg("progressMsg","Erreur des statistiques : "+errorText(e),true));
  $("students").replaceChildren();
  students.data.forEach(s=>{const c=classes.data.find(x=>x.id===s.class_id);const d=document.createElement("div");d.className="row";d.textContent="🧒 "+s.nickname+" · "+(c?c.name:"Classe inconnue")+" · "+(s.pin_hash?"PIN défini":"PIN à définir");const btn=document.createElement("button");btn.className="secondary";btn.style.marginLeft="12px";btn.textContent=s.pin_hash?"Changer PIN":"Définir PIN";btn.onclick=async()=>{const pin=prompt("PIN de 4 à 8 chiffres pour "+s.nickname+" :");if(pin===null)return;if(!/^[0-9]{4,8}$/.test(pin)){msg("spaceMsg","Le PIN doit contenir 4 à 8 chiffres.",true);return;}const {error}=await client.rpc("set_student_pin",{p_student:s.id,p_pin:pin});if(error)msg("spaceMsg",errorText(error),true);else{msg("spaceMsg","PIN enregistré pour "+s.nickname+".");await refresh()}};d.append(btn);$("students").append(d)});
  if(!students.data.length)$("students").textContent="Aucun élève pour le moment.";
  showTab(activeTab);
  msg("spaceMsg",students.data.length+" élève(s) retrouvé(s) dans "+classes.data.length+" classe(s) pour ce compte enseignant.");
+ }catch(e){msg("spaceMsg","Erreur technique pendant le chargement : "+errorText(e),true);console.error("Zoo enseignant refresh",e);}
 }
 
 function showTab(tab){
