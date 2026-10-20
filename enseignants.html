@@ -77,7 +77,7 @@ main{max-width:1050px}
    <button type="button" data-tab="ecouter">À écouter</button>
    <button type="button" data-tab="progression">Progression</button>
    <button type="button" data-tab="reglages">Réglages</button>
-   <button type="button" data-tab="enseignants" id="teachersAdminTab" class="hidden">Enseignants</button>
+   <button type="button" data-tab="enseignants" id="teachersAdminTab">Enseignants</button>
    <button type="button" id="navQuit">Quitter</button>
   </nav>
   <p id="spaceMsg" class="msg" role="status"></p>
@@ -141,8 +141,8 @@ async function refresh(){
  client.from("students").select("id,nickname,class_id,pin_hash").order("created_at")]);
  if(profile.error||classes.error||students.error){const reason=errorText(profile.error||classes.error||students.error);msg("spaceMsg","Impossible de charger les données : "+reason,true);$("classRoster").textContent="Erreur de chargement : "+reason;return;}
  msg("spaceMsg","");
- $("teachersAdminTab").classList.toggle("hidden",profile.data.role!=="admin");
- if(profile.data.role!=="admin"&&activeTab==="enseignants")activeTab="eleves";
+ $("teachersAdminTab").classList.remove("hidden");
+
  renderAdmin(profile.data.role).catch(e=>msg("adminMsg",errorText(e),true));
  allStudents=students.data;allClasses=classes.data;
  const settings=await client.from("teacher_zoo_settings").select("settings").eq("teacher_id",currentUser.id).maybeSingle();
@@ -284,7 +284,7 @@ $("logout").onclick=async()=>{await client.auth.signOut();await refresh()};
 $("classForm").onsubmit=e=>{e.preventDefault();busy("classForm",async()=>{const name=$("className").value.trim();if(!name||!currentUser)return;const {error}=await client.from("classes").insert({teacher_id:currentUser.id,name});if(error)msg("spaceMsg",errorText(error),true);else{$("className").value="";await refresh()}})};
 $("studentForm").onsubmit=e=>{e.preventDefault();busy("addStudent",async()=>{if(!currentUser)return;const {error}=await client.from("students").insert({teacher_id:currentUser.id,class_id:$("classSelect").value,nickname:$("nickname").value.trim()});if(error)msg("spaceMsg",errorText(error),true);else{$("nickname").value="";await refresh()}})};
 async function renderAdmin(role){
- const panel=$("adminPanel");if(role!=="admin")return;
+ const panel=$("adminPanel");if(role!=="admin"){$("adminList").textContent="La gestion des comptes enseignants est réservée à l’administrateur.";return;}
  const {data:teachers,error}=await client.from("teachers").select("id,email,display_name,student_limit,role").order("created_at",{ascending:false});
  if(error){msg("adminMsg",errorText(error),true);return;}
  const {data:counts,error:countError}=await client.from("students").select("teacher_id");
