@@ -3404,7 +3404,25 @@
     card.appendChild(row);
     return card;
   }
+  var shopSettingsRefreshing=false,shopSettingsChecked=0;
+  async function refreshShopSettings(){
+    if(!cloudToken||shopSettingsRefreshing||Date.now()-shopSettingsChecked<3000)return;
+    shopSettingsRefreshing=true;shopSettingsChecked=Date.now();
+    try{
+      var res=await cloudClient.rpc("student_get_teacher_settings",{p_token:cloudToken});
+      if(res.error)throw res.error;
+      var settings=res.data||{};
+      if(Array.isArray(settings.rewards)){
+        var previous=JSON.stringify(data.shop.rewards);
+        data.shop.rewards=settings.rewards;
+        if(previous!==JSON.stringify(data.shop.rewards)&&ses.role==="student"&&document.getElementById("boutique-body"))renderBoutique();
+      }
+      if(Number.isInteger(settings.packPrice)&&settings.packPrice>0)data.shop.packPrice=settings.packPrice;
+    }catch(err){console.warn("Actualisation boutique",err);}
+    finally{shopSettingsRefreshing=false;}
+  }
   function renderBoutique() {
+    if(cloudToken)refreshShopSettings();
     var body = $("boutique-body");
     body.innerHTML = "";
     var sid = ses.sid;
