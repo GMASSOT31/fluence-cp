@@ -762,6 +762,32 @@
   @media (prefers-reduced-motion: reduce) {
     #v-jeux .arcade-sign .a-bulbs i { animation: none; }
   }
+
+  /* Lecture : mode concentration (bandeau fin, texte qui tient dans l'écran) */
+  body.reading-focus #panel-left, body.reading-focus #panel-right { display: none !important; }
+  body.reading-focus #cloud-status, body.reading-focus #bottom-nav { display: none !important; }
+  body.reading-focus main { padding-bottom: 12px !important; }
+  body.reading-focus .layout { grid-template-columns: minmax(0, 1fr) !important; }
+  body.reading-focus #session > .card:first-child { display: grid; grid-template-columns: minmax(110px, auto) minmax(0, 1fr) auto; grid-template-areas: "who trail timer" "inst inst ctrl"; align-items: center; gap: 2px 18px; padding: 10px 18px; margin-bottom: 10px; }
+  body.reading-focus #session .timer-row { display: contents; }
+  body.reading-focus #session .timer-row > div:first-child { grid-area: who; min-width: 0; }
+  body.reading-focus #session .timer-row .who { font-size: .95rem; }
+  body.reading-focus #session .timer-row .muted { font-size: .8rem; line-height: 1.25; }
+  body.reading-focus #session .timer { grid-area: timer; font-size: clamp(1.9rem, 4vw, 2.6rem); }
+  body.reading-focus #session .trail { grid-area: trail; height: 38px; margin: 0; }
+  body.reading-focus #session .trail .dots { bottom: 4px; }
+  body.reading-focus #session .trail .dot { width: 9px; height: 9px; }
+  body.reading-focus #session .walker { bottom: 8px; font-size: 1.6rem; }
+  body.reading-focus #session .goal { bottom: 8px; font-size: 1.3rem; }
+  body.reading-focus #session .instruction { grid-area: inst; font-size: .9rem; margin: 0; min-height: 0; }
+  body.reading-focus #session #controls { grid-area: ctrl; justify-content: flex-end; flex-wrap: nowrap; gap: 8px; margin: 0; }
+  body.reading-focus #session #controls button { padding: 9px 16px; }
+  body.reading-focus #text-card { padding-top: 8px; padding-bottom: 8px; overflow-y: auto; }
+  body.reading-focus #text-card .text { margin-top: 0; }
+  @media (max-width: 700px) {
+    body.reading-focus #session > .card:first-child { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "who timer" "trail trail" "inst inst" "ctrl ctrl"; }
+    body.reading-focus #session #controls { justify-content: flex-start; flex-wrap: wrap; }
+  }
 </style>
 </head>
 <body>
@@ -2036,6 +2062,25 @@
     if (S.phase === "ending") t = S.mode === "end" ? "Touche le dernier élément lu par l’élève." : "Touche un élément pour marquer ou retirer une erreur.";
     $("instruction").textContent = t;
   }
+  /* Mode concentration : pendant la lecture, la page se réduit à la lecture et le texte tient dans l'écran */
+  var FOCUS_PHASES = ["ready", "running", "ending"];
+  function fitReadingText() {
+    var card = $("text-card"), txt = $("text");
+    if (!document.body.classList.contains("reading-focus") || !card || card.hidden) { if (card) card.style.maxHeight = ""; if (txt) txt.style.fontSize = ""; return; }
+    txt.style.fontSize = ""; card.style.maxHeight = "";
+    var avail = window.innerHeight - card.getBoundingClientRect().top - 12;
+    if (avail < 160) return;
+    var size = parseFloat(getComputedStyle(txt).fontSize), min = 22;
+    while (card.scrollHeight > avail && size > min) { size -= 2; txt.style.fontSize = size + "px"; }
+    card.style.maxHeight = avail + "px";
+  }
+  function setReadingFocus(p) {
+    var on = FOCUS_PHASES.indexOf(p) >= 0, was = document.body.classList.contains("reading-focus");
+    document.body.classList.toggle("reading-focus", on);
+    if (on && !was) { var s = $("session"); if (s) { var top = s.getBoundingClientRect().top + window.pageYOffset - (document.querySelector("header") ? document.querySelector("header").offsetHeight + 8 : 0); window.scrollTo(0, Math.max(0, top)); } }
+    setTimeout(fitReadingText, 30);
+  }
+  var fitTimer = null; window.addEventListener("resize", function () { clearTimeout(fitTimer); fitTimer = setTimeout(fitReadingText, 120); });
   function setPhase(p) {
     S.phase = p;
     $("btn-start").hidden = p !== "ready";
@@ -2050,6 +2095,7 @@
     $("result").hidden = p !== "result";
     $("rec-done").hidden = p !== "recdone";
     setInstruction();
+    setReadingFocus(p);
   }
 
   $("btn-open").addEventListener("click", function () {
