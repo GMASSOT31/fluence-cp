@@ -139,7 +139,7 @@ async function refresh(){
  if(!settings.error&&settings.data){const cfg=settings.data.settings||{};const t=cfg.thr||{};$("thrS").value=t.s??25;$("thrM").value=t.m??20;$("thrT").value=t.t??15;$("lockSounds").checked=cfg.lock??true;$("rewardMode").checked=cfg.reward??true;$("soundEffects").checked=cfg.sfx??true;$("maxPlays").value=cfg.maxPlays??6;$("packPrice").value=cfg.packPrice??10;}
  const limit=profile.data.student_limit;const used=students.data.length;
  $("quota").textContent=used+" / "+limit+" élèves inscrits"+(profile.data.role==="admin"?" · Administrateur":"");
- $("adminShortcut").classList.toggle("hidden",profile.data.role!=="admin");
+
  $("addStudent").disabled=used>=limit||classes.data.length===0;
  $("classSelect").replaceChildren();
  $("classes").replaceChildren();
@@ -150,7 +150,7 @@ async function refresh(){
    const heading=document.createElement("h3");heading.textContent="📚 "+c.name+" · "+(c.access_code||"Code indisponible");roster.append(heading);
    const members=students.data.filter(s=>s.class_id===c.id);
    if(!members.length){const empty=document.createElement("p");empty.className="muted";empty.textContent="Aucun élève dans cette classe.";roster.append(empty);}
-   members.forEach(st=>{const line=document.createElement("div");line.className="row";const info=document.createElement("div");const strong=document.createElement("strong");strong.textContent=st.nickname;const status=document.createElement("div");status.className="muted";status.textContent=st.pin_hash?"Mot de passe défini":"Mot de passe à définir";info.append(strong,status);line.append(info);roster.append(line);});
+   members.forEach(st=>{const line=document.createElement("div");line.className="row";const info=document.createElement("div");const strong=document.createElement("strong");strong.textContent=st.nickname;const status=document.createElement("div");status.className="muted";status.textContent=st.pin_hash?"Mot de passe défini":"Mot de passe à définir";info.append(strong,status);line.append(info);const change=document.createElement("button");change.type="button";change.className="secondary";change.textContent=st.pin_hash?"Changer PIN":"Définir PIN";change.onclick=async()=>{const pin=prompt("PIN de 4 à 8 chiffres pour "+st.nickname+" :");if(pin===null)return;if(!/^[0-9]{4,8}$/.test(pin)){msg("spaceMsg","PIN de 4 à 8 chiffres requis.",true);return;}const {error}=await client.rpc("set_student_pin",{p_student:st.id,p_pin:pin});if(error)msg("spaceMsg",errorText(error),true);else{msg("spaceMsg","PIN enregistré pour "+st.nickname);await refresh();}};line.append(change);roster.append(line);});
  });
  if(!classes.data.length)roster.textContent="Aucune classe créée.";
  await renderProgress(students.data,classes.data);
@@ -163,7 +163,7 @@ async function refresh(){
 
 function showTab(tab){
  activeTab=tab;
- document.querySelectorAll("[data-section]").forEach(el=>el.classList.toggle("hidden",el.dataset.section!==tab));
+ document.querySelectorAll("[data-section]").forEach(el=>el.classList.toggle("hidden",el.dataset.section!==tab || el.id==="pinSettings"));
  document.querySelectorAll("[data-tab]").forEach(el=>el.classList.toggle("active",el.dataset.tab===tab));
  if(tab==="ecouter")renderRecordings();
 }
