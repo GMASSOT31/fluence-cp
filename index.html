@@ -1698,7 +1698,9 @@
   }
   function contentOf(sound, kind) {
     var key = kind + ":" + sound;
-    if (Object.prototype.hasOwnProperty.call(data.texts, key)) return data.texts[key];
+    var own = Object.prototype.hasOwnProperty.call(data.texts, key) ? data.texts[key] : null;
+    /* un exercice enregistré vide reprend le contenu d’origine (sinon la progression s’arrête) */
+    if (typeof own === "string" && own.trim()) return own;
     return DEFAULTS[key] || "";
   }
   function hasContent(sound, kind) { return parseItems(contentOf(sound, kind)).words.length > 0; }
