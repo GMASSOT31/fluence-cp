@@ -144,6 +144,7 @@
   .cell { width: 100%; min-height: 48px; padding: 6px 8px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--card); color: var(--muted); font-weight: 700; font-size: 1.05rem; font-variant-numeric: tabular-nums; }
   .cell.try { color: var(--ink); }
   .cell.ok { background: var(--ok-bg); border-color: var(--ok); color: var(--ok); }
+  .cell.pass { background: #f1faf4; border-color: #9fd3b2; border-style: dashed; color: #2f7a4f; }
   .cell:hover { border-color: var(--ink); }
   .nocontent { color: var(--muted); font-size: 0.85rem; }
   .legend { display: flex; gap: 14px; flex-wrap: wrap; color: var(--muted); font-size: 0.9rem; margin-top: 10px; }
@@ -788,6 +789,11 @@
     body.reading-focus #session > .card:first-child { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "who timer" "trail trail" "inst inst" "ctrl ctrl"; }
     body.reading-focus #session #controls { justify-content: flex-start; flex-wrap: wrap; }
   }
+  @media (max-width: 880px) {
+    #cloud-status { bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !important; left: 8px !important; font-size: 11px !important; padding: 5px 9px !important; border-radius: 10px !important; opacity: .92; }
+  }
+  .quote-card { text-align: center; padding: 16px 20px; }
+  .quote-card blockquote { margin: 0; font-size: 1.15rem; font-weight: 700; line-height: 1.45; color: var(--ink); font-style: italic; }
 </style>
 </head>
 <body>
@@ -806,7 +812,7 @@
       <div class="zoo-top-stat"><span aria-hidden="true">🎮</span><strong id="top-games">0</strong><small>Parties</small></div>
       <div class="zoo-top-stat"><span id="top-animal" aria-hidden="true">🥚</span><strong id="top-level">N0</strong><small>Niveau</small></div>
     </div>
-    <nav id="nav" aria-label="Espace de la maîtresse" hidden>
+    <nav id="nav" aria-label="Espace du maître(sse)" hidden>
       <button type="button" data-view="eleves">Élèves</button>
       <button type="button" data-view="ecoute">À écouter<span class="badge-n" id="badge-rec" hidden></span></button>
       <button type="button" data-view="progression">Progression</button>
@@ -821,7 +827,7 @@
         <div class="avatar-profile"><button type="button" class="avatar-trigger" id="btn-avatar" aria-label="Choisir mon avatar" title="Personnaliser mon avatar"><span id="pl-avatar" aria-hidden="true">🧑</span><span class="avatar-edit" aria-hidden="true">✎</span></button><div class="avatar-profile-name"><div class="who-name" id="pl-name"></div><span class="avatar-hint">Touche ton avatar pour le changer</span></div></div>
         <div class="row">
           <button type="button" class="ghost-sm" id="btn-logout">Me déconnecter</button>
-          <button type="button" class="ghost-sm" id="btn-back-teacher" hidden>Retour à la maîtresse</button>
+          <button type="button" class="ghost-sm" id="btn-back-teacher" hidden>Retour au maître(sse)</button>
         </div>
       </div>
       <div class="pcard stats">
@@ -852,13 +858,13 @@
       </div>
       <p class="bad-msg" id="login-msg" role="alert"></p>
       <button type="button" class="primary big-btn" id="btn-login">Entrer</button>
-      <p style="margin: 18px 0 0"><button type="button" class="link" id="btn-show-teacher">Espace maîtresse</button></p>
+      <p style="margin: 18px 0 0"><button type="button" class="link" id="btn-show-teacher">Espace maître(sse)</button></p>
     </div>
     <div class="card login-card" id="login-teacher" hidden>
-      <h2 id="teacher-title">Espace maîtresse</h2>
+      <h2 id="teacher-title">Espace maître(sse)</h2>
       <p class="hint" id="teacher-hint"></p>
       <div class="field">
-        <label for="in-teacher-code">Code de la maîtresse</label>
+        <label for="in-teacher-code">Code du maître(sse)</label>
         <input type="password" id="in-teacher-code" autocomplete="off" autocapitalize="none">
       </div>
       <div class="field" id="fld-teacher-code2" hidden>
@@ -891,15 +897,15 @@
       <div class="field" id="fld-mode" hidden>
         <label id="lb-mode">Comment passer l’évaluation ?</label>
         <span class="seg" id="seg-mode" role="group" aria-labelledby="lb-mode">
-          <button type="button" data-mode="live" aria-pressed="true">En présence de la maîtresse</button>
+          <button type="button" data-mode="live" aria-pressed="true">En présence du maître(sse)</button>
           <button type="button" data-mode="rec" aria-pressed="false">Par enregistrement</button>
         </span>
         <p class="hint" id="mode-hint"></p>
       </div>
       <div id="gate" hidden>
-        <p>La lecture se fait avec la maîtresse. Elle entre son mot de passe pour commencer.</p>
+        <p>La lecture se fait avec le maître(sse). Il ou elle entre son mot de passe pour commencer.</p>
         <div class="field">
-          <label for="in-gate">Mot de passe de la maîtresse</label>
+          <label for="in-gate">Mot de passe du maître(sse)</label>
           <input type="password" id="in-gate" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" data-lpignore="true">
         </div>
         <p class="bad-msg" id="gate-msg" role="alert"></p>
@@ -980,7 +986,7 @@
       <div class="card result" id="rec-done" hidden>
         <div class="big-emoji" aria-hidden="true">🎧</div>
         <p class="msg">Bravo ! Ta lecture est enregistrée.</p>
-        <p class="muted">La maîtresse va l’écouter. Tu auras ton score dès qu’elle l’aura fait.</p>
+        <p class="muted">Le maître(sse) va l’écouter. Tu auras ton score dès qu’il ou elle l’aura fait.</p>
         <button type="button" class="primary" id="btn-rec-back">Retour</button>
       </div>
     </div>
@@ -1065,7 +1071,7 @@
     </div>
   </section>
 
-  <!-- LECTURES À ÉCOUTER (maîtresse) -->
+  <!-- LECTURES À ÉCOUTER (maître(sse)) -->
   <section id="v-ecoute" hidden><div id="ecoute-body"></div></section>
 
   <!-- PROGRESSION -->
@@ -1097,7 +1103,7 @@
           <input type="number" id="in-thr-t" min="1" max="300" inputmode="numeric">
         </div>
       </div>
-      <p class="hint">Valeurs de départ à ajuster selon ta classe. Une étape est validée quand le meilleur score de l’élève atteint l’objectif.</p>
+      <p class="hint">Valeurs de départ à ajuster selon ta classe. Une étape est validée ✓ quand un entraînement enregistré atteint l’objectif (l’élève passe à la suite seul) et certifiée 🏅 quand une évaluation l’atteint (roue, animaux et niveau).</p>
     </div>
 
     <div class="card">
@@ -1108,7 +1114,7 @@
 
     <div class="card">
       <h2>Mode récompense</h2>
-      <label class="check" for="chk-reward"><input type="checkbox" id="chk-reward"> Une étape validée donne un lancer de roue : 1, 2 ou 3 parties de jeu, ou des pièces d’or. Un jeu réussi rapporte aussi une pièce</label>
+      <label class="check" for="chk-reward"><input type="checkbox" id="chk-reward"> Une étape certifiée 🏅 donne un lancer de roue : 1, 2 ou 3 parties de jeu, ou des pièces d’or. Un jeu réussi rapporte aussi une pièce</label>
       <label class="check" for="chk-sfx" style="margin-top: 14px"><input type="checkbox" id="chk-sfx"> Sons et voix pendant la roue (bruitages, annonce parlée en français)</label>
       <div class="field" style="max-width: 320px; margin-top: 14px; margin-bottom: 0">
         <label for="in-maxplays">Parties de jeu maximum par jour et par élève</label>
@@ -1118,7 +1124,7 @@
     </div>
 
     <div class="card">
-      <h2>Code de la maîtresse</h2>
+      <h2>Code du maître(sse)</h2>
       <p class="hint" style="margin-top:-4px">Il ouvre cet espace et valide les lectures. Il ne peut pas être retrouvé s’il est perdu : choisis-en un que tu retiendras.</p>
       <div class="row" style="align-items: flex-end">
         <div style="flex:1; min-width: 160px">
@@ -1139,7 +1145,7 @@
         <label for="in-packprice">Prix de 3 parties de jeu en plus (en pièces d’or)</label>
         <input type="number" id="in-packprice" min="1" max="500" inputmode="numeric">
       </div>
-      <p style="font-weight: 800; margin: 18px 0 6px">Récompenses de la maîtresse</p>
+      <p style="font-weight: 800; margin: 18px 0 6px">Récompenses du maître(sse)</p>
       <div id="shop-list"></div>
       <div class="row" style="margin-top: 12px; align-items: flex-end">
         <div style="width: 76px">
@@ -1476,7 +1482,7 @@
     }catch(err){console.warn("Records de la classe",err);}
     finally{classRecordsRefreshing=false;}
   }
-  /* Cadeau de la maîtresse : pièces en attente sur le serveur, récupérées ici sans conflit de sauvegarde */
+  /* Cadeau du maître(sse) : pièces en attente sur le serveur, récupérées ici sans conflit de sauvegarde */
   var giftsChecking = false, giftsChecked = 0;
   async function claimGifts(force) {
     if(!cloudToken||!cloudStudentId||cloudConflict||giftsChecking||(!force&&Date.now()-giftsChecked<10000))return;
@@ -1494,17 +1500,17 @@
       }
     }catch(e){
       if(String(e.message||"").includes("SYNC_CONFLICT"))showSyncConflict(cloudSnapshot());
-      else console.warn("Cadeau de la maîtresse",e);
+      else console.warn("Cadeau du maître(sse)",e);
     }finally{giftsChecking=false;}
   }
   function showGift(n) {
-    var text="🎁 Ta maîtresse t’a donné "+n+(n>1?" pièces d’or !":" pièce d’or !");
+    var text="🎁 Ton maître(sse) t’a donné "+n+(n>1?" pièces d’or !":" pièce d’or !");
     toast(text);
     var box=el("div","record-banner");box.id="gift-banner";box.setAttribute("role","status");
     box.style.cssText="position:fixed;left:50%;top:18%;transform:translateX(-50%);z-index:9998;cursor:pointer";
     box.appendChild(el("div","rb-title","Cadeau !"));
     var gl=el("div","rb-coins");gl.appendChild(coinEl());gl.appendChild(document.createTextNode(" +"+n+(n>1?" pièces d’or":" pièce d’or")));box.appendChild(gl);
-    box.appendChild(el("div","rb-prev","Ta maîtresse t’a fait un cadeau."));
+    box.appendChild(el("div","rb-prev","Ton maître(sse) t’a fait un cadeau."));
     var old=document.getElementById("gift-banner");if(old)old.remove();
     box.addEventListener("click",function(){box.remove();});
     document.body.appendChild(box);setTimeout(function(){box.remove();},6000);
@@ -1559,6 +1565,14 @@
     return m;
   }
   function isValid(sid, sound, kind) { var b = best(sid, sound, kind); return b !== null && b >= data.thr[kind]; }
+  /* Deux niveaux : « validée ✓ » par un entraînement enregistré qui atteint l’objectif (l’élève avance seul, sans récompense)
+     et « certifiée 🏅 » par une évaluation réussie avec le maître(sse) (isValid : roue, animaux, niveau affiché) */
+  function bestTrain(sid, sound, kind) {
+    var m = null;
+    data.results.forEach(function (r) { if (r.sid === sid && r.sound === sound && r.k === kind && r.src === "train" && (m === null || r.mclm > m)) m = r.mclm; });
+    return m;
+  }
+  function isPassed(sid, sound, kind) { if (isValid(sid, sound, kind)) return true; var b = bestTrain(sid, sound, kind); return b !== null && b >= data.thr[kind]; }
   function stepsList() {
     var out = [];
     data.sounds.forEach(function (s) { KINDS.forEach(function (k) { if (hasContent(s.id, k.k)) out.push({ sound: s.id, kind: k.k }); }); });
@@ -1566,7 +1580,7 @@
   }
   function availSounds() { return data.sounds.filter(function (s) { return KINDS.some(function (k) { return hasContent(s.id, k.k); }); }); }
   function soundValidated(sid, sound) {
-    return KINDS.some(function (k) { return hasContent(sound, k.k) && isValid(sid, sound, k.k); });
+    return KINDS.some(function (k) { return hasContent(sound, k.k) && isPassed(sid, sound, k.k); });
   }
   function hasAnyResult(sid, sound) {
     return data.results.some(function (r) { return r.sid === sid && r.sound === sound && r.src !== "train"; });
@@ -1586,7 +1600,7 @@
   function nextStep(sid) {
     var st = stepsList();
     for (var i = 0; i < st.length; i++) {
-      if (isUnlocked(sid, st[i].sound) && !isValid(sid, st[i].sound, st[i].kind)) return st[i];
+      if (isUnlocked(sid, st[i].sound) && !isPassed(sid, st[i].sound, st[i].kind)) return st[i];
     }
     return null;
   }
@@ -1622,7 +1636,7 @@
   }
   function kindVar(k) { return "var(--k-" + k + ")"; }
 
-  /* ---------- Connexion : élèves (prénom + mot de passe) et maîtresse (code) ---------- */
+  /* ---------- Connexion : élèves (prénom + mot de passe) et maître(sse) (code) ---------- */
   var ses = { role: "none", sid: null, viaTeacher: false, unlocked: false, teacherAuth: false, mode: "live", goal: "train" };
 
   function normName(t) { return String(t).trim().replace(/\s+/g, " ").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
@@ -1713,7 +1727,7 @@
   }
   function backToTeacher() {
     if(cloudMode){location.href="enseignants.html";return;}
-    if (!ses.teacherAuth) { toast("La maîtresse doit saisir son code pour revenir."); return; }
+    if (!ses.teacherAuth) { toast("Le maître(sse) doit saisir son code pour revenir."); return; }
     stopEverything();
     ses.role = "teacher"; ses.sid = null; ses.viaTeacher = false; ses.unlocked = false;
     setMode();
@@ -1786,7 +1800,7 @@
     if (!name.trim()) { msg.textContent = "Écris ton prénom."; return; }
     var st = findStudentByName(name);
     if (!st) { msg.textContent = "Je ne trouve pas ce prénom."; return; }
-    if (!st.pass) { msg.textContent = "Ton mot de passe n’est pas encore prêt. Demande à la maîtresse."; return; }
+    if (!st.pass) { msg.textContent = "Ton mot de passe n’est pas encore prêt. Demande au maître(sse)."; return; }
     checkSecret(st.pass, normSecret($("in-login-pass").value)).then(function (ok) {
       if (ok) enterStudent(st.id, false);
       else { msg.textContent = "Ce n’est pas le bon mot de passe. Essaie encore."; $("in-login-pass").value = ""; $("in-login-pass").focus(); }
@@ -1800,7 +1814,7 @@
     if(cloudMode){location.href="enseignants.html";return;}
     var create = !data.teacher;
     $("login-student").hidden = true; $("login-teacher").hidden = false;
-    $("teacher-title").textContent = create ? "Crée ton code de maîtresse" : "Espace maîtresse";
+    $("teacher-title").textContent = create ? "Crée ton code de maître(sse)" : "Espace maître(sse)";
     $("teacher-hint").textContent = create
       ? "Première utilisation : choisis un code de 4 caractères au moins. Il ouvre cet espace et valide les lectures. Il ne peut pas être retrouvé : choisis-en un que tu retiendras."
       : "";
@@ -1827,16 +1841,16 @@
     $(id).addEventListener("keydown", function (ev) { if (ev.key === "Enter") teacherEnter(); });
   });
 
-  /* La lecture se fait avec la maîtresse : son mot de passe (celui de son espace enseignant) débloque la lecture pour la durée de la connexion */
+  /* La lecture se fait avec le maître(sse) : son mot de passe (celui de son espace enseignant) débloque la lecture pour la durée de la connexion */
   async function gateTry() {
     var message=$("gate-msg"),code=$("in-gate").value;
-    if(!code){message.textContent="Saisis le mot de passe de la maîtresse.";return;}
+    if(!code){message.textContent="Saisis le mot de passe du maître(sse).";return;}
     $("in-gate").value="";
     message.textContent="Vérification du mot de passe…";
     try {
       var result=await cloudClient.rpc("verify_evaluation_code",{p_token:cloudToken,p_code:code});
       if(result.error){if(/Trop d/.test(result.error.message||"")){message.textContent=result.error.message;return;}throw result.error;}
-      if(result.data){ses.unlocked=true;message.textContent="";renderSetup();}
+      if(result.data){ses.unlocked=true;message.textContent="";afterUnlock();}
       else{message.textContent="Mot de passe incorrect.";}
     } catch(err){message.textContent="Vérification impossible. Réessaie lorsque la connexion fonctionne.";}
   }
@@ -1855,6 +1869,14 @@
   $("btn-gate").addEventListener("click", gateTry);
   $("in-gate").addEventListener("keydown", function (ev) { if (ev.key === "Enter") gateTry(); });
 
+  /* Après le mot de passe du maître(sse) : l’étape est déjà choisie, l’évaluation s’ouvre directement */
+  function afterUnlock() {
+    var t = ses.evalTarget; ses.evalTarget = null;
+    if (t && soundById(t.sound) && hasContent(t.sound, t.kind)) { data.sel.sound = t.sound; data.sel.kind = t.kind; }
+    renderSetup();
+    var b = $("btn-open");
+    if (!$("setup-form").hidden && data.sel.sound && hasContent(data.sel.sound, data.sel.kind) && !b.disabled) b.click();
+  }
   /* Écran de départ */
   function renderSetup() {
     var asStudent = ses.role === "student";
@@ -1867,8 +1889,8 @@
     if (picker) {
       setPressed($("seg-goal"), "data-goal", ses.goal);
       $("goal-hint").textContent = ses.goal === "train"
-        ? "Entraîne-toi autant que tu veux, seul(e), avec un camarade ou avec tes parents : celui qui t’écoute touche les mots où tu te trompes. Ça ne valide pas l’étape, mais tu vois tes progrès."
-        : "Quand tu te sens prêt(e), passe l’évaluation : c’est elle qui valide l’étape et te donne ta roue.";
+        ? "Entraîne-toi autant que tu veux, seul(e), avec un camarade ou avec tes parents : celui qui t’écoute touche les mots où tu te trompes. Si tu atteins l’objectif et que tu enregistres, l’étape est validée ✓ et tu passes à la suite."
+        : "Quand tu te sens prêt(e), passe l’évaluation avec ton maître(sse) : c’est elle qui certifie l’étape 🏅, te donne ta roue et fait monter ton niveau.";
     }
     $("fld-mode").hidden = !(picker && ses.goal === "eval");
     if (asStudent && !ses.viaTeacher) {
@@ -1877,8 +1899,8 @@
       setPressed($("seg-mode"), "data-mode", ses.mode);
       Array.prototype.forEach.call($("seg-mode").querySelectorAll("button"), function (b) { if (b.getAttribute("data-mode") === "rec") b.disabled = !!sup; });
       $("mode-hint").textContent = ses.mode === "rec"
-        ? "Le micro enregistre ta minute de lecture. La maîtresse l’écoutera plus tard : tu auras ton score quand elle l’aura écoutée."
-        : (sup ? "Pour lire seul(e) avec l’enregistrement : " + sup : "La maîtresse est avec toi et note ta lecture tout de suite.");
+        ? "Le micro enregistre ta minute de lecture. Le maître(sse) l’écoutera plus tard : tu auras ton score quand il ou elle l’aura écoutée."
+        : (sup ? "Pour lire seul(e) avec l’enregistrement : " + sup : "Le maître(sse) est avec toi et note ta lecture tout de suite.");
     }
     var gated = asStudent && ses.goal === "eval" && ses.mode === "live" && !ses.unlocked;
     $("gate").hidden = !gated;
@@ -1916,13 +1938,13 @@
     var so = $("sel-sound");
     so.innerHTML = "";
     avail.forEach(function (s) {
-      var total = 0, ok = 0;
-      KINDS.forEach(function (k) { if (hasContent(s.id, k.k)) { total++; if (isValid(data.sel.sid, s.id, k.k)) ok++; } });
+      var total = 0, ok = 0, cert = 0;
+      KINDS.forEach(function (k) { if (hasContent(s.id, k.k)) { total++; if (isPassed(data.sel.sid, s.id, k.k)) ok++; if (isValid(data.sel.sid, s.id, k.k)) cert++; } });
       var o = document.createElement("option");
       var unl = isUnlocked(data.sel.sid, s.id);
       o.value = s.id; o.disabled = !unl;
       var pv = prevAvail(s.id);
-      o.textContent = unl ? s.label + "  (" + ok + " sur " + total + " validés)"
+      o.textContent = unl ? s.label + "  (" + ok + " sur " + total + " validés" + (cert ? ", " + cert + " 🏅" : "") + ")"
                           : s.label + "  (verrouillé : valide une étape de " + (pv ? pv.label : "") + ")";
       so.appendChild(o);
     });
@@ -2089,16 +2111,16 @@
     $("seg").hidden = p !== "ending";
     $("btn-validate").hidden = p !== "ending";
     $("btn-validate").disabled = S.endIdx < 0;
-    $("btn-back").hidden = p === "running" || p === "result" || p === "saving" || p === "recdone";
+    $("btn-back").hidden = p === "running" || p === "result" || p === "saving" || p === "recdone" || (ses.role === "student" && ses.goal === "eval");
     $("text-card").hidden = (p === "ready" || p === "idle" || p === "saving" || p === "recdone" || p === "result");
     /* Au résultat, seul le bilan reste affiché (le minuteur et le texte lu ne servent plus) */
-    $("session").firstElementChild.hidden = p === "result";
+    $("session").firstElementChild.hidden = p === "result" || p === "saving" || p === "recdone";
     $("text-card").firstElementChild.classList.toggle("tap", !S.rec && (p === "running" || p === "ending"));
     $("result").hidden = p !== "result";
     $("rec-done").hidden = p !== "recdone";
     setInstruction();
     setReadingFocus(p);
-    if (p === "result") setTimeout(function () { var s = $("session"); if (!s) return; var h = document.querySelector("header"); var top = s.getBoundingClientRect().top + window.pageYOffset - (h && getComputedStyle(h).position === "sticky" ? h.offsetHeight + 8 : 8); window.scrollTo(0, Math.max(0, top)); }, 30);
+    if (p === "result" || p === "recdone") setTimeout(function () { var s = $("session"); if (!s) return; var h = document.querySelector("header"); var top = s.getBoundingClientRect().top + window.pageYOffset - (h && getComputedStyle(h).position === "sticky" ? h.offsetHeight + 8 : 8); window.scrollTo(0, Math.max(0, top)); }, 30);
   }
 
   $("btn-open").addEventListener("click", function () {
@@ -2184,7 +2206,7 @@
       var box0 = $("r-stars");
       box0.innerHTML = "";
       for (var j = 0; j < 3; j++) box0.appendChild(el("span", "star " + (j < stars0 ? "on" : "off"), "★"));
-      $("r-msg").textContent = ok ? "Super entraînement ! Tu atteins l’objectif : tu peux demander ton évaluation."
+      $("r-msg").textContent = ok ? "Bravo, tu atteins l’objectif ! Enregistre ton entraînement : l’étape sera validée ✓ et tu passeras à la suite. Pour la faire certifier 🏅 et gagner la roue, demande ton évaluation."
         : (mclm >= thr0 * 0.75 ? "Presque ! Encore un entraînement et tu y es." : "Bien joué ! Chaque entraînement te fait progresser.");
       return;
     }
@@ -2232,8 +2254,8 @@
     var ok = mclm >= thr;
     var badge = $("r-badge");
     badge.textContent = S.train
-      ? (ok ? "Objectif atteint à l’entraînement" : "Objectif : " + thr + " par minute")
-      : (ok ? "Objectif atteint : étape validée" : "Objectif : " + thr + " par minute");
+      ? (ok ? "✓ Objectif atteint : étape validée" : "Objectif : " + thr + " par minute")
+      : (ok ? "🏅 Objectif atteint : étape certifiée" : "Objectif : " + thr + " par minute");
     badge.className = "badge" + (ok ? " ok" : "");
     $("btn-save").textContent = S.train ? "Enregistrer mon entraînement" : "Enregistrer";
     $("btn-ask-eval").hidden = !(S.train && ok);
@@ -2250,6 +2272,7 @@
   $("btn-ask-eval").addEventListener("click", function () {
     if (!current || !S.train) return;
     saveTraining();
+    ses.evalTarget = { sid: S.sid, sound: S.sound, kind: S.kind };
     ses.goal = "eval";
     toast("Entraînement enregistré. Choisis comment passer l’évaluation.");
     leaveSession(false);
@@ -2258,8 +2281,11 @@
   $("btn-save").addEventListener("click", function () {
     if (!current) return;
     if (S.train) {
+      var wasPassed = isPassed(S.sid, S.sound, S.kind);
       saveTraining();
-      toast("Entraînement enregistré");
+      var nowPassed = !wasPassed && isPassed(S.sid, S.sound, S.kind);
+      if (nowPassed) { data.sel.sid = S.sid; applySuggestion(); save(); }
+      toast(nowPassed ? "Étape validée ✓ : tu passes à la suite !" : "Entraînement enregistré");
       leaveSession(false);
       renderPanels();
       return;
@@ -2276,7 +2302,7 @@
       else zooNote = "Étape validée !";
     }
     save();
-    /* Une évaluation en direct consomme l’autorisation de la maîtresse. */
+    /* Une évaluation en direct consomme l’autorisation du maître(sse). */
     if (ses.viaTeacher || ses.unlocked) {
       ses.unlocked = false;
       ses.teacherAuth = false;
@@ -2300,7 +2326,7 @@
     renderSetup();
   }
 
-  /* Élèves (espace maîtresse) */
+  /* Élèves (espace maître(sse)) */
   function addStudent() {
     var inp = $("in-name"), pw = $("in-pass").value;
     var name = inp.value.trim().replace(/\s+/g, " ").slice(0, 20);
@@ -2398,7 +2424,7 @@
     var a = normSecret($("in-newcode").value), b = normSecret($("in-newcode2").value);
     if (a.length < 4) { toast("Le code doit avoir au moins 4 caractères."); return; }
     if (a !== b) { toast("Les deux codes ne sont pas identiques."); return; }
-    makeSecret(a).then(function (sec) { data.teacher = sec; save(); $("in-newcode").value = ""; $("in-newcode2").value = ""; toast("Code de la maîtresse changé"); });
+    makeSecret(a).then(function (sec) { data.teacher = sec; save(); $("in-newcode").value = ""; $("in-newcode2").value = ""; toast("Code du maître(sse) changé"); });
   });
 
   /* Animaux : un par son, qui grandit avec les trois niveaux */
@@ -2690,6 +2716,8 @@
     body.appendChild(wc);
   }
 
+  var QUOTES = ["Chaque mot que tu lis te rend un peu plus fort.","Se tromper, c’est apprendre : on recommence et ça vient !","Lire, c’est ouvrir une porte vers mille histoires.","Aujourd’hui, tu vas faire de ton mieux, et c’est déjà super.","Petit à petit, tu deviens un grand lecteur.","Ton cerveau grandit chaque fois que tu t’entraînes.","Prends ton temps : bien lire, c’est mieux que lire vite.","Tu as le droit de ne pas savoir encore. Tu vas y arriver !","Chaque son appris est un trésor de plus dans ton sac.","Respire, regarde bien les lettres, et lance-toi !","Les erreurs sont des marches pour monter plus haut.","Tu sais déjà lire plus de mots qu’hier.","Un livre, c’est un ami qui te raconte des secrets.","Ton maître(sse) est fier(ère) de tous tes efforts.","Courage ! Les grands lecteurs ont tous commencé comme toi.","Lire à voix haute, c’est faire chanter les mots.","Chaque jour, un petit pas. Et un jour, un grand voyage !","Tu es capable de belles choses. Montre-le !","Quand c’est difficile, c’est que tu es en train d’apprendre.","Bravo d’être là : ton zoo t’attendait !"];
+  var sessionQuote = QUOTES[Math.floor(Math.random() * QUOTES.length)];
   function renderHome() {
     if (cloudToken) claimGifts();
     var body = $("home-body");
@@ -2718,17 +2746,18 @@
       card.appendChild(el("p", "", "Tu as validé toutes les étapes disponibles. Bravo !"));
     }
     body.appendChild(card);
+    var qc = el("div", "card quote-card"); qc.appendChild(el("blockquote", "", "«\u00a0" + sessionQuote + "\u00a0»")); body.appendChild(qc);
     var waiting = data.reviews.filter(function (r) { return r.sid === sid; }).length;
     if (waiting) {
       var wcard = el("div", "card");
-      wcard.appendChild(el("p", "", waiting > 1 ? waiting + " lectures attendent que la maîtresse les écoute." : "1 lecture attend que la maîtresse l’écoute."));
+      wcard.appendChild(el("p", "", waiting > 1 ? waiting + " lectures attendent que le maître(sse) les écoute." : "1 lecture attend que le maître(sse) l’écoute."));
       body.appendChild(wcard);
     }
     wheelCard(body, sid);
     var avail = availSounds();
     var found = avail.filter(function (x) { return petState(sid, x.id).got > 0; }).length;
     var info = el("div", "card");
-    info.appendChild(el("p", "muted", found + (found > 1 ? " animaux ont éclos" : " animal a éclos") + " sur " + avail.length + ". Chaque étape validée les fait grandir."));
+    info.appendChild(el("p", "muted", found + (found > 1 ? " animaux ont éclos" : " animal a éclos") + " sur " + avail.length + ". Chaque étape certifiée 🏅 par ton maître(sse) les fait grandir."));
     body.appendChild(info);
   }
 
@@ -3501,7 +3530,7 @@
     G.timers.push(setTimeout(nextRound, 1200));
   }
 
-  /* Boutique : 3 parties contre des pièces d’or, ou une récompense choisie par la maîtresse */
+  /* Boutique : 3 parties contre des pièces d’or, ou une récompense choisie par le maître(sse) */
   var PACK_SIZE = 3;
   function priceLine(price) {
     var d = el("div", "muted price");
@@ -3537,7 +3566,7 @@
           if (coins(sid) < r.price) return;
           data.coins[sid] = coins(sid) - r.price;
           data.vouchers.push({ id: uid(), sid: sid, label: r.label, icon: r.icon || "🎁", price: r.price, ts: Date.now(), done: false });
-          zooNote = "Bravo ! Tu as obtenu : " + r.label + ". Montre ton bon à la maîtresse !";
+          zooNote = "Bravo ! Tu as obtenu : " + r.label + ". Montre ton bon au maître(sse) !";
           buyFx(); save(); renderBoutique(); renderPanels();
         }
       });
@@ -3610,7 +3639,7 @@
     var shelf = el("div", "shelf");
     shopItems(sid).forEach(function (it, i) { shelf.appendChild(productCard(it, cn, i)); });
     shop.appendChild(shelf);
-    if (!data.shop.rewards.length) shop.appendChild(el("p", "shop-hint", "Bientôt de nouvelles surprises : la maîtresse en ajoute !"));
+    if (!data.shop.rewards.length) shop.appendChild(el("p", "shop-hint", "Bientôt de nouvelles surprises : le maître(sse) en ajoute !"));
     body.appendChild(shop);
     var mine = data.vouchers.filter(function (v) { return v.sid === sid && !v.done; });
     if (mine.length) {
@@ -3621,14 +3650,14 @@
         var ico = el("span", "ico", v.icon || "🎁"); ico.setAttribute("aria-hidden", "true");
         var g = el("div", "grow");
         g.appendChild(el("div", "name", v.label));
-        g.appendChild(el("div", "muted", "À montrer à la maîtresse"));
+        g.appendChild(el("div", "muted", "À montrer au maître(sse)"));
         row.appendChild(ico); row.appendChild(g); vc.appendChild(row);
       });
       body.appendChild(vc);
     }
   }
 
-  /* Côté maîtresse : prix, récompenses et bons à remettre */
+  /* Côté maître(sse) : prix, récompenses et bons à remettre */
   function renderShopSettings() {
     $("in-packprice").value = data.shop.packPrice;
     var box = $("shop-list");
@@ -3731,7 +3760,7 @@
     REC.mr = null; REC.chunks = []; cleanupStream();
   }
 
-  /* Les enregistrements sont gardés dans IndexedDB, sur l’appareil, jusqu’à ce que la maîtresse valide ou supprime la lecture */
+  /* Les enregistrements sont gardés dans IndexedDB, sur l’appareil, jusqu’à ce que le maître(sse) valide ou supprime la lecture */
   var AUDIO_DB = null;
   function audioDb() {
     return new Promise(function (resolve, reject) {
@@ -3769,8 +3798,8 @@
     }, function (err) {
       $("btn-start").disabled = false;
       $("instruction").textContent = (err && err.name === "NotAllowedError")
-        ? "Le micro est refusé ou bloqué. Demande à la maîtresse."
-        : "Je n’arrive pas à allumer le micro. Demande à la maîtresse.";
+        ? "Le micro est refusé ou bloqué. Demande au maître(sse)."
+        : "Je n’arrive pas à allumer le micro. Demande au maître(sse).";
     });
   }
   function finishRecordedRun() {
@@ -3789,12 +3818,12 @@
     }).catch(function () {
       setPhase("ready");
       $("btn-start").disabled = false;
-      $("instruction").textContent = "L’enregistrement n’a pas pu être gardé. Recommence, ou demande à la maîtresse.";
+      $("instruction").textContent = "L’enregistrement n’a pas pu être gardé. Recommence, ou demande au maître(sse).";
     });
   }
   $("btn-rec-back").addEventListener("click", function () { leaveSession(false); });
 
-  /* ---------- Côté maîtresse : écouter, noter, valider ---------- */
+  /* ---------- Côté maître(sse) : écouter, noter, valider ---------- */
   var RV = { id: null, words: [], breaks: {}, errs: {}, endIdx: -1, mode: "err", url: null, rate: 1, result: null };
   function updateRecBadge() {
     var n = data.reviews.length, b = $("badge-rec");
@@ -3980,7 +4009,7 @@
     data.results.push({ id: uid(), sid: rv.sid, sound: rv.sound, k: rv.kind, n: r.n, e: r.e, t: Math.round(r.t), mclm: r.mclm, ts: rv.ts, src: "rec" });
     var newly = !was && isValid(rv.sid, rv.sound, rv.kind);
     var thr = data.thr[rv.kind];
-    var note = "La maîtresse a écouté ta lecture : " + r.mclm + " " + kindInfo(rv.kind).unit + " par minute.";
+    var note = "Le maître(sse) a écouté ta lecture : " + r.mclm + " " + kindInfo(rv.kind).unit + " par minute.";
     if (newly) {
       note += " Étape validée !";
       if (data.reward) data.wheels.push({ id: uid(), sid: rv.sid, ts: Date.now() });
@@ -3998,7 +4027,7 @@
     renderEcoute();
   }
   function redoReview(rv) {
-    data.notes.push({ sid: rv.sid, text: "La maîtresse te demande de relire cette étape : " + reviewTitle(rv).toLowerCase() + ". Tu peux t’enregistrer à nouveau." });
+    data.notes.push({ sid: rv.sid, text: "Le maître(sse) te demande de relire cette étape : " + reviewTitle(rv).toLowerCase() + ". Tu peux t’enregistrer à nouveau." });
     removeReview(rv.id);
     closeReviewMedia();
     toast("Demande de relecture envoyée");
@@ -4077,15 +4106,16 @@
     show("lecture");
   }
 
-  /* Récapitulatif, courbe et historique : partagés entre la maîtresse et l’élève */
+  /* Récapitulatif, courbe et historique : partagés entre le maître(sse) et l’élève */
   function progressInto(body, sid, forStudent, rerender) {
     body.innerHTML = "";
     /* Récapitulatif par son */
     var steps = stepsList();
     var validated = steps.filter(function (st) { return isValid(sid, st.sound, st.kind); }).length;
+    var passedN = steps.filter(function (st) { return isPassed(sid, st.sound, st.kind); }).length;
     var card = el("div", "card");
     card.appendChild(el("h2", "", forStudent ? "Mes étapes" : "Récapitulatif par son"));
-    card.appendChild(el("p", "muted", validated + " étape" + (validated > 1 ? "s" : "") + " validée" + (validated > 1 ? "s" : "") + " sur " + steps.length + ". Touche une case pour lancer cette étape."));
+    card.appendChild(el("p", "muted", nb(validated, "étape certifiée 🏅", "étapes certifiées 🏅") + " · " + passedN + " validée" + (passedN > 1 ? "s" : "") + " ✓ sur " + steps.length + ". 🏅 = certifiée par ton maître(sse) (roue et niveau) · ✓ = validée à l’entraînement. Touche une case pour lancer cette étape."));
     var rows = data.sounds.filter(function (s) {
       return KINDS.some(function (k) { return hasContent(s.id, k.k) || best(sid, s.id, k.k) !== null; });
     });
@@ -4111,10 +4141,11 @@
           if (!hasContent(s.id, k.k) && b === null) {
             td.appendChild(el("span", "nocontent", s.only && s.only.indexOf(k.k) < 0 ? "sans objet" : "à écrire"));
           } else {
-            var ok = isValid(sid, s.id, k.k);
-            var btn = el("button", "cell " + (ok ? "ok" : (b !== null ? "try" : "")));
+            var ok = isValid(sid, s.id, k.k), pass = !ok && isPassed(sid, s.id, k.k), bt = bestTrain(sid, s.id, k.k);
+            var btn = el("button", "cell " + (ok ? "ok" : (pass ? "pass" : (b !== null ? "try" : ""))));
             btn.type = "button";
-            btn.textContent = ok ? "✓ " + b : (b !== null ? String(b) : "–");
+            btn.textContent = ok ? "🏅 " + b : (pass ? "✓ " + bt : (b !== null ? String(b) : "–"));
+            if (pass) btn.title = "Validée à l’entraînement : demande ton évaluation pour la certifier 🏅";
             btn.setAttribute("aria-label", k.name + ", son " + s.label + " : " + (ok ? "validé, meilleur score " + b : (b !== null ? "pas encore validé, meilleur score " + b : "pas encore lu")));
             btn.disabled = !hasContent(s.id, k.k) || !unl;
             if (!unl) btn.setAttribute("aria-label", k.name + ", son " + s.label + " : verrouillé");
@@ -4127,7 +4158,7 @@
       });
       table.appendChild(tbody); wrap.appendChild(table); card.appendChild(wrap);
       var lg = el("div", "legend");
-      lg.appendChild(el("span", "", "✓ validé, avec le meilleur score"));
+      lg.appendChild(el("span", "", "🏅 certifiée par le maître(sse) · ✓ validée à l’entraînement, avec le meilleur score"));
       lg.appendChild(el("span", "", "chiffre seul : lu, objectif pas atteint"));
       lg.appendChild(el("span", "", "– : pas encore lu"));
       if (data.lock) lg.appendChild(el("span", "", "ligne grisée : son verrouillé"));
