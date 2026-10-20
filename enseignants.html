@@ -64,6 +64,37 @@ main{max-width:1050px}
   @media (max-width: 390px) { header .zoo-hero-art { display: none; } }
   @media (prefers-reduced-motion: no-preference) { header .zoo-bee { animation: zoo-float 3s ease-in-out infinite; } header .zoo-llama { animation: zoo-float 3.6s ease-in-out -1.2s infinite; } @keyframes zoo-float { 0%,100% { translate: 0 0; } 50% { translate: 0 -8px; } } }
 
+
+/* Progression : une ligne par élève */
+.progress-row{flex-wrap:wrap;align-items:center}
+.progress-row>div:first-child{flex:1 1 320px;min-width:0}
+.row-actions{display:flex;gap:8px;flex:0 0 auto;margin-left:auto;flex-wrap:nowrap}
+.row-actions button{padding:8px 13px;font-size:.88rem;border-radius:10px;white-space:nowrap}
+/* Ordre des sons : pastilles */
+.sound-chips{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 12px}
+.sound-chip{display:inline-flex;align-items:center;gap:7px;padding:7px 12px 7px 7px;border-radius:999px;background:#f2f5fb;color:#1b2433;border:2px solid #dfe5f0;font-weight:750;font-size:.95rem}
+.sound-chip:hover{border-color:#9db8e8}
+.sound-chip .chip-n{display:grid;place-items:center;min-width:24px;height:24px;padding:0 5px;border-radius:999px;background:#fff;color:#5a6476;font-size:.75rem;font-weight:800}
+.sound-chip.selected{background:#1b2433;color:#fff;border-color:#1b2433}
+.sound-chip.selected .chip-n{background:#ffd54a;color:#1b2433}
+.chip-tools{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 12px;margin-bottom:12px;border-radius:14px;background:var(--soft)}
+.chip-tools[hidden]{display:none}
+.chip-tools span{flex:1 1 180px;font-weight:700}
+.chip-tools button{padding:8px 12px;font-size:.88rem}
+.danger-soft{color:#b42318!important}
+.sound-add{gap:8px;flex-wrap:wrap}
+.sound-add input{flex:1 1 200px;width:auto!important}
+.save-state{margin:-6px 0 12px;font-size:.88rem;font-weight:700;color:#5a6476;min-height:1.2em}
+.save-state.pending{color:#9a6b00}.save-state.ok{color:#1f7a4d}.save-state.err{color:#b42318}
+/* Réglages généraux : 3 gros boutons */
+.sub-picker{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.sub-picker button{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;padding:18px;border-radius:20px;background:#fff;color:#1b2433;border:2px solid #dfe3ec;transition:border-color .15s,transform .15s}
+.sub-picker button:hover{border-color:#b9a6ef;transform:translateY(-2px)}
+.sub-picker button.active{border-color:#1b2433;box-shadow:0 0 0 3px #1b243322}
+.sub-picker .sp-ico{display:grid;place-items:center;width:46px;height:46px;border-radius:14px;background:#f2eefe;font-size:1.5rem;margin-bottom:6px}
+.sub-picker strong{font-size:1.15rem}
+.sub-picker small{color:#6b7280;font-weight:600}
+@media(max-width:560px){.sub-picker{grid-template-columns:1fr}.sub-picker button{flex-direction:row;align-items:center;gap:12px;padding:12px}.sub-picker .sp-ico{margin:0}.sub-picker small{display:none}.row-actions{margin-left:0}}
 /* Mode enseignant : bandeau fin + menu latéral (comme l'espace élève) */
 .banner-user{display:none}
 body.teacher-mode main{max-width:1240px;margin:0 auto;padding:0 18px 30px}
@@ -162,10 +193,11 @@ body.teacher-mode .quota-tag{display:block;margin:14px 2px 0;font-size:.85rem;te
   <div id="students" class="content-list"></div>
  </section>
  <section class="panel feature-card progress-card" id="listenSettings" data-section="ecouter"><h2>À écouter</h2><p class="muted">Lectures enregistrées par les élèves pour une correction différée. Le son reste sur la tablette de l’élève : ouvre le Zoo sur cette tablette (espace maîtresse, « À écouter ») pour l’écouter et la noter.</p><div id="recordingsList"></div></section>
- <section class="panel feature-card peda-card" data-section="reglages" id="soundOrderPanel"><div class="section-head"><div class="section-icon">🔤</div><div><h2>Ordre des sons</h2><p class="muted">Déplace, ajoute ou retire les sons selon ta progression.</p></div></div><div id="soundOrderList"></div><div class="row"><input id="newSound" placeholder="Nouveau son (ex. oi)" maxlength="24" style="max-width:340px"><button type="button" id="addSound">Ajouter</button><button type="button" class="secondary" id="resetSounds">Ordre d’origine</button></div></section>
-<section class="panel feature-card peda-card" data-section="reglages" id="exercisePanel"><div class="section-head"><div class="section-icon">✏️</div><div><h2>Modifier un exercice</h2><p class="muted">Adapte les syllabes, les mots et les textes de chaque son.</p></div></div><div class="teacher-nav" id="exerciseKinds"><button type="button" data-kind="s" class="active">Syllabes</button><button type="button" data-kind="m">Mots</button><button type="button" data-kind="t">Texte</button></div><label for="exerciseSound">Son</label><select id="exerciseSound" style="width:100%;padding:12px;border-radius:10px"></select><label for="exerciseContent">Contenu</label><textarea id="exerciseContent" rows="7" style="width:100%;padding:14px;border:1px solid #c9bfdf;border-radius:12px;font:inherit"></textarea><p class="muted" id="exerciseCount"></p><button type="button" class="secondary" id="resetExercise">Rétablir le contenu d’origine</button><p class="muted">Sépare les éléments par des espaces et les groupes par des retours à la ligne.</p></section>
-<section class="panel feature-card shop-card" data-section="general" id="rewardsPanel"><div class="section-head"><div class="section-icon">🎁</div><div><h2>Boutique des pièces d’or</h2><p class="muted">Les récompenses que tes élèves peuvent acheter avec leurs pièces.</p></div></div><h3>Récompenses de la maîtresse</h3><div id="rewardList"></div><div class="row"><input id="rewardIcon" value="🎁" maxlength="4" aria-label="Emoji" style="width:90px"><input id="rewardName" placeholder="Nom de la récompense" style="flex:1;min-width:160px"><input id="rewardPrice" type="number" value="10" min="1" max="500" aria-label="Prix" style="width:100px"><button type="button" id="addReward">Ajouter</button></div><p class="muted">Choisis une image :</p><div class="row" id="rewardEmojis"></div><h3>Récompenses à remettre</h3><div id="pendingRewards"></div></section>
-<section class="panel feature-card zoo-card" id="zooSettings" data-section="general"><div class="section-head"><div class="section-icon">🦁</div><div><h2>Réglages du Zoo</h2><p class="muted">Conservés sur le serveur et appliqués à tes élèves dès leur prochaine connexion.</p></div></div>
+ <section class="panel feature-card peda-card" data-section="reglages" id="exercisePanel"><div class="section-head"><div class="section-icon">✏️</div><div><h2>Modifier un exercice</h2><p class="muted">Adapte les syllabes, les mots et les textes de chaque son. Tes changements sont enregistrés automatiquement.</p></div></div><p class="save-state" id="pedaSave" role="status"></p><div class="teacher-nav" id="exerciseKinds"><button type="button" data-kind="s" class="active">Syllabes</button><button type="button" data-kind="m">Mots</button><button type="button" data-kind="t">Texte</button></div><label for="exerciseSound">Son</label><select id="exerciseSound" style="width:100%;padding:12px;border-radius:10px"></select><label for="exerciseContent">Contenu</label><textarea id="exerciseContent" rows="7" style="width:100%;padding:14px;border:1px solid #c9bfdf;border-radius:12px;font:inherit"></textarea><p class="muted" id="exerciseCount"></p><button type="button" class="secondary" id="resetExercise">Rétablir le contenu d’origine</button><p class="muted">Sépare les éléments par des espaces et les groupes par des retours à la ligne.</p></section>
+<section class="panel feature-card peda-card" data-section="reglages" id="soundOrderPanel"><div class="section-head"><div class="section-icon">🔤</div><div><h2>Ordre des sons</h2><p class="muted">Touche un son pour le sélectionner, puis avance-le ou recule-le dans la progression.</p></div></div><div id="soundOrderList" class="sound-chips" role="listbox" aria-label="Ordre des sons"></div><div class="chip-tools" id="soundTools" hidden><span id="soundToolsLabel"></span><button type="button" class="secondary" id="soundUp">◀ Avancer</button><button type="button" class="secondary" id="soundDown">Reculer ▶</button><button type="button" class="secondary danger-soft" id="soundRemove">Retirer</button></div><div class="row sound-add"><input id="newSound" placeholder="Nouveau son (ex. oi)" maxlength="24"><button type="button" id="addSound">Ajouter</button><button type="button" class="secondary" id="resetSounds">Ordre d’origine</button></div></section>
+<div class="sub-picker" data-section="general" role="group" aria-label="Choisir un réglage"><button type="button" data-sub-btn="boutique"><span class="sp-ico">🛍️</span><strong>Boutique</strong><small>Récompenses et prix</small></button><button type="button" data-sub-btn="zoo"><span class="sp-ico">🦁</span><strong>Zoo</strong><small>Objectifs, sons, parties</small></button><button type="button" data-sub-btn="motsdepasse"><span class="sp-ico">🔐</span><strong>Mots de passe</strong><small>PIN des élèves, ton mot de passe</small></button></div>
+<section class="panel feature-card shop-card" data-section="general" id="rewardsPanel" data-sub="boutique"><div class="section-head"><div class="section-icon">🎁</div><div><h2>Boutique des pièces d’or</h2><p class="muted">Les récompenses que tes élèves peuvent acheter avec leurs pièces. Enregistrement automatique.</p></div></div><p class="save-state" id="shopSave" role="status"></p><h3>Récompenses de la maîtresse</h3><div id="rewardList"></div><div class="row"><input id="rewardIcon" value="🎁" maxlength="4" aria-label="Emoji" style="width:90px"><input id="rewardName" placeholder="Nom de la récompense" style="flex:1;min-width:160px"><input id="rewardPrice" type="number" value="10" min="1" max="500" aria-label="Prix" style="width:100px"><button type="button" id="addReward">Ajouter</button></div><p class="muted">Choisis une image :</p><div class="row" id="rewardEmojis"></div><h3>Récompenses à remettre</h3><div id="pendingRewards"></div></section>
+<section class="panel feature-card zoo-card" id="zooSettings" data-section="general" data-sub="zoo"><div class="section-head"><div class="section-icon">🦁</div><div><h2>Réglages du Zoo</h2><p class="muted">Conservés sur le serveur et appliqués à tes élèves dès leur prochaine connexion.</p></div></div>
  <form id="zooSettingsForm">
  <h3>Objectif pour valider une étape</h3><div class="eval-grid"><label>Syllabes par minute<input id="thrS" type="number" min="1" max="300" required value="25"></label><label>Mots par minute<input id="thrM" type="number" min="1" max="300" required value="20"></label><label>Texte : mots par minute<input id="thrT" type="number" min="1" max="300" required value="15"></label></div>
  <h3 style="margin-top:24px">Passage au son suivant</h3><label><input type="checkbox" id="lockSounds" checked style="display:inline;width:auto"> Débloquer progressivement les sons</label>
@@ -173,7 +205,7 @@ body.teacher-mode .quota-tag{display:block;margin:14px 2px 0;font-size:.85rem;te
  <label>Nombre maximal de parties par jour<input id="maxPlays" type="number" min="0" max="50" value="6" required></label>
  <h3 style="margin-top:24px">Boutique des pièces d'or</h3><label>Prix de trois parties supplémentaires<input id="packPrice" type="number" min="1" max="500" value="10" required></label>
  <div class="actions"><button type="submit">Enregistrer les réglages</button></div></form><p id="settingsMsg" class="msg"></p></section>
- <section class="panel feature-card pin-card" id="passwordsSettings" data-section="general"><div class="section-head"><div class="section-icon">🔐</div><div><h2>Gestion des mots de passe</h2><p class="muted">Codes PIN des élèves, création groupée et mot de passe de ton compte.</p></div></div>
+ <section class="panel feature-card pin-card" id="passwordsSettings" data-section="general" data-sub="motsdepasse"><div class="section-head"><div class="section-icon">🔐</div><div><h2>Gestion des mots de passe</h2><p class="muted">Codes PIN des élèves, création groupée et mot de passe de ton compte.</p></div></div>
   <div class="pw-part" id="pinPart"><h3>Codes PIN des élèves</h3><p class="muted">Définis ou change le PIN de chaque élève (4 à 8 chiffres). Transmets-le individuellement à l’élève ou à sa famille.</p><p class="msg" id="pinMsg" role="status"></p><div id="classRoster"></div></div>
   <div class="pw-part"><h3>Mots de passe de la classe</h3><p class="muted">Crée d’un coup un PIN à quatre chiffres pour les élèves qui n’en ont pas encore. Note les codes : ils ne seront affichés qu’une seule fois.</p><div class="actions"><button type="button" id="generatePins">Créer les mots de passe manquants</button></div><pre id="generatedPins" style="white-space:pre-wrap;font:inherit;line-height:1.8"></pre></div>
   <div class="pw-part"><h3>Mon mot de passe</h3><p class="muted">Pour te connecter à cet espace enseignant. Il sert aussi à lancer les évaluations dans le Zoo des élèves.</p><form id="passwordForm"><label for="changePassword">Nouveau mot de passe (au moins 8 caractères)</label><input id="changePassword" type="password" autocomplete="new-password" minlength="8" maxlength="72" required><label for="changePassword2">Écris-le une deuxième fois</label><input id="changePassword2" type="password" autocomplete="new-password" minlength="8" maxlength="72" required><div class="actions"><button id="passwordSave" type="submit">Changer mon mot de passe</button></div></form><p class="msg" id="passwordMsg" role="status"></p></div>
@@ -190,7 +222,7 @@ let recoveryMode=arrival.get("type")==="recovery";
 const arrivalError=arrival.get("error_code")||arrival.get("error")||"";
 const pageUrl=location.origin+location.pathname;
 const client=window.supabase.createClient("https://pcxpazpflnlwmhyuozdx.supabase.co","sb_publishable_j65mDpDNsuwwaL6uRjsMtA_U_OXQXlL");
-const $=id=>document.getElementById(id);let currentUser=null,allStudents=[],allClasses=[],activeTab="eleves";
+const $=id=>document.getElementById(id);let currentUser=null,allStudents=[],allClasses=[],activeTab="eleves",activeSub=null;
 const ORIGINAL_SOUNDS=[{"id":"voy","label":"voyelles","only":["s"]},{"id":"l","label":"l"},{"id":"f","label":"f"},{"id":"ch","label":"ch"},{"id":"s","label":"s"},{"id":"m","label":"m"},{"id":"r","label":"r"},{"id":"n","label":"n"},{"id":"v","label":"v"},{"id":"j","label":"j"},{"id":"z","label":"z"},{"id":"p","label":"p"},{"id":"t","label":"t"},{"id":"c","label":"c"},{"id":"b","label":"b"},{"id":"d","label":"d"},{"id":"g","label":"g"},{"id":"ou","label":"ou"},{"id":"au","label":"au, eau"},{"id":"h","label":"h"},{"id":"on","label":"on, om"},{"id":"oi","label":"oi"},{"id":"an","label":"an, am"},{"id":"en","label":"en, em"},{"id":"ai","label":"ai, ei, ê, et"},{"id":"er","label":"er, ez, es"},{"id":"fr","label":"fr, pr…"},{"id":"fl","label":"fl, pl…"},{"id":"in","label":"in, im"},{"id":"ain","label":"ain, ein"},{"id":"oin","label":"oin"},{"id":"ian","label":"ian…"},{"id":"eu","label":"eu, oeu"},{"id":"k","label":"k, qu"},{"id":"gn","label":"gn"},{"id":"ph","label":"ph"},{"id":"gj","label":"g qui se lit j"},{"id":"cs","label":"c qui se lit s"},{"id":"es","label":"es, er, el, ec"},{"id":"elle","label":"elle, ette…"},{"id":"sz","label":"s qui se lit z"},{"id":"ill","label":"ill"},{"id":"y","label":"y, ii"},{"id":"ti","label":"ti qui se lit si"},{"id":"w","label":"w"},{"id":"x","label":"x"},{"id":"un","label":"un, yn"}];
 const ORIGINAL_TEXTS={"s:voy":"o e é e è o u i o a y e u y\nè a u è é a é i e u è y é\nu y e i y i o i a é a è o","s:l":"la li lo lu le lé lè la lu li lo le lé lè lu la lo li lé le lè la li lu lo\nal il ol ul el","m:l":"la le il lu lue il la lu le lue\nLola Lila Lili Lulu Ali Léa Léo olé élu Lola Lili Léo olé","t:l":"Lola a lu. Lila a lu. Léa a lu, Léo a lu. Lulu a lu, lu, lu. Ali a lu. Il a lu. Léa a élu Léo. Lila a élu Lola. Ali a lu, Ali a lu.","s:f":"fa fi fo fu fe fé fè fa fu fi fo fe fé fè fu fa fo fi fé fe fè fa fi fu fo\naf if of uf ef","m:f":"fil fol fée file elfe fil fée fol file elfe\nFifi folie filé Fifi folie filé folie Fifi filé","t:f":"Fifi a lu. Fifi a lu la folie. La fée a le fil. Léa a filé. Léo a filé le fil. Lola a lu la fée. Lila a la fée. Ali a lu, lu, lu. Il a lu la folie.","s:ch":"cha chi cho chu che ché chè cha chu chi cho che ché chè chu cha cho chi ché che chè cha chi chu cho","m:ch":"chef fiche lèche chef fiche lèche\nfichu chichi léché fiché fichu chichi léché fiché","t:ch":"Le chef a lu. Le chef a fiché la fiche. Fifi a lu la fiche. Léa a lu la fiche. Ali a fichu la fiche. Léo a lu, lu, lu. Le chef a lu la fiche, lu, lu, lu.","s:s":"sa si so su se sé sè sa su si so se sé sè su sa so si sé se sè sa si su so","m:s":"sol sel sale sole su sèche sue sol sel sole\nsalé salée sali sofa solo séché séchée sofa solo salé","t:s":"Le chef a salé la sole. Léa a sali le sol. Le chef a sali le sofa. Léo a lu sa fiche. Ali a séché la sole. Fifi a salé la sole. Lola a lu, lu, lu. Le chef a lu sa fiche.","s:m":"ma mi mo mu me mé mè ma mu mi mo me mé mè mu ma mo mi mé me mè ma mi mu mo","m:m":"mal mol mule mime lame fume mèche mal mule mime\nMimi lama ami mélo mimé fumé fumée limé ému Émile sumo","t:m":"Mimi a le sofa. Le chef a fumé la sole. Mimi a mimé le chef. Émile a lu la fiche. Le lama a mal. Mimi a lu sa fiche, Émile a lu sa fiche. Léa a salé la sole. Le chef a mimé Mimi.","s:r":"ra ri ro ru re ré rè ra ru ri ro re ré rè ru ra ro ri ré re rè ra ri ru ro\nar ir or ur","m:r":"rue rime rame rare rire lire mire mare mur sur or\nRémi mari sari lira rira marée Rémi mari","t:r":"Rémi a lu sur la rame. Mimi a ri, Rémi a ri. Le chef a lu la fiche sur le mur. Léa a lu sur le sofa. Le lama a ri sur la rame. Rémi a fumé la sole, le chef a salé la sole. Mimi lira la fiche.","s:n":"na ni no nu ne né nè na nu ni no ne né nè nu na no ni né ne nè na ni nu no","m:n":"ne ni nu une lune mine rune fane mène née nue\nNina Nora Léna Éline fané miné uni menu mini narine marine","t:n":"Nina a une rame. Léna a une lune. Le lama a lu sur le mur. Nina a mal, Nina a le fil. Rémi a sali la rue. Léna a une rime. Le chef a salé la sole. Nina a fini.","s:v":"va vi vo vu ve vé vè va vu vi vo ve vé vè vu va vo vi vé ve vè va vi vu vo\nav iv ov uv","m:v":"vu val vol vil vif nave lave rive vive fève sève Ève\nvélo Eva Véra Vivi ravi rival naval volé navire avale élève venu valu","t:v":"Nina va sur le vélo. Marine a vu la lune sur la rue. Le lama va sur la rame. Léa a vu la fée sur le mur. Nina a vu le chef. Il a salé la sole. Marine a lu sur la lune. Léa a vu le navire. Nina va, Nina va, Nina a fini."};
 let cfgSounds=structuredClone(ORIGINAL_SOUNDS),cfgTexts={},cfgRewards=[],editKind="s",editSound="";
@@ -268,28 +300,39 @@ async function refresh(){
 }
 
 
-function renderSoundOrder(){const box=$("soundOrderList");box.replaceChildren();cfgSounds.forEach((sound,i)=>{const row=document.createElement("div");row.className="row";const name=document.createElement("strong");name.textContent=(i+1)+". "+sound.label;row.append(name);const actions=document.createElement("div");actions.className="actions";[["↑",()=>swap(i,-1)],["↓",()=>swap(i,1)],["Retirer",()=>{if(!confirm("Retirer "+sound.label+" ?"))return;cfgSounds.splice(i,1);renderSoundOrder();renderExercise();}]].forEach(([label,fn],n)=>{const b=document.createElement("button");b.type="button";b.className="secondary";b.textContent=label;b.disabled=(n===0&&i===0)||(n===1&&i===cfgSounds.length-1);b.onclick=fn;actions.append(b)});row.append(actions);box.append(row)})}
-function swap(i,d){const j=i+d;if(j<0||j>=cfgSounds.length)return;[cfgSounds[i],cfgSounds[j]]=[cfgSounds[j],cfgSounds[i]];renderSoundOrder();renderExercise();}
-$("addSound").onclick=()=>{const label=$("newSound").value.trim().slice(0,24);if(!label)return;cfgSounds.push({id:"custom_"+crypto.randomUUID(),label});$("newSound").value="";renderSoundOrder();renderExercise();};
-$("resetSounds").onclick=()=>{if(confirm("Rétablir l’ordre d’origine ?")){cfgSounds=structuredClone(ORIGINAL_SOUNDS);renderSoundOrder();renderExercise();}};
+let selSound=null;
+function renderSoundOrder(){const box=$("soundOrderList");box.replaceChildren();if(selSound&&!cfgSounds.some(x=>x.id===selSound))selSound=null;
+ cfgSounds.forEach((sound,i)=>{const c=document.createElement("button");c.type="button";c.className="sound-chip"+(sound.id===selSound?" selected":"");c.setAttribute("role","option");c.setAttribute("aria-selected",String(sound.id===selSound));
+  const n=document.createElement("span");n.className="chip-n";n.textContent=i+1;c.append(n,document.createTextNode(sound.label));
+  c.onclick=()=>{selSound=sound.id===selSound?null:sound.id;renderSoundOrder();};box.append(c)});
+ const i=cfgSounds.findIndex(x=>x.id===selSound);$("soundTools").hidden=i<0;
+ if(i>=0){$("soundToolsLabel").textContent="« "+cfgSounds[i].label+" » : position "+(i+1)+" sur "+cfgSounds.length;$("soundUp").disabled=i===0;$("soundDown").disabled=i===cfgSounds.length-1;}}
+$("soundUp").onclick=()=>{const i=cfgSounds.findIndex(x=>x.id===selSound);if(i>0)swap(i,-1);};
+$("soundDown").onclick=()=>{const i=cfgSounds.findIndex(x=>x.id===selSound);if(i>=0)swap(i,1);};
+$("soundRemove").onclick=()=>{const i=cfgSounds.findIndex(x=>x.id===selSound);if(i<0)return;if(!confirm("Retirer « "+cfgSounds[i].label+" » de la progression ?"))return;cfgSounds.splice(i,1);selSound=null;renderSoundOrder();renderExercise();queueSave("pedaSave");};
+function swap(i,d){const j=i+d;if(j<0||j>=cfgSounds.length)return;[cfgSounds[i],cfgSounds[j]]=[cfgSounds[j],cfgSounds[i]];renderSoundOrder();renderExercise();queueSave("pedaSave");}
+$("addSound").onclick=()=>{const label=$("newSound").value.trim().slice(0,24);if(!label)return;cfgSounds.push({id:"custom_"+crypto.randomUUID(),label});$("newSound").value="";selSound=cfgSounds[cfgSounds.length-1].id;renderSoundOrder();renderExercise();queueSave("pedaSave");};
+$("resetSounds").onclick=()=>{if(confirm("Rétablir l’ordre d’origine ?")){cfgSounds=structuredClone(ORIGINAL_SOUNDS);selSound=null;renderSoundOrder();renderExercise();queueSave("pedaSave");}};
 function renderExercise(){const select=$("exerciseSound"),prev=editSound;select.replaceChildren();cfgSounds.forEach(s=>{const o=document.createElement("option");o.value=s.id;o.textContent=s.label;select.append(o)});editSound=cfgSounds.some(s=>s.id===prev)?prev:(cfgSounds[0]?.id||"");select.value=editSound;document.querySelectorAll("#exerciseKinds [data-kind]").forEach(b=>b.classList.toggle("active",b.dataset.kind===editKind));$("exerciseContent").value=cfgTexts[editKind+":"+editSound]??ORIGINAL_TEXTS[editKind+":"+editSound]??"";updateExerciseCount();}
 function updateExerciseCount(){$("exerciseCount").textContent=$("exerciseContent").value.trim().split(/\s+/).filter(Boolean).length+" éléments";}
 $("exerciseSound").onchange=()=>{editSound=$("exerciseSound").value;renderExercise();};
 document.querySelectorAll("#exerciseKinds [data-kind]").forEach(b=>b.onclick=()=>{editKind=b.dataset.kind;renderExercise()});
-$("exerciseContent").oninput=()=>{cfgTexts[editKind+":"+editSound]=$("exerciseContent").value;updateExerciseCount();};
-$("resetExercise").onclick=()=>{if(!editSound)return;delete cfgTexts[editKind+":"+editSound];renderExercise();};
-function renderRewards(){const box=$("rewardList");box.replaceChildren();if(!cfgRewards.length)box.textContent="Aucune récompense pour l’instant.";cfgRewards.forEach((r,i)=>{const row=document.createElement("div");row.className="row";const label=document.createElement("span");label.textContent=(r.icon||"🎁")+" "+r.label+" · "+r.price+" pièces";const b=document.createElement("button");b.type="button";b.className="secondary";b.textContent="Retirer";b.onclick=()=>{if(confirm("Retirer cette récompense ?")){cfgRewards.splice(i,1);renderRewards();}};row.append(label,b);box.append(row)})}
-$("addReward").onclick=()=>{const label=$("rewardName").value.trim(),price=Number($("rewardPrice").value);if(!label||!Number.isInteger(price)||price<1||price>500){alert("Indique un nom et un prix entre 1 et 500.");return;}cfgRewards.push({id:crypto.randomUUID(),label:label.slice(0,40),price,icon:$("rewardIcon").value||"🎁"});$("rewardName").value="";renderRewards();};
+$("exerciseContent").oninput=()=>{cfgTexts[editKind+":"+editSound]=$("exerciseContent").value;updateExerciseCount();queueSave("pedaSave");};
+$("resetExercise").onclick=()=>{if(!editSound)return;delete cfgTexts[editKind+":"+editSound];renderExercise();queueSave("pedaSave");};
+function renderRewards(){const box=$("rewardList");box.replaceChildren();if(!cfgRewards.length)box.textContent="Aucune récompense pour l’instant.";cfgRewards.forEach((r,i)=>{const row=document.createElement("div");row.className="row";const label=document.createElement("span");label.textContent=(r.icon||"🎁")+" "+r.label+" · "+r.price+" pièces";const b=document.createElement("button");b.type="button";b.className="secondary";b.textContent="Retirer";b.onclick=()=>{if(confirm("Retirer cette récompense ?")){cfgRewards.splice(i,1);renderRewards();queueSave("shopSave");}};row.append(label,b);box.append(row)})}
+$("addReward").onclick=()=>{const label=$("rewardName").value.trim(),price=Number($("rewardPrice").value);if(!label||!Number.isInteger(price)||price<1||price>500){alert("Indique un nom et un prix entre 1 et 500.");return;}cfgRewards.push({id:crypto.randomUUID(),label:label.slice(0,40),price,icon:$("rewardIcon").value||"🎁"});$("rewardName").value="";renderRewards();queueSave("shopSave");};
 ["🎁","📚","🍭","⭐","🎨","🎵","🏆","🪑","⚽","🧸"].forEach(emoji=>{const b=document.createElement("button");b.type="button";b.className="secondary";b.textContent=emoji;b.onclick=()=>{$("rewardIcon").value=emoji};$("rewardEmojis").append(b)});
 async function loadPendingRewards(){const {data,error}=await client.from("student_progress").select("student_id,progress").eq("teacher_id",currentUser.id);const box=$("pendingRewards");box.replaceChildren();if(error){box.textContent=errorText(error);return;}let count=0;(data||[]).forEach(row=>{(row.progress?.vouchers||[]).filter(v=>!v.done).forEach(v=>{count++;const div=document.createElement("div");div.className="row";const name=allStudents.find(s=>s.id===row.student_id)?.nickname||"Élève";div.textContent=name+" : "+v.label;box.append(div)})});if(!count)box.textContent="Aucune récompense à remettre.";}
 
 function showTab(tab){
  activeTab=tab;
- document.querySelectorAll("[data-section]").forEach(el=>el.classList.toggle("hidden",el.dataset.section!==tab || el.id==="pinSettings"));
+ document.querySelectorAll("[data-section]").forEach(el=>el.classList.toggle("hidden",el.dataset.section!==tab || el.id==="pinSettings" || (!!el.dataset.sub && el.dataset.sub!==activeSub)));
+ document.querySelectorAll("[data-sub-btn]").forEach(b=>{const on=b.dataset.subBtn===activeSub;b.classList.toggle("active",on);b.setAttribute("aria-pressed",String(on))});
  document.querySelectorAll("[data-tab]").forEach(el=>el.classList.toggle("active",el.dataset.tab===tab));
- if(tab==="ecouter")renderRecordings();if(tab==="general"&&currentUser)loadPendingRewards();
+ if(tab==="ecouter")renderRecordings();if(tab==="general"&&activeSub==="boutique"&&currentUser)loadPendingRewards();
 }
 document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+document.querySelectorAll("[data-sub-btn]").forEach(b=>b.onclick=()=>{activeSub=b.dataset.subBtn;showTab("general");const t=document.querySelector("[data-sub=\""+activeSub+"\"]");if(t)t.scrollIntoView({behavior:"smooth",block:"nearest"});});
 $("generatePins").onclick=async()=>{
  const missing=allStudents.filter(s=>!s.pin_hash);if(!missing.length){$("generatedPins").textContent="Tous les élèves possèdent déjà un PIN.";return;}
  if(!confirm("Créer "+missing.length+" codes PIN ? Note-les avant de quitter cette page."))return;
@@ -302,10 +345,19 @@ $("generatePins").onclick=async()=>{
  $("generatedPins").textContent=generated.join("\n");
  await refresh();
 };
+function collectSettings(){return {thr:{s:Number($("thrS").value),m:Number($("thrM").value),t:Number($("thrT").value)},lock:$("lockSounds").checked,reward:$("rewardMode").checked,sfx:$("soundEffects").checked,maxPlays:Number($("maxPlays").value),packPrice:Number($("packPrice").value),sounds:cfgSounds,texts:cfgTexts,rewards:cfgRewards};}
+async function saveTeacherSettings(){if(!currentUser)return {message:"Session expirée"};const {error}=await client.from("teacher_zoo_settings").upsert({teacher_id:currentUser.id,settings:collectSettings(),updated_at:new Date().toISOString()});return error;}
+/* Enregistrement automatique (réglages péda, boutique) : 1 s après la dernière modification */
+let saveTimer=null,savePending=false,saveStates=new Set();
+function setSaveState(text,cls){saveStates.forEach(id=>{const el=$(id);if(el){el.textContent=text;el.className="save-state "+(cls||"")}});}
+function queueSave(stateId){if(!currentUser)return;saveStates.add(stateId);savePending=true;setSaveState("Modifications en cours…","pending");clearTimeout(saveTimer);saveTimer=setTimeout(flushSave,1000);}
+async function flushSave(){clearTimeout(saveTimer);if(!savePending)return;savePending=false;const error=await saveTeacherSettings();
+ if(error){savePending=true;setSaveState("⚠️ Non enregistré : vérifie la connexion. Nouvel essai dans quelques secondes.","err");saveTimer=setTimeout(flushSave,5000);}
+ else if(!savePending){setSaveState("✓ Enregistré","ok");saveStates.clear();}}
+window.addEventListener("beforeunload",e=>{if(savePending){flushSave();e.preventDefault();e.returnValue="";}});
 $("zooSettingsForm").onsubmit=async ev=>{
  ev.preventDefault();if(!currentUser)return;
- const settings={thr:{s:Number($("thrS").value),m:Number($("thrM").value),t:Number($("thrT").value)},lock:$("lockSounds").checked,reward:$("rewardMode").checked,sfx:$("soundEffects").checked,maxPlays:Number($("maxPlays").value),packPrice:Number($("packPrice").value),sounds:cfgSounds,texts:cfgTexts,rewards:cfgRewards};
- const {error}=await client.from("teacher_zoo_settings").upsert({teacher_id:currentUser.id,settings,updated_at:new Date().toISOString()});
+ const error=await saveTeacherSettings();
  msg("settingsMsg",error?errorText(error):"Réglages enregistrés. Ils seront appliqués à la prochaine connexion des élèves.",!!error);
 };
 function setListenBadge(n){const b=$("listenBadge");if(!b)return;b.textContent=n>99?"99+":String(n);b.classList.toggle("hidden",!n);b.setAttribute("aria-label",n+" lecture(s) à écouter")}
@@ -338,11 +390,11 @@ async function renderProgress(students,classes){
    const evaluations=readings.filter(r=>r&&r.src!=="train");
    const training=readings.filter(r=>r&&r.src==="train");
    const latestEval=evaluations.slice().sort((a,b)=>(Number(b.ts)||0)-(Number(a.ts)||0))[0];
-   const wrap=document.createElement("div");wrap.className="row";
+   const wrap=document.createElement("div");wrap.className="row progress-row";
    const info=document.createElement("div");const name=document.createElement("strong");name.textContent=s.nickname;
    const summary=document.createElement("div");summary.className="muted";summary.textContent=evaluations.length+" évaluation(s) · "+training.length+" entraînement(s)"+(latestEval?" · Dernière fluence : "+fmt(latestEval.mclm)+" corrects/min":"")+" · "+fmt(p.coins)+" pièce(s)"+(row&&row.pending_coins>0?" (+"+row.pending_coins+" en attente)":"")+" · "+games.length+" jeu(x)";
    info.append(name,summary);wrap.append(info);
-   const btn=document.createElement("button");btn.type="button";btn.className="secondary";btn.textContent="Voir les détails";
+   const btn=document.createElement("button");btn.type="button";btn.className="secondary";btn.textContent="Détails";btn.setAttribute("aria-expanded","false");btn.title="Voir les détails de "+s.nickname;
    const details=document.createElement("div");details.className="muted hidden";details.style.cssText="width:100%;padding:10px 0;white-space:pre-wrap";
    const lines=[];
    if(row)lines.push("Dernière sauvegarde : "+new Date(row.updated_at).toLocaleString("fr-FR"));
@@ -350,14 +402,15 @@ async function renderProgress(students,classes){
    readings.slice().sort((a,b)=>(Number(b.ts)||0)-(Number(a.ts)||0)).slice(0,20).forEach(r=>{if(!r)return;const kind=r.k==="s"?"syllabes":r.k==="m"?"mots":r.k==="t"?"texte":"lecture";const when=Number.isFinite(Number(r.ts))?new Date(Number(r.ts)).toLocaleDateString("fr-FR"):"date inconnue";lines.push((r.src==="train"?"🟡 Entraînement":"🟢 Évaluation")+" · "+when+" · "+(r.sound||"son non précisé")+" · "+kind+" · "+fmt(r.n)+" lu(s) · "+fmt(r.e)+" erreur(s) · "+fmt(r.mclm)+" corrects/min")});
    games.forEach(([game,h])=>{lines.push("Jeu "+game+" : record "+(h&&h.best!=null?h.best:"non défini"))});
    details.textContent=lines.join("\n");
-   btn.onclick=()=>{details.classList.toggle("hidden");btn.textContent=details.classList.contains("hidden")?"Voir les détails":"Masquer les détails"};
-   if(s.teacher_id===currentUser.id){const gift=document.createElement("button");gift.type="button";gift.textContent="🎁 +10 pièces";gift.style.marginRight="8px";
+   btn.onclick=()=>{details.classList.toggle("hidden");const open=!details.classList.contains("hidden");btn.textContent=open?"Masquer":"Détails";btn.setAttribute("aria-expanded",String(open))};
+   const acts=document.createElement("div");acts.className="row-actions";
+   if(s.teacher_id===currentUser.id){const gift=document.createElement("button");gift.type="button";gift.textContent="🎁 +10";gift.title="Donner 10 pièces d’or à "+s.nickname;
     gift.onclick=async()=>{if(!confirm("Donner 10 pièces d’or à "+s.nickname+" ?"))return;gift.disabled=true;
      const {error}=await client.rpc("teacher_give_coins",{p_student:s.id,p_amount:10});gift.disabled=false;
      if(error){msg("progressMsg",errorText(error),true);return;}
      await renderProgress(students,classes);msg("progressMsg","🎁 10 pièces envoyées à "+s.nickname+". Elles arriveront dans son Zoo dès sa prochaine ouverture.");};
-    wrap.append(gift);}
-   wrap.append(btn,details);container.append(wrap);
+    acts.append(gift);}
+   acts.append(btn);wrap.append(acts,details);container.append(wrap);
   });
  });
  if(!students.length)container.textContent="Aucun élève inscrit.";
