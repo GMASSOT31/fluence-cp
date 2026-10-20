@@ -4171,6 +4171,8 @@
       if(typeof teacherSettings.reward==="boolean")data.reward=teacherSettings.reward;
       if(typeof teacherSettings.sfx==="boolean")data.sfx=teacherSettings.sfx;
       if(Number.isInteger(teacherSettings.maxPlays)&&teacherSettings.maxPlays>=0&&teacherSettings.maxPlays<=50)data.maxPlays=teacherSettings.maxPlays;
+      if(Array.isArray(teacherSettings.sounds)&&teacherSettings.sounds.length)data.sounds=teacherSettings.sounds.filter(function(s){return s&&typeof s.id==="string"&&typeof s.label==="string";});
+      if(teacherSettings.texts&&typeof teacherSettings.texts==="object")data.texts=teacherSettings.texts;
 
       cloudStudentId=st.student_id;
       data.students=[{id:st.student_id,name:st.nickname}];
@@ -4183,7 +4185,8 @@
       data.vouchers=Array.isArray(p.vouchers)?p.vouchers:[];
       data.reviews=Array.isArray(p.reviews)?p.reviews:[];
       data.notes=Array.isArray(p.notes)?p.notes:[];
-      if(p.shop&&typeof p.shop==="object"&&Array.isArray(p.shop.rewards))data.shop=p.shop;
+      if(p.shop&&typeof p.shop==="object"&&Array.isArray(p.shop.rewards)&&!Array.isArray(teacherSettings.rewards))data.shop=p.shop;
+      if(Array.isArray(teacherSettings.rewards))data.shop.rewards=teacherSettings.rewards;
       if(Number.isInteger(teacherSettings.packPrice)&&teacherSettings.packPrice>0)data.shop.packPrice=teacherSettings.packPrice;
       if(Number.isInteger(p.maxPlays)&&p.maxPlays>=0&&teacherSettings.maxPlays==null)data.maxPlays=p.maxPlays;
       if(typeof p.reward==="boolean"&&teacherSettings.reward==null)data.reward=p.reward;
