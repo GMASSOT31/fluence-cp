@@ -557,6 +557,14 @@
   .listen-play { display: block; margin: 8px auto; min-height: 64px; padding: 12px 26px; font-size: 1.3rem; font-weight: 800; border-radius: 18px; border: 0; background: #3a9d8c; color: #fff; }
   .listen-choices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 14px 0; }
   .listen-choice { min-height: 84px; font-size: 2.2rem; font-weight: 800; border-radius: 18px; background: var(--card); color: var(--ink); border: 2px solid var(--line); }
+  .listen-stars { display: flex; justify-content: center; gap: 10px; margin: 6px 0 2px; }
+  .listen-stars .lstar { font-size: 3rem; line-height: 1; color: #d5d9e2; text-shadow: 0 2px 0 #b9bfcc; }
+  .listen-stars .lstar.on { color: #f5c542; text-shadow: 0 2px 0 #c58e00, 0 0 14px rgba(245, 197, 66, .55); }
+  .listen-stars-cap { text-align: center; font-weight: 700; margin: 2px 0 10px; color: var(--muted); }
+  @media (prefers-reduced-motion: no-preference) {
+    .listen-stars .lstar.new { animation: lstar-pop .7s cubic-bezier(.2, 1.6, .4, 1) both; }
+    @keyframes lstar-pop { 0% { transform: scale(.2) rotate(-40deg); opacity: 0; } 70% { transform: scale(1.35) rotate(8deg); opacity: 1; } 100% { transform: scale(1) rotate(0); } }
+  }
   .listen-choice.word { font-size: 1.55rem; padding: 6px 4px; overflow-wrap: anywhere; }
   .listen-choice.good { background: var(--ok-bg); border-color: var(--ok); }
   .listen-choice.bad { background: #fde3e3; border-color: var(--bad); }
@@ -3303,6 +3311,14 @@
     body.innerHTML = "";
     var card = el("div", "card listen-card");
     card.appendChild(el("h2", "", nowDone ? "Niveau réussi ! 🎉" : (ok ? "Bravo ! 👏" : "Presque !")));
+    /* Les étoiles du son : gagnées en or (la nouvelle s’allume), celles qui restent en gris */
+    var need = listenNeed(id), have = nowDone || listenDone(sid, id) ? need : Math.min(L.passes[id] || 0, need);
+    var starRow = el("div", "listen-stars");
+    starRow.setAttribute("role", "img");
+    starRow.setAttribute("aria-label", nb(have, "étoile", "étoiles") + " sur " + need);
+    for (var si = 0; si < need; si++) starRow.appendChild(el("span", "lstar" + (si < have ? " on" : "") + (ok && !wasDone && si === have - 1 ? " new" : ""), "★"));
+    card.appendChild(starRow);
+    card.appendChild(el("p", "listen-stars-cap", wasDone ? "Ce son est déjà réussi : tu t’entraînes pour le plaisir." : (nowDone ? "Toutes les étoiles : le son est validé !" : nb(have, "étoile", "étoiles") + " sur " + need + (have < need ? " : gagne les autres pour valider ce son." : ""))));
     card.appendChild(el("p", "instruction", "Tu as réussi " + nb(cfg.questions - R.failed, "question", "questions") + " sur " + cfg.questions + "."));
     if (nowDone) {
       card.appendChild(el("p", "instruction", "Le son " + q(R.sound.label) + " est validé. Niveau d’écoute : E" + listenLevel(sid) + "."));
