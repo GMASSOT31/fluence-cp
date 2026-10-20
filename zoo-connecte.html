@@ -1301,6 +1301,8 @@
   };
   var cloudMode = true, cloudToken = sessionStorage.getItem("zoo_student_token"), cloudClient = window.supabase.createClient("https://pcxpazpflnlwmhyuozdx.supabase.co","sb_publishable_j65mDpDNsuwwaL6uRjsMtA_U_OXQXlL");
   var cloudBusy = false, cloudDirty = false, cloudTimer = null, cloudStudentId = null, cloudVersion = 0, cloudConflict = false, cloudStatusNode = null;
+  /* Records de la classe, calculés par le serveur (student_get_class_records) */
+  var classRecords = {}, classSize = 1, classRecordsRefreshing = false, classRecordsChecked = 0;
   function cloudStatus(label){if(cloudStatusNode)cloudStatusNode.firstChild.textContent=label+" · "+(cloudStatusNode.dataset.nickname||"");}
   var loaded = false;
   if (!cloudMode) try {
@@ -1382,6 +1384,7 @@
       hi:data.hi[sid]||{}, vouchers:data.vouchers.filter(function(x){return x.sid===sid}),
       reviews:data.reviews.filter(function(x){return x.sid===sid}),
       notes:data.notes.filter(function(x){return x.sid===sid}),
+      avatar:(studentById(sid)||{}).avatar||null,
       selSound:data.sel.sound||null, selKind:data.sel.kind||"s",
       shop:data.shop, maxPlays:data.maxPlays, reward:data.reward, sfx:data.sfx };
   }
@@ -1403,14 +1406,7 @@
       cloudStatus("☁️ Sauvegardé");
     } catch(e) {
       if(String(e.message||"").includes("SYNC_CONFLICT")){
-        cloudConflict=true;cloudDirty=false;
-        cloudStatus("⚠️ Synchronisation interrompue");
-        clearTimeout(cloudTimer);
-        try{sessionStorage.setItem("zoo_conflict_backup",JSON.stringify(snapshot));}catch(ignored){}
-        var warning=document.createElement("div");warning.id="sync-warning";warning.style.cssText="position:fixed;inset:0;background:#15102bcb;z-index:100000;display:grid;place-items:center;padding:20px";
-        warning.innerHTML='<div style="max-width:460px;background:white;color:#242044;border-radius:20px;padding:28px;font:16px system-ui;line-height:1.5"><h2>⚠️ Progression modifiée ailleurs</h2><p>Ton Zoo a été enregistré depuis un autre appareil. Pour ne pas écraser tes résultats, la sauvegarde est arrêtée.</p><p>Recharge les données récentes pour continuer. Les changements de cet onglet non enregistrés risquent de ne pas apparaître.</p><button id="sync-reload" style="padding:13px 18px;border:0;border-radius:10px;background:#7046ce;color:white;font-weight:bold;cursor:pointer">Recharger mon Zoo</button></div>';
-        document.body.append(warning);
-        document.getElementById("sync-reload").onclick=function(){location.reload()};
+        showSyncConflict(snapshot);
       }else{
         cloudDirty=true;
         cloudStatus("⚠️ Hors ligne, nouvelle tentative");
@@ -1420,6 +1416,53 @@
       cloudBusy=false;
       if(cloudDirty&&!cloudConflict){clearTimeout(cloudTimer);cloudTimer=setTimeout(cloudFlush,2500);}
     }
+  }
+  function showSyncConflict(snapshot) {
+    if(document.getElementById("sync-warning"))return;
+    cloudConflict=true;cloudDirty=false;
+    cloudStatus("⚠️ Synchronisation interrompue");
+    clearTimeout(cloudTimer);
+    try{sessionStorage.setItem("zoo_conflict_backup",JSON.stringify(snapshot));}catch(ignored){}
+    var warning=document.createElement("div");warning.id="sync-warning";warning.style.cssText="position:fixed;inset:0;background:#15102bcb;z-index:100000;display:grid;place-items:center;padding:20px";
+    warning.innerHTML='<div style="max-width:460px;background:white;color:#242044;border-radius:20px;padding:28px;font:16px system-ui;line-height:1.5"><h2>⚠️ Progression modifiée ailleurs</h2><p>Ton Zoo a été enregistré depuis un autre appareil. Pour ne pas écraser tes résultats, la sauvegarde est arrêtée.</p><p>Recharge les données récentes pour continuer. Les changements de cet onglet non enregistrés risquent de ne pas apparaître.</p><button id="sync-reload" style="padding:13px 18px;border:0;border-radius:10px;background:#7046ce;color:white;font-weight:bold;cursor:pointer">Recharger mon Zoo</button></div>';
+    document.body.append(warning);
+    document.getElementById("sync-reload").onclick=function(){location.reload()};
+  }
+  /* Avant d’envoyer un score : on termine la sauvegarde en cours pour partir de la bonne version */
+  async function cloudSettle() {
+    for(var i=0;i<40&&(cloudBusy||cloudDirty)&&!cloudConflict;i++){
+      if(cloudBusy){await new Promise(function(r){setTimeout(r,150)});continue;}
+      clearTimeout(cloudTimer);await cloudFlush();
+      if(cloudDirty)return false;   /* hors ligne : la sauvegarde n’est pas passée */
+    }
+    return !cloudBusy&&!cloudDirty&&!cloudConflict;
+  }
+  async function refreshClassRecords(force) {
+    if(!cloudToken||classRecordsRefreshing||(!force&&Date.now()-classRecordsChecked<5000))return;
+    classRecordsRefreshing=true;classRecordsChecked=Date.now();
+    try{
+      var res=await cloudClient.rpc("student_get_class_records",{p_token:cloudToken});
+      if(res.error)throw res.error;
+      var d=res.data||{}, before=JSON.stringify([classSize,classRecords]);
+      classSize=Number(d.classSize)||1;
+      classRecords=d.records&&typeof d.records==="object"?d.records:{};
+      if(before!==JSON.stringify([classSize,classRecords])&&ses.role==="student"&&!$("v-jeux").hidden)renderJeux();
+    }catch(err){console.warn("Records de la classe",err);}
+    finally{classRecordsRefreshing=false;}
+  }
+  /* Le serveur enregistre le score et décide des pièces : 1 pour un record perso, 5 pour le record absolu */
+  async function cloudSubmitScore(sid, id, value) {
+    if(!(await cloudSettle()))throw new Error("OFFLINE");
+    var res=await cloudClient.rpc("student_submit_score",{p_token:cloudToken,p_game:id,p_value:value,p_version:cloudVersion});
+    if(res.error)throw res.error;
+    var r=res.data;
+    cloudVersion=Number(r.version);
+    if(!data.hi[sid])data.hi[sid]={};
+    data.hi[sid][id]=r.entry;
+    data.coins[sid]=Number(r.coins)||0;
+    cloudStatus("☁️ Sauvegardé");
+    await refreshClassRecords(true);
+    return r;
   }
   function save() { if(cloudMode)cloudQueue(); else try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) {} }
   function uid() { return "x" + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36); }
@@ -2367,8 +2410,15 @@
     return { record: better, first: better && prev === null, prev: prev, value: value };
   }
   function betterThan(g, a, b) { return g.mode === "min" ? a < b : a > b; }
-  /* Le record absolu : le meilleur score de toute la classe, avec le nom de celui qui le détient (à égalité, le premier arrivé) */
+  /* Le record absolu : le meilleur score de toute la classe, avec le nom de celui qui le détient (à égalité, le premier arrivé).
+     En version connectée, c’est le serveur qui le calcule (student_get_class_records). */
   function absRecord(id) {
+    if (cloudMode) {
+      if (classSize < 2) return null;
+      var c = classRecords[id];
+      if (!c || typeof c.value !== "number") return null;
+      return { sid: c.mine ? ses.sid : null, name: c.nickname, avatar: c.avatar || "", value: c.value };
+    }
     if (data.students.length < 2) return null;   /* un record « absolu » n’a de sens qu’avec au moins 2 élèves à comparer */
     var g = gameInfo(id), best = null;
     data.students.forEach(function (st) {
@@ -2379,10 +2429,11 @@
     });
     return best;
   }
+  function holderName(a) { return (a.avatar ? a.avatar + " " : "") + a.name; }
   function absText(id, sid) {
     var g = gameInfo(id), a = absRecord(id);
-    if (!a) return data.students.length < 2 ? "" : "Record absolu : à établir";
-    return "Record absolu : " + g.fmt(a.value) + (a.sid === sid ? ", c’est toi !" : ", " + a.name);
+    if (!a) return (cloudMode ? classSize : data.students.length) < 2 ? "" : "Record absolu : à établir";
+    return "Record absolu : " + g.fmt(a.value) + (a.sid === sid ? ", c’est toi !" : ", " + holderName(a));
   }
   function setGameRecordLine(sid, id) {
     var h = hiOf(sid, id), g = gameInfo(id);
@@ -2391,25 +2442,50 @@
     $("game-abs").textContent = at ? "👑 " + at : "";
   }
   /* À la fin d’une partie : on enregistre le score, on fête un record et on donne des pièces d’or
-     (1 pour un record personnel, 5 pour battre le record absolu de la classe) */
+     (1 pour un record personnel, 5 pour battre le record absolu de la classe).
+     En version connectée, le serveur enregistre le score et décide lui-même des pièces. */
   function finishScore(sid, area, id, value) {
+    if (cloudMode) { finishScoreCloud(sid, area, id, value); return; }
     var g = gameInfo(id), prevAbs = absRecord(id);
     var res = recordScore(sid, id, value);
+    var abs = res.record && prevAbs !== null && betterThan(g, value, prevAbs.value);
+    if (res.record) { data.coins[sid] = coins(sid) + (abs ? 5 : 1); save(); renderPanels(); }
+    showScoreResult(sid, area, id, value, { record: res.record, first: res.first, prev: res.prev, abs: abs, gain: abs ? 5 : 1, prevAbs: prevAbs });
+  }
+  async function finishScoreCloud(sid, area, id, value) {
+    var wait = el("p", "score-line", "Enregistrement du score…");
+    area.appendChild(wait);
+    var shown;
+    try {
+      var r = await cloudSubmitScore(sid, id, value);
+      var pa = r.prevAbs ? { sid: r.prevAbs.mine ? sid : null, name: r.prevAbs.nickname, avatar: r.prevAbs.avatar || "", value: Number(r.prevAbs.value) } : null;
+      shown = { record: !!r.record, first: !!r.first, prev: r.prev === null ? null : Number(r.prev), abs: !!r.absolute, gain: Number(r.gain) || 0, prevAbs: pa };
+    } catch (e) {
+      if (String(e.message || "").includes("SYNC_CONFLICT")) { wait.remove(); showSyncConflict(cloudSnapshot()); return; }
+      /* Hors ligne (ou refus du serveur) : record perso calculé ici, 1 pièce au plus, jamais le bonus du record absolu */
+      var res = recordScore(sid, id, value);
+      if (res.record) { data.coins[sid] = coins(sid) + 1; save(); }
+      shown = { record: res.record, first: res.first, prev: res.prev, abs: false, gain: 1, prevAbs: null, offline: true };
+    }
+    wait.remove();
+    renderPanels();
+    showScoreResult(sid, area, id, value, shown);
+  }
+  function showScoreResult(sid, area, id, value, res) {
+    var g = gameInfo(id), abs = res.abs, prevAbs = res.prevAbs;
     if (res.record) {
-      var abs = prevAbs !== null && betterThan(g, value, prevAbs.value);
-      var gain = abs ? 5 : 1;
-      data.coins[sid] = coins(sid) + gain;
-      save(); renderPanels();
+      var gain = res.gain;
       var box = el("div", "record-banner" + (abs ? " absolute" : ""));
       box.appendChild(el("div", "rb-title", abs ? "Record absolu !" : (res.first ? "Premier score !" : "Nouveau record !")));
       box.appendChild(el("div", "rb-value", g.fmt(value)));
       box.appendChild(el("div", "rb-prev", abs
-        ? (prevAbs.sid === sid ? "Tu améliores ton propre record absolu : " + g.fmt(prevAbs.value) : "Tu prends le record de " + prevAbs.name + " : " + g.fmt(prevAbs.value))
+        ? (prevAbs.sid === sid ? "Tu améliores ton propre record absolu : " + g.fmt(prevAbs.value) : "Tu prends le record de " + holderName(prevAbs) + " : " + g.fmt(prevAbs.value))
         : (res.first ? "C’est ton record à battre." : "Ancien record : " + g.fmt(res.prev))));
       var gl = el("div", "rb-coins");
       gl.appendChild(coinEl());
       gl.appendChild(document.createTextNode(" +" + gain + (gain > 1 ? " pièces d’or" : " pièce d’or")));
       box.appendChild(gl);
+      if (res.offline) box.appendChild(el("div", "rb-prev", "Pas de réseau : le record de la classe sera vérifié plus tard."));
       area.appendChild(box);
       var reduce = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
       if (!reduce) { confetti(abs ? 140 : 80, abs); setTimeout(function () { var c = $("confetti"); if (c) c.innerHTML = ""; }, 5000); }
@@ -2643,6 +2719,7 @@
     return cab;
   }
   function renderJeux() {
+    if (cloudToken) refreshClassRecords();
     var body = $("jeux-body");
     body.innerHTML = "";
     var sid = ses.sid;
@@ -4198,7 +4275,7 @@
       if(teacherSettings.texts&&typeof teacherSettings.texts==="object")data.texts=teacherSettings.texts;
 
       cloudStudentId=st.student_id;
-      data.students=[{id:st.student_id,name:st.nickname}];
+      data.students=[{id:st.student_id,name:st.nickname,avatar:typeof p.avatar==="string"?p.avatar:undefined}];
       data.results=Array.isArray(p.results)?p.results:[];
       data.coins={[st.student_id]:Number(p.coins)||0};
       data.credits={[st.student_id]:Number(p.credits)||0};
@@ -4222,6 +4299,7 @@
       var bar=document.createElement("div");
       bar.id="cloud-status";bar.style.cssText="position:fixed;bottom:10px;left:10px;z-index:9999;background:#372465;color:white;border-radius:12px;padding:8px 12px;font:13px system-ui;box-shadow:0 3px 12px #0005";
       bar.append(document.createTextNode("☁️ Profil connecté · "+st.nickname));cloudStatusNode=bar;bar.dataset.nickname=st.nickname;
+      refreshClassRecords(true);
       var link=document.createElement("a");link.href="eleve.html";link.textContent=" · Déconnexion";link.style.color="#ffe37c";link.onclick=function(ev){ev.preventDefault();logout()};bar.append(link);document.body.append(bar);
     } catch(e) {
       alert("Impossible de charger ton Zoo : "+(e.message||"session expirée")+". Reconnecte-toi.");
