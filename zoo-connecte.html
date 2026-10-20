@@ -547,6 +547,7 @@
   .panel-nav.listen-cta[aria-current="page"] { background: #0f4a40; color: #fff; border-color: #0f4a40; }
   .panel-nav.listen-cta[aria-current="page"] .pn-sub { color: #fff; }
   .listen-card { max-width: 760px; margin: 0 auto; }
+  .zoo-card.heard { border-color: #3a9d8c; box-shadow: 0 0 0 3px #3a9d8c33; }
   .listen-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
   .listen-count { font-weight: 800; }
   .listen-dots { display: flex; gap: 6px; margin: 10px 0; }
@@ -862,7 +863,8 @@
         <button type="button" class="primary small" id="btn-panel-wheel" hidden>Lancer la roue</button>
       </div>
       <button type="button" class="panel-nav needs-reward" data-go="boutique"><span class="pn-ico" aria-hidden="true">🛍️</span><span>Boutique<span class="pn-sub" id="pl-shop"></span></span></button>
-      <button type="button" class="panel-nav" data-go="cartes"><span class="pn-ico" aria-hidden="true">🐾</span><span>Mes cartes</span></button>
+      <button type="button" class="panel-nav" data-go="cartes"><span class="pn-ico" aria-hidden="true">🐾</span><span>Mes cartes lues</span></button>
+      <button type="button" class="panel-nav" data-go="reconnues"><span class="pn-ico" aria-hidden="true">👂</span><span>Mes cartes reconnues</span></button>
       <button type="button" class="panel-nav" data-go="progres"><span class="pn-ico" aria-hidden="true">📈</span><span>Ma progression<span class="pn-sub" id="pr-prog"></span></span></button>
     </aside>
 
@@ -1048,6 +1050,7 @@
 
   <!-- MES CARTES -->
   <section id="v-cartes" hidden><div id="cartes-body"></div></section>
+  <section id="v-reconnues" hidden><div id="reconnues-body"></div></section>
 
   <!-- BOUTIQUE -->
   <section id="v-boutique" hidden><div id="boutique-body"></div></section>
@@ -1836,10 +1839,10 @@
   }
 
   /* ---------- Navigation ---------- */
-  var STUDENT_VIEWS = ["home", "lecture", "audition", "cartes", "boutique", "jeux", "progres", "roue", "jeu"];
+  var STUDENT_VIEWS = ["home", "lecture", "audition", "cartes", "reconnues", "boutique", "jeux", "progres", "roue", "jeu"];
   var TEACHER_VIEWS = ["eleves", "ecoute", "progression", "reglages"];
   var VIEWS = ["login"].concat(STUDENT_VIEWS, TEACHER_VIEWS);
-  var GO_GROUP = { lecture: "lecture", audition: "audition", jeux: "jeux", jeu: "jeux", roue: "jeux", boutique: "boutique", cartes: "cartes", progres: "progres" };
+  var GO_GROUP = { lecture: "lecture", audition: "audition", jeux: "jeux", jeu: "jeux", roue: "jeux", boutique: "boutique", cartes: "cartes", reconnues: "reconnues", progres: "progres" };
   function show(v) {
     if (STUDENT_VIEWS.indexOf(v) >= 0 && ses.role !== "student") v = "login";
     if (TEACHER_VIEWS.indexOf(v) >= 0 && ses.role !== "teacher") v = "login";
@@ -1859,6 +1862,7 @@
     if (v === "home") renderHome();
     if (v === "lecture") renderSetup();
     if (v === "cartes") renderCartes();
+    if (v === "reconnues") renderReconnues();
     if (v === "boutique") renderBoutique();
     if (v === "audition") renderAudition();
     if (v === "reglages") listenSettingsFill();
@@ -3312,8 +3316,11 @@
     var avail = availSounds();
     var found = avail.filter(function (x) { return petState(sid, x.id).got > 0; }).length;
     var head = el("div", "card");
-    head.appendChild(el("h2", "", "Mes cartes"));
+    head.appendChild(el("h2", "", "Mes cartes lues"));
+    var toRec = el("button", "secondary", "👂 Voir mes cartes reconnues"); toRec.type = "button";
+    toRec.addEventListener("click", function () { goTo("reconnues"); });
     head.appendChild(el("p", "muted", found + (found > 1 ? " animaux ont éclos" : " animal a éclos") + " sur " + avail.length + ". Chaque niveau validé le fait grandir."));
+    head.appendChild(toRec);
     body.appendChild(head);
     var grid = el("div", "zoo-grid");
     avail.forEach(function (x) {
@@ -3329,6 +3336,40 @@
       b.appendChild(el("div", "cap", ps.locked ? "verrouillé" : (ps.got === 0 ? "un œuf" : cap(ch.nom))));
       b.setAttribute("aria-label", x.label + " : " + (ps.locked ? "verrouillé" : ps.got + " étape" + (ps.got > 1 ? "s" : "") + " validée" + (ps.got > 1 ? "s" : "") + " sur " + ps.total));
       b.addEventListener("click", function () { openSound(sid, x.id); });
+      grid.appendChild(b);
+    });
+    var gc = el("div", "card"); gc.appendChild(grid);
+    body.appendChild(gc);
+  }
+
+  /* Mes cartes reconnues : une carte par son validé dans ÉCOUTER */
+  function renderReconnues() {
+    var body = $("reconnues-body");
+    body.innerHTML = "";
+    var sid = ses.sid, st = studentById(sid);
+    if (!st) return;
+    var ls = listenSounds(), L = listenMine(sid), cfg = data.listenCfg;
+    var won = ls.filter(function (x) { return listenDone(sid, x.id); }).length;
+    var head = el("div", "card");
+    head.appendChild(el("h2", "", "Mes cartes reconnues"));
+    head.appendChild(el("p", "muted", nb(won, "son reconnu", "sons reconnus") + " sur " + ls.length + ". Réussis l’exercice ÉCOUTER " + nb(cfg.passes, "fois", "fois") + " sur un son pour gagner sa carte."));
+    var toRead = el("button", "secondary", "🐾 Voir mes cartes lues"); toRead.type = "button";
+    toRead.addEventListener("click", function () { goTo("cartes"); });
+    head.appendChild(toRead);
+    body.appendChild(head);
+    var grid = el("div", "zoo-grid");
+    ls.forEach(function (x) {
+      var done = listenDone(sid, x.id), unl = listenUnlocked(sid, x.id), n = Math.min(L.passes[x.id] || 0, cfg.passes), ch = charFor(x.id);
+      var b = el("button", "zoo-card" + (done ? " heard" : "")); b.type = "button";
+      b.disabled = !unl;
+      b.appendChild(buildPet(done ? { got: 1, total: 1, locked: false } : { got: 0, total: 1, locked: !unl }, ch));
+      b.appendChild(el("div", "son", x.label));
+      var stars = el("div", "mini-stars"); stars.setAttribute("aria-hidden", "true");
+      for (var i = 0; i < cfg.passes; i++) stars.appendChild(el("span", "star " + (done || i < n ? "on" : "off"), "★"));
+      b.appendChild(stars);
+      b.appendChild(el("div", "cap", !unl ? "verrouillé" : (done ? "👂 " + cap(ch.nom) : (n ? n + " sur " + cfg.passes : "à écouter"))));
+      b.setAttribute("aria-label", x.label + " : " + (!unl ? "verrouillé" : (done ? "son reconnu" : n + " réussite" + (n > 1 ? "s" : "") + " sur " + cfg.passes)));
+      b.addEventListener("click", function () { LS.sound = x.id; goTo("audition"); });
       grid.appendChild(b);
     });
     var gc = el("div", "card"); gc.appendChild(grid);
