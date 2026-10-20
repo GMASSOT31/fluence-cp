@@ -1300,7 +1300,7 @@
     sel: { sid: null, sound: null, kind: "s" }
   };
   var cloudMode = true, cloudToken = sessionStorage.getItem("zoo_student_token"), cloudClient = window.supabase.createClient("https://pcxpazpflnlwmhyuozdx.supabase.co","sb_publishable_j65mDpDNsuwwaL6uRjsMtA_U_OXQXlL");
-  var cloudBusy = false, cloudDirty = false, cloudTimer = null, cloudStudentId = null;
+  var cloudBusy = false, cloudDirty = false, cloudTimer = null, cloudStudentId = null, cloudVersion = 0, cloudConflict = false;
   var loaded = false;
   if (!cloudMode) try {
     var raw = localStorage.getItem(KEY);
@@ -1384,24 +1384,35 @@
       selSound:data.sel.sound||null };
   }
   function cloudQueue() {
-    if(!cloudStudentId||!cloudToken)return;
+    if(!cloudStudentId||!cloudToken||cloudConflict)return;
     cloudDirty=true;
     clearTimeout(cloudTimer);
     cloudTimer=setTimeout(cloudFlush,700);
   }
   async function cloudFlush() {
-    if(cloudBusy||!cloudDirty||!cloudStudentId)return;
+    if(cloudBusy||!cloudDirty||!cloudStudentId||cloudConflict)return;
     cloudBusy=true;cloudDirty=false;
     var snapshot=cloudSnapshot();
     try {
-      var response=await cloudClient.rpc("student_save_progress",{p_token:cloudToken,p_progress:snapshot});
+      var response=await cloudClient.rpc("student_save_progress_v2",{p_token:cloudToken,p_progress:snapshot,p_version:cloudVersion});
       if(response.error)throw response.error;
+      cloudVersion=Number(response.data);
     } catch(e) {
-      cloudDirty=true;
-      if(typeof toast==="function")toast("Sauvegarde serveur impossible. Vérifie ta connexion.");
+      if(String(e.message||"").includes("SYNC_CONFLICT")){
+        cloudConflict=true;cloudDirty=false;
+        clearTimeout(cloudTimer);
+        try{sessionStorage.setItem("zoo_conflict_backup",JSON.stringify(snapshot));}catch(ignored){}
+        var warning=document.createElement("div");warning.id="sync-warning";warning.style.cssText="position:fixed;inset:0;background:#15102bcb;z-index:100000;display:grid;place-items:center;padding:20px";
+        warning.innerHTML='<div style="max-width:460px;background:white;color:#242044;border-radius:20px;padding:28px;font:16px system-ui;line-height:1.5"><h2>⚠️ Progression modifiée ailleurs</h2><p>Ton Zoo a été enregistré depuis un autre appareil. Pour ne pas écraser tes résultats, la sauvegarde est arrêtée.</p><p>Recharge les données récentes pour continuer. Les changements de cet onglet non enregistrés risquent de ne pas apparaître.</p><button id="sync-reload" style="padding:13px 18px;border:0;border-radius:10px;background:#7046ce;color:white;font-weight:bold;cursor:pointer">Recharger mon Zoo</button></div>';
+        document.body.append(warning);
+        document.getElementById("sync-reload").onclick=function(){location.reload()};
+      }else{
+        cloudDirty=true;
+        if(typeof toast==="function")toast("Sauvegarde serveur impossible. Vérifie ta connexion.");
+      }
     } finally {
       cloudBusy=false;
-      if(cloudDirty){clearTimeout(cloudTimer);cloudTimer=setTimeout(cloudFlush,2500);}
+      if(cloudDirty&&!cloudConflict){clearTimeout(cloudTimer);cloudTimer=setTimeout(cloudFlush,2500);}
     }
   }
   function save() { if(cloudMode)cloudQueue(); else try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) {} }
@@ -4130,11 +4141,13 @@
   async function bootCloud(){
     if(!cloudToken){location.replace("eleve.html");return;}
     try {
-      var result=await cloudClient.rpc("student_get_progress",{p_token:cloudToken});
+      var result=await cloudClient.rpc("student_get_progress_v2",{p_token:cloudToken});
       if(result.error)throw result.error;
       var profile=await cloudClient.rpc("student_session_profile",{p_token:cloudToken});
       if(profile.error)throw profile.error;
-      var st=profile.data, p=result.data||{};
+      if(!result.data)throw new Error("Session expirée");
+      var st=profile.data, p=result.data.progress||{};
+      cloudVersion=Number(result.data.version)||0;
       cloudStudentId=st.student_id;
       data.students=[{id:st.student_id,name:st.nickname}];
       data.results=Array.isArray(p.results)?p.results:[];
