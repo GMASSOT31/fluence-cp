@@ -550,6 +550,11 @@
   }
 
   /* Écouter : choix écrits, gros et tactiles */
+  /* Lire : même traitement qu'ÉCOUTER, en bleu (bleu = lire, vert d'eau = écouter, violet = jouer) */
+  .panel-nav.read-cta { background: linear-gradient(145deg,#e3ebff,#c5d5ff); border-color: #4a6fd1; color: #1c2f6b; }
+  .panel-nav.read-cta .pn-sub { color: #1c2f6b; }
+  .panel-nav.read-cta[aria-current="page"] { background: #1c2f6b; color: #fff; border-color: #1c2f6b; }
+  .panel-nav.read-cta[aria-current="page"] .pn-sub { color: #fff; }
   .panel-nav.listen-cta { background: linear-gradient(145deg,#d9f3ee,#b7e6dc); border-color: #3a9d8c; color: #0f4a40; }
   .panel-nav.listen-cta .pn-sub { color: #0f4a40; }
   .panel-nav.listen-cta[aria-current="page"] { background: #0f4a40; color: #fff; border-color: #0f4a40; }
@@ -1291,7 +1296,7 @@
     </div>
 
     <aside class="panel right" id="panel-right" aria-label="Lire et jouer" hidden>
-      <button type="button" class="panel-nav big" data-go="lecture"><span class="pn-ico" aria-hidden="true">📖</span><span>Lire<span class="pn-sub" id="pr-next"></span></span></button>
+      <button type="button" class="panel-nav big read-cta" data-go="lecture"><span class="pn-ico" aria-hidden="true">📖</span><span>Lire<span class="pn-sub" id="pr-next"></span></span></button>
       <button type="button" class="panel-nav big listen-cta" data-go="audition"><span class="pn-ico" aria-hidden="true">👂</span><span>ÉCOUTER<span class="pn-sub" id="pr-listen"></span></span></button>
       <button type="button" class="panel-nav big needs-reward play-cta" data-go="jeux"><span class="play-cta-spark" aria-hidden="true">✦ ✧ ✦</span><span class="pn-ico play-cta-icon" aria-hidden="true">🎮</span><span class="play-cta-copy"><span class="play-cta-kicker">LA SALLE D’ARCADE</span><span class="play-cta-title">JOUER <span aria-hidden="true">➜</span></span><span class="pn-sub play-cta-count" id="pr-games"></span><span class="play-cta-hook">🏆 Relève les défis !</span></span></button>
     </aside>
