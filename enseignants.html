@@ -7,7 +7,7 @@
 .eval-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.eval-grid input{min-width:0}@media(max-width:560px){.eval-grid{grid-template-columns:1fr}}
 main{max-width:1050px}
 .teacher-space{display:grid;gap:20px;margin-top:22px}
-.teacher-space>.panel{margin:0}
+.teacher-space>.panel{margin:0}#classRosterSettings{border-top:5px solid #2e9b91;background:#fff}#classRosterSettings h3{margin:20px 0 8px}#classRosterSettings .row{background:#f6f8fc;border:1px solid #e4e8f0;border-radius:12px;padding:14px;margin:9px 0}#classRosterSettings .row strong{font-size:1.12rem}
 .teacher-header{padding:23px 26px}
 .teacher-header>.row{border-bottom:0;padding:0}
 .quota-tag{display:inline-flex;font-weight:750;margin:12px 0 17px;padding:10px 14px;border-radius:12px}
@@ -81,7 +81,8 @@ main{max-width:1050px}
   </nav>
   <p id="spaceMsg" class="msg" role="status"></p>
  </div>
- <section class="panel feature-card classes-card" id="classesSettings" data-section="eleves">
+ <section class="panel feature-card student-card" id="classRosterSettings" data-section="eleves"><h2>🧒 Ma classe</h2><p class="muted">Tes élèves sont affichés ici dès la connexion. Tu peux modifier leur PIN directement.</p><div id="classRoster"></div></section>
+<section class="panel feature-card classes-card" id="classesSettings" data-section="eleves">
   <div class="section-head"><div class="section-icon">📚</div><div><h2>Mes classes</h2><p class="muted">Retrouve tes classes et leur code de connexion.</p></div></div>
   <div id="classes" class="content-list"></div>
   <div class="form-zone"><h3>Créer une classe</h3><form id="classForm"><label for="className">Nom de la classe</label><input id="className" required maxlength="80" placeholder="Ex. CP A"><div class="actions"><button>+ Ajouter la classe</button></div></form></div>
@@ -96,7 +97,7 @@ main{max-width:1050px}
   <div class="actions section-actions"><button type="button" class="secondary" id="reloadProgress">↻ Actualiser les résultats</button></div>
   <p id="progressMsg" class="msg" role="status"></p><div id="progressList" class="content-list"></div></section>
  <section class="panel feature-card pin-card" id="evaluationCodeSettings" data-section="reglages"><div class="section-head"><div class="section-icon">🔑</div><div><h2>Code d'évaluation de la maîtresse</h2><p class="muted">Un seul code pour autoriser les évaluations de tous tes élèves.</p></div></div><form id="evalCodeForm"><label for="evalCode">Choisir ou changer mon code</label><input id="evalCode" type="password" minlength="4" maxlength="64" autocomplete="new-password" required placeholder="Au moins 4 caractères"><div class="actions"><button type="submit">Enregistrer mon code d'évaluation</button></div></form><p class="msg" id="evalCodeMsg" role="status"></p></section>
-<section class="panel feature-card student-card" id="classRosterSettings" data-section="eleves"><h2>Ma classe</h2><p class="muted">Élèves inscrits sur Supabase, regroupés par classe.</p><div id="classRoster"></div></section>
+
 <section class="panel feature-card pin-card" id="pinSettings" data-section="eleves">
   <div class="section-head"><div class="section-icon">🔐</div><div><h2>Gestion des codes PIN</h2><p class="muted">Crée ou modifie le code secret de chaque élève.</p></div></div>
   <p class="muted privacy-note">Choisis 4 à 8 chiffres et transmets le code individuellement à l'élève ou à sa famille.</p>
