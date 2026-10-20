@@ -4164,6 +4164,14 @@
       if(!result.data)throw new Error("Session expirée");
       var st=profile.data, p=result.data.progress||{};
       cloudVersion=Number(result.data.version)||0;
+      var settingsResponse=await cloudClient.rpc("student_get_teacher_settings",{p_token:cloudToken});
+      var teacherSettings=!settingsResponse.error&&settingsResponse.data||{};
+      if(teacherSettings.thr&&typeof teacherSettings.thr==="object")["s","m","t"].forEach(function(k){var n=Number(teacherSettings.thr[k]);if(n>=1&&n<=300)data.thr[k]=n;});
+      if(typeof teacherSettings.lock==="boolean")data.lock=teacherSettings.lock;
+      if(typeof teacherSettings.reward==="boolean")data.reward=teacherSettings.reward;
+      if(typeof teacherSettings.sfx==="boolean")data.sfx=teacherSettings.sfx;
+      if(Number.isInteger(teacherSettings.maxPlays)&&teacherSettings.maxPlays>=0&&teacherSettings.maxPlays<=50)data.maxPlays=teacherSettings.maxPlays;
+
       cloudStudentId=st.student_id;
       data.students=[{id:st.student_id,name:st.nickname}];
       data.results=Array.isArray(p.results)?p.results:[];
@@ -4176,9 +4184,10 @@
       data.reviews=Array.isArray(p.reviews)?p.reviews:[];
       data.notes=Array.isArray(p.notes)?p.notes:[];
       if(p.shop&&typeof p.shop==="object"&&Array.isArray(p.shop.rewards))data.shop=p.shop;
-      if(Number.isInteger(p.maxPlays)&&p.maxPlays>0)data.maxPlays=p.maxPlays;
-      if(typeof p.reward==="boolean")data.reward=p.reward;
-      if(typeof p.sfx==="boolean")data.sfx=p.sfx;
+      if(Number.isInteger(teacherSettings.packPrice)&&teacherSettings.packPrice>0)data.shop.packPrice=teacherSettings.packPrice;
+      if(Number.isInteger(p.maxPlays)&&p.maxPlays>=0&&teacherSettings.maxPlays==null)data.maxPlays=p.maxPlays;
+      if(typeof p.reward==="boolean"&&teacherSettings.reward==null)data.reward=p.reward;
+      if(typeof p.sfx==="boolean"&&teacherSettings.sfx==null)data.sfx=p.sfx;
       data.sel.sid=st.student_id;data.sel.sound=p.selSound||null;
       if(["s","m","t"].includes(p.selKind))data.sel.kind=p.selKind;
       if(!data.sel.sound)applySuggestion();
