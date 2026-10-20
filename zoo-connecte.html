@@ -1300,7 +1300,8 @@
     sel: { sid: null, sound: null, kind: "s" }
   };
   var cloudMode = true, cloudToken = sessionStorage.getItem("zoo_student_token"), cloudClient = window.supabase.createClient("https://pcxpazpflnlwmhyuozdx.supabase.co","sb_publishable_j65mDpDNsuwwaL6uRjsMtA_U_OXQXlL");
-  var cloudBusy = false, cloudDirty = false, cloudTimer = null, cloudStudentId = null, cloudVersion = 0, cloudConflict = false;
+  var cloudBusy = false, cloudDirty = false, cloudTimer = null, cloudStudentId = null, cloudVersion = 0, cloudConflict = false, cloudStatusNode = null;
+  function cloudStatus(label){if(cloudStatusNode)cloudStatusNode.firstChild.textContent=label+" · "+(cloudStatusNode.dataset.nickname||"");}
   var loaded = false;
   if (!cloudMode) try {
     var raw = localStorage.getItem(KEY);
@@ -1381,11 +1382,13 @@
       hi:data.hi[sid]||{}, vouchers:data.vouchers.filter(function(x){return x.sid===sid}),
       reviews:data.reviews.filter(function(x){return x.sid===sid}),
       notes:data.notes.filter(function(x){return x.sid===sid}),
-      selSound:data.sel.sound||null };
+      selSound:data.sel.sound||null, selKind:data.sel.kind||"s",
+      shop:data.shop, maxPlays:data.maxPlays, reward:data.reward, sfx:data.sfx };
   }
   function cloudQueue() {
     if(!cloudStudentId||!cloudToken||cloudConflict)return;
     cloudDirty=true;
+    cloudStatus("☁️ Sauvegarde en attente");
     clearTimeout(cloudTimer);
     cloudTimer=setTimeout(cloudFlush,700);
   }
@@ -1397,9 +1400,11 @@
       var response=await cloudClient.rpc("student_save_progress_v2",{p_token:cloudToken,p_progress:snapshot,p_version:cloudVersion});
       if(response.error)throw response.error;
       cloudVersion=Number(response.data);
+      cloudStatus("☁️ Sauvegardé");
     } catch(e) {
       if(String(e.message||"").includes("SYNC_CONFLICT")){
         cloudConflict=true;cloudDirty=false;
+        cloudStatus("⚠️ Synchronisation interrompue");
         clearTimeout(cloudTimer);
         try{sessionStorage.setItem("zoo_conflict_backup",JSON.stringify(snapshot));}catch(ignored){}
         var warning=document.createElement("div");warning.id="sync-warning";warning.style.cssText="position:fixed;inset:0;background:#15102bcb;z-index:100000;display:grid;place-items:center;padding:20px";
@@ -1408,6 +1413,7 @@
         document.getElementById("sync-reload").onclick=function(){location.reload()};
       }else{
         cloudDirty=true;
+        cloudStatus("⚠️ Hors ligne, nouvelle tentative");
         if(typeof toast==="function")toast("Sauvegarde serveur impossible. Vérifie ta connexion.");
       }
     } finally {
@@ -4159,13 +4165,18 @@
       data.vouchers=Array.isArray(p.vouchers)?p.vouchers:[];
       data.reviews=Array.isArray(p.reviews)?p.reviews:[];
       data.notes=Array.isArray(p.notes)?p.notes:[];
+      if(p.shop&&typeof p.shop==="object"&&Array.isArray(p.shop.rewards))data.shop=p.shop;
+      if(Number.isInteger(p.maxPlays)&&p.maxPlays>0)data.maxPlays=p.maxPlays;
+      if(typeof p.reward==="boolean")data.reward=p.reward;
+      if(typeof p.sfx==="boolean")data.sfx=p.sfx;
       data.sel.sid=st.student_id;data.sel.sound=p.selSound||null;
+      if(["s","m","t"].includes(p.selKind))data.sel.kind=p.selKind;
       if(!data.sel.sound)applySuggestion();
       ses.role="student";ses.sid=st.student_id;ses.viaTeacher=false;ses.unlocked=false;ses.teacherAuth=false;
       setMode();show("home");
       var bar=document.createElement("div");
       bar.id="cloud-status";bar.style.cssText="position:fixed;bottom:10px;left:10px;z-index:9999;background:#372465;color:white;border-radius:12px;padding:8px 12px;font:13px system-ui;box-shadow:0 3px 12px #0005";
-      bar.textContent="☁️ Profil connecté · "+st.nickname;
+      bar.append(document.createTextNode("☁️ Profil connecté · "+st.nickname));cloudStatusNode=bar;bar.dataset.nickname=st.nickname;
       var link=document.createElement("a");link.href="eleve.html";link.textContent=" · Déconnexion";link.style.color="#ffe37c";link.onclick=function(){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name")};bar.append(link);document.body.append(bar);
     } catch(e) {
       alert("Impossible de charger ton Zoo : "+(e.message||"session expirée")+". Reconnecte-toi.");
