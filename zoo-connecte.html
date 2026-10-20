@@ -1441,6 +1441,7 @@
     lock: true,
     reward: true,
     sfx: true,
+    allowRec: true,   /* le maître(sse) peut retirer la lecture enregistrée (réglages péda) */
     credits: {},
     coins: {},
     wheels: [],
@@ -2028,7 +2029,8 @@
         ? "Entraîne-toi autant que tu veux, seul(e), avec un camarade ou avec tes parents : celui qui t’écoute touche les mots où tu te trompes. Si tu atteins l’objectif et que tu enregistres, l’étape est validée ✓ et tu passes à la suite."
         : "Quand tu te sens prêt(e), passe l’évaluation avec ton maître(sse) : c’est elle qui certifie l’étape 🏅, te donne ta roue et fait monter ton niveau.";
     }
-    $("fld-mode").hidden = !(picker && ses.goal === "eval");
+    if (data.allowRec === false) ses.mode = "live";   /* lecture enregistrée désactivée par le maître(sse) */
+    $("fld-mode").hidden = !(picker && ses.goal === "eval") || data.allowRec === false;
     if (asStudent && !ses.viaTeacher) {
       var sup = recSupport();
       if (ses.mode === "rec" && sup) ses.mode = "live";
@@ -4362,6 +4364,7 @@
         if(previous!==JSON.stringify(data.shop.rewards)&&ses.role==="student"&&document.getElementById("boutique-body"))renderBoutique();
       }
       if(Number.isInteger(settings.packPrice)&&settings.packPrice>0)data.shop.packPrice=settings.packPrice;
+      if(typeof settings.allowRec==="boolean")data.allowRec=settings.allowRec;
     }catch(err){console.warn("Actualisation boutique",err);}
     finally{shopSettingsRefreshing=false;}
   }
@@ -5134,6 +5137,7 @@
       if(typeof teacherSettings.lock==="boolean")data.lock=teacherSettings.lock;
       if(typeof teacherSettings.reward==="boolean")data.reward=teacherSettings.reward;
       if(typeof teacherSettings.sfx==="boolean")data.sfx=teacherSettings.sfx;
+      if(typeof teacherSettings.allowRec==="boolean")data.allowRec=teacherSettings.allowRec;
       if(Number.isInteger(teacherSettings.maxPlays)&&teacherSettings.maxPlays>=0&&teacherSettings.maxPlays<=50)data.maxPlays=teacherSettings.maxPlays;
       if(Array.isArray(teacherSettings.sounds)&&teacherSettings.sounds.length)data.sounds=teacherSettings.sounds.filter(function(s){return s&&typeof s.id==="string"&&typeof s.label==="string";});
       if(teacherSettings.texts&&typeof teacherSettings.texts==="object")data.texts=teacherSettings.texts;
