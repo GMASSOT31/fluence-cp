@@ -98,8 +98,7 @@ main{max-width:1050px}
   <div class="section-head"><div class="section-icon">📊</div><div><h2>Progressions et résultats</h2><p class="muted">Évaluations du Zoo, entraînements, scores de fluence et jeux sauvegardés sur Supabase.</p></div></div>
   <div class="actions section-actions"><button type="button" class="secondary" id="reloadProgress">↻ Actualiser les résultats</button></div>
   <p id="progressMsg" class="msg" role="status"></p><div id="progressList" class="content-list"></div></section>
- <section class="panel feature-card pin-card" id="passwordSettings" data-section="reglages"><div class="section-head"><div class="section-icon">🔒</div><div><h2>Mon mot de passe</h2><p class="muted">Pour te connecter à cet espace enseignant.</p></div></div><form id="passwordForm"><label for="changePassword">Nouveau mot de passe (au moins 8 caractères)</label><input id="changePassword" type="password" autocomplete="new-password" minlength="8" maxlength="72" required><label for="changePassword2">Écris-le une deuxième fois</label><input id="changePassword2" type="password" autocomplete="new-password" minlength="8" maxlength="72" required><div class="actions"><button id="passwordSave" type="submit">Changer mon mot de passe</button></div></form><p class="msg" id="passwordMsg" role="status"></p></section>
- <section class="panel feature-card pin-card" id="evaluationCodeSettings" data-section="reglages"><div class="section-head"><div class="section-icon">🔑</div><div><h2>Code d'évaluation de la maîtresse</h2><p class="muted">Un seul code pour autoriser les évaluations de tous tes élèves.</p></div></div><form id="evalCodeForm"><label for="evalCode">Choisir ou changer mon code</label><input id="evalCode" type="password" minlength="4" maxlength="64" autocomplete="new-password" required placeholder="Au moins 4 caractères"><div class="actions"><button type="submit">Enregistrer mon code d'évaluation</button></div></form><p class="msg" id="evalCodeMsg" role="status"></p></section>
+ <section class="panel feature-card pin-card" id="passwordSettings" data-section="reglages"><div class="section-head"><div class="section-icon">🔒</div><div><h2>Mon mot de passe</h2><p class="muted">Pour te connecter à cet espace enseignant. Il sert aussi à lancer les évaluations dans le Zoo des élèves.</p></div></div><form id="passwordForm"><label for="changePassword">Nouveau mot de passe (au moins 8 caractères)</label><input id="changePassword" type="password" autocomplete="new-password" minlength="8" maxlength="72" required><label for="changePassword2">Écris-le une deuxième fois</label><input id="changePassword2" type="password" autocomplete="new-password" minlength="8" maxlength="72" required><div class="actions"><button id="passwordSave" type="submit">Changer mon mot de passe</button></div></form><p class="msg" id="passwordMsg" role="status"></p></section>
 
 <section class="panel feature-card pin-card" id="pinSettings" data-section="eleves">
   <div class="section-head"><div class="section-icon">🔐</div><div><h2>Gestion des codes PIN</h2><p class="muted">Crée ou modifie le code secret de chaque élève.</p></div></div>
@@ -302,11 +301,6 @@ async function renderProgress(students,classes){
  if(!students.length)container.textContent="Aucun élève inscrit.";
 }
 $("reloadProgress").onclick=()=>refresh();
-$("evalCodeForm").onsubmit=async ev=>{
- ev.preventDefault();const btn=ev.target.querySelector("button");btn.disabled=true;
- try{const {error}=await client.rpc("set_evaluation_code",{p_code:$("evalCode").value});if(error)throw error;$("evalCode").value="";msg("evalCodeMsg","Code enregistré sur le serveur. Il fonctionne désormais pour les élèves de tes classes.");}
- catch(e){msg("evalCodeMsg",errorText(e),true)}finally{btn.disabled=false}
-};
 
 
 

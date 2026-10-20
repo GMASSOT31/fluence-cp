@@ -871,10 +871,10 @@
         <p class="hint" id="mode-hint"></p>
       </div>
       <div id="gate" hidden>
-        <p>La lecture se fait avec la maîtresse. Elle entre son code pour commencer.</p>
+        <p>La lecture se fait avec la maîtresse. Elle entre son mot de passe pour commencer.</p>
         <div class="field">
-          <label for="in-gate">Code de la maîtresse</label>
-          <input type="password" id="in-gate" autocomplete="off" autocapitalize="none">
+          <label for="in-gate">Mot de passe de la maîtresse</label>
+          <input type="password" id="in-gate" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" data-lpignore="true">
         </div>
         <p class="bad-msg" id="gate-msg" role="alert"></p>
         <button type="button" class="primary" id="btn-gate">Valider</button>
@@ -1801,16 +1801,17 @@
     $(id).addEventListener("keydown", function (ev) { if (ev.key === "Enter") teacherEnter(); });
   });
 
-  /* La lecture se fait avec la maîtresse : son code débloque la lecture pour la durée de la connexion */
+  /* La lecture se fait avec la maîtresse : son mot de passe (celui de son espace enseignant) débloque la lecture pour la durée de la connexion */
   async function gateTry() {
-    var message=$("gate-msg"),code=normSecret($("in-gate").value);
-    if(!code){message.textContent="Saisis le code de la maîtresse.";return;}
-    message.textContent="Vérification du code…";
+    var message=$("gate-msg"),code=$("in-gate").value;
+    if(!code){message.textContent="Saisis le mot de passe de la maîtresse.";return;}
+    $("in-gate").value="";
+    message.textContent="Vérification du mot de passe…";
     try {
       var result=await cloudClient.rpc("verify_evaluation_code",{p_token:cloudToken,p_code:code});
-      if(result.error)throw result.error;
-      if(result.data){ses.unlocked=true;$("in-gate").value="";message.textContent="";renderSetup();}
-      else{message.textContent="Code incorrect ou non défini. La maîtresse peut le configurer dans son espace enseignant.";$("in-gate").value="";}
+      if(result.error){if(/Trop d/.test(result.error.message||"")){message.textContent=result.error.message;return;}throw result.error;}
+      if(result.data){ses.unlocked=true;message.textContent="";renderSetup();}
+      else{message.textContent="Mot de passe incorrect.";}
     } catch(err){message.textContent="Vérification impossible. Réessaie lorsque la connexion fonctionne.";}
   }
   $("seg-goal").addEventListener("click", function (ev) {
