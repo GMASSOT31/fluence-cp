@@ -68,6 +68,7 @@ main{max-width:1050px}
 </header>
 <section class="panel" id="auth"><h2>Créer un compte ou se connecter</h2><p class="muted"><strong>Tu es élève ?</strong> <a href="eleve.html" id="authToStudent">Entre ici avec ton code de classe et ton PIN.</a></p><p class="muted">Inscription libre. Chaque compte dispose de 10 places d'élèves par défaut.</p>
 <form id="authForm"><label for="email">Adresse e-mail professionnelle ou personnelle</label><input id="email" type="email" autocomplete="email" required maxlength="254"><label for="password">Mot de passe (au moins 8 caractères)</label><input id="password" type="password" autocomplete="new-password" minlength="8" required><div class="actions"><button id="signup" type="button">Créer mon compte</button><button id="signin" type="submit" class="secondary">Me connecter</button><button id="reset" type="button" class="secondary">Mot de passe oublié</button></div></form><p class="msg" id="authMsg" role="status"></p></section>
+<section class="panel hidden" id="recovery"><h2>🔒 Choisis ton nouveau mot de passe</h2><p class="muted" id="recoveryWho">Tu es arrivée ici par le lien de l’e-mail « Mot de passe oublié ».</p><form id="recoveryForm"><label for="newPassword">Nouveau mot de passe (au moins 8 caractères)</label><input id="newPassword" type="password" autocomplete="new-password" minlength="8" maxlength="72" required><label for="newPassword2">Écris-le une deuxième fois</label><input id="newPassword2" type="password" autocomplete="new-password" minlength="8" maxlength="72" required><div class="actions"><button id="recoverySave" type="submit">Enregistrer mon nouveau mot de passe</button></div></form><p class="msg" id="recoveryMsg" role="status"></p></section>
 <section class="hidden teacher-space" id="space">
  <div class="panel teacher-header">
   <div class="row"><div><h2 style="margin-bottom:3px">👩‍🏫 Mon espace enseignant</h2><span id="who" class="muted"></span></div><span><a href="eleve.html" id="toStudent" style="display:inline-block;padding:10px 14px;margin-right:8px;border-radius:12px;text-decoration:none;font-weight:700;background:#ede9fe;color:#5b21b6">🎒 Espace élève</a><button id="logout" class="secondary" type="button">Déconnexion</button></span></div>
@@ -97,6 +98,7 @@ main{max-width:1050px}
   <div class="section-head"><div class="section-icon">📊</div><div><h2>Progressions et résultats</h2><p class="muted">Évaluations du Zoo, entraînements, scores de fluence et jeux sauvegardés sur Supabase.</p></div></div>
   <div class="actions section-actions"><button type="button" class="secondary" id="reloadProgress">↻ Actualiser les résultats</button></div>
   <p id="progressMsg" class="msg" role="status"></p><div id="progressList" class="content-list"></div></section>
+ <section class="panel feature-card pin-card" id="passwordSettings" data-section="reglages"><div class="section-head"><div class="section-icon">🔒</div><div><h2>Mon mot de passe</h2><p class="muted">Pour te connecter à cet espace enseignant.</p></div></div><form id="passwordForm"><label for="changePassword">Nouveau mot de passe (au moins 8 caractères)</label><input id="changePassword" type="password" autocomplete="new-password" minlength="8" maxlength="72" required><label for="changePassword2">Écris-le une deuxième fois</label><input id="changePassword2" type="password" autocomplete="new-password" minlength="8" maxlength="72" required><div class="actions"><button id="passwordSave" type="submit">Changer mon mot de passe</button></div></form><p class="msg" id="passwordMsg" role="status"></p></section>
  <section class="panel feature-card pin-card" id="evaluationCodeSettings" data-section="reglages"><div class="section-head"><div class="section-icon">🔑</div><div><h2>Code d'évaluation de la maîtresse</h2><p class="muted">Un seul code pour autoriser les évaluations de tous tes élèves.</p></div></div><form id="evalCodeForm"><label for="evalCode">Choisir ou changer mon code</label><input id="evalCode" type="password" minlength="4" maxlength="64" autocomplete="new-password" required placeholder="Au moins 4 caractères"><div class="actions"><button type="submit">Enregistrer mon code d'évaluation</button></div></form><p class="msg" id="evalCodeMsg" role="status"></p></section>
 
 <section class="panel feature-card pin-card" id="pinSettings" data-section="eleves">
@@ -122,18 +124,35 @@ main{max-width:1050px}
 </section></main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script><script>
 (function(){
 "use strict";
+/* Retour du lien « Mot de passe oublié » : on lit l’adresse avant que la bibliothèque Supabase ne la nettoie */
+const arrival=new URLSearchParams((location.hash||"").replace(/^#/,"")+"&"+(location.search||"").replace(/^\?/,""));
+let recoveryMode=arrival.get("type")==="recovery";
+const arrivalError=arrival.get("error_code")||arrival.get("error")||"";
+const pageUrl=location.origin+location.pathname;
 const client=window.supabase.createClient("https://pcxpazpflnlwmhyuozdx.supabase.co","sb_publishable_j65mDpDNsuwwaL6uRjsMtA_U_OXQXlL");
 const $=id=>document.getElementById(id);let currentUser=null,allStudents=[],allClasses=[],activeTab="eleves";
 const ORIGINAL_SOUNDS=[{"id":"voy","label":"voyelles","only":["s"]},{"id":"l","label":"l"},{"id":"f","label":"f"},{"id":"ch","label":"ch"},{"id":"s","label":"s"},{"id":"m","label":"m"},{"id":"r","label":"r"},{"id":"n","label":"n"},{"id":"v","label":"v"},{"id":"j","label":"j"},{"id":"z","label":"z"},{"id":"p","label":"p"},{"id":"t","label":"t"},{"id":"c","label":"c"},{"id":"b","label":"b"},{"id":"d","label":"d"},{"id":"g","label":"g"},{"id":"ou","label":"ou"},{"id":"au","label":"au, eau"},{"id":"h","label":"h"},{"id":"on","label":"on, om"},{"id":"oi","label":"oi"},{"id":"an","label":"an, am"},{"id":"en","label":"en, em"},{"id":"ai","label":"ai, ei, ê, et"},{"id":"er","label":"er, ez, es"},{"id":"fr","label":"fr, pr…"},{"id":"fl","label":"fl, pl…"},{"id":"in","label":"in, im"},{"id":"ain","label":"ain, ein"},{"id":"oin","label":"oin"},{"id":"ian","label":"ian…"},{"id":"eu","label":"eu, oeu"},{"id":"k","label":"k, qu"},{"id":"gn","label":"gn"},{"id":"ph","label":"ph"},{"id":"gj","label":"g qui se lit j"},{"id":"cs","label":"c qui se lit s"},{"id":"es","label":"es, er, el, ec"},{"id":"elle","label":"elle, ette…"},{"id":"sz","label":"s qui se lit z"},{"id":"ill","label":"ill"},{"id":"y","label":"y, ii"},{"id":"ti","label":"ti qui se lit si"},{"id":"w","label":"w"},{"id":"x","label":"x"},{"id":"un","label":"un, yn"}];
 const ORIGINAL_TEXTS={"s:voy":"o e é e è o u i o a y e u y\nè a u è é a é i e u è y é\nu y e i y i o i a é a è o","s:l":"la li lo lu le lé lè la lu li lo le lé lè lu la lo li lé le lè la li lu lo\nal il ol ul el","m:l":"la le il lu lue il la lu le lue\nLola Lila Lili Lulu Ali Léa Léo olé élu Lola Lili Léo olé","t:l":"Lola a lu. Lila a lu. Léa a lu, Léo a lu. Lulu a lu, lu, lu. Ali a lu. Il a lu. Léa a élu Léo. Lila a élu Lola. Ali a lu, Ali a lu.","s:f":"fa fi fo fu fe fé fè fa fu fi fo fe fé fè fu fa fo fi fé fe fè fa fi fu fo\naf if of uf ef","m:f":"fil fol fée file elfe fil fée fol file elfe\nFifi folie filé Fifi folie filé folie Fifi filé","t:f":"Fifi a lu. Fifi a lu la folie. La fée a le fil. Léa a filé. Léo a filé le fil. Lola a lu la fée. Lila a la fée. Ali a lu, lu, lu. Il a lu la folie.","s:ch":"cha chi cho chu che ché chè cha chu chi cho che ché chè chu cha cho chi ché che chè cha chi chu cho","m:ch":"chef fiche lèche chef fiche lèche\nfichu chichi léché fiché fichu chichi léché fiché","t:ch":"Le chef a lu. Le chef a fiché la fiche. Fifi a lu la fiche. Léa a lu la fiche. Ali a fichu la fiche. Léo a lu, lu, lu. Le chef a lu la fiche, lu, lu, lu.","s:s":"sa si so su se sé sè sa su si so se sé sè su sa so si sé se sè sa si su so","m:s":"sol sel sale sole su sèche sue sol sel sole\nsalé salée sali sofa solo séché séchée sofa solo salé","t:s":"Le chef a salé la sole. Léa a sali le sol. Le chef a sali le sofa. Léo a lu sa fiche. Ali a séché la sole. Fifi a salé la sole. Lola a lu, lu, lu. Le chef a lu sa fiche.","s:m":"ma mi mo mu me mé mè ma mu mi mo me mé mè mu ma mo mi mé me mè ma mi mu mo","m:m":"mal mol mule mime lame fume mèche mal mule mime\nMimi lama ami mélo mimé fumé fumée limé ému Émile sumo","t:m":"Mimi a le sofa. Le chef a fumé la sole. Mimi a mimé le chef. Émile a lu la fiche. Le lama a mal. Mimi a lu sa fiche, Émile a lu sa fiche. Léa a salé la sole. Le chef a mimé Mimi.","s:r":"ra ri ro ru re ré rè ra ru ri ro re ré rè ru ra ro ri ré re rè ra ri ru ro\nar ir or ur","m:r":"rue rime rame rare rire lire mire mare mur sur or\nRémi mari sari lira rira marée Rémi mari","t:r":"Rémi a lu sur la rame. Mimi a ri, Rémi a ri. Le chef a lu la fiche sur le mur. Léa a lu sur le sofa. Le lama a ri sur la rame. Rémi a fumé la sole, le chef a salé la sole. Mimi lira la fiche.","s:n":"na ni no nu ne né nè na nu ni no ne né nè nu na no ni né ne nè na ni nu no","m:n":"ne ni nu une lune mine rune fane mène née nue\nNina Nora Léna Éline fané miné uni menu mini narine marine","t:n":"Nina a une rame. Léna a une lune. Le lama a lu sur le mur. Nina a mal, Nina a le fil. Rémi a sali la rue. Léna a une rime. Le chef a salé la sole. Nina a fini.","s:v":"va vi vo vu ve vé vè va vu vi vo ve vé vè vu va vo vi vé ve vè va vi vu vo\nav iv ov uv","m:v":"vu val vol vil vif nave lave rive vive fève sève Ève\nvélo Eva Véra Vivi ravi rival naval volé navire avale élève venu valu","t:v":"Nina va sur le vélo. Marine a vu la lune sur la rue. Le lama va sur la rame. Léa a vu la fée sur le mur. Nina a vu le chef. Il a salé la sole. Marine a lu sur la lune. Léa a vu le navire. Nina va, Nina va, Nina a fini."};
 let cfgSounds=structuredClone(ORIGINAL_SOUNDS),cfgTexts={},cfgRewards=[],editKind="s",editSound="";
 function msg(id,text,error){$(id).textContent=text||"";$(id).classList.toggle("err",!!error)}
-function errorText(e){return e&&e.message?e.message:"Une erreur est survenue."}
+function errorText(e){
+ const m=e&&e.message?String(e.message):"",c=e&&e.code?String(e.code):"";
+ if(c==="invalid_credentials"||/invalid login credentials/i.test(m))return "E-mail ou mot de passe incorrect. Si tu l’as oublié, clique sur « Mot de passe oublié ».";
+ if(c==="same_password"||/different from the old password/i.test(m))return "Ce mot de passe est le même que l’ancien : choisis-en un autre.";
+ if(c==="weak_password"||/password should/i.test(m))return "Mot de passe trop faible : au moins 8 caractères, en mélangeant lettres et chiffres.";
+ if(c==="over_email_send_rate_limit"||/rate limit|too many/i.test(m))return "Trop de demandes en peu de temps. Attends quelques minutes puis réessaie.";
+ if(c==="otp_expired"||/expired|invalid.*(link|token)/i.test(m))return "Ce lien a expiré ou a déjà servi : redemande un e-mail avec « Mot de passe oublié ».";
+ if(c==="email_not_confirmed"||/email not confirmed/i.test(m))return "Ton adresse e-mail n’est pas encore confirmée : clique sur le lien reçu à l’inscription.";
+ if(/session.*missing|not authenticated/i.test(m))return "Ta session a expiré : redemande un e-mail avec « Mot de passe oublié ».";
+ return m||"Une erreur est survenue.";
+}
 function studentLink(code){return new URL("eleve.html?code="+encodeURIComponent(code),location.href).href}
 async function copyStudentLink(code){const link=studentLink(code);try{await navigator.clipboard.writeText(link);msg("spaceMsg","Lien élève copié : "+link)}catch(e){prompt("Copie ce lien à donner aux élèves :",link)}}
 async function refresh(){
  try{
  const {data:{user},error}=await client.auth.getUser();currentUser=error?null:user;
+ $("recovery").classList.toggle("hidden",!(recoveryMode&&currentUser));
+ if(recoveryMode&&currentUser){$("auth").classList.add("hidden");$("space").classList.add("hidden");$("recoveryWho").textContent="Compte : "+(currentUser.email||"")+". Choisis un nouveau mot de passe pour pouvoir te reconnecter.";return;}
  $("auth").classList.toggle("hidden",!!currentUser);$("space").classList.toggle("hidden",!currentUser);
  if(!currentUser)return;
  $("who").textContent=currentUser.email||"";
@@ -281,7 +300,28 @@ $("signup").onclick=()=>busy("signup",async()=>{
  msg("authMsg",data.session?"Compte créé, connexion en cours.":"Vérifie ta boîte mail pour confirmer ton inscription. Pense aussi aux courriers indésirables.");if(data.session)await refresh();
 });
 $("authForm").onsubmit=e=>{e.preventDefault();busy("signin",async()=>{const {error}=await client.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});if(error)msg("authMsg",errorText(error),true);else await refresh()})};
-$("reset").onclick=()=>busy("reset",async()=>{const email=$("email").value.trim();if(!email){msg("authMsg","Indique d'abord ton adresse e-mail.",true);return;}const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});msg("authMsg",error?errorText(error):"Si ce compte existe, un e-mail de réinitialisation sera envoyé.",!!error)});
+$("reset").onclick=()=>busy("reset",async()=>{const email=$("email").value.trim();if(!email){msg("authMsg","Écris d’abord ton adresse e-mail dans la case ci-dessus, puis clique sur « Mot de passe oublié ».",true);return;}const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo:pageUrl});msg("authMsg",error?errorText(error):"C’est envoyé ! Regarde ta boîte mail (et les courriers indésirables), puis clique sur le lien depuis cet appareil. Tu pourras alors choisir un nouveau mot de passe.",!!error)});
+function checkNewPassword(a,b,out){
+ if(a.length<8){msg(out,"Le mot de passe doit faire au moins 8 caractères.",true);return false;}
+ if(a!==b){msg(out,"Les deux mots de passe ne sont pas identiques.",true);return false;}
+ return true;
+}
+$("recoveryForm").onsubmit=e=>{e.preventDefault();const a=$("newPassword").value,b=$("newPassword2").value;if(!checkNewPassword(a,b,"recoveryMsg"))return;
+ const btn=$("recoverySave");btn.disabled=true;
+ client.auth.updateUser({password:a}).then(async({error})=>{
+  if(error){msg("recoveryMsg",errorText(error),true);return;}
+  recoveryMode=false;$("newPassword").value="";$("newPassword2").value="";
+  history.replaceState(null,"",pageUrl);
+  await refresh();msg("spaceMsg","✅ Mot de passe changé. Utilise-le à ta prochaine connexion.");
+ }).catch(err=>msg("recoveryMsg",errorText(err),true)).finally(()=>{btn.disabled=false});
+};
+$("passwordForm").onsubmit=e=>{e.preventDefault();const a=$("changePassword").value,b=$("changePassword2").value;if(!checkNewPassword(a,b,"passwordMsg"))return;
+ const btn=$("passwordSave");btn.disabled=true;
+ client.auth.updateUser({password:a}).then(({error})=>{
+  if(error){msg("passwordMsg",errorText(error),true);return;}
+  $("changePassword").value="";$("changePassword2").value="";msg("passwordMsg","✅ Mot de passe changé.");
+ }).catch(err=>msg("passwordMsg",errorText(err),true)).finally(()=>{btn.disabled=false});
+};
 $("logout").onclick=async()=>{await client.auth.signOut();await refresh()};
 $("classForm").onsubmit=e=>{e.preventDefault();busy("classForm",async()=>{const name=$("className").value.trim();if(!name||!currentUser)return;const {error}=await client.from("classes").insert({teacher_id:currentUser.id,name});if(error)msg("spaceMsg",errorText(error),true);else{$("className").value="";await refresh()}})};
 $("studentForm").onsubmit=e=>{e.preventDefault();busy("addStudent",async()=>{if(!currentUser)return;const {error}=await client.from("students").insert({teacher_id:currentUser.id,class_id:$("classSelect").value,nickname:$("nickname").value.trim()});if(error)msg("spaceMsg",errorText(error),true);else{$("nickname").value="";await refresh()}})};
@@ -315,6 +355,8 @@ async function renderAdmin(role){
  });
  if(!teachers.length)$("adminList").textContent="Aucun compte enseignant.";
 }
-client.auth.onAuthStateChange(()=>{setTimeout(refresh,0)});refresh();
+client.auth.onAuthStateChange(event=>{if(event==="PASSWORD_RECOVERY")recoveryMode=true;setTimeout(refresh,0)});
+if(arrivalError){history.replaceState(null,"",pageUrl);msg("authMsg",errorText({code:arrivalError,message:arrival.get("error_description")||""}),true);}
+refresh();
 })();
 </script></body></html>
