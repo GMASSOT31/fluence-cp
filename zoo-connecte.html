@@ -1450,6 +1450,40 @@
     }catch(err){console.warn("Records de la classe",err);}
     finally{classRecordsRefreshing=false;}
   }
+  /* Cadeau de la maîtresse : pièces en attente sur le serveur, récupérées ici sans conflit de sauvegarde */
+  var giftsChecking = false, giftsChecked = 0;
+  async function claimGifts(force) {
+    if(!cloudToken||!cloudStudentId||cloudConflict||giftsChecking||(!force&&Date.now()-giftsChecked<10000))return;
+    giftsChecking=true;giftsChecked=Date.now();
+    try{
+      if(!(await cloudSettle()))return;
+      var res=await cloudClient.rpc("student_claim_coins",{p_token:cloudToken,p_version:cloudVersion});
+      if(res.error)throw res.error;
+      var r=res.data||{}, n=Number(r.claimed)||0;
+      if(n>0){
+        cloudVersion=Number(r.version);
+        data.coins[cloudStudentId]=Number(r.coins)||0;
+        renderPanels();
+        showGift(n);
+      }
+    }catch(e){
+      if(String(e.message||"").includes("SYNC_CONFLICT"))showSyncConflict(cloudSnapshot());
+      else console.warn("Cadeau de la maîtresse",e);
+    }finally{giftsChecking=false;}
+  }
+  function showGift(n) {
+    var text="🎁 Ta maîtresse t’a donné "+n+(n>1?" pièces d’or !":" pièce d’or !");
+    toast(text);
+    var box=el("div","record-banner");box.id="gift-banner";box.setAttribute("role","status");
+    box.style.cssText="position:fixed;left:50%;top:18%;transform:translateX(-50%);z-index:9998;cursor:pointer";
+    box.appendChild(el("div","rb-title","Cadeau !"));
+    var gl=el("div","rb-coins");gl.appendChild(coinEl());gl.appendChild(document.createTextNode(" +"+n+(n>1?" pièces d’or":" pièce d’or")));box.appendChild(gl);
+    box.appendChild(el("div","rb-prev","Ta maîtresse t’a fait un cadeau."));
+    var old=document.getElementById("gift-banner");if(old)old.remove();
+    box.addEventListener("click",function(){box.remove();});
+    document.body.appendChild(box);setTimeout(function(){box.remove();},6000);
+    [784,1047,1319,1568].forEach(function(f,k){tone(f,k*0.09,0.2,"triangle",0.15);});
+  }
   /* Le serveur enregistre le score et décide des pièces : 1 pour un record perso, 5 pour le record absolu */
   async function cloudSubmitScore(sid, id, value) {
     if(!(await cloudSettle()))throw new Error("OFFLINE");
@@ -2607,6 +2641,7 @@
   }
 
   function renderHome() {
+    if (cloudToken) claimGifts();
     var body = $("home-body");
     body.innerHTML = "";
     var sid = ses.sid, st = studentById(sid);
@@ -2719,7 +2754,7 @@
     return cab;
   }
   function renderJeux() {
-    if (cloudToken) refreshClassRecords();
+    if (cloudToken) { refreshClassRecords(); claimGifts(); }
     var body = $("jeux-body");
     body.innerHTML = "";
     var sid = ses.sid;
@@ -3504,7 +3539,7 @@
     finally{shopSettingsRefreshing=false;}
   }
   function renderBoutique() {
-    if(cloudToken)refreshShopSettings();
+    if(cloudToken){refreshShopSettings();claimGifts();}
     var body = $("boutique-body");
     body.innerHTML = "";
     var sid = ses.sid;
@@ -4299,7 +4334,7 @@
       var bar=document.createElement("div");
       bar.id="cloud-status";bar.style.cssText="position:fixed;bottom:10px;left:10px;z-index:9999;background:#372465;color:white;border-radius:12px;padding:8px 12px;font:13px system-ui;box-shadow:0 3px 12px #0005";
       bar.append(document.createTextNode("☁️ Profil connecté · "+st.nickname));cloudStatusNode=bar;bar.dataset.nickname=st.nickname;
-      refreshClassRecords(true);
+      refreshClassRecords(true);claimGifts(true);
       var link=document.createElement("a");link.href="eleve.html";link.textContent=" · Déconnexion";link.style.color="#ffe37c";link.onclick=function(ev){ev.preventDefault();logout()};bar.append(link);document.body.append(bar);
     } catch(e) {
       alert("Impossible de charger ton Zoo : "+(e.message||"session expirée")+". Reconnecte-toi.");
