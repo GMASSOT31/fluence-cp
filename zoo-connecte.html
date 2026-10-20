@@ -119,6 +119,14 @@
   .stars { font-size: 3rem; line-height: 1; letter-spacing: 0.08em; }
   .star.on { color: #f5b301; }
   .star.off { color: var(--line); }
+  .sound-stars { display: flex; justify-content: center; gap: 18px; letter-spacing: 0; }
+  .sound-stars .lvl-star { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .sound-stars .lvl-name { font-size: .85rem; font-weight: 700; color: var(--muted); }
+  .sound-stars .star.on { text-shadow: 0 2px 0 #c58e00, 0 0 14px rgba(245, 197, 66, .5); }
+  .sound-stars-cap { text-align: center; font-weight: 700; color: var(--muted); margin: 4px 0 8px; }
+  @media (prefers-reduced-motion: no-preference) {
+    .sound-stars .star.new { display: inline-block; animation: lstar-pop .7s cubic-bezier(.2, 1.6, .4, 1) both; }
+  }
   .badge { display: inline-block; padding: 4px 12px; border-radius: 999px; font-weight: 700; font-size: 0.92rem; background: var(--line); }
   .badge.ok { background: var(--ok); color: var(--card); }
 
@@ -1006,6 +1014,7 @@
       <div class="card result" id="result" hidden>
         <div id="r-pet"></div>
         <div class="stars" id="r-stars" aria-hidden="true"></div>
+        <p class="sound-stars-cap" id="r-stars-cap"></p>
         <p class="msg" id="r-msg"></p>
         <div class="teacher">
           <p class="muted" id="r-label">Mots lus correctement en une minute</p>
@@ -2316,15 +2325,34 @@
   $("btn-back").addEventListener("click", function () { leaveSession(false); });
 
   var current = null;
+  /* Où en est le son : une étoile par niveau (syllabes, mots, texte), en or quand il est validé, grise sinon ;
+     🏅 sous les niveaux certifiés par le maître(sse). « okNow » : l’objectif vient d’être atteint sur ce niveau. */
+  function soundStars(sid, sound, kind, okNow, certifies) {
+    var box = $("r-stars");
+    box.innerHTML = "";
+    box.className = "stars sound-stars";
+    box.removeAttribute("aria-hidden");
+    var lv = KINDS.filter(function (k) { return hasContent(sound, k.k); }), have = 0;
+    lv.forEach(function (k) {
+      var was = isPassed(sid, sound, k.k), now = k.k === kind && okNow, on = was || now, cert = isValid(sid, sound, k.k) || (now && certifies);
+      if (on) have++;
+      var cell = el("span", "lvl-star");
+      cell.appendChild(el("span", "star " + (on ? "on" : "off") + (now && !was ? " new" : ""), "★"));
+      cell.appendChild(el("span", "lvl-name", k.name + (cert ? " 🏅" : "")));
+      box.appendChild(cell);
+    });
+    box.setAttribute("role", "img");
+    box.setAttribute("aria-label", nb(have, "étoile", "étoiles") + " sur " + lv.length + " pour le son " + soundById(sound).label);
+    var cap0 = $("r-stars-cap");
+    if (cap0) cap0.textContent = have === lv.length ? "Toutes les étoiles du son " + q(soundById(sound).label) + " !" : nb(have, "étoile", "étoiles") + " sur " + lv.length + " pour le son " + q(soundById(sound).label) + (S.train && okNow ? " (enregistre ton entraînement pour la garder)" : "");
+  }
   function renderResultPet(mclm, ok) {
     if (S.train) {
       var st0 = petState(S.sid, S.sound), h0 = $("r-pet");
       h0.innerHTML = "";
       h0.appendChild(buildPet(st0, charFor(S.sound)));
       var thr0 = data.thr[S.kind], stars0 = ok ? 3 : (mclm >= thr0 * 0.75 ? 2 : 1);
-      var box0 = $("r-stars");
-      box0.innerHTML = "";
-      for (var j = 0; j < 3; j++) box0.appendChild(el("span", "star " + (j < stars0 ? "on" : "off"), "★"));
+      soundStars(S.sid, S.sound, S.kind, ok, false);
       $("r-msg").textContent = ok ? "Bravo, tu atteins l’objectif ! Enregistre ton entraînement : l’étape sera validée ✓ et tu passeras à la suite. Pour la faire certifier 🏅 et gagner la roue, demande ton évaluation."
         : (mclm >= thr0 * 0.75 ? "Presque ! Encore un entraînement et tu y es." : "Bien joué ! Chaque entraînement te fait progresser.");
       return;
@@ -2340,9 +2368,7 @@
     holder.appendChild(pet);
     var thr = data.thr[S.kind];
     var stars = ok ? 3 : (mclm >= thr * 0.75 ? 2 : 1);
-    var box = $("r-stars");
-    box.innerHTML = "";
-    for (var i = 0; i < 3; i++) { var sp = el("span", "star " + (i < stars ? "on" : "off"), "★"); box.appendChild(sp); }
+    soundStars(sid, S.sound, S.kind, ok, true);
     var prev = best(sid, S.sound, S.kind);
     var msg;
     if (ok && !was) {
