@@ -1356,8 +1356,8 @@
   var LISTEN_DEF = {
     questions: 8, maxErrors: 1, passes: 2, coins: 2,
     say: {},
-    equiv: [["an", "am", "en", "em"], ["in", "im", "ain", "ein", "un", "yn"], ["on", "om"], ["au", "eau"], ["ai", "ei", "ê", "et", "è"],
-      ["er", "ez", "es", "é"], ["eu", "oeu"], ["c", "k", "qu"], ["f", "ph"], ["s", "ce", "ci"], ["j", "ge", "gi"], ["y", "ii"]],
+    equiv: [["an", "am", "en", "em"], ["in", "im", "ain", "ein", "un", "yn"], ["on", "om"], ["o", "au", "eau"], ["è", "ai", "ei", "ê", "et", "es"],
+      ["é", "er", "ez", "es", "et"], ["e", "eu", "oeu"], ["c", "k", "qu"], ["f", "ph"], ["s", "ce", "ci"], ["j", "ge", "gi"], ["i", "y", "ii"]],
     confus: [["b", "d"], ["p", "t"], ["p", "b"], ["t", "d"], ["m", "n"], ["f", "v"], ["s", "z"], ["ch", "j"], ["c", "g"], ["ou", "on"],
       ["ou", "u"], ["on", "an"], ["an", "in"], ["on", "in"], ["oi", "on"], ["eu", "ou"], ["a", "o"], ["é", "è"], ["un", "on"]]
   };
@@ -1375,7 +1375,7 @@
     ["x", "x", "ks"], ["un", "un,yn", "un"]
   ];
   var LISTEN_SKIP = { h: 1, sz: 1 };   /* « h » est muet, « s qui se lit z » ne se reconnaît pas à l’oreille seule */
-  function listenInt(v, lo, hi, dflt) { v = Math.floor(Number(v)); return v >= lo && v <= hi ? v : dflt; }
+  function listenInt(v, lo, hi, dflt) { if (v === null || v === undefined || String(v).trim() === "") return dflt; v = Math.floor(Number(v)); return v >= lo && v <= hi ? v : dflt; }
   function listenGroups(a) {
     return (Array.isArray(a) ? a : []).map(function (g) {
       return (Array.isArray(g) ? g : []).map(function (x) { return String(x).trim(); }).filter(Boolean).slice(0, 12);
@@ -2700,6 +2700,7 @@
     var rest = cands.filter(function (x) { return goods.indexOf(x) < 0; });
     if (rest.length && Math.random() < 0.5) goods.push(rest[Math.floor(Math.random() * rest.length)]);
     var banned = cands.slice();
+    item.g.concat(goods).forEach(function (g) { equivOf(g).forEach(function (x) { if (banned.indexOf(x) < 0) banned.push(x); }); });
     var nBad = 6 - goods.length, bad = [];
     var prio = [];
     data.listenCfg.confus.forEach(function (pr) {
@@ -2933,7 +2934,7 @@
     var say = {}, def = {};
     listenSounds().forEach(function (s) { listenItems(s).forEach(function (it) { def[it.key] = it.dsay; }); });
     $("ta-lsay").value.split("\n").forEach(function (ln) {
-      var i = ln.indexOf(":"), k = ln.slice(0, i).trim(), v = ln.slice(i + 1).trim();
+      var sep = ln.indexOf(" : "), i = sep >= 0 ? sep : ln.indexOf(":"), k = ln.slice(0, i).trim(), v = ln.slice(i + (sep >= 0 ? 3 : 1)).trim();
       if (i > 0 && v && v !== def[k]) say[k] = v;
     });
     function groups(t, sep) { return t.split("\n").map(function (ln) { return ln.split(sep); }); }
