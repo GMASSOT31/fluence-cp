@@ -2721,6 +2721,122 @@
     return { item: item, goods: goods, cands: cands, choices: shuffle(all) };
   }
 
+  /* ---------- Écouter : syllabes, à partir de la première consonne ---------- */
+  /* Voyelles simples : écrit → texte dit après la consonne (« lai » se prononce comme « lè ») */
+  var SYL_VOWELS = { a: "a", e: "e", i: "i", o: "o", u: "u", "é": "é", "è": "ai" };
+  var SYL_E_WORDS = { l: 1, m: 1, n: 1, s: 1, t: 1, d: 1, j: 1 };   /* « le, me, ne… » sont des mots : la voix les lit bien */
+  /* Sons-consonnes : [graphie, ce que la voix dit, voyelles permises] (c et g restent durs : seulement a et o) */
+  var LISTEN_SYL_CONS = {
+    l: [["l", "l"]], f: [["f", "f"]], ch: [["ch", "ch"]], s: [["s", "s"]], m: [["m", "m"]], r: [["r", "r"]], n: [["n", "n"]], v: [["v", "v"]],
+    j: [["j", "j"]], z: [["z", "z"]], p: [["p", "p"]], t: [["t", "t"]], b: [["b", "b"]], d: [["d", "d"]],
+    c: [["c", "k", "a o"]], g: [["g", "g", "a o"]], k: [["k", "k", "a i o u é"]], gn: [["gn", "gn", "a e i o"]], ph: [["ph", "f"]],
+    fr: [["fr", "fr"], ["pr", "pr"]], fl: [["fl", "fl"], ["pl", "pl"]]
+  };
+  /* Sons-voyelles arrivant après les consonnes : [graphie, ce que la voix dit après la consonne] */
+  var LISTEN_SYL_VOW = {
+    ou: [["ou", "ou"]], au: [["au", "o"], ["eau", "o"]], on: [["on", "on"]], oi: [["oi", "oi"]], an: [["an", "an"]], en: [["en", "an"]],
+    ai: [["ai", "ai"], ["ei", "ai"]], in: [["in", "in"]], ain: [["ain", "in"]], oin: [["oin", "oin"]], eu: [["eu", "eu"]], un: [["un", "un"]]
+  };
+  var SYL_NO_INVERSE = { fr: 1, pr: 1, fl: 1, pl: 1, gn: 1, ph: 1, j: 1, ch: 1 };
+  function sylConsAll() { var out = []; Object.keys(LISTEN_SYL_CONS).forEach(function (id) { LISTEN_SYL_CONS[id].forEach(function (e) { out.push({ id: id, g: e[0], say: e[1], vow: e[2] ? e[2].split(" ") : null }); }); }); return out; }
+  function sylConsByG(g) { return sylConsAll().filter(function (c) { return c.g === g; })[0] || null; }
+  /* c et g restent durs : devant e, i, é, è, ei, eau, in, eu… ils changeraient de son */
+  function sylOK(cg, v) {
+    var c = sylConsByG(cg);
+    if (!c) return false;
+    if (c.vow) return SYL_VOWELS[v] !== undefined ? c.vow.indexOf(v) >= 0 : (cg !== "c" && cg !== "g") || /^[aou]/.test(v);
+    return true;
+  }
+  function sylVowSay(v) {
+    if (SYL_VOWELS[v] !== undefined) return SYL_VOWELS[v];
+    var out = null;
+    Object.keys(LISTEN_SYL_VOW).forEach(function (id) { LISTEN_SYL_VOW[id].forEach(function (e) { if (e[0] === v) out = e[1]; }); });
+    return out || v;
+  }
+  function sylSay(cg, v) {
+    var c = sylConsByG(cg), cs = c ? c.say : cg;
+    if (v === "e") return SYL_E_WORDS[cg] ? cg + "e" : cs + "eu";
+    return cs + sylVowSay(v);
+  }
+  function sylItem(cg, v, target) { var w = cg + v; return { key: "syl:" + w, g: [w], say: sylSay(cg, v), dsay: sylSay(cg, v), syl: { c: cg, v: v, target: target } }; }
+  /* Consonnes et voyelles connues de l’élève (sons débloqués en écoute) */
+  function sylKnown(sid) {
+    var cons = [], vows = Object.keys(SYL_VOWELS);
+    listenSounds().forEach(function (s) {
+      if (!listenUnlocked(sid, s.id)) return;
+      (LISTEN_SYL_CONS[s.id] || []).forEach(function (e) { if (cons.indexOf(e[0]) < 0) cons.push(e[0]); });
+      (LISTEN_SYL_VOW[s.id] || []).forEach(function (e) { if (vows.indexOf(e[0]) < 0) vows.push(e[0]); });
+    });
+    return { cons: cons, vows: vows };
+  }
+  /* Les syllabes d’un exercice ; null si le son reste en « son seul » */
+  function listenSylItems(sid, sound) {
+    var out = [];
+    if (LISTEN_SYL_CONS[sound.id]) {
+      LISTEN_SYL_CONS[sound.id].forEach(function (e) {
+        Object.keys(SYL_VOWELS).forEach(function (v) { if (sylOK(e[0], v)) out.push(sylItem(e[0], v, "c")); });
+      });
+      return out.length ? out : null;
+    }
+    if (LISTEN_SYL_VOW[sound.id]) {
+      var known = sylKnown(sid).cons;
+      if (!known.length) return null;
+      LISTEN_SYL_VOW[sound.id].forEach(function (e) {
+        shuffle(known.slice()).forEach(function (cg) { if (sylOK(cg, e[0]) && out.length < 40) out.push(sylItem(cg, e[0], "v")); });
+      });
+      return out.length ? out : null;
+    }
+    return null;
+  }
+  function consEquiv(cg) { return equivOf(cg).filter(function (x) { return !/[aeiouyéè]/.test(x); }); }
+  function sylSame(a, b) {   /* même son : consonnes et voyelles équivalentes (ca / ka, lo / lau, lan / len, lè / lai) */
+    return consEquiv(a.c).indexOf(b.c) >= 0 && (a.v === b.v || equivOf(a.v).indexOf(b.v) >= 0 || equivOf(b.v).indexOf(a.v) >= 0);
+  }
+  function confusOf(x) {
+    var out = [];
+    data.listenCfg.confus.forEach(function (pr) { if (pr.indexOf(x) >= 0) pr.forEach(function (y) { if (y !== x && out.indexOf(y) < 0) out.push(y); }); });
+    return out;
+  }
+  /* Une question en syllabes : la bonne (parfois avec une autre écriture du même son), puis les pièges */
+  function listenBuildSyl(sid, item) {
+    var k = sylKnown(sid), c = item.syl.c, v = item.syl.v;
+    var good = { c: c, v: v };
+    var goods = [good];
+    var alts = [];
+    consEquiv(c).forEach(function (c2) {
+      k.vows.concat(Object.keys(SYL_VOWELS)).forEach(function (v2) {
+        var s = { c: c2, v: v2 };
+        if ((c2 !== c || v2 !== v) && sylSame(good, s) && (k.cons.indexOf(c2) >= 0 || c2 === c) && sylOK(c2, v2) && !alts.some(function (a) { return a.c === s.c && a.v === s.v; })) alts.push(s);
+      });
+    });
+    if (alts.length && Math.random() < 0.5) goods.push(alts[Math.floor(Math.random() * alts.length)]);
+    var bad = [], nBad = 6 - goods.length;
+    function okBad(s) {
+      if (!sylOK(s.c, s.v)) return false;
+      if (goods.some(function (g) { return sylSame(g, s); })) return false;
+      return !bad.some(function (b) { return b.c === s.c && b.v === s.v; });
+    }
+    function addSyl(s, max) { if (bad.length < nBad && (max === undefined || max > 0) && okBad(s)) { bad.push(s); return true; } return false; }
+    /* 1. syllabe inversée : « il » pour « li » */
+    var inverse = null;
+    if (item.syl.target === "c" && /^[aeiou]$/.test(v) && !SYL_NO_INVERSE[c]) inverse = v + c;
+    /* 2. même consonne, autre voyelle (confusions d’abord) */
+    var otherV = shuffle(confusOf(v).filter(function (x) { return k.vows.indexOf(x) >= 0; })).concat(shuffle(k.vows.slice()));
+    /* 3. même voyelle, consonne qui se confond, puis autres consonnes connues */
+    var otherC = shuffle(confusOf(c).filter(function (x) { return k.cons.indexOf(x) >= 0; })).concat(shuffle(k.cons.slice()));
+    if (inverse && bad.length < nBad) bad.push({ c: "", v: "", w: inverse });
+    var nV = 2, nC = 2;
+    otherV.forEach(function (v2) { if (nV > 0 && addSyl({ c: c, v: v2 })) nV--; });
+    otherC.forEach(function (c2) { if (nC > 0 && addSyl({ c: c2, v: v })) nC--; });
+    otherV.forEach(function (v2) { addSyl({ c: c, v: v2 }); });
+    otherC.forEach(function (c2) { addSyl({ c: c2, v: v }); });
+    /* au tout début, compléter avec d’autres syllabes connues */
+    shuffle(k.cons.slice()).forEach(function (c2) { shuffle(k.vows.slice()).forEach(function (v2) { addSyl({ c: c2, v: v2 }); }); });
+    var all = goods.map(function (s) { return { g: s.c + s.v, good: true }; }).concat(bad.map(function (s) { return { g: s.w || s.c + s.v, good: false }; }));
+    return { item: item, goods: goods.map(function (s) { return s.c + s.v; }), cands: [], choices: shuffle(all) };
+  }
+  function listenUsesSyl(sid, sound) { return !!listenSylItems(sid, sound); }
+
   /* Voix : fichier sons/<clé>.mp3 s’il existe, sinon synthèse vocale en français (texte réglable) */
   function listenStopVoice() {
     try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}
@@ -2775,7 +2891,7 @@
     var card = el("div", "card");
     card.appendChild(el("h2", "", "👂 Écouter les sons"));
     if (!ls.length) { card.appendChild(el("p", "instruction", "Aucun son disponible pour le moment.")); body.appendChild(card); return; }
-    card.appendChild(el("p", "instruction", "Une voix dit un son. Touche les façons de l’écrire : il y en a une ou deux. Réussis " + nb(cfg.passes, "fois", "fois") + " pour passer au son suivant."));
+    card.appendChild(el("p", "instruction", (listenUsesSyl(sid, soundById(listenSelOk(sid)) || {}) ? "Une voix dit une syllabe. Touche comment elle s’écrit : il y en a une ou deux." : "Une voix dit un son. Touche les façons de l’écrire : il y en a une ou deux.") + " Réussis " + nb(cfg.passes, "fois", "fois") + " pour passer au son suivant."));
     LS.sound = listenSelOk(sid);
     var field = el("div", "field"), lab = el("label", "", "Son"), sel = document.createElement("select");
     lab.setAttribute("for", "sel-listen"); sel.id = "sel-listen";
@@ -2798,7 +2914,7 @@
     body.appendChild(card);
   }
   function listenStart(sid, soundId) {
-    var sound = soundById(soundId), items = listenItems(sound);
+    var sound = soundById(soundId), items = sound ? (listenSylItems(sid, sound) || listenItems(sound)) : [];
     if (!sound || !items.length) { toast("Ce son n’a pas encore d’exercice."); return; }
     listenClear();
     LS.run = { sid: sid, sound: sound, items: items, order: [], n: 0, failed: 0, q: null };
@@ -2811,7 +2927,8 @@
   function listenQuestion() {
     var R = LS.run, cfg = data.listenCfg, body = $("audition-body");
     if (R.n >= cfg.questions) { listenEnd(); return; }
-    var q = listenBuild(R.sid, R.sound, R.order[R.n]);
+    var it = R.order[R.n];
+    var q = it.syl ? listenBuildSyl(R.sid, it) : listenBuild(R.sid, R.sound, it);
     q.found = []; q.bad = false; q.over = false; R.q = q; R.n++;
     body.innerHTML = "";
     var card = el("div", "card listen-card");
@@ -2827,7 +2944,7 @@
     var again = el("button", "listen-play", "🔊 Écouter le son"); again.type = "button";
     again.addEventListener("click", function () { listenSay(q.item); });
     card.appendChild(again);
-    var msg = el("p", "instruction listen-msg", "Touche ce que tu entends. Il y a 1 ou 2 bonnes réponses.");
+    var msg = el("p", "instruction listen-msg", it.syl ? "Touche la syllabe que tu entends. Il y a 1 ou 2 bonnes réponses." : "Touche ce que tu entends. Il y a 1 ou 2 bonnes réponses.");
     msg.setAttribute("role", "status"); msg.id = "listen-msg";
     card.appendChild(msg);
     var grid = el("div", "listen-choices");
