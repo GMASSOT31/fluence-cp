@@ -96,6 +96,7 @@ main{max-width:1050px}
   <div class="actions section-actions"><button type="button" class="secondary" id="reloadProgress">↻ Actualiser les résultats</button></div>
   <p id="progressMsg" class="msg" role="status"></p><div id="progressList" class="content-list"></div></section>
  <section class="panel feature-card pin-card" id="evaluationCodeSettings" data-section="reglages"><div class="section-head"><div class="section-icon">🔑</div><div><h2>Code d'évaluation de la maîtresse</h2><p class="muted">Un seul code pour autoriser les évaluations de tous tes élèves.</p></div></div><form id="evalCodeForm"><label for="evalCode">Choisir ou changer mon code</label><input id="evalCode" type="password" minlength="4" maxlength="64" autocomplete="new-password" required placeholder="Au moins 4 caractères"><div class="actions"><button type="submit">Enregistrer mon code d'évaluation</button></div></form><p class="msg" id="evalCodeMsg" role="status"></p></section>
+<section class="panel feature-card student-card" id="classRosterSettings" data-section="eleves"><h2>Ma classe</h2><p class="muted">Élèves inscrits sur Supabase, regroupés par classe.</p><div id="classRoster"></div></section>
 <section class="panel feature-card pin-card" id="pinSettings" data-section="eleves">
   <div class="section-head"><div class="section-icon">🔐</div><div><h2>Gestion des codes PIN</h2><p class="muted">Crée ou modifie le code secret de chaque élève.</p></div></div>
   <p class="muted privacy-note">Choisis 4 à 8 chiffres et transmets le code individuellement à l'élève ou à sa famille.</p>
@@ -144,6 +145,14 @@ async function refresh(){
  $("classes").replaceChildren();
  classes.data.forEach(c=>{const opt=document.createElement("option");opt.value=c.id;opt.textContent=c.name;$("classSelect").append(opt);const d=document.createElement("div");d.className="row";d.textContent="📚 "+c.name+" · Code de classe : "+(c.access_code||"à actualiser");$("classes").append(d)});
  if(!classes.data.length)$("classes").textContent="Aucune classe pour le moment.";
+ const roster=$("classRoster");roster.replaceChildren();
+ classes.data.forEach(c=>{
+   const heading=document.createElement("h3");heading.textContent="📚 "+c.name+" · "+(c.access_code||"Code indisponible");roster.append(heading);
+   const members=students.data.filter(s=>s.class_id===c.id);
+   if(!members.length){const empty=document.createElement("p");empty.className="muted";empty.textContent="Aucun élève dans cette classe.";roster.append(empty);}
+   members.forEach(st=>{const line=document.createElement("div");line.className="row";const info=document.createElement("div");const strong=document.createElement("strong");strong.textContent=st.nickname;const status=document.createElement("div");status.className="muted";status.textContent=st.pin_hash?"Mot de passe défini":"Mot de passe à définir";info.append(strong,status);line.append(info);roster.append(line);});
+ });
+ if(!classes.data.length)roster.textContent="Aucune classe créée.";
  await renderProgress(students.data,classes.data);
  $("students").replaceChildren();
  students.data.forEach(s=>{const c=classes.data.find(x=>x.id===s.class_id);const d=document.createElement("div");d.className="row";d.textContent="🧒 "+s.nickname+" · "+(c?c.name:"Classe inconnue")+" · "+(s.pin_hash?"PIN défini":"PIN à définir");const btn=document.createElement("button");btn.className="secondary";btn.style.marginLeft="12px";btn.textContent=s.pin_hash?"Changer PIN":"Définir PIN";btn.onclick=async()=>{const pin=prompt("PIN de 4 à 8 chiffres pour "+s.nickname+" :");if(pin===null)return;if(!/^[0-9]{4,8}$/.test(pin)){msg("spaceMsg","Le PIN doit contenir 4 à 8 chiffres.",true);return;}const {error}=await client.rpc("set_student_pin",{p_student:s.id,p_pin:pin});if(error)msg("spaceMsg",errorText(error),true);else{msg("spaceMsg","PIN enregistré pour "+s.nickname+".");await refresh()}};d.append(btn);$("students").append(d)});
