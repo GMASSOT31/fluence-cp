@@ -555,6 +555,9 @@
   .panel-nav.listen-cta[aria-current="page"] { background: #0f4a40; color: #fff; border-color: #0f4a40; }
   .panel-nav.listen-cta[aria-current="page"] .pn-sub { color: #fff; }
   .listen-card { max-width: 760px; margin: 0 auto; }
+  .zoo-card { position: relative; }
+  .zoo-card .cert-stamp { position: absolute; top: 6px; right: 6px; padding: 2px 7px; border: 2px solid #b8860b; border-radius: 8px; background: #fff7d6; color: #8a6200; font-size: .72rem; font-weight: 800; transform: rotate(8deg); box-shadow: 0 1px 0 rgba(0,0,0,.15); }
+  .zoo-card.certified { border-color: #e2b23a; }
   .zoo-card.heard { border-color: #3a9d8c; box-shadow: 0 0 0 3px #3a9d8c33; }
   .listen-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
   .listen-count { font-weight: 800; }
@@ -3461,18 +3464,25 @@
     if (!st) return;
     takeNote(body);
     var avail = availSounds();
-    var found = avail.filter(function (x) { return petState(sid, x.id).got > 0; }).length;
+    /* Cartes lues : étoiles et animal suivent les niveaux validés (comme le bilan de lecture) ; le tampon 🏅 montre les niveaux certifiés */
+    function readState(id) {
+      var total = 0, got = 0, cert = 0;
+      KINDS.forEach(function (k) { if (hasContent(id, k.k)) { total++; if (isPassed(sid, id, k.k)) got++; if (isValid(sid, id, k.k)) cert++; } });
+      return { total: total, got: got, cert: cert, locked: !isUnlocked(sid, id) };
+    }
+    var found = avail.filter(function (x) { return readState(x.id).got > 0; }).length;
     var head = el("div", "card");
     head.appendChild(el("h2", "", "Mes cartes lues"));
     var toRec = el("button", "secondary", "👂 Voir mes cartes reconnues"); toRec.type = "button";
     toRec.addEventListener("click", function () { goTo("reconnues"); });
-    head.appendChild(el("p", "muted", found + (found > 1 ? " animaux ont éclos" : " animal a éclos") + " sur " + avail.length + ". Chaque niveau validé le fait grandir."));
+    head.appendChild(el("p", "muted", found + (found > 1 ? " animaux ont éclos" : " animal a éclos") + " sur " + avail.length + ". Chaque niveau validé (syllabes, mots, texte) donne une étoile et fait grandir l’animal. Le tampon 🏅 montre les niveaux certifiés par ton maître(sse)."));
     head.appendChild(toRec);
     body.appendChild(head);
     var grid = el("div", "zoo-grid");
     avail.forEach(function (x) {
-      var ps = petState(sid, x.id), ch = charFor(x.id);
-      var b = el("button", "zoo-card"); b.type = "button";
+      var ps = readState(x.id), ch = charFor(x.id);
+      var b = el("button", "zoo-card" + (ps.cert ? " certified" : "")); b.type = "button";
+      if (ps.cert && !ps.locked) b.appendChild(el("span", "cert-stamp", ps.cert === ps.total ? "🏅 Certifiée" : "🏅 " + ps.cert + "/" + ps.total));
       b.disabled = ps.locked;
       b.appendChild(buildPet(ps, ch));
       b.appendChild(el("div", "son", x.label));
@@ -3481,7 +3491,7 @@
       for (var i = 0; i < ps.total; i++) stars.appendChild(el("span", "star " + (i < ps.got ? "on" : "off"), "★"));
       b.appendChild(stars);
       b.appendChild(el("div", "cap", ps.locked ? "verrouillé" : (ps.got === 0 ? "un œuf" : cap(ch.nom))));
-      b.setAttribute("aria-label", x.label + " : " + (ps.locked ? "verrouillé" : ps.got + " étape" + (ps.got > 1 ? "s" : "") + " validée" + (ps.got > 1 ? "s" : "") + " sur " + ps.total));
+      b.setAttribute("aria-label", x.label + " : " + (ps.locked ? "verrouillé" : ps.got + " niveau" + (ps.got > 1 ? "x" : "") + " validé" + (ps.got > 1 ? "s" : "") + " sur " + ps.total + (ps.cert ? ", dont " + ps.cert + " certifié" + (ps.cert > 1 ? "s" : "") + " par ton maître(sse)" : "")));
       b.addEventListener("click", function () { openSound(sid, x.id); });
       grid.appendChild(b);
     });
