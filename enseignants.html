@@ -36,7 +36,7 @@ main{max-width:1050px}
 .section-actions{margin:0 0 15px}
 .teacher-footnote{margin:0 0 10px;color:#746e86;font-size:.86rem;text-align:center;line-height:1.5}
 @media(max-width:650px){main{padding:12px;margin:16px auto}.teacher-nav{grid-template-columns:repeat(2,minmax(0,1fr))}.feature-card,.teacher-header{padding:19px}.section-head h2{font-size:1.2rem}.section-icon{width:44px;height:44px;flex-basis:44px;font-size:21px}.feature-card .row{align-items:flex-start}.feature-card .row button{font-size:.9rem}}
-<style>@import url("https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700;800&family=Fredoka:wght@500;600;700&display=swap");body{font-family:Figtree,system-ui,sans-serif;background:#f2f4f8;color:#1b2433}.panel{border:2px solid #dfe3ec;box-shadow:none}.teacher-header{border:0;background:transparent;padding:0}.teacher-header>.row{padding:12px 0}.hero{text-align:left}.hero .toplink{font-weight:700}  header .zoo-hero { position: relative; isolation: isolate; display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 176px; padding: 22px 26px; overflow: hidden; border: 3px solid #4be5f0; border-radius: 25px; color: #fff; background: radial-gradient(circle at 83% 18%, rgba(255,69,181,.46), transparent 32%), radial-gradient(circle at 22% 120%, rgba(22,213,225,.4), transparent 45%), linear-gradient(125deg,#21104f 0%,#3e1680 57%,#15134b 100%); box-shadow: 0 7px 0 #161044, 0 15px 30px rgba(32,17,80,.22); }
+@import url("https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700;800&family=Fredoka:wght@500;600;700&display=swap");body{font-family:Figtree,system-ui,sans-serif;background:#f2f4f8;color:#1b2433}.panel{border:2px solid #dfe3ec;box-shadow:none}.teacher-header{border:0;background:transparent;padding:0}.teacher-header>.row{padding:12px 0}.hero{text-align:left}.hero .toplink{font-weight:700}  header .zoo-hero { position: relative; isolation: isolate; display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 176px; padding: 22px 26px; overflow: hidden; border: 3px solid #4be5f0; border-radius: 25px; color: #fff; background: radial-gradient(circle at 83% 18%, rgba(255,69,181,.46), transparent 32%), radial-gradient(circle at 22% 120%, rgba(22,213,225,.4), transparent 45%), linear-gradient(125deg,#21104f 0%,#3e1680 57%,#15134b 100%); box-shadow: 0 7px 0 #161044, 0 15px 30px rgba(32,17,80,.22); }
   header .zoo-hero::before { content: ""; position: absolute; inset: 0; z-index: -1; opacity: .18; background-image: linear-gradient(rgba(255,255,255,.22) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.22) 1px,transparent 1px); background-size: 25px 25px; transform: perspective(250px) rotateX(17deg) scale(1.2); }
   header .zoo-hero-copy { position: relative; z-index: 2; min-width: 0; }
   header .zoo-kicker { display: inline-block; color: #fff18d; font-size: .72rem; font-weight: 900; letter-spacing: .13em; margin-bottom: 6px; }
@@ -130,7 +130,7 @@ async function refresh(){
  client.from("teachers").select("student_limit,role").eq("id",currentUser.id).single(),
  client.from("classes").select("id,name,school_year,access_code").order("created_at"),
  client.from("students").select("id,nickname,class_id,pin_hash").order("created_at")]);
- if(profile.error||classes.error||students.error){msg("spaceMsg","Impossible de charger les données : "+errorText(profile.error||classes.error||students.error),true);return;}
+ if(profile.error||classes.error||students.error){msg("spaceMsg","Impossible de charger les données : "+errorText(profile.error||classes.error||students.error),true);$("classRoster").textContent="Erreur de chargement. "+errorText(profile.error||classes.error||students.error);return;}
  msg("spaceMsg","");
  $("adminPanel").classList.toggle("hidden",profile.data.role!=="admin");
  renderAdmin(profile.data.role).catch(e=>msg("adminMsg",errorText(e),true));
@@ -158,6 +158,7 @@ async function refresh(){
  students.data.forEach(s=>{const c=classes.data.find(x=>x.id===s.class_id);const d=document.createElement("div");d.className="row";d.textContent="🧒 "+s.nickname+" · "+(c?c.name:"Classe inconnue")+" · "+(s.pin_hash?"PIN défini":"PIN à définir");const btn=document.createElement("button");btn.className="secondary";btn.style.marginLeft="12px";btn.textContent=s.pin_hash?"Changer PIN":"Définir PIN";btn.onclick=async()=>{const pin=prompt("PIN de 4 à 8 chiffres pour "+s.nickname+" :");if(pin===null)return;if(!/^[0-9]{4,8}$/.test(pin)){msg("spaceMsg","Le PIN doit contenir 4 à 8 chiffres.",true);return;}const {error}=await client.rpc("set_student_pin",{p_student:s.id,p_pin:pin});if(error)msg("spaceMsg",errorText(error),true);else{msg("spaceMsg","PIN enregistré pour "+s.nickname+".");await refresh()}};d.append(btn);$("students").append(d)});
  if(!students.data.length)$("students").textContent="Aucun élève pour le moment.";
  showTab(activeTab);
+ msg("spaceMsg",students.data.length+" élève(s) retrouvé(s) dans "+classes.data.length+" classe(s) pour ce compte enseignant.");
 }
 
 function showTab(tab){
