@@ -7,7 +7,7 @@
 .eval-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.eval-grid input{min-width:0}@media(max-width:560px){.eval-grid{grid-template-columns:1fr}}
 main{max-width:1050px}
 .teacher-space{display:grid;gap:20px;margin-top:22px}
-.teacher-space>.panel{margin:0}#classRosterSettings{border-top:5px solid #2e9b91;background:#fff}#classRosterSettings h3{margin:20px 0 8px}#classRosterSettings .row{background:#f6f8fc;border:1px solid #e4e8f0;border-radius:12px;padding:14px;margin:9px 0}#classRosterSettings .row strong{font-size:1.12rem}
+.teacher-space>.panel{margin:0}#pinPart h4{margin:16px 0 6px;font-size:1rem}#pinPart .row{background:#f6f8fc;border:1px solid #e4e8f0;border-radius:12px;padding:14px;margin:9px 0}#pinPart .row strong{font-size:1.12rem}
 .teacher-header{padding:23px 26px}
 .teacher-header>.row{border-bottom:0;padding:0}
 .quota-tag{display:inline-flex;font-weight:750;margin:12px 0 17px;padding:10px 14px;border-radius:12px}
@@ -20,6 +20,12 @@ main{max-width:1050px}
 .student-card{--accent:#2e9b91;--soft:#eaf8f5}
 .progress-card{--accent:#367bc4;--soft:#ecf5ff}
 .pin-card{--accent:#d48b2d;--soft:#fff6e7}
+.peda-card{--accent:#3f7fd0;--soft:#eaf2ff}
+.shop-card{--accent:#e0a21b;--soft:#fff7df}
+.zoo-card{--accent:#2e9b91;--soft:#eaf8f5}
+.pw-part{padding:18px 0 4px;border-top:1px solid #eee7f7;margin-top:14px}
+#pinPart{border-top:0;margin-top:0;padding-top:0}
+.pw-part>p.muted{margin:0 0 6px}
 .section-head{display:flex;gap:15px;align-items:center;margin-bottom:20px}
 .section-head h2{margin:0 0 4px;font-size:1.45rem}
 .section-head p{margin:0}
@@ -74,16 +80,16 @@ main{max-width:1050px}
   <div class="row"><div><h2 style="margin-bottom:3px">👩‍🏫 Mon espace enseignant</h2><span id="who" class="muted"></span></div><span><a href="eleve.html" id="toStudent" style="display:inline-block;padding:10px 14px;margin-right:8px;border-radius:12px;text-decoration:none;font-weight:700;background:#ede9fe;color:#5b21b6">🎒 Espace élève</a><button id="logout" class="secondary" type="button">Déconnexion</button></span></div>
   <p id="quota" class="tag quota-tag"></p>
   <nav class="teacher-nav" aria-label="Rubriques de l'espace enseignant">
-   <button type="button" class="active" data-tab="eleves">Élèves</button>
+   <button type="button" class="active" data-tab="eleves">Mes classes</button>
    <button type="button" data-tab="ecouter">À écouter</button>
    <button type="button" data-tab="progression">Progression</button>
-   <button type="button" data-tab="reglages">Réglages</button>
+   <button type="button" data-tab="reglages">Réglages péda</button>
+   <button type="button" data-tab="general">Réglages généraux</button>
    <button type="button" data-tab="enseignants" id="teachersAdminTab">Enseignants</button>
    <button type="button" id="navQuit">Quitter</button>
   </nav>
   <p id="spaceMsg" class="msg" role="status"></p>
  </div>
- <section class="panel feature-card student-card" id="classRosterSettings" data-section="eleves"><h2>🧒 Ma classe</h2><p class="muted">Tes élèves sont affichés ici dès la connexion. Tu peux modifier leur PIN directement.</p><div id="classRoster"></div></section>
 <section class="panel feature-card classes-card" id="classesSettings" data-section="eleves">
   <div class="section-head"><div class="section-icon">📚</div><div><h2>Mes classes</h2><p class="muted">Retrouve tes classes et leur code de connexion.</p></div></div>
   <div id="classes" class="content-list"></div>
@@ -98,19 +104,17 @@ main{max-width:1050px}
   <div class="section-head"><div class="section-icon">📊</div><div><h2>Progressions et résultats</h2><p class="muted">Évaluations du Zoo, entraînements, scores de fluence et jeux sauvegardés sur Supabase.</p></div></div>
   <div class="actions section-actions"><button type="button" class="secondary" id="reloadProgress">↻ Actualiser les résultats</button></div>
   <p id="progressMsg" class="msg" role="status"></p><div id="progressList" class="content-list"></div></section>
- <section class="panel feature-card pin-card" id="passwordSettings" data-section="reglages"><div class="section-head"><div class="section-icon">🔒</div><div><h2>Mon mot de passe</h2><p class="muted">Pour te connecter à cet espace enseignant. Il sert aussi à lancer les évaluations dans le Zoo des élèves.</p></div></div><form id="passwordForm"><label for="changePassword">Nouveau mot de passe (au moins 8 caractères)</label><input id="changePassword" type="password" autocomplete="new-password" minlength="8" maxlength="72" required><label for="changePassword2">Écris-le une deuxième fois</label><input id="changePassword2" type="password" autocomplete="new-password" minlength="8" maxlength="72" required><div class="actions"><button id="passwordSave" type="submit">Changer mon mot de passe</button></div></form><p class="msg" id="passwordMsg" role="status"></p></section>
 
 <section class="panel feature-card pin-card" id="pinSettings" data-section="eleves">
   <div class="section-head"><div class="section-icon">🔐</div><div><h2>Gestion des codes PIN</h2><p class="muted">Crée ou modifie le code secret de chaque élève.</p></div></div>
   <p class="muted privacy-note">Choisis 4 à 8 chiffres et transmets le code individuellement à l'élève ou à sa famille.</p>
   <div id="students" class="content-list"></div>
  </section>
- <section class="panel feature-card student-card" id="bulkPinSettings" data-section="eleves"><h2>Mots de passe de la classe</h2><p class="muted">Crée d'un coup un PIN à quatre chiffres pour les élèves qui n'en ont pas encore. Note les codes : ils ne seront affichés qu'une seule fois.</p><div class="actions"><button type="button" id="generatePins">Créer les mots de passe manquants</button></div><pre id="generatedPins" style="white-space:pre-wrap;font:inherit;line-height:1.8"></pre></section>
  <section class="panel feature-card progress-card" id="listenSettings" data-section="ecouter"><h2>À écouter</h2><p class="muted">Lectures enregistrées par les élèves pour une correction différée. Le son reste sur la tablette de l’élève : ouvre le Zoo sur cette tablette (espace maîtresse, « À écouter ») pour l’écouter et la noter.</p><div id="recordingsList"></div></section>
- <section class="panel feature-card" data-section="reglages" id="soundOrderPanel"><h2>🔤 Ordre des sons</h2><p class="muted">Déplace, ajoute ou retire les sons selon ta progression.</p><div id="soundOrderList"></div><div class="row"><input id="newSound" placeholder="Nouveau son (ex. oi)" maxlength="24" style="max-width:340px"><button type="button" id="addSound">Ajouter</button><button type="button" class="secondary" id="resetSounds">Ordre d’origine</button></div></section>
-<section class="panel feature-card" data-section="reglages" id="exercisePanel"><h2>✏️ Modifier un exercice</h2><div class="teacher-nav" id="exerciseKinds"><button type="button" data-kind="s" class="active">Syllabes</button><button type="button" data-kind="m">Mots</button><button type="button" data-kind="t">Texte</button></div><label for="exerciseSound">Son</label><select id="exerciseSound" style="width:100%;padding:12px;border-radius:10px"></select><label for="exerciseContent">Contenu</label><textarea id="exerciseContent" rows="7" style="width:100%;padding:14px;border:1px solid #c9bfdf;border-radius:12px;font:inherit"></textarea><p class="muted" id="exerciseCount"></p><button type="button" class="secondary" id="resetExercise">Rétablir le contenu d’origine</button><p class="muted">Sépare les éléments par des espaces et les groupes par des retours à la ligne.</p></section>
-<section class="panel feature-card" data-section="reglages" id="rewardsPanel"><h2>🎁 Boutique des pièces d’or</h2><h3>Récompenses de la maîtresse</h3><div id="rewardList"></div><div class="row"><input id="rewardIcon" value="🎁" maxlength="4" aria-label="Emoji" style="width:90px"><input id="rewardName" placeholder="Nom de la récompense" style="flex:1;min-width:160px"><input id="rewardPrice" type="number" value="10" min="1" max="500" aria-label="Prix" style="width:100px"><button type="button" id="addReward">Ajouter</button></div><p class="muted">Choisis une image :</p><div class="row" id="rewardEmojis"></div><h3>Récompenses à remettre</h3><div id="pendingRewards"></div></section>
-<section class="panel feature-card pin-card" id="zooSettings" data-section="reglages"><h2>Réglages du Zoo</h2><p class="muted">Les réglages de ta classe sont conservés sur le serveur et appliqués aux élèves lors de leur prochaine connexion.</p>
+ <section class="panel feature-card peda-card" data-section="reglages" id="soundOrderPanel"><div class="section-head"><div class="section-icon">🔤</div><div><h2>Ordre des sons</h2><p class="muted">Déplace, ajoute ou retire les sons selon ta progression.</p></div></div><div id="soundOrderList"></div><div class="row"><input id="newSound" placeholder="Nouveau son (ex. oi)" maxlength="24" style="max-width:340px"><button type="button" id="addSound">Ajouter</button><button type="button" class="secondary" id="resetSounds">Ordre d’origine</button></div></section>
+<section class="panel feature-card peda-card" data-section="reglages" id="exercisePanel"><div class="section-head"><div class="section-icon">✏️</div><div><h2>Modifier un exercice</h2><p class="muted">Adapte les syllabes, les mots et les textes de chaque son.</p></div></div><div class="teacher-nav" id="exerciseKinds"><button type="button" data-kind="s" class="active">Syllabes</button><button type="button" data-kind="m">Mots</button><button type="button" data-kind="t">Texte</button></div><label for="exerciseSound">Son</label><select id="exerciseSound" style="width:100%;padding:12px;border-radius:10px"></select><label for="exerciseContent">Contenu</label><textarea id="exerciseContent" rows="7" style="width:100%;padding:14px;border:1px solid #c9bfdf;border-radius:12px;font:inherit"></textarea><p class="muted" id="exerciseCount"></p><button type="button" class="secondary" id="resetExercise">Rétablir le contenu d’origine</button><p class="muted">Sépare les éléments par des espaces et les groupes par des retours à la ligne.</p></section>
+<section class="panel feature-card shop-card" data-section="general" id="rewardsPanel"><div class="section-head"><div class="section-icon">🎁</div><div><h2>Boutique des pièces d’or</h2><p class="muted">Les récompenses que tes élèves peuvent acheter avec leurs pièces.</p></div></div><h3>Récompenses de la maîtresse</h3><div id="rewardList"></div><div class="row"><input id="rewardIcon" value="🎁" maxlength="4" aria-label="Emoji" style="width:90px"><input id="rewardName" placeholder="Nom de la récompense" style="flex:1;min-width:160px"><input id="rewardPrice" type="number" value="10" min="1" max="500" aria-label="Prix" style="width:100px"><button type="button" id="addReward">Ajouter</button></div><p class="muted">Choisis une image :</p><div class="row" id="rewardEmojis"></div><h3>Récompenses à remettre</h3><div id="pendingRewards"></div></section>
+<section class="panel feature-card zoo-card" id="zooSettings" data-section="general"><div class="section-head"><div class="section-icon">🦁</div><div><h2>Réglages du Zoo</h2><p class="muted">Conservés sur le serveur et appliqués à tes élèves dès leur prochaine connexion.</p></div></div>
  <form id="zooSettingsForm">
  <h3>Objectif pour valider une étape</h3><div class="eval-grid"><label>Syllabes par minute<input id="thrS" type="number" min="1" max="300" required value="25"></label><label>Mots par minute<input id="thrM" type="number" min="1" max="300" required value="20"></label><label>Texte : mots par minute<input id="thrT" type="number" min="1" max="300" required value="15"></label></div>
  <h3 style="margin-top:24px">Passage au son suivant</h3><label><input type="checkbox" id="lockSounds" checked style="display:inline;width:auto"> Débloquer progressivement les sons</label>
@@ -118,6 +122,11 @@ main{max-width:1050px}
  <label>Nombre maximal de parties par jour<input id="maxPlays" type="number" min="0" max="50" value="6" required></label>
  <h3 style="margin-top:24px">Boutique des pièces d'or</h3><label>Prix de trois parties supplémentaires<input id="packPrice" type="number" min="1" max="500" value="10" required></label>
  <div class="actions"><button type="submit">Enregistrer les réglages</button></div></form><p id="settingsMsg" class="msg"></p></section>
+ <section class="panel feature-card pin-card" id="passwordsSettings" data-section="general"><div class="section-head"><div class="section-icon">🔐</div><div><h2>Gestion des mots de passe</h2><p class="muted">Codes PIN des élèves, création groupée et mot de passe de ton compte.</p></div></div>
+  <div class="pw-part" id="pinPart"><h3>Codes PIN des élèves</h3><p class="muted">Définis ou change le PIN de chaque élève (4 à 8 chiffres). Transmets-le individuellement à l’élève ou à sa famille.</p><p class="msg" id="pinMsg" role="status"></p><div id="classRoster"></div></div>
+  <div class="pw-part"><h3>Mots de passe de la classe</h3><p class="muted">Crée d’un coup un PIN à quatre chiffres pour les élèves qui n’en ont pas encore. Note les codes : ils ne seront affichés qu’une seule fois.</p><div class="actions"><button type="button" id="generatePins">Créer les mots de passe manquants</button></div><pre id="generatedPins" style="white-space:pre-wrap;font:inherit;line-height:1.8"></pre></div>
+  <div class="pw-part"><h3>Mon mot de passe</h3><p class="muted">Pour te connecter à cet espace enseignant. Il sert aussi à lancer les évaluations dans le Zoo des élèves.</p><form id="passwordForm"><label for="changePassword">Nouveau mot de passe (au moins 8 caractères)</label><input id="changePassword" type="password" autocomplete="new-password" minlength="8" maxlength="72" required><label for="changePassword2">Écris-le une deuxième fois</label><input id="changePassword2" type="password" autocomplete="new-password" minlength="8" maxlength="72" required><div class="actions"><button id="passwordSave" type="submit">Changer mon mot de passe</button></div></form><p class="msg" id="passwordMsg" role="status"></p></div>
+ </section>
  <p class="teacher-footnote">☁️ Les progressions du Zoo connecté sont enregistrées sur Supabase. Les anciennes données locales ne sont pas importées automatiquement.</p>
 <section class="panel hidden" data-section="enseignants" id="adminPanel"><h2>🛡️ Administration de Zoo de Lecture</h2><p class="muted">Comptes enseignants inscrits et quotas d'élèves. Les modifications sont enregistrées sur le serveur.</p><div id="adminList"></div><p id="adminMsg" class="msg" role="status"></p></section>
 </section></main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script><script>
@@ -191,10 +200,10 @@ async function refresh(){
  if(!classes.data.length)$("classes").textContent="Aucune classe pour le moment.";
  const roster=$("classRoster");roster.replaceChildren();
  classes.data.forEach(c=>{
-   const heading=document.createElement("h3");heading.textContent="📚 "+c.name+" · "+(c.access_code||"Code indisponible")+(c.teacher_id===currentUser.id?"":" (autre enseignant, lecture seule)");roster.append(heading);
+   const heading=document.createElement("h4");heading.textContent="📚 "+c.name+" · "+(c.access_code||"Code indisponible")+(c.teacher_id===currentUser.id?"":" (autre enseignant, lecture seule)");roster.append(heading);
    const members=students.data.filter(s=>s.class_id===c.id);
    if(!members.length){const empty=document.createElement("p");empty.className="muted";empty.textContent="Aucun élève dans cette classe.";roster.append(empty);}
-   members.forEach(st=>{const line=document.createElement("div");line.className="row";const info=document.createElement("div");const strong=document.createElement("strong");strong.textContent=st.nickname;const status=document.createElement("div");status.className="muted";status.textContent=st.pin_hash?"Mot de passe défini":"Mot de passe à définir";info.append(strong,status);line.append(info);if(st.teacher_id!==currentUser.id){const other=document.createElement("span");other.className="muted";other.textContent="Géré par un autre enseignant";line.append(other);roster.append(line);return}const change=document.createElement("button");change.type="button";change.className="secondary";change.textContent=st.pin_hash?"Changer PIN":"Définir PIN";change.onclick=async()=>{const pin=prompt("PIN de 4 à 8 chiffres pour "+st.nickname+" :");if(pin===null)return;if(!/^[0-9]{4,8}$/.test(pin)){msg("spaceMsg","PIN de 4 à 8 chiffres requis.",true);return;}const {error}=await client.rpc("set_student_pin",{p_student:st.id,p_pin:pin});if(error)msg("spaceMsg",errorText(error),true);else{msg("spaceMsg","PIN enregistré pour "+st.nickname);await refresh();}};line.append(change);roster.append(line);});
+   members.forEach(st=>{const line=document.createElement("div");line.className="row";const info=document.createElement("div");const strong=document.createElement("strong");strong.textContent=st.nickname;const status=document.createElement("div");status.className="muted";status.textContent=st.pin_hash?"PIN défini":"PIN à définir";info.append(strong,status);line.append(info);if(st.teacher_id!==currentUser.id){const other=document.createElement("span");other.className="muted";other.textContent="Géré par un autre enseignant";line.append(other);roster.append(line);return}const change=document.createElement("button");change.type="button";change.className="secondary";change.textContent=st.pin_hash?"Changer PIN":"Définir PIN";change.onclick=async()=>{const pin=prompt("PIN de 4 à 8 chiffres pour "+st.nickname+" :");if(pin===null)return;if(!/^[0-9]{4,8}$/.test(pin)){msg("pinMsg","PIN de 4 à 8 chiffres requis.",true);return;}const {error}=await client.rpc("set_student_pin",{p_student:st.id,p_pin:pin});if(error)msg("pinMsg",errorText(error),true);else{await refresh();msg("pinMsg","✅ PIN enregistré pour "+st.nickname+".");}};line.append(change);roster.append(line);});
  });
  if(!classes.data.length)roster.textContent="Aucune classe créée.";
  renderProgress(students.data,classes.data).catch(e=>msg("progressMsg","Erreur des statistiques : "+errorText(e),true));
@@ -226,7 +235,7 @@ function showTab(tab){
  activeTab=tab;
  document.querySelectorAll("[data-section]").forEach(el=>el.classList.toggle("hidden",el.dataset.section!==tab || el.id==="pinSettings"));
  document.querySelectorAll("[data-tab]").forEach(el=>el.classList.toggle("active",el.dataset.tab===tab));
- if(tab==="ecouter")renderRecordings();if(tab==="reglages"&&currentUser)loadPendingRewards();
+ if(tab==="ecouter")renderRecordings();if(tab==="general"&&currentUser)loadPendingRewards();
 }
 document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
 $("navQuit").onclick=()=>client.auth.signOut().then(refresh);
