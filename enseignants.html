@@ -179,6 +179,54 @@ body:not(.teacher-mode) main{color:#eef0f7}
 #auth a,#recovery a{color:#7fd7ff;font-weight:700}
 #recovery .muted,#recovery label{color:#a3abbf}
 @media(max-width:520px){body:not(.teacher-mode) main{padding:10px 10px 30px;margin-top:6px}body:not(.teacher-mode) header .zoo-hero{min-height:0;padding:14px 16px}body:not(.teacher-mode) header .zoo-kicker,body:not(.teacher-mode) header .zoo-hero-tag{display:none}body:not(.teacher-mode) header .zoo-hero .brand .sub{margin-top:4px}body:not(.teacher-mode) header .zoo-hero-art{height:90px;flex-basis:84px}#auth,#recovery{margin-top:14px;padding:18px}}
+
+/* Espace enseignant sur téléphone : tout compact, symboles plutôt que mots, indications grisées dans les cases */
+.banner-user .bu-ico{display:none}
+@media(max-width:600px){
+ body.teacher-mode main{padding:6px 6px 24px;margin:0 auto}
+ body.teacher-mode header{margin-bottom:6px}
+ body.teacher-mode header .zoo-hero{min-height:0;padding:6px 10px;border-width:2px;border-radius:16px}
+ body.teacher-mode header .zoo-kicker,body.teacher-mode header .zoo-hero-tag{display:none}
+ .banner-user .bu-label{display:none}
+ .banner-user .bu-ico{display:inline}
+ .banner-user a,.banner-user button{padding:6px 9px;font-size:1rem}
+ body.teacher-mode .teacher-space{gap:6px}
+ body.teacher-mode .teacher-header{top:56px;padding:4px;border-radius:14px}
+ body.teacher-mode .teacher-header .teacher-nav{display:grid;grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:2px;overflow:visible}
+ body.teacher-mode .teacher-header .teacher-nav button{width:auto;flex:none;min-width:0}
+ body.teacher-mode .teacher-header .teacher-nav button{position:relative;justify-content:center;padding:5px 0;border-radius:10px;border-width:1.5px;margin:0}
+ body.teacher-mode .teacher-header .teacher-nav .nav-ico{display:grid;width:30px;height:30px;flex-basis:30px;font-size:1.15rem;margin:0}
+ body.teacher-mode .teacher-header .teacher-nav .nav-label{display:none}
+ body.teacher-mode .teacher-header .teacher-nav .nav-badge{position:absolute;top:-2px;right:0;min-width:16px;height:16px;padding:0 4px;font-size:.6rem}
+ #spaceMsg:not(.err),.teacher-footnote,.privacy-note,#space .section-head .muted,#space .section-icon,#space .sub-picker small,#space form .muted,#space .form-zone .muted,#space .feature-card>p.muted,#space .panel>p.muted,#space .pw-part>p.muted,#space .ph-label{display:none}
+ #space .feature-card,#space .panel{padding:12px;margin-top:6px;border-radius:14px;border-top-width:3px}
+ #space .section-head{margin:0 0 8px;gap:0}
+ #space .section-head h2,#space .panel>h2{font-size:1.05rem;margin:0 0 6px}
+ #space h3{font-size:.95rem;margin:12px 0 6px}
+ #space .sub-picker{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:1fr;gap:6px;margin-bottom:6px}
+ #space .sub-picker button{flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:2px;padding:7px 3px;border-radius:12px;font-size:.74rem;line-height:1.1}
+#space .sub-picker strong{font-size:.8rem;font-weight:800}
+ #space .sub-picker .sp-ico{width:auto;height:auto;margin:0;font-size:1.25rem;background:none}
+ #space .sub-picker.fb-kinds{grid-auto-flow:row;grid-template-columns:repeat(3,minmax(0,1fr))}
+ #space input:not([type=checkbox]):not([type=radio]),#space select,#space textarea{padding:10px;font-size:16px;margin:0 0 8px}
+ #space button{padding:9px 12px;font-size:.9rem}
+ #space label{margin:6px 0 4px;font-size:.88rem}
+ #space .form-zone{padding:10px;margin-top:6px}
+ #space .actions{margin-top:6px;gap:6px}
+ #space .row{padding:7px 0;gap:6px}
+ #space .eval-grid{gap:6px}
+ #space .seat-request{margin-top:10px;padding:10px}
+ #space .eval-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+ #space .eval-grid label{margin:0;font-size:.72rem;line-height:1.15;display:flex;flex-direction:column;justify-content:space-between}
+ #space .eval-grid input{margin:4px 0 0}
+ #space label:has(>input[type=number]):not(.eval-grid label){display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:.85rem}
+ #space label:has(>input[type=number]):not(.eval-grid label) input{width:76px;flex:0 0 76px;margin:0}
+ #space #zooSettingsForm h3{margin:12px 0 4px!important}
+ #space .rec-choice,#space label:has(>input[type=checkbox]){font-size:.85rem;margin:4px 0}
+ #space #fbMessage{height:84px}
+ #space .fb-item .tag{font-size:.72rem;padding:4px 7px}
+ #space #fbReplyNote{margin:0 0 8px;padding:8px 10px;font-size:.88rem}
+}
 </style></head><body><main><header class="hero">    <div class="zoo-hero">
       <div class="zoo-hero-copy">
         <span class="zoo-kicker">✦ LE GRAND JEU DE LA LECTURE ✦</span>
@@ -186,7 +234,7 @@ body:not(.teacher-mode) main{color:#eef0f7}
         <span class="zoo-hero-tag">⭐ Lis · 🏆 Progresse · 🎮 Joue !</span>
       </div>
       <div class="zoo-hero-art" aria-hidden="true"><span class="zoo-star zoo-star-one">✦</span><span class="zoo-mascot zoo-bee">🐝</span><span class="zoo-mascot zoo-llama">🦙</span><span class="zoo-mascot zoo-owl">🦉</span><span class="zoo-star zoo-star-two">✧</span><span class="zoo-pad">✚ <span>● ●</span></span></div>
-      <div class="banner-user" id="bannerUser"><span id="who"></span><a href="eleve.html" id="toStudent" title="Espace élève"><span aria-hidden="true">🎒</span><span class="bu-label">&nbsp;Espace élève</span></a><button id="logout" class="secondary" type="button">Déconnexion</button></div>
+      <div class="banner-user" id="bannerUser"><span id="who"></span><a href="eleve.html" id="toStudent" title="Espace élève"><span aria-hidden="true">🎒</span><span class="bu-label">&nbsp;Espace élève</span></a><button id="logout" class="secondary" type="button" title="Déconnexion"><span class="bu-ico" aria-hidden="true">🚪</span><span class="bu-label">Déconnexion</span></button></div>
     </div>
 </header>
 <section class="panel" id="auth"><h2 class="auth-title">🧑‍🏫 Se connecter</h2><form id="authForm"><label for="email" class="sr-only">Adresse e-mail</label><input id="email" type="email" autocomplete="email" required maxlength="254" placeholder="Adresse e-mail"><label for="password" class="sr-only">Mot de passe</label><input id="password" type="password" autocomplete="current-password" minlength="8" required placeholder="Mot de passe"><div class="actions auth-actions"><button id="signin" type="submit">Me connecter</button><button id="reset" type="button" class="secondary">Mot de passe oublié</button><button id="signup" type="button" class="secondary">Créer un compte</button><small class="signup-note">Inscription libre. Chaque compte dispose de 10 places d'élèves par défaut.</small></div></form><p class="msg" id="authMsg" role="status"></p><p class="auth-student">🎒 Élève ? <a href="eleve.html" id="authToStudent">Entre ici avec ton code de classe</a></p></section>
@@ -464,7 +512,10 @@ async function renderProgress(students,classes){
    const latestEval=evaluations.slice().sort((a,b)=>(Number(b.ts)||0)-(Number(a.ts)||0))[0];
    const wrap=document.createElement("div");wrap.className="row progress-row";
    const info=document.createElement("div");const name=document.createElement("strong");name.textContent=s.nickname;
-   const summary=document.createElement("div");summary.className="muted";summary.textContent=certified.length+" 🏅 certifiée(s) · "+alone.length+" ✓ validée(s) seul · "+evaluations.length+" évaluation(s) · "+training.length+" entraînement(s)"+(latestEval?" · Dernière fluence : "+fmt(latestEval.mclm)+" corrects/min":"")+" · "+fmt(p.coins)+" pièce(s)"+(row&&row.pending_coins>0?" (+"+row.pending_coins+" en attente)":"")+" · "+games.length+" jeu(x)";
+   const summary=document.createElement("div");summary.className="muted";summary.textContent=matchMedia("(max-width:600px)").matches
+    ?"🏅"+certified.length+" · ✓"+alone.length+" · 📝"+evaluations.length+" · 🏋️"+training.length+(latestEval?" · ⚡"+fmt(latestEval.mclm)+"/min":"")+" · 🪙"+fmt(p.coins)+(row&&row.pending_coins>0?"(+"+row.pending_coins+")":"")+" · 🎮"+games.length
+    :certified.length+" 🏅 certifiée(s) · "+alone.length+" ✓ validée(s) seul · "+evaluations.length+" évaluation(s) · "+training.length+" entraînement(s)"+(latestEval?" · Dernière fluence : "+fmt(latestEval.mclm)+" corrects/min":"")+" · "+fmt(p.coins)+" pièce(s)"+(row&&row.pending_coins>0?" (+"+row.pending_coins+" en attente)":"")+" · "+games.length+" jeu(x)";
+   summary.title=certified.length+" certifiée(s), "+alone.length+" validée(s) seul, "+evaluations.length+" évaluation(s), "+training.length+" entraînement(s), "+fmt(p.coins)+" pièce(s), "+games.length+" jeu(x)";
    info.append(name,summary);wrap.append(info);
    const btn=document.createElement("button");btn.type="button";btn.className="secondary";btn.textContent="Détails";btn.setAttribute("aria-expanded","false");btn.title="Voir les détails de "+s.nickname;
    const details=document.createElement("div");details.className="muted hidden";details.style.cssText="width:100%;padding:10px 0;white-space:pre-wrap";
@@ -674,4 +725,18 @@ client.auth.onAuthStateChange(event=>{if(event==="PASSWORD_RECOVERY")recoveryMod
 if(arrivalError){history.replaceState(null,"",pageUrl);msg("authMsg",errorText({code:arrivalError,message:arrival.get("error_description")||""}),true);}
 refresh();
 })();
-</script></body></html>
+</script><script>
+/* Sur téléphone, les titres des cases deviennent l'indication grisée dans la case */
+(function(){
+ var phone=window.matchMedia&&matchMedia("(max-width:600px)").matches;
+ document.querySelectorAll("#space label[for]").forEach(function(l){
+  var f=document.getElementById(l.htmlFor);if(!f||/^(checkbox|radio)$/.test(f.type))return;
+  var txt=l.textContent.replace(/\s*\(.*?\)\s*/g," ").replace(/\s*:\s*$/,"").trim();
+  if(f.tagName!=="SELECT"&&phone){var ph=f.getAttribute("placeholder");f.setAttribute("placeholder",ph&&/^ex\./i.test(ph)?txt+" ("+ph.replace(/^ex\.\s*/i,"ex. ")+")":(ph||txt));}
+  if(!f.getAttribute("aria-label"))f.setAttribute("aria-label",l.textContent.trim());
+  l.classList.add("ph-label");
+ });
+ document.querySelectorAll(".teacher-nav [data-tab]").forEach(function(b){var l=b.querySelector(".nav-label");if(l&&!b.title)b.title=l.textContent.trim();});
+})();
+</script>
+</body></html>
