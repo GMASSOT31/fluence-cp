@@ -2008,7 +2008,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     document.body.appendChild(box);setTimeout(function(){box.remove();},6000);
     [784,1047,1319,1568].forEach(function(f,k){tone(f,k*0.09,0.2,"triangle",0.15);});
   }
-  /* Le serveur enregistre le score et décide des pièces : 3 pour un record perso battu, 10 pour le record absolu */
+  /* Le serveur enregistre le score et décide des pièces : 3 pour un record perso battu, 10 pour le record de la classe pris à un camarade */
   async function cloudSubmitScore(sid, id, value) {
     if(!(await cloudSettle()))throw new Error("OFFLINE");
     var res=await cloudClient.rpc("student_submit_score",{p_token:cloudToken,p_game:id,p_value:value,p_version:cloudVersion});
@@ -3170,7 +3170,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
      (la plus haute seulement : 1 objectif réussi, 3 record personnel battu, 10 record absolu de la classe).
      En version connectée, le serveur enregistre le score et décide lui-même des pièces. */
   /* Pièces d’une partie : la plus haute récompense seulement (jamais additionnées).
-     1 = objectif du jeu réussi (donnée tout de suite par winCoin), 3 = record perso battu, 10 = record absolu de la classe.
+     1 = objectif du jeu réussi (donnée tout de suite par winCoin), 3 = record perso battu, 10 = record de la classe pris à un camarade.
      Si un record tombe, la pièce de l’objectif est comprise dedans : on ne rajoute que la différence. */
   var COIN_GOAL = 1, COIN_RECORD = 3, COIN_ABS = 10;
   function settleCoins(sid, gain, obj) { if (gain > 0 && obj) { data.coins[sid] = coins(sid) - COIN_GOAL; save(); } }
@@ -3180,7 +3180,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var g = gameInfo(id), prevAbs = absRecord(id);
     var res = recordScore(sid, id, value);
     var abs = res.record && prevAbs !== null && betterThan(g, value, prevAbs.value);
-    var gain = abs ? COIN_ABS : (res.record && !res.first ? COIN_RECORD : 0);
+    var gain = abs && prevAbs.sid !== sid ? COIN_ABS : (res.record && !res.first ? COIN_RECORD : 0);   /* 10 seulement si on prend le record à un camarade */
     if (gain) { data.coins[sid] = coins(sid) + gain; save(); settleCoins(sid, gain, obj); renderPanels(); }
     showScoreResult(sid, area, id, value, { record: res.record, first: res.first, prev: res.prev, abs: abs, gain: gain, prevAbs: prevAbs, obj: obj });
   }
@@ -4136,7 +4136,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if (cr <= 0) tk.appendChild(el("span", "tk-empty", "Aucun jeton"));
     bar.appendChild(tk);
     bar.appendChild(el("p", "tk-text", cr > 0 ? cr + (cr > 1 ? " parties disponibles" : " partie disponible") + ". Choisis ta machine !" : "Tu n’as plus de partie. Va à la boutique ou gagne des parties en lecture et en écoute."));
-    bar.appendChild(el("p", "tk-rules", "🎯 Objectif réussi : 1 pièce · 🏆 Ton record battu : 3 pièces · 👑 Record de la classe : 10 pièces"));
+    bar.appendChild(el("p", "tk-rules", "🎯 Objectif réussi : 1 pièce · 🏆 Ton record battu : 3 pièces · 👑 Record pris à un camarade : 10 pièces"));
     room.appendChild(bar);
     var floor = el("div", "cabs");
     GAMES.forEach(function (g) { floor.appendChild(cabinet(g, sid, cr, lim)); });
