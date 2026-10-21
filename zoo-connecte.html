@@ -2044,9 +2044,10 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   function isValid(sid, sound, kind) { var b = best(sid, sound, kind); return b !== null && b >= data.thr[kind]; }
   /* Deux niveaux : « validée ✓ » par un entraînement enregistré qui atteint l’objectif (l’élève avance seul, sans récompense)
      et « certifiée 🏅 » par une évaluation réussie avec le maître(sse) (isValid : roue, animaux, niveau affiché) */
+  var MIN_TRAIN_SEC = 15;   /* un entraînement plus court ne valide pas l’étape (score extrapolé peu fiable) */
   function bestTrain(sid, sound, kind) {
     var m = null;
-    data.results.forEach(function (r) { if (r.sid === sid && r.sound === sound && r.k === kind && r.src === "train" && (m === null || r.mclm > m)) m = r.mclm; });
+    data.results.forEach(function (r) { if (r.sid === sid && r.sound === sound && r.k === kind && r.src === "train" && !r.short && (m === null || r.mclm > m)) m = r.mclm; });
     return m;
   }
   function isPassed(sid, sound, kind) { if (isValid(sid, sound, kind)) return true; var b = bestTrain(sid, sound, kind); return b !== null && b >= data.thr[kind]; }
@@ -2834,7 +2835,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var c = Math.max(0, n - e);
     var t = Math.max(1, S.elapsed);
     var mclm = Math.round(c / t * 60);
-    current = { n: n, e: e, c: c, t: Math.round(t), mclm: mclm };
+    var short = S.train && t < MIN_TRAIN_SEC;
+    current = { n: n, e: e, c: c, t: Math.round(t), mclm: mclm, short: short };
     var info = kindInfo(S.kind);
     $("r-big").textContent = mclm;
     $("r-label").textContent = (S.kind === "s" ? "Syllabes lues" : "Mots lus") + " correctement en une minute";
@@ -2843,11 +2845,11 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if (t < 15) det += ". Durée très courte : ce score est une estimation peu fiable.";
     $("r-detail").textContent = det;
     var thr = data.thr[S.kind];
-    var ok = mclm >= thr;
+    var ok = mclm >= thr && !short;
     var badge = $("r-badge");
     badge.textContent = S.train
-      ? (ok ? "✓ Objectif atteint : étape validée" : "Objectif : " + thr + " par minute")
-      : (ok ? "🏅 Objectif atteint : étape certifiée" : "Objectif : " + thr + " par minute");
+      ? (short ? "⏱️ Lecture trop courte : lis au moins " + MIN_TRAIN_SEC + " secondes pour valider l’étape" : ok ? "✓ Objectif atteint : étape validée" : "Objectif : " + thr + " par minute")
+      : (ok ? "🏅 Objectif atteint : étape certifiée" : "Objectif : " + thr + " par minute") + (t < MIN_TRAIN_SEC ? " · ⏱️ lecture très courte, à vérifier" : "");
     badge.className = "badge" + (ok ? " ok" : "");
     $("btn-save").textContent = S.train ? "Enregistrer mon entraînement" : "Enregistrer";
     $("btn-ask-eval").hidden = !(S.train && ok);
@@ -2857,7 +2859,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     paintWords();
   }
   function saveTraining() {
-    data.results.push({ id: uid(), sid: S.sid, sound: S.sound, k: S.kind, n: current.n, e: current.e, t: current.t, mclm: current.mclm, ts: Date.now(), src: "train" });
+    data.results.push({ id: uid(), sid: S.sid, sound: S.sound, k: S.kind, n: current.n, e: current.e, t: current.t, mclm: current.mclm, ts: Date.now(), src: "train", short: current.short || undefined });
     data.sel.sid = S.sid;
     save();
   }
@@ -2882,6 +2884,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       renderPanels();
       return;
     }
+    if (current.t < MIN_TRAIN_SEC && !confirm("Lecture très courte (" + current.t + " s) : le score n’est pas fiable. Enregistrer quand même ?")) return;
     var intro = $("r-msg").textContent, petEmoji = charFor(S.sound).e;
     var was = isValid(S.sid, S.sound, S.kind);
     data.results.push({ id: uid(), sid: S.sid, sound: S.sound, k: S.kind, n: current.n, e: current.e, t: current.t, mclm: current.mclm, ts: Date.now() });
@@ -3308,7 +3311,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     $("pl-shop").textContent = cn >= minPrice ? "Tu peux acheter !" : "";
     var allSteps = stepsList();
     var doneSteps = allSteps.filter(function (x) { return isValid(sid, x.sound, x.kind); }).length;
-    $("pr-prog").textContent = doneSteps + " sur " + allSteps.length + " étapes";
+    var passedSteps = allSteps.filter(function (x) { return isPassed(sid, x.sound, x.kind); }).length;
+    $("pr-prog").textContent = nb(passedSteps, "étape réussie", "étapes réussies") + " · " + doneSteps + (doneSteps > 1 ? " certifiées" : " certifiée");
     $("pl-level").textContent = "N" + doneSteps;
     $("top-level").textContent = "N" + doneSteps;
     var lvl = listenLevel(sid), lnx = listenNext(sid);
@@ -3824,6 +3828,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       if (L.passes[id] >= listenNeed(id)) {
         L.done[id] = true; nowDone = true;
         if (data.reward && cfg.coins > 0) { data.coins[sid] = coins(sid) + cfg.coins; gained = cfg.coins; }
+        if (data.reward) data.wheels.push({ id: uid(), sid: sid, ts: Date.now() });   /* comme une lecture certifiée */
       }
     }
     save(); renderPanels();
@@ -3850,7 +3855,12 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       card.appendChild(el("p", "instruction", "Il faut au plus " + nb(cfg.maxErrors, "erreur", "erreurs") + ". Écoute bien et recommence, tu vas y arriver !"));
     }
     var row = el("div", "row");
-    var again = el("button", "primary big-btn", "Rejouer"); again.type = "button";
+    if (nowDone && pendingWheels(sid).length) {
+      var spin = el("button", "primary big-btn", "🎡 Lancer la roue !"); spin.type = "button";
+      spin.addEventListener("click", function () { listenFocus(false); openWheel(sid, "Bravo, tu as réussi le son " + q(R.sound.label) + " à l’écoute !", charFor(id).e); });
+      row.appendChild(spin);
+    }
+    var again = el("button", (nowDone && pendingWheels(sid).length ? "secondary" : "primary") + " big-btn", "Rejouer"); again.type = "button";
     again.addEventListener("click", function () { listenStart(sid, id); });
     row.appendChild(again);
     var nx = nowDone ? listenNext(sid) : null;
@@ -4099,7 +4109,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     GAMES.forEach(function (g) { floor.appendChild(cabinet(g, sid, cr, lim)); });
     room.appendChild(floor);
     if (lim) room.appendChild(el("p", "arcade-hint", "Limite du jour atteinte : on rejouera demain."));
-    else if (cr <= 0) room.appendChild(el("p", "arcade-hint", "Valide une étape de lecture pour gagner des parties."));
+    else if (cr <= 0) room.appendChild(el("p", "arcade-hint", "Fais certifier une étape par ton maître ou ta maîtresse, ou réussis un son dans J’écoute, pour gagner des parties."));
     body.appendChild(room);
   }
 
