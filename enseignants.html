@@ -335,6 +335,18 @@ function msg(id,text,error){$(id).textContent=text||"";$(id).classList.toggle("e
 const CLASS_CODE_RULE="Le code de classe doit faire de 4 à 20 lettres ou chiffres (majuscules, accents et espaces ne comptent pas).";
 function normalizeClassCode(v){return String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^A-Za-z0-9]/g,"").toUpperCase()}
 function validClassCode(v){return /^[A-Z0-9]{4,20}$/.test(normalizeClassCode(v))}
+async function renameClass(c,msgId){
+ const old=c.name;
+ const name=prompt("Nouveau nom pour la classe « "+old+" » :",old);
+ if(name===null)return;
+ const n=name.trim();
+ if(!n||n.length>80){msg(msgId,"Le nom de la classe doit faire entre 1 et 80 caractères.",true);return;}
+ if(n===old)return;
+ const {error}=await client.from("classes").update({name:n}).eq("id",c.id).select("id").single();
+ if(error){msg(msgId,errorText(error),true);return;}
+ if(msgId==="studentsMsg")studentsNotice="✏️ « "+old+" » s’appelle maintenant « "+n+" ».";
+ await refresh();if(msgId!=="studentsMsg")msg(msgId,"✏️ « "+old+" » s’appelle maintenant « "+n+" ».");
+}
 async function changeClassCode(c){
  const code=prompt("Nouveau code pour la classe « "+c.name+" » (4 à 20 lettres ou chiffres).\nAttention : l’ancien code « "+c.access_code+" » ne marchera plus.",c.access_code||"");
  if(code===null)return;
@@ -390,7 +402,7 @@ async function refresh(){
  $("addStudent").disabled=used>=limit||ownClasses.length===0;
  $("classSelect").replaceChildren();
  $("classes").replaceChildren();
- classes.data.forEach((c,ci)=>{const own=c.teacher_id===currentUser.id;if(own){const opt=document.createElement("option");opt.value=c.id;opt.textContent=c.name;$("classSelect").append(opt)}const d=document.createElement("div");d.className="row class-item";d.style.setProperty("--cg",classColor(ci));const label=document.createElement("span");label.textContent=(c.ghosted_at?"👻 ":"📚 ")+c.name+(c.ghosted_at?" (ghostée)":"")+(own?"":" (autre enseignant)")+" · Code de classe : "+(c.access_code||"à actualiser");d.append(label);if(c.access_code){const copy=document.createElement("button");copy.type="button";copy.className="secondary";copy.style.marginLeft="12px";copy.textContent="Copier le lien élève";copy.onclick=()=>copyStudentLink(c.access_code);d.append(copy)}if(own){const change=document.createElement("button");change.type="button";change.className="secondary";change.style.marginLeft="8px";change.textContent="Changer le code";change.onclick=()=>changeClassCode(c);d.append(change)}$("classes").append(d)});
+ classes.data.forEach((c,ci)=>{const own=c.teacher_id===currentUser.id;if(own){const opt=document.createElement("option");opt.value=c.id;opt.textContent=c.name;$("classSelect").append(opt)}const d=document.createElement("div");d.className="row class-item";d.style.setProperty("--cg",classColor(ci));const label=document.createElement("span");label.textContent=(c.ghosted_at?"👻 ":"📚 ")+c.name+(c.ghosted_at?" (ghostée)":"")+(own?"":" (autre enseignant)")+" · Code de classe : "+(c.access_code||"à actualiser");d.append(label);if(c.access_code){const copy=document.createElement("button");copy.type="button";copy.className="secondary";copy.style.marginLeft="12px";copy.textContent="Copier le lien élève";copy.onclick=()=>copyStudentLink(c.access_code);d.append(copy)}if(own){const change=document.createElement("button");change.type="button";change.className="secondary";change.style.marginLeft="8px";change.textContent="Changer le code";change.onclick=()=>changeClassCode(c);const ren=document.createElement("button");ren.type="button";ren.className="secondary";ren.style.marginLeft="8px";ren.textContent="✏️ Renommer";ren.onclick=()=>renameClass(c,"spaceMsg");d.append(change,ren)}$("classes").append(d)});
  if(!classes.data.length)$("classes").textContent="Aucune classe pour le moment.";
  const roster=$("classRoster");roster.replaceChildren();
  classes.data.forEach((c,ci)=>{
@@ -627,6 +639,7 @@ async function renderStudentsTab(role){
    const cact=document.createElement("div");cact.className="actions";cact.style.marginTop="0";
    const cghost=document.createElement("button");cghost.type="button";cghost.className="secondary";cghost.textContent=c.ghosted_at?"Réactiver la classe":"👻 Ghoster la classe";cghost.onclick=()=>manageClass(c,c.ghosted_at?"unghost":"ghost",[cghost,cdel]);
    const cdel=document.createElement("button");cdel.type="button";cdel.className="danger";cdel.textContent="🗑️ Supprimer la classe";cdel.onclick=()=>manageClass(c,"delete",[cghost,cdel]);
+   if(c.teacher_id===currentUser.id){const cren=document.createElement("button");cren.type="button";cren.className="secondary";cren.textContent="✏️ Renommer";cren.onclick=()=>renameClass(c,"studentsMsg");cact.append(cren);}
    cact.append(cghost,cdel);head.append(h,cact);box.append(head);
    const members=sts.filter(s=>s.class_id===c.id);
    if(!members.length){const p=document.createElement("p");p.className="muted";p.textContent="Aucun élève dans cette classe.";box.append(p);}
