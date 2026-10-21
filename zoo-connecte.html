@@ -4566,6 +4566,155 @@
     draw(); msg();
   }
 
+  /* Tour d’animaux : un animal glisse, on touche pour le poser sur la pile ; ce qui dépasse tombe */
+  var STACK_GOAL = 10, STACK_MAX = 200, STACK_H = 44;
+  var STACK_COLORS = ["#fde68a", "#bbf7d0", "#bfdbfe", "#fbcfe8", "#ddd6fe", "#fed7aa", "#a5f3fc"];
+  function startStack(sid) {
+    var gp = gamePool(sid), pool = gp.mine.concat(gp.extra);
+    var area = $("game-area");
+    area.innerHTML = "";
+    var box = el("div", "stack-area"); box.tabIndex = 0;
+    box.setAttribute("role", "button"); box.setAttribute("aria-label", "Touche pour poser l’animal");
+    var world = el("div", "stack-world");
+    box.appendChild(world); area.appendChild(box);
+    var W = box.clientWidth || 320, floors = 0, won = false, over = false, raf = 0, last = 0, cur = null;
+    var base = { x: Math.round(W * 0.2), w: Math.round(W * 0.6) };
+    function block(x, w, lvl, color, txt) {
+      var b = el("div", "stack-block", txt || "");
+      b.style.left = x + "px"; b.style.width = w + "px"; b.style.bottom = (lvl * STACK_H) + "px"; b.style.background = color;
+      world.appendChild(b); return b;
+    }
+    block(base.x, base.w, 0, "#e5e7eb", "🏁");
+    function msg(t) { $("game-msg").textContent = t || ("Touche pour poser l’animal sur la tour. Étages : " + floors + (won ? "." : " (pièce d’or à " + STACK_GOAL + ").")); }
+    function spawn() {
+      var lvl = floors + 1, fromLeft = Math.random() < 0.5;
+      cur = { lvl: lvl, w: base.w, x: fromLeft ? 0 : W - base.w, dir: fromLeft ? 1 : -1, speed: Math.min(2.3 + floors * 0.2, 7.5) };
+      cur.el = block(cur.x, cur.w, lvl, STACK_COLORS[lvl % STACK_COLORS.length], pool[Math.floor(Math.random() * pool.length)]);
+      var rows = Math.max(4, Math.floor((box.clientHeight || 352) / STACK_H) - 3);
+      world.style.transform = "translateY(" + Math.max(0, (lvl - rows) * STACK_H) + "px)";
+    }
+    function frame(ts) {
+      if (over) return;
+      var dt = last ? Math.min(40, ts - last) / 16.67 : 1; last = ts;
+      cur.x += cur.dir * cur.speed * dt;
+      if (cur.x <= 0) { cur.x = 0; cur.dir = 1; }
+      if (cur.x + cur.w >= W) { cur.x = W - cur.w; cur.dir = -1; }
+      cur.el.style.left = cur.x + "px";
+      raf = requestAnimationFrame(frame);
+    }
+    function finish() {
+      if (over) return;
+      over = true; cancelAnimationFrame(raf); stopGame();
+      $("game-msg").textContent = (won ? praise() + " ! " : "Bien essayé ! ") + "Ta tour fait " + nb(floors, "étage", "étages") + "." + (won ? " Tu as gagné une pièce d’or !" : " Il en fallait " + STACK_GOAL + " pour gagner une pièce d’or.");
+      finishScore(sid, area, "stack", floors);
+    }
+    function drop() {
+      if (over || !cur) return;
+      var left = Math.max(cur.x, base.x), right = Math.min(cur.x + cur.w, base.x + base.w), ov = right - left;
+      if (ov <= 0) { cur.el.classList.add("stack-fall"); sfxBad(); finish(); return; }
+      var perfect = Math.abs(cur.x - base.x) <= 4;
+      if (perfect) {
+        left = base.x; ov = base.w;
+        tone(880, 0, 0.1, "sine", 0.07); tone(1320, 0.06, 0.14, "sine", 0.05);
+      } else {
+        var piece = el("div", "stack-block stack-fall");
+        piece.style.left = (cur.x < base.x ? cur.x : right) + "px"; piece.style.width = (cur.w - ov) + "px";
+        piece.style.bottom = cur.el.style.bottom; piece.style.background = cur.el.style.background;
+        world.appendChild(piece);
+        G.timers.push(setTimeout(function () { if (piece.parentNode) piece.parentNode.removeChild(piece); }, 700));
+        tone(392, 0, 0.08, "triangle", 0.07);
+      }
+      cur.el.style.left = left + "px"; cur.el.style.width = ov + "px";
+      base = { x: left, w: ov }; floors++;
+      if (!won && floors >= STACK_GOAL) { won = true; winCoin(sid, area); }
+      if (floors >= STACK_MAX) { finish(); return; }
+      msg(perfect ? "Parfait ! Étages : " + floors + "." : null);
+      spawn();
+    }
+    box.addEventListener("pointerdown", function (e) { e.preventDefault(); drop(); });
+    box.addEventListener("keydown", function (e) { if (e.key === " " || e.key === "Enter") { e.preventDefault(); drop(); } });
+    G.cleanup = function () { over = true; cancelAnimationFrame(raf); };
+    msg(); spawn();
+    raf = requestAnimationFrame(frame);
+    box.focus({ preventScroll: true });
+  }
+
+  /* Ballons des sons : la voix dit une syllabe déjà vue, on éclate le bon ballon (45 s) */
+  var BALLOON_GOAL = 8, BALLOON_TIME = 45;
+  var BALLOON_COLORS = ["#fca5a5", "#fcd34d", "#86efac", "#93c5fd", "#c4b5fd", "#f9a8d4"];
+  function balloonRound(sid) {
+    var ls = listenSounds().filter(function (s) { return listenUnlocked(sid, s.id); });
+    for (var k = 0; k < 15 && ls.length; k++) {
+      var s = ls[Math.floor(Math.random() * ls.length)];
+      var items = listenSylItems(sid, s) || listenItems(s);
+      if (!items || !items.length) continue;
+      var it = items[Math.floor(Math.random() * items.length)];
+      var qq = it.syl ? listenBuildSyl(sid, it) : listenBuild(sid, s, it);
+      if (!qq || !qq.choices) continue;
+      var goods = qq.choices.filter(function (c) { return c.good; });
+      var bads = shuffle(qq.choices.filter(function (c) { return !c.good; })).slice(0, 3);
+      if (!goods.length || bads.length < 2) continue;
+      return { item: qq.item, choices: shuffle([goods[0]].concat(bads)) };
+    }
+    return null;
+  }
+  function startBalloons(sid) {
+    var area = $("game-area");
+    area.innerHTML = "";
+    var bar = el("div", "balloon-top");
+    var again = el("button", "listen-play", "🔊 Réécouter"); again.type = "button";
+    bar.appendChild(again);
+    var sky = el("div", "balloon-sky");
+    area.appendChild(bar); area.appendChild(sky);
+    var score = 0, left = BALLOON_TIME, won = false, over = false, round = null, n = 0;
+    function upd() { $("game-msg").textContent = "Éclate le ballon du son que tu entends ! Il reste " + left + " s. Bons ballons : " + score + (won ? "." : " (pièce d’or à " + BALLOON_GOAL + ")."); }
+    function finish() {
+      if (over) return;
+      over = true; stopGame(); listenStopVoice();
+      sky.innerHTML = ""; again.disabled = true;
+      $("game-msg").textContent = (won ? praise() + " ! " : "Bien essayé ! ") + "Tu as éclaté " + nb(score, "bon ballon", "bons ballons") + "." + (won ? " Tu as gagné une pièce d’or !" : " Il en fallait " + BALLOON_GOAL + " pour gagner une pièce d’or.");
+      finishScore(sid, area, "ballons", score);
+    }
+    function freeze(b) { b.style.bottom = getComputedStyle(b).bottom; b.style.animation = "none"; }
+    function next() {
+      if (over) return;
+      sky.innerHTML = "";
+      round = balloonRound(sid);
+      if (!round) { $("game-msg").textContent = "Pas encore de syllabes à écouter : lis ou écoute d’abord un son !"; finish(); return; }
+      var token = round, cnt = round.choices.length, btns = [];
+      round.choices.forEach(function (c, i) {
+        var b = el("button", "balloon", c.g); b.type = "button";
+        b.style.left = (3 + i * (94 / cnt)) + "%";
+        b.style.background = BALLOON_COLORS[(i + n) % BALLOON_COLORS.length];
+        b.style.animationDuration = (6.6 + Math.random() * 1.2) + "s";
+        b.style.animationDelay = (Math.random() * 0.5) + "s";
+        b.addEventListener("click", function () {
+          if (over || b.disabled || round !== token) return;
+          if (c.good) {
+            score++; sfxGood();
+            btns.forEach(function (x) { x.disabled = true; });
+            freeze(b); b.classList.add("pop");
+            if (!won && score >= BALLOON_GOAL) { won = true; winCoin(sid, area); }
+            upd();
+            G.timers.push(setTimeout(next, 420));
+          } else {
+            sfxBad(); b.disabled = true; b.classList.add("bad");
+            left = Math.max(0, left - 2); upd();
+            if (left <= 0) finish();
+          }
+        });
+        sky.appendChild(b); btns.push(b);
+      });
+      n++;
+      G.timers.push(setTimeout(function () { if (round === token && !over) listenSay(token.item); }, 200));
+      G.timers.push(setTimeout(function () { if (round === token && !over) next(); }, 8200));
+    }
+    again.addEventListener("click", function () { if (round && !over) listenSay(round.item); });
+    G.timers.push(setInterval(function () { left--; if (left <= 0) finish(); else upd(); }, 1000));
+    G.cleanup = function () { over = true; listenStopVoice(); };
+    upd(); next();
+  }
+
   /* Fin de partie commune : félicitations et pièce d’or, ou encouragements */
   function endGame(sid, area, ok, okMsg, koMsg) {
     stopGame();
