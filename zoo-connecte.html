@@ -389,7 +389,7 @@
   .cab-abs { display: flex; align-items: center; justify-content: center; gap: 6px; text-align: center; font-size: 0.9rem; font-weight: 600; line-height: 1.25; color: #ffe66d; }
   .cab-abs .crown { font-size: 1.2rem; }
   .game-abs { margin: 0 0 6px; font-weight: 600; color: var(--muted); min-height: 1.3em; }
-  .count-clock { text-align: center; font-weight: 700; font-size: 1.3rem; margin-bottom: 8px; color: #ffe66d; font-variant-numeric: tabular-nums; }
+  .count-clock { text-align: center; font-weight: 700; font-size: 1.3rem; margin-bottom: 8px; color: var(--ink); font-variant-numeric: tabular-nums; }
   .rb-coins { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 8px; font-weight: 800; font-size: 1.15rem; }
   .rb-coins .gold-coin { font-size: 1.5rem; }
   .record-banner.absolute { background: linear-gradient(135deg, #ff3cac, #ffe66d 55%, #2de2e6); box-shadow: 0 0 34px rgba(255, 60, 172, 0.75); }
@@ -900,11 +900,24 @@
   .balloon.pop { opacity: 0; transition: opacity .3s; }
   .balloon.bad { opacity: .45; outline: 3px solid #ef4444; outline-offset: 2px; }
   .balloon:disabled { cursor: default; }
-  @keyframes balloonUp { to { transform: translateY(-480px); } }
+  @keyframes balloonUp { to { bottom: 104%; } }
   .home-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
   .home-actions .big-btn { margin: 0; }
   .home-listen-line { margin: 4px 0 0; color: var(--muted); }
   .listen-go { background: #0f766e; color: #fff; border-color: #0f766e; }
+  /* Pendant une partie : le jeu occupe tout l’écran */
+  body.playing header, body.playing #panel-left, body.playing #panel-right, body.playing .bottom-nav { display: none !important; }
+  body.playing main { max-width: none; padding: 8px !important; margin: 0; }
+  body.playing .layout { display: block; }
+  body.playing #v-jeu .arcade-screen { min-height: calc(100vh - 16px); min-height: calc(100dvh - 16px); margin: 0; display: flex; flex-direction: column; border-radius: 16px; }
+  body.playing #game-area { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+  body.playing .stack-area { height: min(calc(100dvh - 245px), 640px); min-height: 280px; max-width: 560px; }
+  body.playing .balloon-sky { height: min(calc(100dvh - 320px), 640px); min-height: 260px; max-width: 720px; width: 100%; }
+  body.playing .catch-area { height: min(calc(100dvh - 230px), 620px); min-height: 260px; }
+  body.playing .simon-grid { max-width: min(520px, 62vh); }
+  body.playing .mem-grid { max-width: min(680px, 90vh); }
+  body.playing .order-grid { max-width: min(560px, 80vh); }
+  body.playing .safari-wrap { max-width: min(100%, calc((100vh - 230px) * 2.25)); }
   /* Téléphone : pas d'avatar ni de Cartes / Progrès ; boutique et salle de jeux tiennent sur un écran */
   @media (max-width: 600px) {
     body.mode-student #panel-left .avatar-profile, body.mode-student #btn-logout { display: none; }
@@ -2151,7 +2164,8 @@
   function show(v) {
     if (STUDENT_VIEWS.indexOf(v) >= 0 && ses.role !== "student") v = "login";
     if (TEACHER_VIEWS.indexOf(v) >= 0 && ses.role !== "teacher") v = "login";
-    if (v !== "jeu") stopGame();
+    if (v !== "jeu") { stopGame(); gameFullscreen(false); }
+    document.body.classList.toggle("playing", v === "jeu");
     if (v !== "roue") wheelCleanup();
     if (v !== "eleves") $("codes-out").innerHTML = "";
     if (v !== "ecoute") closeReviewMedia();
@@ -4137,13 +4151,23 @@
     FALLBACK.forEach(function (f) { if (mine.indexOf(f[0]) < 0) extra.push(f[0]); });
     return { mine: mine, extra: extra };
   }
+  /* Plein écran pendant une partie (si l’appareil le permet ; sinon la page seule passe en mode jeu) */
+  function gameFullscreen(on) {
+    try {
+      var d = document, de = d.documentElement, cur = d.fullscreenElement || d.webkitFullscreenElement;
+      if (on && !cur) { var rq = de.requestFullscreen || de.webkitRequestFullscreen; if (rq) { var p = rq.call(de); if (p && p.catch) p.catch(function () {}); } }
+      else if (!on && cur) { var ex = d.exitFullscreen || d.webkitExitFullscreen; if (ex) { var p2 = ex.call(d); if (p2 && p2.catch) p2.catch(function () {}); } }
+    } catch (e) {}
+  }
   function playGame(gameId, sid) {
     if (!data.reward || credits(sid) <= 0 || limitReached(sid)) return;
     data.credits[sid] = credits(sid) - 1;
     data.playLog.push({ sid: sid, ts: Date.now() });
     if (data.playLog.length > 300) data.playLog = data.playLog.slice(-300);
     save();
+    gameFullscreen(true);
     show("jeu");
+    window.scrollTo(0, 0);
     $("game-title").textContent = gameName(gameId);
     setGameRecordLine(sid, gameId);
     if (gameId === "catch") startCatch(sid);
@@ -4416,7 +4440,8 @@
       var lvl = floors + 1, fromLeft = Math.random() < 0.5;
       cur = { lvl: lvl, w: base.w, x: fromLeft ? 0 : W - base.w, dir: fromLeft ? 1 : -1, speed: Math.min(2.3 + floors * 0.2, 7.5) };
       cur.el = block(cur.x, cur.w, lvl, STACK_COLORS[lvl % STACK_COLORS.length], pool[Math.floor(Math.random() * pool.length)]);
-      world.style.transform = "translateY(" + Math.max(0, (lvl - 5) * STACK_H) + "px)";
+      var rows = Math.max(4, Math.floor((box.clientHeight || 352) / STACK_H) - 3);
+      world.style.transform = "translateY(" + Math.max(0, (lvl - rows) * STACK_H) + "px)";
     }
     function frame(ts) {
       if (over) return;
@@ -4500,7 +4525,7 @@
       $("game-msg").textContent = (won ? praise() + " ! " : "Bien essayé ! ") + "Tu as éclaté " + nb(score, "bon ballon", "bons ballons") + "." + (won ? " Tu as gagné une pièce d’or !" : " Il en fallait " + BALLOON_GOAL + " pour gagner une pièce d’or.");
       finishScore(sid, area, "ballons", score);
     }
-    function freeze(b) { b.style.transform = getComputedStyle(b).transform; b.style.animation = "none"; }
+    function freeze(b) { b.style.bottom = getComputedStyle(b).bottom; b.style.animation = "none"; }
     function next() {
       if (over) return;
       sky.innerHTML = "";
@@ -4667,7 +4692,7 @@
   }
 
   /* Répète les animaux : la pièce se gagne à 5, puis la partie continue jusqu’à 8 pour le défi */
-  var SIMON_GOAL = 5, SIMON_MAX = 8;
+  var SIMON_GOAL = 5, SIMON_MAX = 12;
   function startSimon(sid) {
     var gp = gamePool(sid);
     var pool = shuffle(gp.mine).concat(shuffle(gp.extra)).slice(0, 4);
