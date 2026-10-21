@@ -913,6 +913,9 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   .home-listen-line { margin: 4px 0 0; color: var(--muted); }
   .short-chip { margin-left: 6px; background: #fff3d6; color: #7a4b00; }
   .score.short { opacity: .45; text-decoration: line-through; }
+  .tk-rules { margin: 4px 0 0; font-size: .85rem; font-weight: 700; opacity: .85; }
+  .buy-confirm .bc-icon { font-size: 3.2rem; text-align: center; }
+  .buy-confirm .bc-price { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 1.3rem; font-weight: 800; margin: 6px 0 14px; }
   .listen-go { background: #0f766e; color: #fff; border-color: #0f766e; }
   .home-hero .home-step { flex-wrap: nowrap; }
   .home-pet { background: none; border: 0; padding: 0; cursor: pointer; flex: 0 0 auto; box-shadow: none; }
@@ -2005,7 +2008,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     document.body.appendChild(box);setTimeout(function(){box.remove();},6000);
     [784,1047,1319,1568].forEach(function(f,k){tone(f,k*0.09,0.2,"triangle",0.15);});
   }
-  /* Le serveur enregistre le score et décide des pièces : 1 pour un record perso, 5 pour le record absolu */
+  /* Le serveur enregistre le score et décide des pièces : 3 pour un record perso battu, 10 pour le record absolu */
   async function cloudSubmitScore(sid, id, value) {
     if(!(await cloudSettle()))throw new Error("OFFLINE");
     var res=await cloudClient.rpc("student_submit_score",{p_token:cloudToken,p_game:id,p_value:value,p_version:cloudVersion});
@@ -3164,30 +3167,38 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     $("game-abs").textContent = at ? "👑 " + at : "";
   }
   /* À la fin d’une partie : on enregistre le score, on fête un record et on donne des pièces d’or
-     (1 pour un record personnel, 5 pour battre le record absolu de la classe).
+     (la plus haute seulement : 1 objectif réussi, 3 record personnel battu, 10 record absolu de la classe).
      En version connectée, le serveur enregistre le score et décide lui-même des pièces. */
+  /* Pièces d’une partie : la plus haute récompense seulement (jamais additionnées).
+     1 = objectif du jeu réussi (donnée tout de suite par winCoin), 3 = record perso battu, 10 = record absolu de la classe.
+     Si un record tombe, la pièce de l’objectif est comprise dedans : on ne rajoute que la différence. */
+  var COIN_GOAL = 1, COIN_RECORD = 3, COIN_ABS = 10;
+  function settleCoins(sid, gain, obj) { if (gain > 0 && obj) { data.coins[sid] = coins(sid) - COIN_GOAL; save(); } }
   function finishScore(sid, area, id, value) {
-    if (cloudMode) { finishScoreCloud(sid, area, id, value); return; }
+    var obj = !!G.objCoin;
+    if (cloudMode) { finishScoreCloud(sid, area, id, value, obj); return; }
     var g = gameInfo(id), prevAbs = absRecord(id);
     var res = recordScore(sid, id, value);
     var abs = res.record && prevAbs !== null && betterThan(g, value, prevAbs.value);
-    if (res.record) { data.coins[sid] = coins(sid) + (abs ? 5 : 1); save(); renderPanels(); }
-    showScoreResult(sid, area, id, value, { record: res.record, first: res.first, prev: res.prev, abs: abs, gain: abs ? 5 : 1, prevAbs: prevAbs });
+    var gain = abs ? COIN_ABS : (res.record && !res.first ? COIN_RECORD : 0);
+    if (gain) { data.coins[sid] = coins(sid) + gain; save(); settleCoins(sid, gain, obj); renderPanels(); }
+    showScoreResult(sid, area, id, value, { record: res.record, first: res.first, prev: res.prev, abs: abs, gain: gain, prevAbs: prevAbs, obj: obj });
   }
-  async function finishScoreCloud(sid, area, id, value) {
+  async function finishScoreCloud(sid, area, id, value, obj) {
     var wait = el("p", "score-line", "Enregistrement du score…");
     area.appendChild(wait);
     var shown;
     try {
       var r = await cloudSubmitScore(sid, id, value);
       var pa = r.prevAbs ? { sid: r.prevAbs.mine ? sid : null, name: r.prevAbs.nickname, avatar: r.prevAbs.avatar || "", value: Number(r.prevAbs.value) } : null;
-      shown = { record: !!r.record, first: !!r.first, prev: r.prev === null ? null : Number(r.prev), abs: !!r.absolute, gain: Number(r.gain) || 0, prevAbs: pa };
+      shown = { record: !!r.record, first: !!r.first, prev: r.prev === null ? null : Number(r.prev), abs: !!r.absolute, gain: Number(r.gain) || 0, prevAbs: pa, obj: obj };
+      settleCoins(sid, shown.gain, obj);
     } catch (e) {
       if (String(e.message || "").includes("SYNC_CONFLICT")) { wait.remove(); showSyncConflict(cloudSnapshot()); return; }
-      /* Hors ligne (ou refus du serveur) : record perso calculé ici, 1 pièce au plus, jamais le bonus du record absolu */
-      var res = recordScore(sid, id, value);
-      if (res.record) { data.coins[sid] = coins(sid) + 1; save(); }
-      shown = { record: res.record, first: res.first, prev: res.prev, abs: false, gain: 1, prevAbs: null, offline: true };
+      /* Hors ligne (ou refus du serveur) : record perso calculé ici, jamais le bonus du record absolu */
+      var res = recordScore(sid, id, value), offGain = res.record && !res.first ? COIN_RECORD : 0;
+      if (offGain) { data.coins[sid] = coins(sid) + offGain; save(); settleCoins(sid, offGain, obj); }
+      shown = { record: res.record, first: res.first, prev: res.prev, abs: false, gain: offGain, prevAbs: null, offline: true, obj: obj };
     }
     wait.remove();
     renderPanels();
@@ -3226,10 +3237,13 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       box.appendChild(el("div", "rb-prev", abs
         ? (prevAbs.sid === sid ? "Tu améliores ton propre record absolu : " + g.fmt(prevAbs.value) : "Tu prends le record de " + holderName(prevAbs) + " : " + g.fmt(prevAbs.value))
         : (res.first ? "C’est ton record à battre." : "Ancien record : " + g.fmt(res.prev))));
-      var gl = el("div", "rb-coins");
-      gl.appendChild(coinEl());
-      gl.appendChild(document.createTextNode(" +" + gain + (gain > 1 ? " pièces d’or" : " pièce d’or")));
-      box.appendChild(gl);
+      var total = gain > 0 ? gain : (res.obj ? COIN_GOAL : 0);
+      if (total) {
+        var gl = el("div", "rb-coins");
+        gl.appendChild(coinEl());
+        gl.appendChild(document.createTextNode(" +" + total + (total > 1 ? " pièces d’or" : " pièce d’or") + (gain > 0 && res.obj ? " en tout" : "")));
+        box.appendChild(gl);
+      }
       if (res.offline) box.appendChild(el("div", "rb-prev", "Pas de réseau : le record de la classe sera vérifié plus tard."));
       gameResultOverlay(sid, id, box);
       var reduce = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
@@ -3237,7 +3251,10 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       (abs ? [523, 659, 784, 1047, 784, 1047, 1319, 1568] : [523, 659, 784, 1047, 1319, 1568]).forEach(function (f, k) { tone(f, k * 0.08, 0.22, "triangle", 0.15); });
     } else {
       var h = hiOf(sid, id);
-      gameResultOverlay(sid, id, el("p", "score-line", "Ton score : " + g.fmt(value) + ". Ton record : " + (h.best !== null ? g.fmt(h.best) : "à établir") + "."));
+      var wrapR = el("div");
+      wrapR.appendChild(el("p", "score-line", "Ton score : " + g.fmt(value) + ". Ton record : " + (h.best !== null ? g.fmt(h.best) : "à établir") + "."));
+      if (res.obj) { var gl2 = el("div", "rb-coins"); gl2.appendChild(coinEl()); gl2.appendChild(document.createTextNode(" +1 pièce d’or : objectif réussi")); wrapR.appendChild(gl2); }
+      gameResultOverlay(sid, id, wrapR);
     }
     setGameRecordLine(sid, id);
   }
@@ -4118,7 +4135,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if (cr > 8) tk.appendChild(el("span", "tk-more", "+" + (cr - 8)));
     if (cr <= 0) tk.appendChild(el("span", "tk-empty", "Aucun jeton"));
     bar.appendChild(tk);
-    bar.appendChild(el("p", "tk-text", cr + (cr > 1 ? " parties disponibles" : " partie disponible") + ". Choisis ta machine !"));
+    bar.appendChild(el("p", "tk-text", cr > 0 ? cr + (cr > 1 ? " parties disponibles" : " partie disponible") + ". Choisis ta machine !" : "Tu n’as plus de partie. Va à la boutique ou gagne des parties en lecture et en écoute."));
+    bar.appendChild(el("p", "tk-rules", "🎯 Objectif réussi : 1 pièce · 🏆 Ton record battu : 3 pièces · 👑 Record de la classe : 10 pièces"));
     room.appendChild(bar);
     var floor = el("div", "cabs");
     GAMES.forEach(function (g) { floor.appendChild(cabinet(g, sid, cr, lim)); });
@@ -4374,6 +4392,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   function playGame(gameId, sid) {
     if (!data.reward || credits(sid) <= 0 || limitReached(sid)) return;
     data.credits[sid] = credits(sid) - 1;
+    G.objCoin = false;
     data.playLog.push({ sid: sid, ts: Date.now() });
     if (data.playLog.length > 300) data.playLog = data.playLog.slice(-300);
     save();
@@ -4533,7 +4552,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   function praise() { return PRAISE[Math.floor(Math.random() * PRAISE.length)]; }
   /* une pièce d’or par jeu réussi, une seule fois par partie */
   function winCoin(sid, area) {
-    data.coins[sid] = coins(sid) + 1;
+    G.objCoin = true;
+    data.coins[sid] = coins(sid) + COIN_GOAL;
     save();
     renderPanels();
     var box = el("div", "coin-win");
@@ -5120,10 +5140,29 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     tag.appendChild(el("b", "", String(it.price)));
     tag.appendChild(document.createTextNode(" pièces d’or"));
     var b = el("button", "buy"); b.type = "button"; b.disabled = !afford;
-    confirmButton(b, "Acheter", it.onBuy, "Je confirme !");
+    b.textContent = "Acheter";
+    b.addEventListener("click", function () { buyConfirm(it); });
     row.appendChild(tag); row.appendChild(b);
     card.appendChild(row);
     return card;
+  }
+  /* Confirmation d’achat : une fenêtre qui reste affichée jusqu’à « Oui » ou « Non » */
+  function buyConfirm(it) {
+    var old = document.querySelector(".buy-confirm"); if (old) old.parentNode.removeChild(old);
+    var ov = el("div", "game-result buy-confirm"); ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true");
+    var card = el("div", "game-result-card");
+    card.appendChild(el("div", "bc-icon", it.icon || "🎁"));
+    card.appendChild(el("h2", "gr-title", "Tu veux acheter « " + it.label + " » ?"));
+    var pr = el("p", "bc-price"); pr.appendChild(coinEl()); pr.appendChild(document.createTextNode(" " + nb(it.price, "pièce d’or", "pièces d’or"))); card.appendChild(pr);
+    var acts = el("div", "gr-actions");
+    var yes = el("button", "primary", "✅ Oui, j’achète"); yes.type = "button";
+    var no = el("button", "secondary", "Non"); no.type = "button";
+    function close() { if (ov.parentNode) ov.parentNode.removeChild(ov); }
+    yes.addEventListener("click", function () { close(); it.onBuy(); });
+    no.addEventListener("click", close);
+    acts.appendChild(yes); acts.appendChild(no); card.appendChild(acts); ov.appendChild(card);
+    document.body.appendChild(ov);
+    yes.focus({ preventScroll: true });
   }
   var shopSettingsRefreshing=false,shopSettingsChecked=0;
   async function refreshShopSettings(){
