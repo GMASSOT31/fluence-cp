@@ -244,8 +244,12 @@
   .mem-card { aspect-ratio: 1; padding: 0; font-size: 2.4rem; line-height: 1; border-radius: 14px; background: var(--k-m); color: var(--ink); }
   .mem-card.open { background: var(--card); border: 2px solid var(--line); }
   .mem-card.done { background: var(--ok-bg); border: 2px solid var(--ok); }
-  .catch-area { position: relative; height: 320px; border-radius: 16px; background: var(--ok-bg); overflow: hidden; touch-action: manipulation; }
-  .catch-btn { position: absolute; padding: 4px; background: transparent; font-size: 2.8rem; line-height: 1; border-radius: 50%; }
+  .snake-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .snake-canvas { display: block; width: min(100%, 440px); aspect-ratio: 1; border-radius: 14px; border: 1.5px solid var(--line); touch-action: none; user-select: none; -webkit-user-select: none; }
+  .snake-pad { display: grid; grid-template-columns: repeat(3, 64px); grid-template-areas: ". up ." "left down right"; gap: 6px; touch-action: none; user-select: none; -webkit-user-select: none; }
+  .snake-btn { width: 64px; height: 52px; padding: 0; font-size: 1.4rem; border-radius: 14px; background: var(--card); color: var(--ink); border: 1.5px solid var(--line); touch-action: none; }
+  .snake-btn:active { background: var(--line); }
+  .snake-up { grid-area: up; } .snake-left { grid-area: left; } .snake-down { grid-area: down; } .snake-right { grid-area: right; }
   @media (prefers-reduced-motion: no-preference) {
     .result .pet.bounce .pet-face { animation: hop 0.6s ease 2; }
     @keyframes hop { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
@@ -914,7 +918,7 @@
   body.playing #game-area > * { width: 100%; }
   body.playing .stack-area { height: min(calc(100dvh - 245px), 640px); min-height: 280px; max-width: 560px; }
   body.playing .balloon-sky { height: min(calc(100dvh - 320px), 640px); min-height: 260px; max-width: 720px; width: 100%; }
-  body.playing .catch-area { height: min(calc(100dvh - 230px), 620px); min-height: 260px; }
+  body.playing .snake-canvas { width: min(100%, calc(100dvh - 360px), 620px); min-width: 240px; }
   body.playing .simon-grid { max-width: min(520px, 62vh); }
   body.playing .mem-grid { max-width: min(680px, 90vh); }
   body.playing .order-grid { max-width: min(560px, 80vh); }
@@ -2971,7 +2975,7 @@
   function takeNote(body) { if (zooNote) { body.appendChild(el("div", "note", zooNote)); zooNote = ""; } }
   var GAMES = [
     { id: "memory", name: "Memory des animaux", ico: "🃏", neon: "#ff3cac", tag: "Retrouve toutes les paires", mode: "min", fmt: function (v) { return nb(v, "coup", "coups"); } },
-    { id: "catch", name: "Attrape-les", ico: "🎯", neon: "#2de2e6", tag: "Touche vite les animaux", mode: "max", fmt: function (v) { return nb(v, "animal", "animaux"); } },
+    { id: "snake", name: "Le serpent", ico: "🐍", neon: "#22c55e", tag: "Mange les animaux sans te mordre la queue", mode: "max", fmt: function (v) { return nb(v, "animal", "animaux"); } },
     { id: "count", name: "Compte les animaux", ico: "🔢", neon: "#ffe66d", tag: "Combien y en a-t-il ? Vite !", mode: "max", fmt: countFmt },
     { id: "order", name: "Dans l’ordre", ico: "⏱️", neon: "#3dff8b", tag: "Touche 1, 2, 3… le plus vite", mode: "min", fmt: function (v) { return v + " s"; } },
     { id: "simon", name: "Répète les animaux", ico: "🧠", neon: "#a78bfa", tag: "Retiens la suite", mode: "max", fmt: function (v) { return nb(v, "animal", "animaux"); } },
@@ -4234,7 +4238,7 @@
     window.scrollTo(0, 0);
     $("game-title").textContent = gameName(gameId);
     setGameRecordLine(sid, gameId);
-    if (gameId === "catch") startCatch(sid);
+    if (gameId === "snake") startSnake(sid);
     else if (gameId === "count") startCount(sid);
     else if (gameId === "order") startOrder(sid);
     else if (gameId === "simon") startSimon(sid);
@@ -4380,7 +4384,6 @@
     raf=requestAnimationFrame(frame);
   }
 
-  var CATCH_GOAL = 11;
   var MEMORY_MAX = 14;
   var PRAISE = ["Bravo", "Génial", "Super", "Excellent", "Magnifique"];
   function praise() { return PRAISE[Math.floor(Math.random() * PRAISE.length)]; }
@@ -4446,187 +4449,117 @@
     });
   }
 
-  function startCatch(sid) {
-    var gp = gamePool(sid);
-    var list = gp.mine.concat(gp.mine).concat(gp.extra);
-    var area = $("game-area");
-    area.innerHTML = "";
-    var field = el("div", "catch-area");
-    area.appendChild(field);
-    var score = 0, left = 20;
-    function upd() { $("game-msg").textContent = "Attrape " + CATCH_GOAL + " animaux pour gagner une pièce d’or ! Il reste " + left + " s. Attrapés : " + score + "."; }
-    upd();
-    var spawn = setInterval(function () {
-      var b = el("button", "catch-btn", list[Math.floor(Math.random() * list.length)]);
-      b.type = "button"; b.setAttribute("aria-label", "Animal");
-      b.style.left = (5 + Math.random() * 80) + "%"; b.style.top = (5 + Math.random() * 70) + "%";
-      b.addEventListener("click", function () { score++; if (b.parentNode) b.parentNode.removeChild(b); upd(); });
-      field.appendChild(b);
-      G.timers.push(setTimeout(function () { if (b.parentNode) b.parentNode.removeChild(b); }, 1200));
-    }, 700);
-    var tick = setInterval(function () {
-      left--;
-      if (left <= 0) {
-        stopGame(); field.innerHTML = "";
-        if (score >= CATCH_GOAL) {
-          $("game-msg").textContent = praise() + " ! Tu as attrapé " + nb(score, "animal", "animaux") + ". Tu gagnes une pièce d’or !";
-          winCoin(sid, area);
-        } else {
-          $("game-msg").textContent = "Bien essayé ! Tu as attrapé " + nb(score, "animal", "animaux") + ". Il en fallait " + CATCH_GOAL + " pour gagner une pièce d’or. À la prochaine partie !";
-        }
-        finishScore(sid, area, "catch", score);
-      } else upd();
-    }, 1000);
-    G.timers.push(spawn, tick);
-  }
-
-  /* Tour d’animaux : un animal glisse, on touche pour le poser sur la pile ; ce qui dépasse tombe */
-  var STACK_GOAL = 10, STACK_MAX = 200, STACK_H = 44;
-  var STACK_COLORS = ["#fde68a", "#bbf7d0", "#bfdbfe", "#fbcfe8", "#ddd6fe", "#fed7aa", "#a5f3fc"];
-  function startStack(sid) {
+  /* Le serpent (comme sur les vieux téléphones) : il avance tout seul, on change de direction ;
+     il mange des animaux, grandit et accélère. Il traverse les bords ; la partie s’arrête s’il se mord. */
+  var SNAKE_GOAL = 10, SNAKE_MAX = 200, SNAKE_N = 15;
+  function startSnake(sid) {
     var gp = gamePool(sid), pool = gp.mine.concat(gp.extra);
     var area = $("game-area");
     area.innerHTML = "";
-    var box = el("div", "stack-area"); box.tabIndex = 0;
-    box.setAttribute("role", "button"); box.setAttribute("aria-label", "Touche pour poser l’animal");
-    var world = el("div", "stack-world");
-    box.appendChild(world); area.appendChild(box);
-    var W = box.clientWidth || 320, floors = 0, won = false, over = false, raf = 0, last = 0, cur = null;
-    var base = { x: Math.round(W * 0.2), w: Math.round(W * 0.6) };
-    function block(x, w, lvl, color, txt) {
-      var b = el("div", "stack-block", txt || "");
-      b.style.left = x + "px"; b.style.width = w + "px"; b.style.bottom = (lvl * STACK_H) + "px"; b.style.background = color;
-      world.appendChild(b); return b;
-    }
-    block(base.x, base.w, 0, "#e5e7eb", "🏁");
-    function msg(t) { $("game-msg").textContent = t || ("Touche pour poser l’animal sur la tour. Étages : " + floors + (won ? "." : " (pièce d’or à " + STACK_GOAL + ").")); }
-    function spawn() {
-      var lvl = floors + 1, fromLeft = Math.random() < 0.5;
-      cur = { lvl: lvl, w: base.w, x: fromLeft ? 0 : W - base.w, dir: fromLeft ? 1 : -1, speed: Math.min(2.3 + floors * 0.2, 7.5) };
-      cur.el = block(cur.x, cur.w, lvl, STACK_COLORS[lvl % STACK_COLORS.length], pool[Math.floor(Math.random() * pool.length)]);
-      var rows = Math.max(4, Math.floor((box.clientHeight || 352) / STACK_H) - 3);
-      world.style.transform = "translateY(" + Math.max(0, (lvl - rows) * STACK_H) + "px)";
-    }
-    function frame(ts) {
-      if (over) return;
-      var dt = last ? Math.min(40, ts - last) / 16.67 : 1; last = ts;
-      cur.x += cur.dir * cur.speed * dt;
-      if (cur.x <= 0) { cur.x = 0; cur.dir = 1; }
-      if (cur.x + cur.w >= W) { cur.x = W - cur.w; cur.dir = -1; }
-      cur.el.style.left = cur.x + "px";
-      raf = requestAnimationFrame(frame);
-    }
-    function finish() {
-      if (over) return;
-      over = true; cancelAnimationFrame(raf); stopGame();
-      $("game-msg").textContent = (won ? praise() + " ! " : "Bien essayé ! ") + "Ta tour fait " + nb(floors, "étage", "étages") + "." + (won ? " Tu as gagné une pièce d’or !" : " Il en fallait " + STACK_GOAL + " pour gagner une pièce d’or.");
-      finishScore(sid, area, "stack", floors);
-    }
-    function drop() {
-      if (over || !cur) return;
-      var left = Math.max(cur.x, base.x), right = Math.min(cur.x + cur.w, base.x + base.w), ov = right - left;
-      if (ov <= 0) { cur.el.classList.add("stack-fall"); sfxBad(); finish(); return; }
-      var perfect = Math.abs(cur.x - base.x) <= 4;
-      if (perfect) {
-        left = base.x; ov = base.w;
-        tone(880, 0, 0.1, "sine", 0.07); tone(1320, 0.06, 0.14, "sine", 0.05);
-      } else {
-        var piece = el("div", "stack-block stack-fall");
-        piece.style.left = (cur.x < base.x ? cur.x : right) + "px"; piece.style.width = (cur.w - ov) + "px";
-        piece.style.bottom = cur.el.style.bottom; piece.style.background = cur.el.style.background;
-        world.appendChild(piece);
-        G.timers.push(setTimeout(function () { if (piece.parentNode) piece.parentNode.removeChild(piece); }, 700));
-        tone(392, 0, 0.08, "triangle", 0.07);
+    var wrap = el("div", "snake-wrap");
+    var cv = document.createElement("canvas"); cv.className = "snake-canvas";
+    cv.setAttribute("role", "img"); cv.setAttribute("aria-label", "Le terrain du serpent");
+    var N = SNAKE_N, CELL = 32; cv.width = cv.height = N * CELL;
+    wrap.appendChild(cv);
+    var pad = el("div", "snake-pad");
+    [["up", "▲", "Haut"], ["left", "◀", "Gauche"], ["down", "▼", "Bas"], ["right", "▶", "Droite"]].forEach(function (d) {
+      var b = el("button", "snake-btn snake-" + d[0], d[1]); b.type = "button"; b.setAttribute("aria-label", d[2]);
+      b.addEventListener("pointerdown", function (e) { e.preventDefault(); turn(d[0]); });
+      pad.appendChild(b);
+    });
+    wrap.appendChild(pad);
+    area.appendChild(wrap);
+    var ctx = cv.getContext("2d");
+    var DIRS = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
+    var mid = Math.floor(N / 2), snake = [[mid, mid], [mid - 1, mid], [mid - 2, mid]];
+    var dir = "right", queue = [], score = 0, won = false, over = false, started = false, speed = 260, food = null;
+    function place() {
+      var free = [];
+      for (var x = 0; x < N; x++) for (var y = 0; y < N; y++) {
+        if (!snake.some(function (s) { return s[0] === x && s[1] === y; })) free.push([x, y]);
       }
-      cur.el.style.left = left + "px"; cur.el.style.width = ov + "px";
-      base = { x: left, w: ov }; floors++;
-      if (!won && floors >= STACK_GOAL) { won = true; winCoin(sid, area); }
-      if (floors >= STACK_MAX) { finish(); return; }
-      msg(perfect ? "Parfait ! Étages : " + floors + "." : null);
-      spawn();
+      if (!free.length) return null;
+      var p = free[Math.floor(Math.random() * free.length)];
+      return { x: p[0], y: p[1], e: pool[Math.floor(Math.random() * pool.length)] };
     }
-    box.addEventListener("pointerdown", function (e) { e.preventDefault(); drop(); });
-    box.addEventListener("keydown", function (e) { if (e.key === " " || e.key === "Enter") { e.preventDefault(); drop(); } });
-    G.cleanup = function () { over = true; cancelAnimationFrame(raf); };
-    msg(); spawn();
-    raf = requestAnimationFrame(frame);
-    box.focus({ preventScroll: true });
-  }
-
-  /* Ballons des sons : la voix dit une syllabe déjà vue, on éclate le bon ballon (45 s) */
-  var BALLOON_GOAL = 8, BALLOON_TIME = 45;
-  var BALLOON_COLORS = ["#fca5a5", "#fcd34d", "#86efac", "#93c5fd", "#c4b5fd", "#f9a8d4"];
-  function balloonRound(sid) {
-    var ls = listenSounds().filter(function (s) { return listenUnlocked(sid, s.id); });
-    for (var k = 0; k < 15 && ls.length; k++) {
-      var s = ls[Math.floor(Math.random() * ls.length)];
-      var items = listenSylItems(sid, s) || listenItems(s);
-      if (!items || !items.length) continue;
-      var it = items[Math.floor(Math.random() * items.length)];
-      var qq = it.syl ? listenBuildSyl(sid, it) : listenBuild(sid, s, it);
-      if (!qq || !qq.choices) continue;
-      var goods = qq.choices.filter(function (c) { return c.good; });
-      var bads = shuffle(qq.choices.filter(function (c) { return !c.good; })).slice(0, 3);
-      if (!goods.length || bads.length < 2) continue;
-      return { item: qq.item, choices: shuffle([goods[0]].concat(bads)) };
+    function rr(x, y, w, h, r) {
+      ctx.beginPath(); ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h); ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r); ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y); ctx.closePath();
     }
-    return null;
-  }
-  function startBalloons(sid) {
-    var area = $("game-area");
-    area.innerHTML = "";
-    var bar = el("div", "balloon-top");
-    var again = el("button", "listen-play", "🔊 Réécouter"); again.type = "button";
-    bar.appendChild(again);
-    var sky = el("div", "balloon-sky");
-    area.appendChild(bar); area.appendChild(sky);
-    var score = 0, left = BALLOON_TIME, won = false, over = false, round = null, n = 0;
-    function upd() { $("game-msg").textContent = "Éclate le ballon du son que tu entends ! Il reste " + left + " s. Bons ballons : " + score + (won ? "." : " (pièce d’or à " + BALLOON_GOAL + ")."); }
+    function draw() {
+      ctx.fillStyle = "#eaf6ea"; ctx.fillRect(0, 0, cv.width, cv.height);
+      ctx.fillStyle = "#dcefdc";
+      for (var x = 0; x < N; x++) for (var y = 0; y < N; y++) if ((x + y) % 2) ctx.fillRect(x * CELL, y * CELL, CELL, CELL);
+      if (food) {
+        ctx.font = Math.round(CELL * 0.8) + "px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillText(food.e, food.x * CELL + CELL / 2, food.y * CELL + CELL / 2 + 2);
+      }
+      for (var i = snake.length - 1; i >= 0; i--) {
+        var s = snake[i];
+        ctx.fillStyle = i === 0 ? "#15803d" : (i % 2 ? "#22c55e" : "#16a34a");
+        rr(s[0] * CELL + 2, s[1] * CELL + 2, CELL - 4, CELL - 4, i === 0 ? 10 : 7); ctx.fill();
+      }
+      var h = snake[0], d = DIRS[dir], cx = h[0] * CELL + CELL / 2, cy = h[1] * CELL + CELL / 2, px = -d[1], py = d[0];
+      [-1, 1].forEach(function (k) {
+        var ex = cx + d[0] * 5 + px * 7 * k, ey = cy + d[1] * 5 + py * 7 * k;
+        ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(ex, ey, 4.5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#1b2433"; ctx.beginPath(); ctx.arc(ex + d[0] * 1.5, ey + d[1] * 1.5, 2.2, 0, Math.PI * 2); ctx.fill();
+      });
+    }
+    function msg() {
+      $("game-msg").textContent = started
+        ? "Animaux mangés : " + score + (won ? "." : " (pièce d’or à " + SNAKE_GOAL + ").")
+        : "Touche une flèche ou fais glisser ton doigt sur le terrain pour partir. Mange les animaux sans te mordre la queue !";
+    }
+    function turn(d) {
+      if (over) return;
+      var last = queue.length ? queue[queue.length - 1] : dir;
+      var a = DIRS[d], b = DIRS[last];
+      if (d === last || (a[0] === -b[0] && a[1] === -b[1])) { if (!started) { started = true; msg(); loop(); } return; }
+      if (queue.length < 3) queue.push(d);
+      if (!started) { started = true; msg(); loop(); }
+    }
     function finish() {
       if (over) return;
-      over = true; stopGame(); listenStopVoice();
-      sky.innerHTML = ""; again.disabled = true;
-      $("game-msg").textContent = (won ? praise() + " ! " : "Bien essayé ! ") + "Tu as éclaté " + nb(score, "bon ballon", "bons ballons") + "." + (won ? " Tu as gagné une pièce d’or !" : " Il en fallait " + BALLOON_GOAL + " pour gagner une pièce d’or.");
-      finishScore(sid, area, "ballons", score);
+      over = true; stopGame(); sfxBad();
+      $("game-msg").textContent = (won ? praise() + " ! " : "Oups, le serpent s’est mordu ! ") + "Il a mangé " + nb(score, "animal", "animaux") + "." + (won ? " Tu as gagné une pièce d’or !" : " Il en fallait " + SNAKE_GOAL + " pour gagner une pièce d’or.");
+      finishScore(sid, area, "snake", score);
     }
-    function freeze(b) { b.style.bottom = getComputedStyle(b).bottom; b.style.animation = "none"; }
-    function next() {
+    function step() {
       if (over) return;
-      sky.innerHTML = "";
-      round = balloonRound(sid);
-      if (!round) { $("game-msg").textContent = "Pas encore de syllabes à écouter : lis ou écoute d’abord un son !"; finish(); return; }
-      var token = round, cnt = round.choices.length, btns = [];
-      round.choices.forEach(function (c, i) {
-        var b = el("button", "balloon", c.g); b.type = "button";
-        b.style.left = (3 + i * (94 / cnt)) + "%";
-        b.style.background = BALLOON_COLORS[(i + n) % BALLOON_COLORS.length];
-        b.style.animationDuration = (6.6 + Math.random() * 1.2) + "s";
-        b.style.animationDelay = (Math.random() * 0.5) + "s";
-        b.addEventListener("click", function () {
-          if (over || b.disabled || round !== token) return;
-          if (c.good) {
-            score++; sfxGood();
-            btns.forEach(function (x) { x.disabled = true; });
-            freeze(b); b.classList.add("pop");
-            if (!won && score >= BALLOON_GOAL) { won = true; winCoin(sid, area); }
-            upd();
-            G.timers.push(setTimeout(next, 420));
-          } else {
-            sfxBad(); b.disabled = true; b.classList.add("bad");
-            left = Math.max(0, left - 2); upd();
-            if (left <= 0) finish();
-          }
-        });
-        sky.appendChild(b); btns.push(b);
-      });
-      n++;
-      G.timers.push(setTimeout(function () { if (round === token && !over) listenSay(token.item); }, 200));
-      G.timers.push(setTimeout(function () { if (round === token && !over) next(); }, 8200));
+      if (queue.length) dir = queue.shift();
+      var d = DIRS[dir], h = snake[0], nx = (h[0] + d[0] + N) % N, ny = (h[1] + d[1] + N) % N;
+      var eat = food && nx === food.x && ny === food.y;
+      var body = eat ? snake : snake.slice(0, -1);
+      if (body.some(function (s) { return s[0] === nx && s[1] === ny; })) { draw(); finish(); return; }
+      snake.unshift([nx, ny]);
+      if (!eat) snake.pop();
+      else {
+        score++; sfxGood();
+        if (!won && score >= SNAKE_GOAL) { won = true; winCoin(sid, area); }
+        if (score >= SNAKE_MAX) { draw(); finish(); return; }
+        food = place(); speed = Math.max(110, speed - 8); msg();
+      }
+      draw();
     }
-    again.addEventListener("click", function () { if (round && !over) listenSay(round.item); });
-    G.timers.push(setInterval(function () { left--; if (left <= 0) finish(); else upd(); }, 1000));
-    G.cleanup = function () { over = true; listenStopVoice(); };
-    upd(); next();
+    function loop() { if (over) return; step(); if (!over) G.timers.push(setTimeout(loop, speed)); }
+    var sx = null, sy = null;
+    cv.addEventListener("pointerdown", function (e) { e.preventDefault(); sx = e.clientX; sy = e.clientY; });
+    cv.addEventListener("pointerup", function (e) {
+      if (sx === null) return;
+      var dx = e.clientX - sx, dy = e.clientY - sy; sx = sy = null;
+      if (Math.max(Math.abs(dx), Math.abs(dy)) < 18) return;
+      turn(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "right" : "left") : (dy > 0 ? "down" : "up"));
+    });
+    function onKey(e) {
+      var k = { ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right" }[e.key];
+      if (k) { e.preventDefault(); turn(k); }
+    }
+    document.addEventListener("keydown", onKey);
+    G.cleanup = function () { over = true; document.removeEventListener("keydown", onKey); };
+    food = place();
+    draw(); msg();
   }
 
   /* Fin de partie commune : félicitations et pièce d’or, ou encouragements */
