@@ -846,6 +846,47 @@
   .quote-card blockquote { margin: 0; font-size: 1.15rem; font-weight: 700; line-height: 1.45; color: var(--ink); font-style: italic; }
 
   .bottom-nav .bn-logout { display: none; }
+  /* Salle de jeux : design sobre (remplace néons, guirlande et lignes d'écran) */
+  #v-jeux .arcade { background: var(--card); color: var(--ink); border: 1.5px solid var(--line); border-radius: 18px; box-shadow: none; font-family: Figtree, system-ui, sans-serif; padding: 16px 16px 18px; }
+  #v-jeux .arcade::before, #v-jeux .arcade::after { display: none; }
+  #v-jeux .arcade-sign { max-width: none; margin: 0 0 12px !important; padding: 0 !important; text-align: left; background: none; border: 0; box-shadow: none; }
+  #v-jeux .arcade-sign .a-bulbs { display: none !important; }
+  #v-jeux .arcade-sign .a-title { font-family: Fredoka, Figtree, system-ui, sans-serif; font-size: 1.45rem; font-weight: 700; line-height: 1.2; letter-spacing: 0; color: var(--ink); text-shadow: none; animation: none; }
+  #v-jeux .arcade-sign .a-sub { margin-top: 2px; font-family: Figtree, system-ui, sans-serif; font-size: .95rem; font-weight: 500; color: var(--muted); text-shadow: none; }
+  #v-jeux .tokens { align-items: flex-start; margin: 0 0 14px !important; }
+  #v-jeux .tokens .tk-text { color: var(--ink); font-size: .95rem; font-weight: 600; }
+  #v-jeux .tokens .tk-more, #v-jeux .tokens .tk-empty { color: var(--muted); }
+  #v-jeux .token { animation: none; box-shadow: none; }
+  #v-jeux .cabs { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  #v-jeux .cab { flex: none; gap: 8px !important; padding: 14px !important; background: var(--bg); color: var(--ink); border: 1.5px solid var(--line); border-radius: 14px; box-shadow: none; filter: none; transform: none; }
+  #v-jeux .cab.off { filter: none; }
+  #v-jeux .cab.off .cab-screen, #v-jeux .cab.off .cab-marquee { opacity: .55; }
+  #v-jeux .cab-screen { order: -1; flex-direction: row; justify-content: flex-start; gap: 10px; min-height: 0 !important; padding: 0 !important; background: none; border: 0; border-radius: 0; overflow: visible; text-align: left; }
+  #v-jeux .cab-screen::after { display: none; }
+  #v-jeux .cab-ico { display: grid; place-items: center; width: 44px; height: 44px; flex: 0 0 44px; border-radius: 12px; font-size: 1.5rem !important; background: color-mix(in srgb, var(--neon) 16%, transparent); filter: none; animation: none !important; }
+  #v-jeux .cab-tag { font-size: .85rem; font-weight: 500; color: var(--muted); }
+  #v-jeux .cab-marquee { order: -2; margin: 0; padding: 0; background: none; border-radius: 0; text-align: left; font-family: Figtree, system-ui, sans-serif; font-size: 1.02rem; font-weight: 800; color: var(--ink); text-shadow: none; }
+  #v-jeux .cab-hi { display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 0 8px !important; padding: 8px 0 0 !important; background: none; border: 0; border-top: 1px solid var(--line); border-radius: 0; }
+  #v-jeux .cab-hi small { font-size: .78rem; font-weight: 600; letter-spacing: 0; color: var(--muted); text-transform: none; }
+  #v-jeux .cab-hi b { font-family: Figtree, system-ui, sans-serif; font-size: .95rem; font-weight: 800; color: var(--ink); text-shadow: none; }
+  #v-jeux .cab-hi .last { grid-column: 1 / -1; text-align: left; font-size: .78rem; color: var(--muted); }
+  #v-jeux .cab-abs { justify-content: flex-start; text-align: left; font-size: .78rem; font-weight: 500; color: var(--muted); }
+  #v-jeux .cab-ctl { display: none !important; }
+  #v-jeux .cab-play { margin-top: auto; padding: 10px 8px !important; min-height: 0; font-family: Figtree, system-ui, sans-serif; font-size: .95rem; font-weight: 700; color: #fff; background: var(--focus); border: 0; border-radius: 10px; box-shadow: none; animation: none !important; }
+  #v-jeux .cab-play:active:not(:disabled) { transform: translateY(1px); box-shadow: none; }
+  #v-jeux .cab-play:disabled { font-size: .85rem; color: var(--muted); background: var(--line); box-shadow: none; }
+  #v-jeux .cab:not(.off):hover { transform: none; border-color: var(--focus); }
+  #v-jeux .arcade-hint { margin-top: 12px; font-family: Figtree, system-ui, sans-serif; font-size: .88rem; font-weight: 500; color: var(--muted); text-align: left; }
+  /* Écrans de jeu : même sobriété */
+  .arcade-screen { background: var(--card); color: var(--ink); border: 1.5px solid var(--line); box-shadow: none; }
+  .arcade-screen h2 { font-family: Fredoka, Figtree, system-ui, sans-serif; font-size: 1.25rem; line-height: 1.25; color: var(--ink); }
+  .arcade-screen .instruction { color: var(--ink); }
+  .arcade-screen .secondary { color: var(--ink); border-color: var(--line); background: transparent; }
+  .arcade-screen .muted { color: var(--muted); }
+  .arcade .card { background: var(--card); color: var(--ink); border: 1.5px solid var(--line); box-shadow: none; }
+  .arcade .card h2 { color: var(--ink); }
+  .arcade .muted, .arcade .hint { color: var(--muted); }
+  .arcade .primary { background: var(--focus); color: #fff; box-shadow: none; }
   /* Téléphone : pas d'avatar ni de Cartes / Progrès ; boutique et salle de jeux tiennent sur un écran */
   @media (max-width: 600px) {
     body.mode-student #panel-left .avatar-profile, body.mode-student #btn-logout { display: none; }
@@ -888,11 +929,15 @@
     #v-jeux .tokens .tk-row { min-height: 0; }
     #v-jeux .tokens .tk-text { font-size: .78rem; text-align: center; }
     #v-jeux .cabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 8px; }
-    #v-jeux .cab { flex: none; gap: 4px !important; padding: 0 5px 6px !important; border-width: 2px; }
-    #v-jeux .cab-marquee { margin: 0 -5px; padding: 4px 3px; font-size: .74rem; }
+    #v-jeux .cab { flex: none; gap: 5px !important; padding: 8px !important; border-width: 1.5px; }
+    #v-jeux .cab-marquee { margin: 0; padding: 0; font-size: .78rem; }
     #v-jeux .cab-screen { min-height: 0 !important; padding: 2px !important; gap: 0; border-width: 2px; }
     #v-jeux .cab-ico { font-size: 1.45rem !important; }
     #v-jeux .cab-tag, #v-jeux .cab-hi small, #v-jeux .cab-hi .last { display: none; }
+    #v-jeux .cab-ico { width: 30px; height: 30px; flex-basis: 30px; border-radius: 9px; font-size: 1.1rem !important; }
+    #v-jeux .cab-hi { grid-template-columns: 1fr; padding-top: 4px !important; }
+    #v-jeux .cab-hi b { font-size: .8rem; }
+    #v-jeux .arcade-sign .a-title { font-size: 1.1rem; }
     #v-jeux .cab-hi { padding: 2px 4px !important; gap: 0 !important; border-width: 1.5px; }
     #v-jeux .cab-hi b { font-size: .58rem; line-height: 1.3; }
     #v-jeux .cab-abs { display: block; font-size: .6rem; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
