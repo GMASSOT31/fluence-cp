@@ -917,6 +917,32 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   .buy-confirm .bc-icon { font-size: 3.2rem; text-align: center; }
   .buy-confirm .bc-price { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 1.3rem; font-weight: 800; margin: 6px 0 14px; }
   .simon-ready { display: block; margin: 0 auto 14px; min-height: 64px; font-size: 1.3rem; }
+  /* Scène d’évolution de l’animal */
+  .evo { position: fixed; inset: 0; z-index: 45; display: grid; place-items: center; padding: 16px; background: radial-gradient(circle at 50% 38%, #3a2a7a 0%, #17122f 62%, #0b0916 100%); color: #fff; }
+  .evo-card { width: min(520px, 100%); text-align: center; }
+  .evo-stage { position: relative; display: grid; place-items: center; width: 100%; height: 15rem; background: none; border: 0; box-shadow: none; padding: 0; cursor: pointer; }
+  .evo-face { position: relative; z-index: 2; line-height: 1; transition: font-size .7s cubic-bezier(.2, 1.6, .4, 1); filter: drop-shadow(0 10px 20px rgba(0, 0, 0, .5)); }
+  .evo-rays { position: absolute; z-index: 0; width: 16rem; height: 16rem; border-radius: 50%; opacity: 0; transition: opacity .5s;
+    background: repeating-conic-gradient(rgba(255, 214, 90, .5) 0deg 12deg, rgba(255, 214, 90, 0) 12deg 30deg);
+    -webkit-mask: radial-gradient(circle, #000 30%, transparent 70%); mask: radial-gradient(circle, #000 30%, transparent 70%); }
+  .evo-rays.on { opacity: 1; animation: evo-spin 9s linear infinite; }
+  .evo-flash { position: absolute; z-index: 1; width: 12rem; height: 12rem; border-radius: 50%; background: radial-gradient(circle, #fff 0%, rgba(255, 255, 255, 0) 70%); opacity: 0; }
+  .evo-flash.on { animation: evo-flash .8s ease-out; }
+  .evo-face.wobble { animation: evo-wobble .32s ease-in-out infinite; }
+  .evo-face.charge { animation: evo-charge 1.7s ease-in forwards; }
+  .evo-face.pop { animation: evo-pop .8s cubic-bezier(.2, 1.6, .4, 1); }
+  .evo-title { font-size: clamp(1.6rem, 5vw, 2.2rem); margin: .2rem 0 .4rem; color: #ffe37c; }
+  .evo-msg { font-size: 1.15rem; margin: .4rem 0 1rem; color: #f1ecff; }
+  .evo-stars { display: flex; justify-content: center; gap: 10px; min-height: 2.6rem; }
+  .evo-star { font-size: 2.4rem; line-height: 1; color: #5d5684; filter: grayscale(.6); }
+  .evo-star.on { color: #f5c542; filter: none; text-shadow: 0 0 14px rgba(245, 197, 66, .6); }
+  .evo-star.new { animation: lstar-pop .8s cubic-bezier(.2, 1.6, .4, 1) .25s both; }
+  .evo-acts { justify-content: center; }
+  @keyframes evo-spin { to { transform: rotate(360deg); } }
+  @keyframes evo-wobble { 0%, 100% { transform: rotate(-9deg); } 50% { transform: rotate(9deg) translateY(-4px); } }
+  @keyframes evo-charge { 0% { transform: scale(1); filter: brightness(1); } 70% { transform: scale(.88); filter: brightness(1.6); } 100% { transform: scale(.92); filter: brightness(2.2); } }
+  @keyframes evo-pop { 0% { transform: scale(.25) rotate(-12deg); } 100% { transform: scale(1) rotate(0); } }
+  @keyframes evo-flash { 0% { opacity: 0; transform: scale(.4); } 30% { opacity: 1; } 100% { opacity: 0; transform: scale(2.4); } }
   .listen-go { background: #0f766e; color: #fff; border-color: #0f766e; }
   .home-hero .home-step { flex-wrap: nowrap; }
   .home-pet { background: none; border: 0; padding: 0; cursor: pointer; flex: 0 0 auto; box-shadow: none; }
@@ -2904,7 +2930,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     }
     if (current.t < MIN_TRAIN_SEC && !confirm("Lecture très courte (" + current.t + " s) : le score n’est pas fiable. Enregistrer quand même ?")) return;
     var intro = $("r-msg").textContent, petEmoji = charFor(S.sound).e;
-    var was = isValid(S.sid, S.sound, S.kind);
+    var was = isValid(S.sid, S.sound, S.kind), petBefore = petState(S.sid, S.sound), evoSound = S.sound;
     data.results.push({ id: uid(), sid: S.sid, sound: S.sound, k: S.kind, n: current.n, e: current.e, t: current.t, mclm: current.mclm, ts: Date.now() });
     data.sel.sid = S.sid;
     var newly = !was && isValid(S.sid, S.sound, S.kind);
@@ -2927,7 +2953,10 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     toast(newly ? "Enregistré : étape validée" : "Résultat enregistré");
     leaveSession(true);
     renderPanels();
-    if (newly) { if (data.reward) openWheel(sid, intro, petEmoji); else show("home"); }
+    if (newly) {
+      var afterWheel = function () { if (data.reward) openWheel(sid, intro, petEmoji); else show("home"); };
+      showEvolution({ ch: charFor(evoSound), from: petBefore, to: petState(sid, evoSound), sid: sid, zoo: "cartes" }, afterWheel);
+    }
   });
   $("btn-discard").addEventListener("click", function () { leaveSession(false); });
   function leaveSession(suggest) {
@@ -3099,6 +3128,73 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       var sp = el("span", "pet-sparkle", "✨"); sp.setAttribute("aria-hidden", "true"); w.appendChild(sp);
     }
     return w;
+  }
+
+  /* « Ton lama », « ta fourmi », « ton abeille », « Nounours » */
+  function petPoss(nom) {
+    if (/^le /i.test(nom)) return "ton " + nom.slice(3);
+    if (/^la /i.test(nom)) return "ta " + nom.slice(3);
+    if (/^l[’']/i.test(nom)) return "ton " + nom.slice(2);
+    return nom;
+  }
+  /* Scène d’évolution, avant la roue : l’œuf éclot ou l’animal grandit (certification, ou son réussi dans ÉCOUTER).
+     o = { ch, from: {got,total}, to: {got,total}, listen, sid, zoo: "cartes" | "reconnues" } ; next() = suite (roue…) */
+  function showEvolution(o, next) {
+    var old = document.querySelector(".evo"); if (old) old.parentNode.removeChild(old);
+    var reduce = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    var poss = petPoss(o.ch.nom), hatch = o.from.got === 0, full = !o.listen && o.to.total > 0 && o.to.got >= o.to.total;
+    var ov = el("div", "evo"); ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true"); ov.setAttribute("aria-label", "Ton animal évolue");
+    var card = el("div", "evo-card");
+    var stage = el("button", "evo-stage"); stage.type = "button"; stage.setAttribute("aria-label", "Voir l’évolution");
+    var rays = el("span", "evo-rays"); rays.setAttribute("aria-hidden", "true");
+    var flash = el("span", "evo-flash"); flash.setAttribute("aria-hidden", "true");
+    var face = el("span", "evo-face");
+    stage.appendChild(rays); stage.appendChild(flash); stage.appendChild(face);
+    var title = el("h2", "evo-title", "Regarde bien…");
+    var stars = el("div", "evo-stars"); stars.setAttribute("aria-hidden", "true");
+    var msg = el("p", "evo-msg", hatch ? "Ton œuf bouge !" : cap(poss) + " se prépare…");
+    var acts = el("div", "gr-actions evo-acts"); acts.hidden = true;
+    card.appendChild(stage); card.appendChild(title); card.appendChild(stars); card.appendChild(msg); card.appendChild(acts);
+    ov.appendChild(card); document.body.appendChild(ov);
+    function setFace(st) {
+      face.textContent = st.got === 0 ? "🥚" : o.ch.e;
+      face.style.fontSize = (st.got === 0 ? 5.5 : 4.5 + 4 * st.got / Math.max(1, st.total)) + "rem";
+    }
+    function setStars(st, fresh) {
+      stars.innerHTML = "";
+      for (var i = 0; i < st.total; i++) stars.appendChild(el("span", "evo-star" + (i < st.got ? " on" : "") + (fresh && i === st.got - 1 ? " new" : ""), o.listen ? "👂" : "★"));
+    }
+    setFace(o.from); setStars(o.from, false);
+    var done = false, timers = [];
+    function finale() {
+      if (done) return; done = true;
+      timers.forEach(clearTimeout);
+      face.classList.remove("wobble", "charge");
+      setFace(o.to); setStars(o.to, true);
+      if (!reduce) { flash.classList.add("on"); face.classList.add("pop"); rays.classList.add("on"); confetti(110, false); }
+      else rays.classList.add("on");
+      var t, m;
+      if (o.listen) { t = "L’œuf éclot !"; m = "Voici " + poss + " : nouvelle carte reconnue 👂"; }
+      else if (hatch && !full) { t = "L’œuf éclot !"; m = "Voici " + poss + " : bienvenue dans ton zoo !"; }
+      else if (full) { t = cap(poss) + " a fini de grandir ! ✨"; m = "Toutes ses étapes sont certifiées 🏅 : sa carte brille dans ton zoo !"; }
+      else { var left = o.to.total - o.to.got; t = cap(poss) + " grandit !"; m = "Encore " + nb(left, "étape", "étapes") + " 🏅 et " + poss + " aura fini de grandir."; }
+      title.textContent = t; msg.textContent = m;
+      if (data.sfx) [392, 523, 659, 784, 1047].forEach(function (f, k) { tone(f, k * 0.09, 0.3, "triangle", 0.16); });
+      speak(t + " " + m.replace(/[🏅👂✨]/g, ""));
+      var wheel = data.reward && pendingWheels(o.sid).length > 0;
+      var go = el("button", "primary big-btn" + (wheel ? " wheel-go" : ""), wheel ? "🎡 Lancer la roue !" : "Continuer"); go.type = "button";
+      var zoo = el("button", "secondary big-btn", "🐾 Voir mon zoo"); zoo.type = "button";
+      function close() { if (ov.parentNode) ov.parentNode.removeChild(ov); var c = $("confetti"); if (c) c.innerHTML = ""; }
+      go.addEventListener("click", function () { close(); next(); });
+      zoo.addEventListener("click", function () { close(); if (o.listen) listenFocus(false); goTo(o.zoo); });
+      acts.appendChild(go); acts.appendChild(zoo); acts.hidden = false;
+      go.focus({ preventScroll: true });
+    }
+    stage.addEventListener("click", finale);
+    if (reduce) { finale(); return; }
+    face.classList.add(hatch ? "wobble" : "charge");
+    if (data.sfx) [262, 294, 330].forEach(function (f, k) { tone(f, k * 0.35, 0.18, "sine", 0.1); });
+    timers.push(setTimeout(finale, 1700));
   }
 
   var zooNote = "";
@@ -3906,6 +4002,9 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     row.appendChild(back);
     card.appendChild(row);
     body.appendChild(card);
+    if (nowDone) showEvolution({ ch: charFor(id), from: { got: 0, total: 1 }, to: { got: 1, total: 1 }, listen: true, sid: sid, zoo: "reconnues" }, function () {
+      if (data.reward && pendingWheels(sid).length) { listenFocus(false); openWheel(sid, "Bravo, tu as réussi le son " + q(R.sound.label) + " à l’écoute !", charFor(id).e); }
+    });
   }
   /* Réglages de l’écoute (maître(sse)) : seuils, texte à prononcer, équivalences, confusions */
   function listenSettingsFill() {
