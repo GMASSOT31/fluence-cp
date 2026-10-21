@@ -1065,6 +1065,18 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     #v-jeux .cab-play:disabled { font-size: .7rem; }
     #v-jeux .arcade-hint { margin-top: 6px; font-size: .74rem; }
   }
+  /* Téléphone et tablette étroite : la roue et son bouton tiennent dans l’écran, sans défiler */
+  @media (max-width: 880px) {
+    body.mode-student:has(#v-roue:not([hidden])) #panel-left,
+    body.mode-student:has(#v-roue:not([hidden])) #panel-right,
+    body.mode-student:has(#v-roue:not([hidden])) .bottom-nav { display: none !important; }
+    #v-roue .wheel-card { padding-top: 12px; padding-bottom: 12px; }
+    #v-roue .wheel-pet { display: none; }
+    #v-roue #wheel-title { margin: 0 0 4px; font-size: 1.25rem; }
+    #v-roue #wheel-msg { margin: 0; font-size: 1rem; }
+    #v-roue .wheel-wrap { --size: min(78vw, 340px, max(180px, calc(100dvh - 330px))); margin: 26px auto 16px; }
+    #v-roue .row { margin-top: 0; }
+  }
 </style>
 </head>
 <body>
