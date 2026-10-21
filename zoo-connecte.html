@@ -4755,7 +4755,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       world.appendChild(b); return b;
     }
     block(base.x, base.w, 0, "#e5e7eb", "🏁");
-    function msg(t) { $("game-msg").textContent = t || ("Touche pour poser l’animal sur la tour. Étages : " + floors + (won ? "." : " (pièce d’or à " + STACK_GOAL + ").")); }
+    function msg(t) { $("game-msg").textContent = t || ("Touche quand le bloc est bien aligné avec celui du dessous. Étages : " + floors + (won ? "." : " (pièce d’or à " + STACK_GOAL + ").")); }
     function spawn() {
       var lvl = floors + 1, fromLeft = Math.random() < 0.5;
       cur = { lvl: lvl, w: base.w, x: fromLeft ? 0 : W - base.w, dir: fromLeft ? 1 : -1, speed: Math.min(2.3 + floors * 0.2, 7.5) };
@@ -4880,9 +4880,18 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       G.timers.push(setTimeout(function () { if (round === token && !over) next(); }, 8200));
     }
     again.addEventListener("click", function () { if (round && !over) listenSay(round.item); });
-    G.timers.push(setInterval(function () { left--; if (left <= 0) finish(); else upd(); }, 1000));
     G.cleanup = function () { over = true; listenStopVoice(); };
-    upd(); next();
+    /* Le chronomètre ne part qu’après « Je suis prêt », pour laisser le temps de comprendre la consigne */
+    again.disabled = true;
+    $("game-msg").textContent = "Écoute le son, puis éclate le ballon qui fait ce son ! Tu as " + BALLOON_TIME + " secondes. Touche « Je suis prêt » pour commencer.";
+    var ready = el("button", "primary big-btn simon-ready", "👀 Je suis prêt !"); ready.type = "button";
+    ready.addEventListener("click", function () {
+      if (ready.parentNode) ready.parentNode.removeChild(ready);
+      again.disabled = false;
+      G.timers.push(setInterval(function () { left--; if (left <= 0) finish(); else upd(); }, 1000));
+      upd(); next();
+    });
+    area.insertBefore(ready, bar);
   }
 
   /* Fin de partie commune : félicitations et pièce d’or, ou encouragements */
