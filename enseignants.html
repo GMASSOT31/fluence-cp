@@ -613,7 +613,9 @@ async function renderFeedbackAdmin(){
   const replyBtn=document.createElement("button");replyBtn.type="button";replyBtn.textContent=f.reply?"✏️ Modifier la réponse":"💬 Répondre ici";replyBtn.onclick=()=>{form.classList.toggle("hidden");if(!form.classList.contains("hidden"))ta.focus();};actions.append(replyBtn);
   const toggle=document.createElement("button");toggle.type="button";toggle.className="secondary";toggle.textContent=f.read_at?"Marquer non lu":"Marquer comme lu";
   toggle.onclick=async()=>{toggle.disabled=true;const {error}=await client.from("teacher_feedback").update({read_at:f.read_at?null:new Date().toISOString()}).eq("id",f.id);toggle.disabled=false;if(error){msg("fbAdminMsg",errorText(error),true);return;}await renderFeedbackAdmin();};
-  actions.append(toggle);
+  const del=document.createElement("button");del.type="button";del.className="danger";del.textContent="🗑️ Supprimer";
+  del.onclick=async()=>{if(!confirm("Supprimer définitivement ce message"+(email?" de "+email:"")+" ? Il disparaîtra aussi de son onglet « Améliorations »."))return;del.disabled=true;const {data:gone,error}=await client.from("teacher_feedback").delete().eq("id",f.id).select("id");del.disabled=false;if(error){msg("fbAdminMsg",errorText(error),true);return;}if(!gone||!gone.length){msg("fbAdminMsg","Ce message n’a pas pu être supprimé.",true);return;}fbNotice="🗑️ Message supprimé.";await renderFeedbackAdmin();};
+  actions.append(toggle,del);
   if(email){const a=document.createElement("a");a.className="button-link";a.href="mailto:"+email+"?subject="+encodeURIComponent(f.kind==="question"?"Zoo de Lecture : ta question":"Zoo de Lecture : ton message");a.textContent="✉️ Par e-mail";actions.append(a);}
   row.append(left,actions);box.append(row);
  });
