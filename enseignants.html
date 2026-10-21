@@ -232,6 +232,7 @@ body:not(.teacher-mode) main{color:#eef0f7}
  #space .fb-item .tag{font-size:.72rem;padding:4px 7px}
  #space #fbReplyNote{margin:0 0 8px;padding:8px 10px;font-size:.88rem}
 }
+.demo-link{text-align:center;margin:16px 0 0}.demo-link a{display:inline-block;padding:10px 18px;border-radius:999px;background:#ffe37c;color:#3b2a00;font-weight:800;text-decoration:none}.demo-link a:hover{background:#ffd54a}.demo-link small{display:block;margin-top:6px;color:#8b93a8;font-size:.8rem}
 </style></head><body><main><header class="hero">    <div class="zoo-hero">
       <div class="zoo-hero-copy">
         <span class="zoo-kicker">✦ LE GRAND JEU DE LA LECTURE ✦</span>
@@ -242,7 +243,7 @@ body:not(.teacher-mode) main{color:#eef0f7}
       <div class="banner-user" id="bannerUser"><span id="who"></span><a href="eleve.html" id="toStudent" title="Espace élève"><span aria-hidden="true">🎒</span><span class="bu-label">&nbsp;Espace élève</span></a><button id="logout" class="secondary" type="button" title="Déconnexion"><span class="bu-ico" aria-hidden="true">🚪</span><span class="bu-label">Déconnexion</span></button></div>
     </div>
 </header>
-<section class="panel" id="auth"><h2 class="auth-title">🧑‍🏫 Se connecter</h2><form id="authForm"><label for="email" class="sr-only">Adresse e-mail</label><input id="email" type="email" autocomplete="email" required maxlength="254" placeholder="Adresse e-mail"><label for="password" class="sr-only">Mot de passe</label><input id="password" type="password" autocomplete="current-password" minlength="8" required placeholder="Mot de passe"><div class="actions auth-actions"><button id="signin" type="submit">Me connecter</button><button id="reset" type="button" class="secondary">Mot de passe oublié</button><button id="signup" type="button" class="secondary">Créer un compte</button><small class="signup-note">Inscription libre. Chaque compte dispose de 3 places d'élèves par défaut.</small></div></form><p class="msg" id="authMsg" role="status"></p><p class="auth-student">🎒 Élève ? <a href="eleve.html" id="authToStudent">Entre ici avec ton code de classe</a></p></section>
+<section class="panel" id="auth"><h2 class="auth-title">🧑‍🏫 Se connecter</h2><form id="authForm"><label for="email" class="sr-only">Adresse e-mail</label><input id="email" type="email" autocomplete="email" required maxlength="254" placeholder="Adresse e-mail"><label for="password" class="sr-only">Mot de passe</label><input id="password" type="password" autocomplete="current-password" minlength="8" required placeholder="Mot de passe"><div class="actions auth-actions"><button id="signin" type="submit">Me connecter</button><button id="reset" type="button" class="secondary">Mot de passe oublié</button><button id="signup" type="button" class="secondary">Créer un compte</button><small class="signup-note">Inscription libre. Chaque compte dispose de 3 places d'élèves par défaut.</small></div></form><p class="demo-link"><a href="zoo-connecte.html?demo=1&amp;new=1">✨ Essayer la démo, sans compte</a><small>Une classe fictive : le Zoo d'un élève, puis l'espace enseignant.</small></p><p class="msg" id="authMsg" role="status"></p><p class="auth-student">🎒 Élève ? <a href="eleve.html" id="authToStudent">Entre ici avec ton code de classe</a></p></section>
 <section class="panel hidden" id="recovery"><h2>🔒 Choisis ton nouveau mot de passe</h2><p class="muted" id="recoveryWho">Tu es arrivée ici par le lien de l’e-mail « Mot de passe oublié ».</p><form id="recoveryForm"><label for="newPassword">Nouveau mot de passe (au moins 8 caractères)</label><input id="newPassword" type="password" autocomplete="new-password" minlength="8" maxlength="72" required><label for="newPassword2">Écris-le une deuxième fois</label><input id="newPassword2" type="password" autocomplete="new-password" minlength="8" maxlength="72" required><div class="actions"><button id="recoverySave" type="submit">Enregistrer mon nouveau mot de passe</button></div></form><p class="msg" id="recoveryMsg" role="status"></p></section>
 <section class="hidden teacher-space" id="space">
  <aside class="panel teacher-header" aria-label="Menu de l’espace enseignant">
@@ -323,7 +324,7 @@ body:not(.teacher-mode) main{color:#eef0f7}
  <p class="msg" id="fbAdminMsg" role="status"></p><div id="fbList" class="content-list"></div>
 </section>
 </div>
-</section></main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script><script>
+</section></main><script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=1"><\/script>':'<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"><\/script>');})();</script><script>
 (function(){
 "use strict";
 /* Retour du lien « Mot de passe oublié » : on lit l’adresse avant que la bibliothèque Supabase ne la nettoie */
