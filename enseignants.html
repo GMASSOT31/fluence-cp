@@ -98,6 +98,7 @@ main{max-width:1050px}
 /* Mes classes et PIN : une couleur par classe */
 #classes .class-item{border:2px solid #e3e7ef;border-left:6px solid var(--cg);border-radius:14px;background:color-mix(in srgb,var(--cg) 7%,white);padding:12px 14px;margin:0 0 10px}
 #classes .class-item>span:first-child{font-weight:700;color:#1b2433}
+.class-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:16px}.class-head h4.class-tag{margin:0;font-size:1rem;padding:5px 12px;border-radius:10px;border-left:5px solid var(--cg);background:color-mix(in srgb,var(--cg) 12%,white)}.class-head .actions button{padding:6px 12px;font-size:.9rem}
 #pinPart h4.class-tag{display:inline-block;margin:16px 0 6px;padding:5px 12px;border-radius:10px;border-left:5px solid var(--cg);background:color-mix(in srgb,var(--cg) 12%,white)}
 .rec-choice{display:flex;gap:10px;align-items:center;font-weight:700;margin:6px 0 8px}
 /* Progression : une carte par classe */
@@ -367,7 +368,7 @@ async function refresh(){
  $("who").textContent=currentUser.email||"";
  const [profile,classes,students]=await Promise.all([
  client.from("teachers").select("student_limit,role,seat_request,seat_request_at,ghosted_at").eq("id",currentUser.id).single(),
- client.from("classes").select("id,name,school_year,access_code,teacher_id").order("created_at"),
+ client.from("classes").select("id,name,school_year,access_code,teacher_id,ghosted_at").order("created_at"),
  client.from("students").select("id,nickname,class_id,pin_hash,teacher_id,ghosted_at").order("created_at")]);
  if(profile.error||classes.error||students.error){const reason=errorText(profile.error||classes.error||students.error);msg("spaceMsg","Impossible de charger les données : "+reason,true);$("classRoster").textContent="Erreur de chargement : "+reason;return;}
  msg("spaceMsg","");
@@ -389,7 +390,7 @@ async function refresh(){
  $("addStudent").disabled=used>=limit||ownClasses.length===0;
  $("classSelect").replaceChildren();
  $("classes").replaceChildren();
- classes.data.forEach((c,ci)=>{const own=c.teacher_id===currentUser.id;if(own){const opt=document.createElement("option");opt.value=c.id;opt.textContent=c.name;$("classSelect").append(opt)}const d=document.createElement("div");d.className="row class-item";d.style.setProperty("--cg",classColor(ci));const label=document.createElement("span");label.textContent="📚 "+c.name+(own?"":" (autre enseignant)")+" · Code de classe : "+(c.access_code||"à actualiser");d.append(label);if(c.access_code){const copy=document.createElement("button");copy.type="button";copy.className="secondary";copy.style.marginLeft="12px";copy.textContent="Copier le lien élève";copy.onclick=()=>copyStudentLink(c.access_code);d.append(copy)}if(own){const change=document.createElement("button");change.type="button";change.className="secondary";change.style.marginLeft="8px";change.textContent="Changer le code";change.onclick=()=>changeClassCode(c);d.append(change)}$("classes").append(d)});
+ classes.data.forEach((c,ci)=>{const own=c.teacher_id===currentUser.id;if(own){const opt=document.createElement("option");opt.value=c.id;opt.textContent=c.name;$("classSelect").append(opt)}const d=document.createElement("div");d.className="row class-item";d.style.setProperty("--cg",classColor(ci));const label=document.createElement("span");label.textContent=(c.ghosted_at?"👻 ":"📚 ")+c.name+(c.ghosted_at?" (ghostée)":"")+(own?"":" (autre enseignant)")+" · Code de classe : "+(c.access_code||"à actualiser");d.append(label);if(c.access_code){const copy=document.createElement("button");copy.type="button";copy.className="secondary";copy.style.marginLeft="12px";copy.textContent="Copier le lien élève";copy.onclick=()=>copyStudentLink(c.access_code);d.append(copy)}if(own){const change=document.createElement("button");change.type="button";change.className="secondary";change.style.marginLeft="8px";change.textContent="Changer le code";change.onclick=()=>changeClassCode(c);d.append(change)}$("classes").append(d)});
  if(!classes.data.length)$("classes").textContent="Aucune classe pour le moment.";
  const roster=$("classRoster");roster.replaceChildren();
  classes.data.forEach((c,ci)=>{
@@ -613,7 +614,7 @@ let studentsNotice="";
 async function renderStudentsTab(role){
  const box=$("studentsAdminList"),admin=role==="admin";box.replaceChildren();
  msg("studentsMsg",studentsNotice);studentsNotice="";
- $("studentsPanelHint").textContent=(admin?"Tous les élèves, rangés par compte enseignant puis par classe.":"Tous tes élèves, rangés par classe.")+" 👻 Ghoster suspend la connexion sans rien effacer (« Réactiver » la rend). 🗑️ Supprimer efface l’élève et toute sa progression.";
+ $("studentsPanelHint").textContent=(admin?"Tous les élèves, rangés par compte enseignant puis par classe.":"Tous tes élèves, rangés par classe.")+" Une classe entière peut aussi être ghostée ou supprimée. 👻 Ghoster suspend la connexion sans rien effacer (« Réactiver » la rend). 🗑️ Supprimer efface l’élève et toute sa progression.";
  let groups=[{id:currentUser.id,email:currentUser.email,ghosted_at:null}];
  if(admin){const {data,error}=await client.from("teachers").select("id,email,ghosted_at").order("created_at",{ascending:true});if(error){msg("studentsMsg",errorText(error),true);return;}groups=data;}
  groups.forEach(t=>{
@@ -621,13 +622,18 @@ async function renderStudentsTab(role){
   if(admin){const h=document.createElement("h3");h.className="teacher-group";h.textContent="👤 "+(t.email||"Compte sans e-mail")+" · "+sts.length+" élève(s)"+(t.ghosted_at?" · 👻 compte ghosté":"");box.append(h);}
   if(!cls.length){const p=document.createElement("p");p.className="muted";p.textContent="Aucune classe.";box.append(p);return;}
   cls.forEach(c=>{
-   const h=document.createElement("h4");h.className="class-tag";h.style.setProperty("--cg",classColor(allClasses.indexOf(c)));h.textContent="📚 "+c.name;box.append(h);
+   const head=document.createElement("div");head.className="class-head";
+   const h=document.createElement("h4");h.className="class-tag";h.style.setProperty("--cg",classColor(allClasses.indexOf(c)));h.textContent=(c.ghosted_at?"👻 ":"📚 ")+c.name+(c.ghosted_at?" · ghostée le "+frDate(c.ghosted_at):"");
+   const cact=document.createElement("div");cact.className="actions";cact.style.marginTop="0";
+   const cghost=document.createElement("button");cghost.type="button";cghost.className="secondary";cghost.textContent=c.ghosted_at?"Réactiver la classe":"👻 Ghoster la classe";cghost.onclick=()=>manageClass(c,c.ghosted_at?"unghost":"ghost",[cghost,cdel]);
+   const cdel=document.createElement("button");cdel.type="button";cdel.className="danger";cdel.textContent="🗑️ Supprimer la classe";cdel.onclick=()=>manageClass(c,"delete",[cghost,cdel]);
+   cact.append(cghost,cdel);head.append(h,cact);box.append(head);
    const members=sts.filter(s=>s.class_id===c.id);
    if(!members.length){const p=document.createElement("p");p.className="muted";p.textContent="Aucun élève dans cette classe.";box.append(p);}
    members.forEach(st=>{
-    const line=document.createElement("div");line.className="row"+(st.ghosted_at||t.ghosted_at?" ghosted":"");
+    const line=document.createElement("div");line.className="row"+(st.ghosted_at||t.ghosted_at||c.ghosted_at?" ghosted":"");
     const info=document.createElement("div");const name=document.createElement("strong");name.textContent=(st.ghosted_at?"👻 ":"🧒 ")+st.nickname;
-    const status=document.createElement("div");status.className="muted";status.textContent=(st.pin_hash?"PIN défini":"PIN à définir")+(st.ghosted_at?" · ghosté le "+frDate(st.ghosted_at):"")+(!st.ghosted_at&&t.ghosted_at?" · suspendu avec le compte enseignant":"");
+    const status=document.createElement("div");status.className="muted";status.textContent=(st.pin_hash?"PIN défini":"PIN à définir")+(st.ghosted_at?" · ghosté le "+frDate(st.ghosted_at):"")+(!st.ghosted_at&&t.ghosted_at?" · suspendu avec le compte enseignant":"")+(!st.ghosted_at&&!t.ghosted_at&&c.ghosted_at?" · suspendu avec la classe":"");
     info.append(name,status);
     const actions=document.createElement("div");actions.className="actions";actions.style.marginTop="0";
     const ghost=document.createElement("button");ghost.type="button";ghost.className="secondary";ghost.textContent=st.ghosted_at?"Réactiver":"👻 Ghoster";ghost.onclick=()=>manageStudent(st,st.ghosted_at?"unghost":"ghost",[ghost,del]);
@@ -645,6 +651,20 @@ async function manageStudent(st,action,buttons){
  buttons.forEach(b=>b.disabled=false);
  if(error){msg("studentsMsg",errorText(error),true);return;}
  studentsNotice={ghost:"👻 "+st.nickname+" est ghosté(e) : plus de connexion possible, ses données sont gardées.",unghost:"✅ "+st.nickname+" peut de nouveau se connecter.",delete:"🗑️ "+st.nickname+" a été supprimé(e)."}[action];
+ await refresh();
+}
+async function manageClass(c,action,buttons){
+ const n=allStudents.filter(s=>s.class_id===c.id).length;
+ if(action==="delete"){
+  const typed=prompt("Supprimer définitivement la classe « "+c.name+" » et ses "+n+" élève(s), avec toute leur progression ?\nCette action est irréversible. Pour confirmer, retape le nom de la classe :");
+  if(typed===null)return;
+  if(typed.trim().toLowerCase()!==c.name.trim().toLowerCase()){msg("studentsMsg","Nom différent : rien n’a été supprimé.",true);return;}
+ }
+ buttons.forEach(b=>b.disabled=true);
+ const {error}=await client.rpc("manage_class",{p_class:c.id,p_action:action});
+ buttons.forEach(b=>b.disabled=false);
+ if(error){msg("studentsMsg",errorText(error),true);return;}
+ studentsNotice={ghost:"👻 La classe « "+c.name+" » est ghostée : ses élèves ne peuvent plus se connecter, leurs données sont gardées.",unghost:"✅ Les élèves de « "+c.name+" » peuvent de nouveau se connecter.",delete:"🗑️ La classe « "+c.name+" » a été supprimée avec ses élèves."}[action];
  await refresh();
 }
 async function manageTeacher(t,action,buttons){
