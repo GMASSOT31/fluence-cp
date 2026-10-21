@@ -388,12 +388,12 @@
   .arcade-screen .muted { color: #c4b5fd; }
   .cab-abs { display: flex; align-items: center; justify-content: center; gap: 6px; text-align: center; font-size: 0.9rem; font-weight: 600; line-height: 1.25; color: #ffe66d; }
   .cab-abs .crown { font-size: 1.2rem; }
-  .game-abs { margin: 0 0 6px; font-weight: 600; color: #ffe66d; min-height: 1.3em; }
+  .game-abs { margin: 0 0 6px; font-weight: 600; color: var(--muted); min-height: 1.3em; }
   .count-clock { text-align: center; font-weight: 700; font-size: 1.3rem; margin-bottom: 8px; color: #ffe66d; font-variant-numeric: tabular-nums; }
   .rb-coins { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 8px; font-weight: 800; font-size: 1.15rem; }
   .rb-coins .gold-coin { font-size: 1.5rem; }
   .record-banner.absolute { background: linear-gradient(135deg, #ff3cac, #ffe66d 55%, #2de2e6); box-shadow: 0 0 34px rgba(255, 60, 172, 0.75); }
-  .game-record { margin: 0 0 6px; font-weight: 700; color: #3dff8b; text-shadow: 0 0 8px rgba(61, 255, 139, 0.6); min-height: 1.4em; }
+  .game-record { margin: 0 0 6px; font-weight: 700; color: var(--ink); min-height: 1.4em; }
   .record-banner { margin: 18px auto 0; max-width: 360px; padding: 12px 18px; text-align: center; color: #150a33; border-radius: 16px; background: linear-gradient(135deg, #ffe66d, #ff9f1c); box-shadow: 0 0 26px rgba(255, 230, 109, 0.7); }
   .rb-title { font-family: "Press Start 2P", ui-monospace, monospace; font-size: 0.85rem; line-height: 1.4; }
   .rb-value { font-size: 1.7rem; font-weight: 800; line-height: 1.2; margin-top: 4px; }
@@ -887,6 +887,24 @@
   .arcade .card h2 { color: var(--ink); }
   .arcade .muted, .arcade .hint { color: var(--muted); }
   .arcade .primary { background: var(--focus); color: #fff; box-shadow: none; }
+  /* Tour d’animaux et Ballons des sons */
+  .stack-area { position: relative; width: 100%; max-width: 380px; height: 352px; margin: 8px auto; overflow: hidden; border-radius: 14px; background: linear-gradient(var(--card), var(--bg)); border: 1.5px solid var(--line); touch-action: manipulation; cursor: pointer; user-select: none; -webkit-user-select: none; outline: none; }
+  .stack-world { position: absolute; inset: 0; transition: transform .25s ease; }
+  .stack-block { position: absolute; height: 42px; display: flex; align-items: center; justify-content: center; overflow: hidden; white-space: nowrap; font-size: 1.5rem; border-radius: 8px; border: 1.5px solid rgba(0, 0, 0, .12); }
+  .stack-fall { animation: stackFall .7s ease-in forwards; }
+  @keyframes stackFall { to { transform: translateY(170px) rotate(18deg); opacity: 0; } }
+  .balloon-top { display: flex; justify-content: center; margin: 4px 0 8px; }
+  .balloon-sky { position: relative; height: 340px; max-width: 520px; margin: 0 auto; overflow: hidden; border-radius: 14px; background: linear-gradient(#dbeafe, #f8fafc); border: 1.5px solid var(--line); touch-action: manipulation; }
+  .balloon { position: absolute; bottom: -120px; width: 22%; max-width: 100px; aspect-ratio: 4 / 5; padding: 0; border: 0; border-radius: 50% 50% 46% 46%; color: #1b2433; font-weight: 800; font-size: clamp(1.1rem, 4.5vw, 1.5rem); box-shadow: inset -8px -10px 0 rgba(0, 0, 0, .08); animation: balloonUp 7s linear forwards; cursor: pointer; }
+  .balloon::after { content: ""; position: absolute; left: 50%; top: 100%; width: 1.5px; height: 28px; background: rgba(0, 0, 0, .25); }
+  .balloon.pop { opacity: 0; transition: opacity .3s; }
+  .balloon.bad { opacity: .45; outline: 3px solid #ef4444; outline-offset: 2px; }
+  .balloon:disabled { cursor: default; }
+  @keyframes balloonUp { to { transform: translateY(-480px); } }
+  .home-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+  .home-actions .big-btn { margin: 0; }
+  .home-listen-line { margin: 4px 0 0; color: var(--muted); }
+  .listen-go { background: #0f766e; color: #fff; border-color: #0f766e; }
   /* Téléphone : pas d'avatar ni de Cartes / Progrès ; boutique et salle de jeux tiennent sur un écran */
   @media (max-width: 600px) {
     body.mode-student #panel-left .avatar-profile, body.mode-student #btn-logout { display: none; }
@@ -936,6 +954,9 @@
     #v-jeux .cab-tag, #v-jeux .cab-hi small, #v-jeux .cab-hi .last { display: none; }
     #v-jeux .cab-ico { width: 30px; height: 30px; flex-basis: 30px; border-radius: 9px; font-size: 1.1rem !important; }
     #v-jeux .cab-hi { grid-template-columns: 1fr; padding-top: 4px !important; }
+    #v-jeux .cab-hi, #v-jeux .cab-abs { display: none !important; }
+    .stack-area { height: 320px; }
+    .balloon-sky { height: 300px; }
     #v-jeux .cab-hi b { font-size: .8rem; }
     #v-jeux .arcade-sign .a-title { font-size: 1.1rem; }
     #v-jeux .cab-hi { padding: 2px 4px !important; gap: 0 !important; border-width: 1.5px; }
@@ -2908,7 +2929,9 @@
     { id: "count", name: "Compte les animaux", ico: "🔢", neon: "#ffe66d", tag: "Combien y en a-t-il ? Vite !", mode: "max", fmt: countFmt },
     { id: "order", name: "Dans l’ordre", ico: "⏱️", neon: "#3dff8b", tag: "Touche 1, 2, 3… le plus vite", mode: "min", fmt: function (v) { return v + " s"; } },
     { id: "simon", name: "Répète les animaux", ico: "🧠", neon: "#a78bfa", tag: "Retiens la suite", mode: "max", fmt: function (v) { return nb(v, "animal", "animaux"); } },
-    { id: "safari", name: "Safari des animaux", ico: "🦁", neon: "#ffcf4b", tag: "10 étoiles en moins de 30 secondes !", mode: "min", fmt: function (v) { return (v / 1000).toFixed(2).replace(".", ",") + " s"; } }
+    { id: "safari", name: "Safari des animaux", ico: "🦁", neon: "#ffcf4b", tag: "10 étoiles en moins de 30 secondes !", mode: "min", fmt: function (v) { return (v / 1000).toFixed(2).replace(".", ",") + " s"; } },
+    { id: "stack", name: "Tour d’animaux", ico: "🦒", neon: "#f97316", tag: "Empile le plus haut possible", mode: "max", fmt: function (v) { return nb(v, "étage", "étages"); } },
+    { id: "ballons", name: "Ballons des sons", ico: "🎈", neon: "#ef4444", tag: "Éclate le bon son", mode: "max", fmt: function (v) { return nb(v, "ballon", "ballons"); } }
   ];
   /* Score du comptage : bonnes réponses × 1000 − secondes (plus grand = meilleur), donc à 6 sur 6 c’est le temps qui départage */
   function countFmt(v) {
@@ -3568,6 +3591,7 @@
     var R = LS.run, ok = !q.bad && q.found.length === q.goods.length, msg = $("listen-msg");
     if (!ok) {
       R.failed++;
+      if (!q.bad) sfxBad();
       listenReveal(q);
       msg.textContent = (why ? why + " " : "") + "On écrivait : " + q.goods.join(" ou ") + ".";
       LS.timers.push(setTimeout(listenQuestion, 2600));
@@ -3581,11 +3605,13 @@
     if (q.over || b.disabled) return;
     if (c.good) {
       b.classList.add("good"); b.disabled = true; q.found.push(c.g);
+      sfxGood();
       $("listen-msg").textContent = "Oui !";
       if (q.found.length === q.goods.length) listenFinishQ(q, "");
       else q.doneBtn.hidden = false;
     } else {
       b.classList.add("bad"); q.bad = true;
+      sfxBad();
       listenFinishQ(q, "Oups, ce n’est pas ça.");
     }
   }
@@ -3691,20 +3717,32 @@
     if (myNotes.length) { data.notes = data.notes.filter(function (n) { return n.sid !== sid; }); save(); }
     var card = el("div", "card");
     card.appendChild(el("h2", "", "Bonjour " + st.name + " !"));
-    var nx = nextStep(sid);
+    var nx = nextStep(sid), lx = listenNext(sid);
+    var acts = el("div", "home-actions");
+    if (lx) {
+      var lgo = el("button", "primary big-btn listen-go", "👂 J’écoute"); lgo.type = "button";
+      lgo.addEventListener("click", function () { LS.sound = lx.id; goTo("audition"); });
+    }
     if (nx) {
       var snd = soundById(nx.sound);
       var row = el("div", "home-step");
       row.appendChild(buildPet(petState(sid, nx.sound), charFor(nx.sound)));
       var txt = el("div");
       txt.appendChild(el("p", "", "Ta prochaine étape : " + kindInfo(nx.kind).name.toLowerCase() + " du son " + q(snd.label) + "."));
-      var go = el("button", "primary big-btn", "Je lis"); go.type = "button";
+      if (lx) txt.appendChild(el("p", "home-listen-line", "Prochaine écoute : son " + q(lx.label) + "."));
+      var go = el("button", "primary big-btn", "📖 Je lis"); go.type = "button";
       go.addEventListener("click", function () { data.sel.sound = nx.sound; data.sel.kind = nx.kind; save(); goTo("lecture"); });
-      txt.appendChild(go);
+      acts.appendChild(go);
+      if (lx) acts.appendChild(lgo);
+      txt.appendChild(acts);
       row.appendChild(txt);
       card.appendChild(row);
     } else {
-      card.appendChild(el("p", "", "Tu as validé toutes les étapes disponibles. Bravo !"));
+      card.appendChild(el("p", "", "Tu as validé toutes les étapes de lecture disponibles. Bravo !"));
+      if (lx) {
+        card.appendChild(el("p", "home-listen-line", "Prochaine écoute : son " + q(lx.label) + "."));
+        acts.appendChild(lgo); card.appendChild(acts);
+      }
     }
     body.appendChild(card);
     var qc = el("div", "card quote-card"); qc.appendChild(el("blockquote", "", "«\u00a0" + sessionQuote + "\u00a0»")); body.appendChild(qc);
@@ -3926,6 +3964,9 @@
       o.start(t0); o.stop(t0 + dur + 0.05);
     } catch (e) {}
   }
+  /* Petits sons discrets : bonne réponse (deux notes qui montent), erreur (note grave qui descend) */
+  function sfxGood() { tone(660, 0, 0.12, "sine", 0.07); tone(990, 0.08, 0.16, "sine", 0.06); }
+  function sfxBad() { tone(233, 0, 0.16, "triangle", 0.08); tone(175, 0.09, 0.22, "triangle", 0.07); }
   function primeSpeech() {
     try {
       if (!data.sfx || !window.speechSynthesis || !window.SpeechSynthesisUtterance) return;
@@ -4088,6 +4129,7 @@
     G.timers.forEach(function (t) { clearInterval(t); clearTimeout(t); });
     G.timers = [];
     if (G.safariCleanup) { var cleanup = G.safariCleanup; G.safariCleanup = null; cleanup(); }
+    if (G.cleanup) { var c2 = G.cleanup; G.cleanup = null; c2(); }
   }
   function gamePool(sid) {
     var mine = [], extra = [];
@@ -4109,6 +4151,8 @@
     else if (gameId === "order") startOrder(sid);
     else if (gameId === "simon") startSimon(sid);
     else if (gameId === "safari") startSafari(sid);
+    else if (gameId === "stack") startStack(sid);
+    else if (gameId === "ballons") startBalloons(sid);
     else startMemory(sid);
   }
   $("game-back").addEventListener("click", function () { show("jeux"); });
@@ -4346,6 +4390,154 @@
       } else upd();
     }, 1000);
     G.timers.push(spawn, tick);
+  }
+
+  /* Tour d’animaux : un animal glisse, on touche pour le poser sur la pile ; ce qui dépasse tombe */
+  var STACK_GOAL = 10, STACK_MAX = 200, STACK_H = 44;
+  var STACK_COLORS = ["#fde68a", "#bbf7d0", "#bfdbfe", "#fbcfe8", "#ddd6fe", "#fed7aa", "#a5f3fc"];
+  function startStack(sid) {
+    var gp = gamePool(sid), pool = gp.mine.concat(gp.extra);
+    var area = $("game-area");
+    area.innerHTML = "";
+    var box = el("div", "stack-area"); box.tabIndex = 0;
+    box.setAttribute("role", "button"); box.setAttribute("aria-label", "Touche pour poser l’animal");
+    var world = el("div", "stack-world");
+    box.appendChild(world); area.appendChild(box);
+    var W = box.clientWidth || 320, floors = 0, won = false, over = false, raf = 0, last = 0, cur = null;
+    var base = { x: Math.round(W * 0.2), w: Math.round(W * 0.6) };
+    function block(x, w, lvl, color, txt) {
+      var b = el("div", "stack-block", txt || "");
+      b.style.left = x + "px"; b.style.width = w + "px"; b.style.bottom = (lvl * STACK_H) + "px"; b.style.background = color;
+      world.appendChild(b); return b;
+    }
+    block(base.x, base.w, 0, "#e5e7eb", "🏁");
+    function msg(t) { $("game-msg").textContent = t || ("Touche pour poser l’animal sur la tour. Étages : " + floors + (won ? "." : " (pièce d’or à " + STACK_GOAL + ").")); }
+    function spawn() {
+      var lvl = floors + 1, fromLeft = Math.random() < 0.5;
+      cur = { lvl: lvl, w: base.w, x: fromLeft ? 0 : W - base.w, dir: fromLeft ? 1 : -1, speed: Math.min(2.3 + floors * 0.2, 7.5) };
+      cur.el = block(cur.x, cur.w, lvl, STACK_COLORS[lvl % STACK_COLORS.length], pool[Math.floor(Math.random() * pool.length)]);
+      world.style.transform = "translateY(" + Math.max(0, (lvl - 5) * STACK_H) + "px)";
+    }
+    function frame(ts) {
+      if (over) return;
+      var dt = last ? Math.min(40, ts - last) / 16.67 : 1; last = ts;
+      cur.x += cur.dir * cur.speed * dt;
+      if (cur.x <= 0) { cur.x = 0; cur.dir = 1; }
+      if (cur.x + cur.w >= W) { cur.x = W - cur.w; cur.dir = -1; }
+      cur.el.style.left = cur.x + "px";
+      raf = requestAnimationFrame(frame);
+    }
+    function finish() {
+      if (over) return;
+      over = true; cancelAnimationFrame(raf); stopGame();
+      $("game-msg").textContent = (won ? praise() + " ! " : "Bien essayé ! ") + "Ta tour fait " + nb(floors, "étage", "étages") + "." + (won ? " Tu as gagné une pièce d’or !" : " Il en fallait " + STACK_GOAL + " pour gagner une pièce d’or.");
+      finishScore(sid, area, "stack", floors);
+    }
+    function drop() {
+      if (over || !cur) return;
+      var left = Math.max(cur.x, base.x), right = Math.min(cur.x + cur.w, base.x + base.w), ov = right - left;
+      if (ov <= 0) { cur.el.classList.add("stack-fall"); sfxBad(); finish(); return; }
+      var perfect = Math.abs(cur.x - base.x) <= 4;
+      if (perfect) {
+        left = base.x; ov = base.w;
+        tone(880, 0, 0.1, "sine", 0.07); tone(1320, 0.06, 0.14, "sine", 0.05);
+      } else {
+        var piece = el("div", "stack-block stack-fall");
+        piece.style.left = (cur.x < base.x ? cur.x : right) + "px"; piece.style.width = (cur.w - ov) + "px";
+        piece.style.bottom = cur.el.style.bottom; piece.style.background = cur.el.style.background;
+        world.appendChild(piece);
+        G.timers.push(setTimeout(function () { if (piece.parentNode) piece.parentNode.removeChild(piece); }, 700));
+        tone(392, 0, 0.08, "triangle", 0.07);
+      }
+      cur.el.style.left = left + "px"; cur.el.style.width = ov + "px";
+      base = { x: left, w: ov }; floors++;
+      if (!won && floors >= STACK_GOAL) { won = true; winCoin(sid, area); }
+      if (floors >= STACK_MAX) { finish(); return; }
+      msg(perfect ? "Parfait ! Étages : " + floors + "." : null);
+      spawn();
+    }
+    box.addEventListener("pointerdown", function (e) { e.preventDefault(); drop(); });
+    box.addEventListener("keydown", function (e) { if (e.key === " " || e.key === "Enter") { e.preventDefault(); drop(); } });
+    G.cleanup = function () { over = true; cancelAnimationFrame(raf); };
+    msg(); spawn();
+    raf = requestAnimationFrame(frame);
+    box.focus({ preventScroll: true });
+  }
+
+  /* Ballons des sons : la voix dit une syllabe déjà vue, on éclate le bon ballon (45 s) */
+  var BALLOON_GOAL = 8, BALLOON_TIME = 45;
+  var BALLOON_COLORS = ["#fca5a5", "#fcd34d", "#86efac", "#93c5fd", "#c4b5fd", "#f9a8d4"];
+  function balloonRound(sid) {
+    var ls = listenSounds().filter(function (s) { return listenUnlocked(sid, s.id); });
+    for (var k = 0; k < 15 && ls.length; k++) {
+      var s = ls[Math.floor(Math.random() * ls.length)];
+      var items = listenSylItems(sid, s) || listenItems(s);
+      if (!items || !items.length) continue;
+      var it = items[Math.floor(Math.random() * items.length)];
+      var qq = it.syl ? listenBuildSyl(sid, it) : listenBuild(sid, s, it);
+      if (!qq || !qq.choices) continue;
+      var goods = qq.choices.filter(function (c) { return c.good; });
+      var bads = shuffle(qq.choices.filter(function (c) { return !c.good; })).slice(0, 3);
+      if (!goods.length || bads.length < 2) continue;
+      return { item: qq.item, choices: shuffle([goods[0]].concat(bads)) };
+    }
+    return null;
+  }
+  function startBalloons(sid) {
+    var area = $("game-area");
+    area.innerHTML = "";
+    var bar = el("div", "balloon-top");
+    var again = el("button", "listen-play", "🔊 Réécouter"); again.type = "button";
+    bar.appendChild(again);
+    var sky = el("div", "balloon-sky");
+    area.appendChild(bar); area.appendChild(sky);
+    var score = 0, left = BALLOON_TIME, won = false, over = false, round = null, n = 0;
+    function upd() { $("game-msg").textContent = "Éclate le ballon du son que tu entends ! Il reste " + left + " s. Bons ballons : " + score + (won ? "." : " (pièce d’or à " + BALLOON_GOAL + ")."); }
+    function finish() {
+      if (over) return;
+      over = true; stopGame(); listenStopVoice();
+      sky.innerHTML = ""; again.disabled = true;
+      $("game-msg").textContent = (won ? praise() + " ! " : "Bien essayé ! ") + "Tu as éclaté " + nb(score, "bon ballon", "bons ballons") + "." + (won ? " Tu as gagné une pièce d’or !" : " Il en fallait " + BALLOON_GOAL + " pour gagner une pièce d’or.");
+      finishScore(sid, area, "ballons", score);
+    }
+    function freeze(b) { b.style.transform = getComputedStyle(b).transform; b.style.animation = "none"; }
+    function next() {
+      if (over) return;
+      sky.innerHTML = "";
+      round = balloonRound(sid);
+      if (!round) { $("game-msg").textContent = "Pas encore de syllabes à écouter : lis ou écoute d’abord un son !"; finish(); return; }
+      var token = round, cnt = round.choices.length, btns = [];
+      round.choices.forEach(function (c, i) {
+        var b = el("button", "balloon", c.g); b.type = "button";
+        b.style.left = (3 + i * (94 / cnt)) + "%";
+        b.style.background = BALLOON_COLORS[(i + n) % BALLOON_COLORS.length];
+        b.style.animationDuration = (6.6 + Math.random() * 1.2) + "s";
+        b.style.animationDelay = (Math.random() * 0.5) + "s";
+        b.addEventListener("click", function () {
+          if (over || b.disabled || round !== token) return;
+          if (c.good) {
+            score++; sfxGood();
+            btns.forEach(function (x) { x.disabled = true; });
+            freeze(b); b.classList.add("pop");
+            if (!won && score >= BALLOON_GOAL) { won = true; winCoin(sid, area); }
+            upd();
+            G.timers.push(setTimeout(next, 420));
+          } else {
+            sfxBad(); b.disabled = true; b.classList.add("bad");
+            left = Math.max(0, left - 2); upd();
+            if (left <= 0) finish();
+          }
+        });
+        sky.appendChild(b); btns.push(b);
+      });
+      n++;
+      G.timers.push(setTimeout(function () { if (round === token && !over) listenSay(token.item); }, 200));
+      G.timers.push(setTimeout(function () { if (round === token && !over) next(); }, 8200));
+    }
+    again.addEventListener("click", function () { if (round && !over) listenSay(round.item); });
+    G.timers.push(setInterval(function () { left--; if (left <= 0) finish(); else upd(); }, 1000));
+    G.cleanup = function () { over = true; listenStopVoice(); };
+    upd(); next();
   }
 
   /* Fin de partie commune : félicitations et pièce d’or, ou encouragements */
