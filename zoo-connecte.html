@@ -1745,7 +1745,7 @@
     wheels: [],
     playLog: [],
     maxPlays: 6,
-    shop: { packPrice: 10, rewards: [] },
+    shop: { packPrice: 10, wheelPrice: 7, rewards: [] },
     vouchers: [],
     teacher: null,
     hi: {},
@@ -1783,6 +1783,7 @@
         if (typeof d.maxPlays === "number") data.maxPlays = d.maxPlays;
         if (d.shop && typeof d.shop === "object") {
           if (typeof d.shop.packPrice === "number" && d.shop.packPrice >= 1) data.shop.packPrice = d.shop.packPrice;
+          if (typeof d.shop.wheelPrice === "number" && d.shop.wheelPrice >= 1) data.shop.wheelPrice = d.shop.wheelPrice;
           if (Array.isArray(d.shop.rewards)) data.shop.rewards = d.shop.rewards.filter(function (r) { return r && r.label && typeof r.price === "number"; });
         }
         if (Array.isArray(d.vouchers)) data.vouchers = d.vouchers;
@@ -1926,6 +1927,17 @@
         data.coins[cloudStudentId]=Number(r.coins)||0;
         renderPanels();
         showGift(n);
+      }
+      /* Bons remis par le maître(sse) : ils sortent de « Mes bons » */
+      var rv=await cloudClient.rpc("student_claim_vouchers",{p_token:cloudToken,p_version:cloudVersion});
+      if(rv.error)throw rv.error;
+      var vr=rv.data||{}, ids=Array.isArray(vr.ids)?vr.ids.map(String):[];
+      if(Number(vr.claimed)>0){
+        cloudVersion=Number(vr.version);
+        var got=[];
+        data.vouchers.forEach(function(x){if(ids.indexOf(String(x.id))>=0&&!x.done){x.done=true;got.push(x.label);}});
+        if(got.length)toast("✅ Ton maître(sse) t’a remis : "+got.join(", ")+".");
+        if(!$("v-boutique").hidden)renderBoutique();
       }
     }catch(e){
       if(String(e.message||"").includes("SYNC_CONFLICT"))showSyncConflict(cloudSnapshot());
@@ -4816,6 +4828,16 @@
         zooNote = "Achat réussi : " + PACK_SIZE + " parties de jeu en plus !";
         buyFx(); save(); renderBoutique(); renderPanels();
       }
+    }, {
+      icon: "🎡", label: "Un tour de roue", price: data.shop.wheelPrice,
+      onBuy: function () {
+        var p = data.shop.wheelPrice;
+        if (coins(sid) < p) return;
+        data.coins[sid] = coins(sid) - p;
+        data.wheels.push({ id: uid(), sid: sid, ts: Date.now() });
+        buyFx(); save(); renderPanels();
+        openWheel(sid, "Tu as acheté un tour de roue !");
+      }
     }];
     data.shop.rewards.slice().sort(function (x, y) { return x.price - y.price; }).forEach(function (r) {
       items.push({
@@ -4872,6 +4894,7 @@
         if(previous!==JSON.stringify(data.shop.rewards)&&ses.role==="student"&&document.getElementById("boutique-body"))renderBoutique();
       }
       if(Number.isInteger(settings.packPrice)&&settings.packPrice>0)data.shop.packPrice=settings.packPrice;
+      if(Number.isInteger(settings.wheelPrice)&&settings.wheelPrice>0)data.shop.wheelPrice=settings.wheelPrice;
       if(typeof settings.allowRec==="boolean")data.allowRec=settings.allowRec;
     }catch(err){console.warn("Actualisation boutique",err);}
     finally{shopSettingsRefreshing=false;}
@@ -5666,6 +5689,7 @@
       if(p.shop&&typeof p.shop==="object"&&Array.isArray(p.shop.rewards)&&!Array.isArray(teacherSettings.rewards))data.shop=p.shop;
       if(Array.isArray(teacherSettings.rewards))data.shop.rewards=teacherSettings.rewards;
       if(Number.isInteger(teacherSettings.packPrice)&&teacherSettings.packPrice>0)data.shop.packPrice=teacherSettings.packPrice;
+      if(Number.isInteger(teacherSettings.wheelPrice)&&teacherSettings.wheelPrice>0)data.shop.wheelPrice=teacherSettings.wheelPrice;
       if(Number.isInteger(p.maxPlays)&&p.maxPlays>=0&&teacherSettings.maxPlays==null)data.maxPlays=p.maxPlays;
       if(typeof p.reward==="boolean"&&teacherSettings.reward==null)data.reward=p.reward;
       if(typeof p.sfx==="boolean"&&teacherSettings.sfx==null)data.sfx=p.sfx;
