@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" class="booting">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -7,6 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Figtree:wght@400;600;800&family=Fredoka:wght@500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
+/* Pendant le chargement du profil : rien de l’ancienne page ne s’affiche */
+html.booting body > * { visibility: hidden !important; }
+html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: fixed; inset: 0; display: grid; place-items: center; font: 600 1.2rem system-ui, sans-serif; color: #eef0f7; background: #14151c; z-index: 99999; }
   :root {
     --bg: #f2f4f8;
     --card: #ffffff;
@@ -3927,7 +3930,7 @@
       txt.appendChild(el("p", "", "Ta prochaine étape : " + kindInfo(nx.kind).name.toLowerCase() + " du son " + q(snd.label) + "."));
       if (lx) txt.appendChild(el("p", "home-listen-line", "Prochaine écoute : son " + q(lx.label) + "."));
       var go = el("button", "primary big-btn", "📖 Je lis"); go.type = "button";
-      go.addEventListener("click", function () { goTo("lecture"); if (S.phase !== "running") lireLaunch("train", nx.sound, nx.kind); });
+      go.addEventListener("click", function () { goTo("lecture"); });
       acts.appendChild(go);
       if (lx) acts.appendChild(lgo);
       txt.appendChild(acts);
@@ -5917,7 +5920,7 @@
       if(["s","m","t"].includes(p.selKind))data.sel.kind=p.selKind;
       if(!data.sel.sound)applySuggestion();
       ses.role="student";ses.sid=st.student_id;ses.viaTeacher=false;ses.unlocked=false;ses.teacherAuth=false;
-      setMode();show("home");
+      setMode();show("home");document.documentElement.classList.remove("booting");
       var bar=document.createElement("div");
       bar.id="cloud-status";bar.className="cs-ok";bar.style.cssText="position:fixed;bottom:10px;left:10px;z-index:9999;background:#372465;color:white;border-radius:12px;padding:8px 12px;font:13px system-ui;box-shadow:0 3px 12px #0005";
       bar.append(document.createTextNode("☁️ Profil connecté · "+st.nickname));cloudStatusNode=bar;bar.dataset.nickname=st.nickname;
@@ -5929,7 +5932,7 @@
       location.replace("eleve.html");
     }
   }
-  if(!cloudMode){setMode();show("login");}bootCloud();
+  if(!cloudMode){setMode();show("login");document.documentElement.classList.remove("booting");}bootCloud();
 })();
 </script>
 </body>
