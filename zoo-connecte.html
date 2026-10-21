@@ -927,6 +927,15 @@
   .game-result .record-banner { margin: 12px auto 0; }
   .game-result .score-line { font-size: 1.1rem; }
   .game-result .gr-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 18px; }
+  /* Écoute : plein écran pendant une série */
+  body.listen-focus header, body.listen-focus #panel-left, body.listen-focus #panel-right, body.listen-focus .bottom-nav, body.listen-focus #cloud-status { display: none !important; }
+  body.listen-focus main { max-width: none; padding: 8px !important; margin: 0; }
+  body.listen-focus .layout { display: block; }
+  body.listen-focus #audition-body > .card { max-width: 900px; min-height: calc(100vh - 16px); min-height: calc(100dvh - 16px); margin: 0 auto; display: flex; flex-direction: column; justify-content: center; border-radius: 18px; }
+  body.listen-focus .listen-play { min-height: 76px; font-size: 1.5rem; padding: 14px 34px; }
+  body.listen-focus .listen-choices { gap: 14px; margin: 18px 0; }
+  body.listen-focus .listen-choice { min-height: clamp(84px, 16vh, 150px); font-size: clamp(2.2rem, 6vh, 3.4rem); }
+  body.listen-focus .listen-msg { font-size: 1.15rem; }
   /* Téléphone : pas d'avatar ni de Cartes / Progrès ; boutique et salle de jeux tiennent sur un écran */
   @media (max-width: 600px) {
     body.mode-student #panel-left .avatar-profile, body.mode-student #btn-logout { display: none; }
@@ -2192,7 +2201,7 @@
     if (v !== "roue") wheelCleanup();
     if (v !== "eleves") $("codes-out").innerHTML = "";
     if (v !== "ecoute") closeReviewMedia();
-    if (v !== "audition") listenStop();
+    if (v !== "audition") { listenStop(); listenFocus(false); }
     VIEWS.forEach(function (name) { $("v-" + name).hidden = (name !== v); });
     Array.prototype.forEach.call($("nav").querySelectorAll("button"), function (b) {
       if (b.getAttribute("data-view") === v) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
@@ -3546,6 +3555,13 @@
     } catch (e) { listenSpeak(item.say); }
   }
   function listenClear() { LS.timers.forEach(clearTimeout); LS.timers = []; }
+  /* Pendant une série d’écoute : l’écran entier est consacré à l’exercice (comme les jeux) */
+  function listenFocus(on) {
+    var was = document.body.classList.contains("listen-focus");
+    document.body.classList.toggle("listen-focus", !!on);
+    if (on && !was) { gameFullscreen(true); window.scrollTo(0, 0); }
+    else if (!on && was) gameFullscreen(false);
+  }
   function listenStop() { listenClear(); listenStopVoice(); LS.phase = "menu"; }
 
   /* ---------- Écouter : écrans ---------- */
@@ -3562,6 +3578,7 @@
     area.appendChild(box);
   }
   function renderAudition() {
+    listenFocus(false);
     if (ses.role !== "student") return;
     listenStop();
     var sid = ses.sid, body = $("audition-body"), cfg = data.listenCfg, ls = listenSounds(), L = listenMine(sid);
@@ -3600,6 +3617,7 @@
       if (i % items.length === 0) LS.run.order = LS.run.order.concat(shuffle(items.slice()));
     }
     LS.phase = "run";
+    listenFocus(true);
     listenQuestion();
   }
   function listenQuestion() {
