@@ -845,11 +845,15 @@
   .quote-card { text-align: center; padding: 16px 20px; }
   .quote-card blockquote { margin: 0; font-size: 1.15rem; font-weight: 700; line-height: 1.45; color: var(--ink); font-style: italic; }
 
+  .bottom-nav .bn-logout { display: none; }
   /* Téléphone : pas d'avatar ni de Cartes / Progrès ; boutique et salle de jeux tiennent sur un écran */
   @media (max-width: 600px) {
-    body.mode-student #panel-left .avatar-profile { display: none; }
+    body.mode-student #panel-left .avatar-profile, body.mode-student #btn-logout { display: none; }
     body.mode-student #panel-left .pcard { padding: 6px 8px; }
     body.mode-student #panel-left .pcard .row { margin: 0; justify-content: flex-end; }
+    body.mode-student #panel-left .pcard:has(#btn-back-teacher[hidden]) { display: none; }
+    body.mode-student #panel-left:has(#btn-back-teacher[hidden]):has(#btn-panel-wheel[hidden]) { display: none; }
+    body.mode-student .bottom-nav .bn-logout { display: flex; flex: 0.8; }
     body.mode-student .bottom-nav [data-go="cartes"], body.mode-student .bottom-nav [data-go="progres"] { display: none; }
     body.mode-student .home-zoo-count { display: none; }
     /* Boutique */
@@ -1362,6 +1366,7 @@
     <button type="button" class="panel-nav needs-reward" data-go="boutique"><span class="pn-ico" aria-hidden="true">🛍️</span><span>Boutique</span></button>
     <button type="button" class="panel-nav" data-go="cartes"><span class="pn-ico" aria-hidden="true">🐾</span><span>Cartes</span></button>
     <button type="button" class="panel-nav" data-go="progres"><span class="pn-ico" aria-hidden="true">📈</span><span>Progrès</span></button>
+    <button type="button" class="panel-nav bn-logout" id="bn-logout"><span class="pn-ico" aria-hidden="true">🚪</span><span>Quitter</span></button>
   </nav>
   <div class="confetti" id="confetti" aria-hidden="true"></div>
 </main>
@@ -2128,6 +2133,7 @@
   $("btn-lsave").addEventListener("click", listenSettingsSave);
   $("btn-lreset").addEventListener("click", listenSettingsReset);
   $("btn-logout").addEventListener("click", logout);
+  $("bn-logout").addEventListener("click", logout);
   $("btn-back-teacher").addEventListener("click", backToTeacher);
   $("btn-panel-wheel").addEventListener("click", function () { openWheel(ses.sid); });
 
