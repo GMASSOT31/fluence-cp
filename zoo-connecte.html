@@ -916,6 +916,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   .tk-rules { margin: 4px 0 0; font-size: .85rem; font-weight: 700; opacity: .85; }
   .buy-confirm .bc-icon { font-size: 3.2rem; text-align: center; }
   .buy-confirm .bc-price { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 1.3rem; font-weight: 800; margin: 6px 0 14px; }
+  .simon-ready { display: block; margin: 0 auto 14px; min-height: 64px; font-size: 1.3rem; }
   .listen-go { background: #0f766e; color: #fff; border-color: #0f766e; }
   .home-hero .home-step { flex-wrap: nowrap; }
   .home-pet { background: none; border: 0; padding: 0; cursor: pointer; flex: 0 0 auto; box-shadow: none; }
@@ -4099,7 +4100,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var hi = el("div", "cab-hi");
     hi.appendChild(el("small", "", "Record"));
     hi.appendChild(el("b", "", h.best !== null ? g.fmt(h.best) : "—"));
-    hi.appendChild(el("span", "last", h.n ? "Dernier score : " + g.fmt(h.last) : "Établis ton premier record !"));
+    var lastTxt = h.lastTry ? "Dernière partie : " + nb(h.lastTry.stars, "étoile", "étoiles") + " sur " + h.lastTry.goal : (h.n ? "Dernier score : " + g.fmt(h.last) : "Établis ton premier record !");
+    hi.appendChild(el("span", "last", lastTxt));
     cab.appendChild(hi);
     var absTxt = absText(g.id, sid);
     if (absTxt) {
@@ -4135,14 +4137,13 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if (cr > 8) tk.appendChild(el("span", "tk-more", "+" + (cr - 8)));
     if (cr <= 0) tk.appendChild(el("span", "tk-empty", "Aucun jeton"));
     bar.appendChild(tk);
-    bar.appendChild(el("p", "tk-text", cr > 0 ? cr + (cr > 1 ? " parties disponibles" : " partie disponible") + ". Choisis ta machine !" : "Tu n’as plus de partie. Va à la boutique ou gagne des parties en lecture et en écoute."));
+    bar.appendChild(el("p", "tk-text", lim ? "Tu as terminé tes parties pour aujourd’hui. Reviens demain !" : (cr > 0 ? cr + (cr > 1 ? " parties disponibles" : " partie disponible") + ". Choisis ta machine !" : "Tu n’as plus de partie. Va à la boutique ou gagne des parties en lecture et en écoute.")));
     bar.appendChild(el("p", "tk-rules", "🎯 Objectif réussi : 1 pièce · 🏆 Ton record battu : 3 pièces · 👑 Record pris à un camarade : 10 pièces"));
     room.appendChild(bar);
     var floor = el("div", "cabs");
     GAMES.forEach(function (g) { floor.appendChild(cabinet(g, sid, cr, lim)); });
     room.appendChild(floor);
-    if (lim) room.appendChild(el("p", "arcade-hint", "Limite du jour atteinte : on rejouera demain."));
-    else if (cr <= 0) room.appendChild(el("p", "arcade-hint", "Fais certifier une étape par ton maître ou ta maîtresse, ou réussis un son dans J’écoute, pour gagner des parties."));
+    if (!lim && cr <= 0) room.appendChild(el("p", "arcade-hint", "Fais certifier une étape par ton maître ou ta maîtresse, ou réussis un son dans J’écoute, pour gagner des parties."));
     body.appendChild(room);
   }
 
@@ -4488,9 +4489,18 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       if (won) {
         $("game-msg").textContent = "Safari réussi en " + (Math.round(nowElapsed()) / 1000).toFixed(2).replace(".", ",") + " secondes !";
         winCoin(sid,area);
-      } else $("game-msg").textContent = "Fin du Safari ! Tu as récupéré " + got + " étoiles sur " + goal + ".";
+      } else $("game-msg").textContent = "Fin du Safari ! Tu as récupéré " + nb(got, "étoile", "étoiles") + " sur " + goal + ".";
       stopGame();
       if (won) finishScore(sid,area,"safari",Math.max(1,Math.round(nowElapsed())));
+      else {
+        /* Partie perdue : pas de record (c’est un temps), mais on garde la performance pour la carte du jeu */
+        if (!data.hi[sid]) data.hi[sid] = {};
+        var sh = data.hi[sid].safari || (data.hi[sid].safari = { best: null, last: null, n: 0 });
+        sh.lastTry = { stars: got, goal: goal, ts: Date.now() };
+        save();
+        gameResultOverlay(sid, "safari", el("p", "score-line", "Ramasse les " + goal + " étoiles en moins de " + duration + " secondes pour établir un record !"));
+        setGameRecordLine(sid, "safari");
+      }
     }
     function drawStar(x,y) {
       ctx.beginPath();
@@ -5061,8 +5071,10 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       });
       btns.push(b); grid.appendChild(b);
     });
-    $("game-msg").textContent = "Répète la suite d’animaux jusqu’à " + SIMON_GOAL + " pour gagner une pièce d’or. Tu peux aller jusqu’à " + SIMON_MAX + " pour le défi ! Regarde bien !";
-    G.timers.push(setTimeout(nextRound, 1200));
+    $("game-msg").textContent = "Répète la suite d’animaux jusqu’à " + SIMON_GOAL + " pour gagner une pièce d’or. Tu peux aller jusqu’à " + SIMON_MAX + " pour le défi ! Touche « Je suis prêt » puis regarde bien.";
+    var ready = el("button", "primary big-btn simon-ready", "👀 Je suis prêt !"); ready.type = "button";
+    ready.addEventListener("click", function () { ready.parentNode && ready.parentNode.removeChild(ready); nextRound(); });
+    area.insertBefore(ready, grid);
   }
 
   /* Boutique : 3 parties contre des pièces d’or, ou une récompense choisie par le maître(sse) */
