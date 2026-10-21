@@ -264,7 +264,7 @@ body:not(.teacher-mode) main{color:#eef0f7}
  <section class="panel feature-card student-card" id="addStudentSettings" data-section="eleves" data-sub="ajout">
   <div class="section-head"><div class="section-icon">🧒</div><div><h2>Ajouter un élève</h2><p class="muted">Inscris un élève dans la classe de ton choix.</p></div></div>
   <p class="muted privacy-note">🔒 Privilégie un pseudonyme ou un prénom abrégé plutôt qu'un nom complet.</p>
-  <form id="studentForm"><label for="classSelect">Choisir sa classe</label><select id="classSelect" required></select><label for="nickname">Pseudonyme de l'élève</label><input id="nickname" required maxlength="60" placeholder="Ex. Léa C."><div class="actions"><button id="addStudent">+ Ajouter l'élève</button></div></form>
+  <form id="studentForm"><label for="classSelect">Choisir sa classe</label><select id="classSelect" required></select><label for="nickname">Pseudonyme de l'élève</label><input id="nickname" required maxlength="60" placeholder="Ex. Léa C."><p class="muted">PIN de départ : 1234 (modifiable ensuite dans Mots de passe).</p><div class="actions"><button id="addStudent">+ Ajouter l'élève</button></div></form>
   <div class="seat-request" id="seatRequestBox"><form id="seatRequestForm"><label for="seatCount">Demande de plus d'élèves :</label><div class="seat-row"><input id="seatCount" type="number" min="1" max="500" step="1" value="10" required><span>élève(s) en plus</span><button id="seatSend">Envoyer la demande</button><button type="button" id="seatCancel" class="secondary hidden">Annuler la demande</button></div></form><p class="muted" id="seatInfo"></p><p class="msg" id="seatMsg" role="status"></p></div>
  </section>
  <section class="panel feature-card student-card" id="studentsPanel" data-section="liste">
@@ -297,9 +297,8 @@ body:not(.teacher-mode) main{color:#eef0f7}
  <label>Nombre maximal de parties par jour<input id="maxPlays" type="number" min="1" max="500" value="6" required></label><label class="rec-choice"><input type="checkbox" id="unlimitedPlays" style="display:inline;width:auto"> Parties illimitées (aucune limite par jour)</label>
  <h3 style="margin-top:24px">Boutique des pièces d'or</h3><label>Prix de trois parties supplémentaires<input id="packPrice" type="number" min="1" max="500" value="10" required></label><label>Prix d’un tour de roue<input id="wheelPrice" type="number" min="1" max="500" value="7" required></label>
  <div class="actions"><button type="submit">Enregistrer les réglages</button></div></form><p id="settingsMsg" class="msg"></p></section>
- <section class="panel feature-card pin-card" id="passwordsSettings" data-section="general" data-sub="motsdepasse"><div class="section-head"><div class="section-icon">🔐</div><div><h2>Gestion des mots de passe</h2><p class="muted">Codes PIN des élèves, création groupée et mot de passe de ton compte.</p></div></div>
+ <section class="panel feature-card pin-card" id="passwordsSettings" data-section="general" data-sub="motsdepasse"><div class="section-head"><div class="section-icon">🔐</div><div><h2>Gestion des mots de passe</h2><p class="muted">Codes PIN des élèves et mot de passe de ton compte.</p></div></div>
   <div class="pw-part" id="pinPart"><h3>Codes PIN des élèves</h3><p class="muted">Définis ou change le PIN de chaque élève (4 à 8 chiffres). Transmets-le individuellement à l’élève ou à sa famille.</p><p class="msg" id="pinMsg" role="status"></p><div id="classRoster"></div></div>
-  <div class="pw-part"><h3>Mots de passe de la classe</h3><p class="muted">Crée d’un coup un PIN à quatre chiffres pour les élèves qui n’en ont pas encore. Note les codes : ils ne seront affichés qu’une seule fois.</p><div class="actions"><button type="button" id="generatePins">Créer les mots de passe manquants</button></div><pre id="generatedPins" style="white-space:pre-wrap;font:inherit;line-height:1.8"></pre></div>
   <div class="pw-part"><h3>Mon mot de passe</h3><p class="muted">Pour te connecter à cet espace enseignant. Il sert aussi à lancer les évaluations dans le Zoo des élèves.</p><form id="passwordForm"><label for="changePassword">Nouveau mot de passe (au moins 8 caractères)</label><input id="changePassword" type="password" autocomplete="new-password" minlength="8" maxlength="72" required><label for="changePassword2">Écris-le une deuxième fois</label><input id="changePassword2" type="password" autocomplete="new-password" minlength="8" maxlength="72" required><div class="actions"><button id="passwordSave" type="submit">Changer mon mot de passe</button></div></form><p class="msg" id="passwordMsg" role="status"></p></div>
  </section>
  <p class="teacher-footnote">☁️ Les progressions du Zoo connecté sont enregistrées sur Supabase. Les anciennes données locales ne sont pas importées automatiquement.</p>
@@ -444,18 +443,6 @@ function showTab(tab){
 }
 document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
 document.querySelectorAll("[data-sub-btn]").forEach(b=>b.onclick=()=>{const tab=b.closest(".sub-picker").dataset.section;activeSubs[tab]=b.dataset.subBtn;showTab(tab);const t=document.querySelector("[data-section=\""+tab+"\"][data-sub=\""+b.dataset.subBtn+"\"]");if(t)t.scrollIntoView({behavior:"smooth",block:"nearest"});});
-$("generatePins").onclick=async()=>{
- const missing=allStudents.filter(s=>!s.pin_hash);if(!missing.length){$("generatedPins").textContent="Tous les élèves possèdent déjà un PIN.";return;}
- if(!confirm("Créer "+missing.length+" codes PIN ? Note-les avant de quitter cette page."))return;
- const generated=[];
- for(const s of missing){
-  const buf=new Uint32Array(1);crypto.getRandomValues(buf);const pin=String(1000+buf[0]%9000);
-  const {error}=await client.rpc("set_student_pin",{p_student:s.id,p_pin:pin});
-  generated.push(s.nickname+" : "+(error?"ERREUR ("+errorText(error)+")":pin));
- }
- $("generatedPins").textContent=generated.join("\n");
- await refresh();
-};
 function collectSettings(){return {thr:{s:Number($("thrS").value),m:Number($("thrM").value),t:Number($("thrT").value)},lock:$("lockSounds").checked,reward:$("rewardMode").checked,sfx:$("soundEffects").checked,allowRec:$("allowRec").checked,evalCode:$("evalCode").checked,maxPlays:$("unlimitedPlays").checked?0:Number($("maxPlays").value),packPrice:Number($("packPrice").value),wheelPrice:Number($("wheelPrice").value),sounds:cfgSounds,texts:cfgTexts,rewards:cfgRewards};}
 async function saveTeacherSettings(){if(!currentUser)return {message:"Session expirée"};const {error}=await client.from("teacher_zoo_settings").upsert({teacher_id:currentUser.id,settings:collectSettings(),updated_at:new Date().toISOString()});return error;}
 /* Enregistrement automatique (réglages péda, boutique) : 1 s après la dernière modification */
@@ -575,7 +562,8 @@ $("passwordForm").onsubmit=e=>{e.preventDefault();const a=$("changePassword").va
 };
 $("logout").onclick=async()=>{await client.auth.signOut();await refresh()};
 $("classForm").onsubmit=e=>{e.preventDefault();busy("classForm",async()=>{const name=$("className").value.trim();if(!name||!currentUser)return;const code=$("classCode").value.trim();if(code&&!validClassCode(code)){msg("spaceMsg",CLASS_CODE_RULE,true);return;}const {data:created,error}=await client.from("classes").insert(code?{teacher_id:currentUser.id,name,access_code:code}:{teacher_id:currentUser.id,name}).select("access_code").single();if(error)msg("spaceMsg",errorText(error),true);else{$("className").value="";$("classCode").value="";await refresh();msg("spaceMsg","Classe créée. Code à donner aux élèves : "+created.access_code)}})};
-$("studentForm").onsubmit=e=>{e.preventDefault();busy("addStudent",async()=>{if(!currentUser)return;const {error}=await client.from("students").insert({teacher_id:currentUser.id,class_id:$("classSelect").value,nickname:$("nickname").value.trim()});if(error)msg("spaceMsg",errorText(error),true);else{$("nickname").value="";await refresh()}})};
+const DEFAULT_PIN="1234";
+$("studentForm").onsubmit=e=>{e.preventDefault();busy("addStudent",async()=>{if(!currentUser)return;const nick=$("nickname").value.trim();const {data:created,error}=await client.from("students").insert({teacher_id:currentUser.id,class_id:$("classSelect").value,nickname:nick}).select("id").single();if(error){msg("spaceMsg",errorText(error),true);return;}const pinRes=await client.rpc("set_student_pin",{p_student:created.id,p_pin:DEFAULT_PIN});$("nickname").value="";await refresh();if(pinRes.error)msg("spaceMsg","Élève ajouté, mais le PIN n’a pas pu être créé : "+errorText(pinRes.error),true);else msg("spaceMsg","✅ "+nick+" ajouté(e). PIN : "+DEFAULT_PIN+".");})};
 function frDate(v){const d=new Date(v);return isNaN(d)?"":d.toLocaleDateString("fr-FR",{day:"numeric",month:"long"})}
 function renderSeatRequest(p){const n=p&&p.seat_request;$("seatInfo").textContent=n?"⏳ Demande en cours : +"+n+" élève(s)"+(p.seat_request_at?", envoyée le "+frDate(p.seat_request_at):"")+". L’administrateur va la traiter.":"Toutes tes places sont prises ? Demande des places en plus à l’administrateur.";$("seatCancel").classList.toggle("hidden",!n);$("seatSend").textContent=n?"Modifier la demande":"Envoyer la demande";if(n)$("seatCount").value=String(n)}
 async function sendSeatRequest(count){const {data,error}=await client.rpc("teacher_request_seats",{p_count:count});if(error){msg("seatMsg",errorText(error),true);return;}renderSeatRequest(data);msg("seatMsg",count?"Demande envoyée : +"+count+" élève(s).":"Demande annulée.")}
