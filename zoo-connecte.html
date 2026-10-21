@@ -911,6 +911,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   .home-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
   .home-actions .big-btn { margin: 0; }
   .home-listen-line { margin: 4px 0 0; color: var(--muted); }
+  .short-chip { margin-left: 6px; background: #fff3d6; color: #7a4b00; }
+  .score.short { opacity: .45; text-decoration: line-through; }
   .listen-go { background: #0f766e; color: #fff; border-color: #0f766e; }
   .home-hero .home-step { flex-wrap: nowrap; }
   .home-pet { background: none; border: 0; padding: 0; cursor: pointer; flex: 0 0 auto; box-shadow: none; }
@@ -5694,7 +5696,9 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     body.appendChild(card);
 
     /* Courbe */
-    var rs = data.results.filter(function (r) { return r.sid === sid && r.k === progKind; }).sort(function (a, b) { return a.ts - b.ts; });
+    /* Les essais trop courts (durée insuffisante) restent dans l’historique mais sortent des records et de la courbe */
+    var rsAll = data.results.filter(function (r) { return r.sid === sid && r.k === progKind; }).sort(function (a, b) { return a.ts - b.ts; });
+    var rs = rsAll.filter(function (r) { return !r.short; });
     var card2 = el("div", "card");
     card2.appendChild(el("h2", "", forStudent ? "Mes scores par minute" : "Évolution des scores par minute"));
     var seg = el("span", "seg"); seg.setAttribute("role", "group"); seg.setAttribute("aria-label", "Niveau");
@@ -5706,11 +5710,14 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     });
     var segBox = el("div"); segBox.style.marginBottom = "12px"; segBox.appendChild(seg);
     card2.appendChild(segBox);
+    var lastAll = rsAll[rsAll.length - 1];
     if (!rs.length) {
-      card2.appendChild(el("p", "empty", forStudent ? "Pas encore de lecture à ce niveau. Lis pour voir ta courbe !" : "Pas encore de lecture enregistrée à ce niveau pour cet élève."));
+      card2.appendChild(el("p", "empty", rsAll.length
+        ? (forStudent ? "Tes lectures à ce niveau étaient trop courtes. Lis au moins " + MIN_TRAIN_SEC + " secondes pour voir ta courbe !" : "Seulement des essais trop courts à ce niveau (durée insuffisante).")
+        : (forStudent ? "Pas encore de lecture à ce niveau. Lis pour voir ta courbe !" : "Pas encore de lecture enregistrée à ce niveau pour cet élève.")));
     } else {
       var bestAll = Math.max.apply(null, rs.map(function (r) { return r.mclm; }));
-      card2.appendChild(el("p", "muted", "Dernière lecture : " + rs[rs.length - 1].mclm + ". Meilleur score : " + bestAll + "."));
+      card2.appendChild(el("p", "muted", "Dernière lecture : " + (lastAll.short ? lastAll.mclm + " (durée insuffisante, non retenue)" : lastAll.mclm) + ". Meilleur score : " + bestAll + "."));
       var cb = el("div"); cb.innerHTML = chartSVG(rs, progKind); card2.appendChild(cb);
       if (rs.some(function (r) { return r.src === "train"; })) card2.appendChild(el("p", "hint", "Point plein : évaluation. Point vide : entraînement."));
     }
@@ -5729,11 +5736,13 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
         var top = el("div");
         top.appendChild(el("span", "chip k-" + r.k, kindInfo(r.k).name + (r.src === "train" ? " (entraînement)" : (r.src === "rec" ? " (enregistrement)" : ""))));
         top.appendChild(document.createTextNode(" son " + q(snd ? snd.label : "supprimé")));
+        if (r.short) top.appendChild(el("span", "chip short-chip", "⏱️ durée insuffisante"));
         var sub = el("div", "muted");
         var date = new Date(r.ts).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
         sub.textContent = date + ", " + r.n + " " + kindInfo(r.k).unit + " lus, " + r.e + (r.e > 1 ? " erreurs" : " erreur") + (r.t < DURATION - 1 ? ", en " + r.t + " s" : "");
         g.appendChild(top); g.appendChild(sub);
-        var sc = el("div", "score", String(r.mclm));
+        var sc = el("div", "score" + (r.short ? " short" : ""), String(r.mclm));
+        if (r.short) sc.title = "Durée insuffisante : non retenu dans les records";
         var del = el("button", "danger"); del.type = "button";
         confirmButton(del, "Supprimer", function () {
           data.results = data.results.filter(function (x) { return x.id !== r.id; });

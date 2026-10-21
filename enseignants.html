@@ -549,7 +549,7 @@ async function renderProgress(students,classes){
    const games=p.hi&&typeof p.hi==="object"?Object.entries(p.hi):[];
    const evaluations=readings.filter(r=>r&&r.src!=="train");
    const thrOf={s:Number($("thrS").value)||25,m:Number($("thrM").value)||20,t:Number($("thrT").value)||15};
-   const bestE={},bestT={};readings.forEach(r=>{if(!r||!r.sound||!thrOf[r.k])return;const key=r.sound+":"+r.k,v=Number(r.mclm)||0,box=r.src==="train"?bestT:bestE;if(!(key in box)||v>box[key])box[key]=v;});
+   const bestE={},bestT={};readings.forEach(r=>{if(!r||!r.sound||!thrOf[r.k]||r.short)return;const key=r.sound+":"+r.k,v=Number(r.mclm)||0,box=r.src==="train"?bestT:bestE;if(!(key in box)||v>box[key])box[key]=v;});
    const certified=Object.keys(bestE).filter(k=>bestE[k]>=thrOf[k.split(":").pop()]);
    const alone=Object.keys(bestT).filter(k=>bestT[k]>=thrOf[k.split(":").pop()]&&!certified.includes(k));
    const training=readings.filter(r=>r&&r.src==="train");
@@ -566,7 +566,7 @@ async function renderProgress(students,classes){
    const lines=[];
    if(row)lines.push("Dernière sauvegarde : "+new Date(row.updated_at).toLocaleString("fr-FR"));
    else lines.push("Aucune progression enregistrée sur le Zoo connecté.");
-   readings.slice().sort((a,b)=>(Number(b.ts)||0)-(Number(a.ts)||0)).slice(0,20).forEach(r=>{if(!r)return;const kind=r.k==="s"?"syllabes":r.k==="m"?"mots":r.k==="t"?"texte":"lecture";const when=Number.isFinite(Number(r.ts))?new Date(Number(r.ts)).toLocaleDateString("fr-FR"):"date inconnue";lines.push((r.src==="train"?"🟡 Entraînement":"🟢 Évaluation")+" · "+when+" · "+(r.sound||"son non précisé")+" · "+kind+" · "+fmt(r.n)+" lu(s) · "+fmt(r.e)+" erreur(s) · "+fmt(r.mclm)+" corrects/min")});
+   readings.slice().sort((a,b)=>(Number(b.ts)||0)-(Number(a.ts)||0)).slice(0,20).forEach(r=>{if(!r)return;const kind=r.k==="s"?"syllabes":r.k==="m"?"mots":r.k==="t"?"texte":"lecture";const when=Number.isFinite(Number(r.ts))?new Date(Number(r.ts)).toLocaleDateString("fr-FR"):"date inconnue";lines.push((r.src==="train"?"🟡 Entraînement":"🟢 Évaluation")+" · "+when+" · "+(r.sound||"son non précisé")+" · "+kind+" · "+fmt(r.n)+" lu(s) · "+fmt(r.e)+" erreur(s) · "+fmt(r.mclm)+" corrects/min"+(r.short?" · ⏱️ durée insuffisante (non retenu)":""))});
    games.forEach(([game,h])=>{lines.push("Jeu "+game+" : record "+(h&&h.best!=null?h.best:"non défini"))});
    details.textContent=lines.join("\n");
    btn.onclick=()=>{details.classList.toggle("hidden");const open=!details.classList.contains("hidden");btn.textContent=open?"Masquer":"Détails";btn.setAttribute("aria-expanded",String(open))};
