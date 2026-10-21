@@ -398,7 +398,7 @@
   .rb-title { font-family: "Press Start 2P", ui-monospace, monospace; font-size: 0.85rem; line-height: 1.4; }
   .rb-value { font-size: 1.7rem; font-weight: 800; line-height: 1.2; margin-top: 4px; }
   .rb-prev { font-size: 0.95rem; font-weight: 600; }
-  .score-line { margin: 16px 0 0; text-align: center; font-weight: 600; color: #c4b5fd; }
+  .score-line { margin: 16px 0 0; text-align: center; font-weight: 600; color: var(--ink); }
   @media (prefers-reduced-motion: no-preference) {
     .a-bulbs i:nth-child(odd) { animation: arc-a 0.9s steps(1) infinite; }
     .a-bulbs i:nth-child(even) { animation: arc-b 0.9s steps(1) infinite; }
@@ -911,6 +911,7 @@
   body.playing .layout { display: block; }
   body.playing #v-jeu .arcade-screen { min-height: calc(100vh - 16px); min-height: calc(100dvh - 16px); margin: 0; display: flex; flex-direction: column; border-radius: 16px; }
   body.playing #game-area { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+  body.playing #game-area > * { width: 100%; }
   body.playing .stack-area { height: min(calc(100dvh - 245px), 640px); min-height: 280px; max-width: 560px; }
   body.playing .balloon-sky { height: min(calc(100dvh - 320px), 640px); min-height: 260px; max-width: 720px; width: 100%; }
   body.playing .catch-area { height: min(calc(100dvh - 230px), 620px); min-height: 260px; }
@@ -918,6 +919,14 @@
   body.playing .mem-grid { max-width: min(680px, 90vh); }
   body.playing .order-grid { max-width: min(560px, 80vh); }
   body.playing .safari-wrap { max-width: min(100%, calc((100vh - 230px) * 2.25)); }
+  /* Fin de partie : fenêtre au milieu de l’écran */
+  .game-result { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: 16px; background: rgba(15, 18, 28, .55); }
+  .game-result-card { width: min(440px, 100%); max-height: calc(100dvh - 32px); overflow: auto; padding: 22px 20px 20px; text-align: center; color: var(--ink); background: var(--card); border-radius: 20px; box-shadow: 0 20px 50px rgba(0, 0, 0, .35); }
+  .game-result .gr-title { margin: 0 0 6px; font-family: Fredoka, Figtree, system-ui, sans-serif; font-size: 1.3rem; }
+  .game-result .gr-msg { margin: 0 0 4px; font-weight: 600; line-height: 1.35; }
+  .game-result .record-banner { margin: 12px auto 0; }
+  .game-result .score-line { font-size: 1.1rem; }
+  .game-result .gr-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 18px; }
   /* Téléphone : pas d'avatar ni de Cartes / Progrès ; boutique et salle de jeux tiennent sur un écran */
   @media (max-width: 600px) {
     body.mode-student #panel-left .avatar-profile, body.mode-student #btn-logout { display: none; }
@@ -2165,6 +2174,7 @@
     if (STUDENT_VIEWS.indexOf(v) >= 0 && ses.role !== "student") v = "login";
     if (TEACHER_VIEWS.indexOf(v) >= 0 && ses.role !== "teacher") v = "login";
     if (v !== "jeu") { stopGame(); gameFullscreen(false); }
+    closeGameResult();
     document.body.classList.toggle("playing", v === "jeu");
     if (v !== "roue") wheelCleanup();
     if (v !== "eleves") $("codes-out").innerHTML = "";
@@ -3031,6 +3041,29 @@
     renderPanels();
     showScoreResult(sid, area, id, value, shown);
   }
+  function closeGameResult() { var o = document.querySelector(".game-result"); if (o) o.parentNode.removeChild(o); }
+  /* Fenêtre de fin de partie, au milieu de l’écran : message (gagné ou pas), record, Rejouer / Retour aux jeux */
+  function gameResultOverlay(sid, id, content) {
+    closeGameResult();
+    var ov = el("div", "game-result"); ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true");
+    var card = el("div", "game-result-card");
+    card.appendChild(el("h2", "gr-title", gameName(id)));
+    card.appendChild(el("p", "gr-msg", $("game-msg").textContent));
+    card.appendChild(content);
+    var acts = el("div", "gr-actions");
+    if (data.reward && credits(sid) > 0 && !limitReached(sid)) {
+      var again = el("button", "primary", "🔁 Rejouer"); again.type = "button";
+      again.addEventListener("click", function () { closeGameResult(); playGame(id, sid); });
+      acts.appendChild(again);
+    }
+    var back = el("button", "secondary", "Retour aux jeux"); back.type = "button";
+    back.addEventListener("click", function () { closeGameResult(); show("jeux"); });
+    acts.appendChild(back);
+    card.appendChild(acts);
+    ov.appendChild(card);
+    document.body.appendChild(ov);
+    var first = acts.querySelector("button"); if (first) first.focus({ preventScroll: true });
+  }
   function showScoreResult(sid, area, id, value, res) {
     var g = gameInfo(id), abs = res.abs, prevAbs = res.prevAbs;
     if (res.record) {
@@ -3046,13 +3079,13 @@
       gl.appendChild(document.createTextNode(" +" + gain + (gain > 1 ? " pièces d’or" : " pièce d’or")));
       box.appendChild(gl);
       if (res.offline) box.appendChild(el("div", "rb-prev", "Pas de réseau : le record de la classe sera vérifié plus tard."));
-      area.appendChild(box);
+      gameResultOverlay(sid, id, box);
       var reduce = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
       if (!reduce) { confetti(abs ? 140 : 80, abs); setTimeout(function () { var c = $("confetti"); if (c) c.innerHTML = ""; }, 5000); }
       (abs ? [523, 659, 784, 1047, 784, 1047, 1319, 1568] : [523, 659, 784, 1047, 1319, 1568]).forEach(function (f, k) { tone(f, k * 0.08, 0.22, "triangle", 0.15); });
     } else {
       var h = hiOf(sid, id);
-      area.appendChild(el("p", "score-line", "Ton score : " + g.fmt(value) + ". Ton record : " + (h.best !== null ? g.fmt(h.best) : "à établir") + "."));
+      gameResultOverlay(sid, id, el("p", "score-line", "Ton score : " + g.fmt(value) + ". Ton record : " + (h.best !== null ? g.fmt(h.best) : "à établir") + "."));
     }
     setGameRecordLine(sid, id);
   }
