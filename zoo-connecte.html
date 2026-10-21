@@ -5923,7 +5923,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       setMode();show("home");document.documentElement.classList.remove("booting");
       var bar=document.createElement("div");
       bar.id="cloud-status";bar.className="cs-ok";bar.style.cssText="position:fixed;bottom:10px;left:10px;z-index:9999;background:#372465;color:white;border-radius:12px;padding:8px 12px;font:13px system-ui;box-shadow:0 3px 12px #0005";
-      bar.append(document.createTextNode("☁️ Profil connecté · "+st.nickname));cloudStatusNode=bar;bar.dataset.nickname=st.nickname;
+      bar.append(document.createTextNode("☁️ Connecté(e) · "+st.nickname));cloudStatusNode=bar;bar.dataset.nickname=st.nickname;
       refreshClassRecords(true);claimGifts(true);
       var link=document.createElement("a");link.href="eleve.html";link.textContent=" · Déconnexion";link.style.color="#ffe37c";link.onclick=function(ev){ev.preventDefault();logout()};bar.append(link);document.body.append(bar);
     } catch(e) {
