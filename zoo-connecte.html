@@ -941,6 +941,20 @@
   body.listen-focus .listen-choice { min-height: clamp(84px, 16vh, 150px); font-size: clamp(2.2rem, 6vh, 3.4rem); }
   body.listen-focus .listen-msg { font-size: 1.15rem; }
   #v-jeux .tk-today { margin: 0 0 10px; padding: 6px 12px; display: inline-block; font-size: .92rem; font-weight: 700; color: var(--ink); background: var(--bg); border: 1.5px solid var(--line); border-radius: 999px; }
+  /* LIRE / ÉCOUTER : choix par cartes */
+  .lire-choice { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin: 6px 0 4px; }
+  .lire-big { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 170px; padding: 18px 10px; border-radius: 20px; border: 2px solid var(--line); background: var(--card); color: var(--ink); font-weight: 800; }
+  .lire-big .lb-ico { font-size: 3rem; line-height: 1; }
+  .lire-big .lb-txt { font-size: 1.35rem; }
+  .lire-big small { font-weight: 600; color: var(--muted); }
+  .lire-big.lire-train { border-color: #4a6fd1; background: linear-gradient(145deg, #e3ebff, var(--card)); }
+  .lire-big.lire-eval { border-color: #e2b23a; background: linear-gradient(145deg, #fff3cf, var(--card)); }
+  .lire-big:hover { transform: translateY(-2px); }
+  .lire-top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 0 0 12px; }
+  .lire-sub { margin: 0; font-weight: 700; }
+  .listen-next { grid-template-columns: minmax(150px, 220px); justify-content: center; margin: 12px 0 4px; }
+  .listen-next .zoo-card { padding: 18px 10px 14px; }
+  @media (max-width: 600px) { .lire-big { min-height: 130px; } .lire-big .lb-ico { font-size: 2.4rem; } .lire-big .lb-txt { font-size: 1.1rem; } }
   /* Téléphone : pas d'avatar ni de Cartes / Progrès ; boutique et salle de jeux tiennent sur un écran */
   @media (max-width: 600px) {
     body.mode-student #panel-left .avatar-profile, body.mode-student #btn-logout { display: none; }
@@ -1098,6 +1112,7 @@
   <section id="v-lecture">
     <div class="card" id="setup">
       <h2 id="setup-title">Qui lit ?</h2>
+      <div id="lire-menu" hidden></div>
       <div class="field" id="fld-goal" hidden>
         <label id="lb-goal">Que veux-tu faire ?</label>
         <span class="seg" id="seg-goal" role="group" aria-labelledby="lb-goal">
@@ -1132,11 +1147,11 @@
           <label for="sel-student">Élève</label>
           <select id="sel-student"></select>
         </div>
-        <div class="field">
+        <div class="field" id="fld-sound">
           <label for="sel-sound">Son</label>
           <select id="sel-sound"></select>
         </div>
-        <div class="field">
+        <div class="field" id="fld-kind">
           <label id="lb-kind">Niveau</label>
           <span class="seg" id="seg-kind" role="group" aria-labelledby="lb-kind">
             <button type="button" data-kind="s" aria-pressed="true">Syllabes</button>
@@ -2217,7 +2232,7 @@
     });
     if (v === "login") renderLogin();
     if (v === "home") renderHome();
-    if (v === "lecture") renderSetup();
+    if (v === "lecture") { lireReset(); renderSetup(); }
     if (v === "cartes") renderCartes();
     if (v === "reconnues") renderReconnues();
     if (v === "boutique") renderBoutique();
@@ -2345,6 +2360,82 @@
     var b = $("btn-open");
     if (!$("setup-form").hidden && data.sel.sound && hasContent(data.sel.sound, data.sel.kind) && !b.disabled) b.click();
   }
+  /* LIRE pour l’élève : « S’entraîner » ou « Valider un son », puis une carte d’animal par son */
+  var LR = { goal: null, picked: false };
+  function lireReset() { LR.goal = null; LR.picked = false; }
+  function fullyCertified(sid, id) { return KINDS.every(function (k) { return !hasContent(id, k.k) || isValid(sid, id, k.k); }); }
+  function lireKind(sid, id, goal) {
+    var test = goal === "eval" ? isValid : isPassed, kind = null;
+    KINDS.forEach(function (k) { if (kind === null && hasContent(id, k.k) && !test(sid, id, k.k)) kind = k.k; });
+    if (kind === null) KINDS.forEach(function (k) { if (kind === null && hasContent(id, k.k)) kind = k.k; });
+    return kind;
+  }
+  function lireSounds(sid, goal) {
+    var av = availSounds(), nx = nextStep(sid), nextId = nx ? nx.sound : null, idx = -1;
+    av.forEach(function (s, i) { if (s.id === nextId) idx = i; });
+    if (goal === "train") return av.filter(function (s) { return isUnlocked(sid, s.id) && (soundValidated(sid, s.id) || s.id === nextId); });
+    return av.filter(function (s, i) { return isUnlocked(sid, s.id) && (idx < 0 || i <= idx) && !fullyCertified(sid, s.id); });
+  }
+  function lireLaunch(goal, sound, kind) {
+    if (!sound || !kind) return;
+    data.sel.sid = ses.sid; data.sel.sound = sound; data.sel.kind = kind; save();
+    ses.goal = goal; LR.goal = goal; LR.picked = true;
+    if (goal === "train") { ses.mode = "live"; $("btn-open").disabled = false; $("btn-open").click(); }
+    else renderSetup();
+  }
+  function renderLireMenu(sid) {
+    var lm = $("lire-menu");
+    lm.innerHTML = "";
+    if (!LR.goal) {
+      var row = el("div", "lire-choice");
+      var tr = el("button", "lire-big lire-train", ""); tr.type = "button";
+      tr.appendChild(el("span", "lb-ico", "🏋️")); tr.appendChild(el("span", "lb-txt", "S’entraîner"));
+      tr.appendChild(el("small", "", "Autant que tu veux"));
+      tr.addEventListener("click", function () { LR.goal = "train"; renderSetup(); });
+      var va = el("button", "lire-big lire-eval", ""); va.type = "button";
+      va.appendChild(el("span", "lb-ico", "🏅")); va.appendChild(el("span", "lb-txt", "Valider un son"));
+      va.appendChild(el("small", "", "Avec ton maître(sse)"));
+      va.addEventListener("click", function () { LR.goal = "eval"; renderSetup(); });
+      row.appendChild(tr); row.appendChild(va); lm.appendChild(row);
+      return;
+    }
+    var goal = LR.goal, list = lireSounds(sid, goal);
+    var top = el("div", "lire-top");
+    var back = el("button", "secondary", "← Retour"); back.type = "button";
+    back.addEventListener("click", function () { lireReset(); renderSetup(); });
+    top.appendChild(back);
+    top.appendChild(el("p", "lire-sub", goal === "train" ? "🏋️ Choisis une carte pour t’entraîner." : "🏅 Choisis le son à valider."));
+    lm.appendChild(top);
+    if (!list.length) { lm.appendChild(el("p", "instruction", goal === "train" ? "Aucun son pour l’instant." : "Bravo ! Tous tes sons sont déjà certifiés 🏅.")); return; }
+    var grid = el("div", "zoo-grid lire-grid");
+    list.forEach(function (s) {
+      var total = 0, got = 0, cert = 0;
+      KINDS.forEach(function (k) { if (hasContent(s.id, k.k)) { total++; if (isPassed(sid, s.id, k.k)) got++; if (isValid(sid, s.id, k.k)) cert++; } });
+      var kind = lireKind(sid, s.id, goal), ch = charFor(s.id);
+      var b = el("button", "zoo-card" + (cert ? " certified" : "")); b.type = "button";
+      if (cert) b.appendChild(el("span", "cert-stamp", cert === total ? "🏅 Certifiée" : "🏅 " + cert + "/" + total));
+      b.appendChild(buildPet({ got: got, total: total, cert: cert, locked: false }, ch));
+      b.appendChild(el("div", "son", s.label));
+      var stars = el("div", "mini-stars"); stars.setAttribute("aria-hidden", "true");
+      for (var i = 0; i < total; i++) stars.appendChild(el("span", "star " + (i < got ? "on" : "off"), "★"));
+      b.appendChild(stars);
+      b.appendChild(el("div", "cap", (goal === "eval" ? "À valider : " : "→ ") + kindInfo(kind).name.toLowerCase()));
+      b.setAttribute("aria-label", s.label + " : " + kindInfo(kind).name.toLowerCase());
+      b.addEventListener("click", function () { lireLaunch(goal, s.id, kind); });
+      grid.appendChild(b);
+    });
+    lm.appendChild(grid);
+  }
+  function renderLirePicked() {
+    var lm = $("lire-menu"), snd = soundById(data.sel.sound);
+    lm.innerHTML = "";
+    var top = el("div", "lire-top");
+    var back = el("button", "secondary", "← Choisir une autre carte"); back.type = "button";
+    back.addEventListener("click", function () { ses.evalTarget = null; LR.picked = false; renderSetup(); });
+    top.appendChild(back);
+    top.appendChild(el("p", "lire-sub", "🏅 Valider : " + kindInfo(data.sel.kind).name.toLowerCase() + " du son " + q(snd ? snd.label : "") + "."));
+    lm.appendChild(top);
+  }
   /* Écran de départ */
   function renderSetup() {
     var asStudent = ses.role === "student";
@@ -2353,7 +2444,19 @@
     $("btn-open").textContent = ses.goal === "eval" ? "Passer l’évaluation" : "Préparer la lecture";
     $("btn-back").textContent = asStudent ? "Changer d’étape" : "Changer d’élève ou d’étape";
     var picker = asStudent && !ses.viaTeacher;
-    $("fld-goal").hidden = !picker;
+    var lm = $("lire-menu");
+    lm.hidden = !picker;
+    $("fld-sound").hidden = picker; $("fld-kind").hidden = picker;
+    if (picker) {
+      if (ses.evalTarget && soundById(ses.evalTarget.sound)) { data.sel.sound = ses.evalTarget.sound; data.sel.kind = ses.evalTarget.kind; LR.goal = "eval"; LR.picked = true; ses.goal = "eval"; }
+      if (!LR.picked) {
+        $("fld-goal").hidden = true; $("fld-mode").hidden = true; $("gate").hidden = true; $("setup-empty").hidden = true; $("setup-form").hidden = true;
+        renderLireMenu(ses.sid);
+        return;
+      }
+      renderLirePicked();
+    }
+    $("fld-goal").hidden = true;
     if (picker) {
       setPressed($("seg-goal"), "data-goal", ses.goal);
       $("goal-hint").textContent = ses.goal === "train"
@@ -2809,6 +2912,7 @@
     $("session").hidden = true;
     $("setup").hidden = false;
     if (suggest) { applySuggestion(); save(); }
+    lireReset();
     renderSetup();
   }
 
@@ -3593,25 +3697,33 @@
     card.appendChild(el("h2", "", "👂 Écouter les sons"));
     if (!ls.length) { card.appendChild(el("p", "instruction", "Aucun son disponible pour le moment.")); body.appendChild(card); return; }
     card.appendChild(el("p", "instruction", (listenUsesSyl(sid, soundById(listenSelOk(sid)) || {}) ? "Une voix dit une syllabe. Touche comment elle s’écrit : il y en a une ou deux." : "Une voix dit un son. Touche les façons de l’écrire : il y en a une ou deux.") + " Réussis " + nb(cfg.passes, "fois", "fois") + " pour passer au son suivant."));
-    LS.sound = listenSelOk(sid);
-    var field = el("div", "field"), lab = el("label", "", "Son"), sel = document.createElement("select");
-    lab.setAttribute("for", "sel-listen"); sel.id = "sel-listen";
-    ls.forEach(function (s) {
-      var o = document.createElement("option"), unl = listenUnlocked(sid, s.id), pv = listenPrev(s.id);
-      o.value = s.id; o.disabled = !unl;
-      o.textContent = unl ? s.label + (listenDone(sid, s.id) ? "  ✓ réussi" : "  (" + (L.passes[s.id] || 0) + " sur " + listenNeed(s.id) + ")")
-                          : s.label + "  (verrouillé : réussis " + (pv ? pv.label : "le son d’avant") + ")";
-      sel.appendChild(o);
-    });
-    sel.value = LS.sound;
-    sel.addEventListener("change", function () { LS.sound = sel.value; renderAudition(); });
-    field.appendChild(lab); field.appendChild(sel); card.appendChild(field);
-    var cur = soundById(LS.sound);
-    card.appendChild(el("p", "hint", listenDone(sid, LS.sound) ? "Ce son est réussi. Tu peux t’entraîner encore, sans nouvelle pièce."
-      : "Réussites : " + (L.passes[LS.sound] || 0) + " sur " + listenNeed(LS.sound) + ". " + cfg.questions + " questions, " + nb(cfg.maxErrors, "erreur permise", "erreurs permises") + "." + (listenWordTurn(sid, LS.sound) ? " Cette fois, ce sont des mots à retrouver !" : "")));
-    var go = el("button", "primary big-btn", "Commencer"); go.type = "button"; go.disabled = !cur;
-    go.addEventListener("click", function () { listenStart(sid, LS.sound); });
-    card.appendChild(go);
+    var pick = LS.pick && soundById(LS.pick) && listenUnlocked(sid, LS.pick) ? LS.pick : null;
+    LS.pick = null;
+    var nxt = listenNext(sid);
+    LS.sound = pick || (nxt ? nxt.id : null);
+    if (!LS.sound) {
+      card.appendChild(el("p", "instruction", "Bravo ! Tous les sons sont réussis 🎉 Tu peux les rejouer dans « Mes cartes reconnues »."));
+      var toRec = el("button", "secondary", "👂 Mes cartes reconnues"); toRec.type = "button";
+      toRec.addEventListener("click", function () { goTo("reconnues"); });
+      card.appendChild(toRec);
+      body.appendChild(card);
+      return;
+    }
+    var cur = soundById(LS.sound), done = listenDone(sid, LS.sound), need = listenNeed(LS.sound), n = Math.min(L.passes[LS.sound] || 0, need), ch = charFor(LS.sound);
+    card.appendChild(el("p", "hint", cfg.questions + " questions, " + nb(cfg.maxErrors, "erreur permise", "erreurs permises") + "." + (done ? " Ce son est déjà réussi : tu t’entraînes, sans nouvelle pièce." : "")));
+    card.appendChild(el("p", "lire-sub", done ? "👂 Touche la carte pour rejouer." : "👂 Ton prochain son : touche la carte pour commencer !"));
+    var grid = el("div", "zoo-grid listen-next");
+    var b = el("button", "zoo-card" + (done ? " heard" : "")); b.type = "button";
+    b.appendChild(buildPet(done ? { got: 1, total: 1, locked: false } : { got: 0, total: 1, locked: false }, ch));
+    b.appendChild(el("div", "son", cur.label));
+    var stars = el("div", "mini-stars"); stars.setAttribute("aria-hidden", "true");
+    for (var si = 0; si < need; si++) stars.appendChild(el("span", "star " + (done || si < n ? "on" : "off"), "★"));
+    b.appendChild(stars);
+    b.appendChild(el("div", "cap", listenWordTurn(sid, LS.sound) ? "Cette fois, des mots !" : (done ? "👂 " + cap(ch.nom) : n + " sur " + need)));
+    b.setAttribute("aria-label", "Commencer : " + cur.label);
+    b.addEventListener("click", function () { listenStart(sid, LS.sound); });
+    grid.appendChild(b);
+    card.appendChild(grid);
     body.appendChild(card);
   }
   function listenStart(sid, soundId) {
@@ -3745,7 +3857,7 @@
       row.appendChild(nb2);
     }
     var back = el("button", "secondary", "Choisir un son"); back.type = "button";
-    back.addEventListener("click", function () { LS.sound = id; renderAudition(); });
+    back.addEventListener("click", function () { LS.pick = id; renderAudition(); });
     row.appendChild(back);
     card.appendChild(row);
     body.appendChild(card);
@@ -3805,7 +3917,7 @@
     var acts = el("div", "home-actions");
     if (lx) {
       var lgo = el("button", "primary big-btn listen-go", "👂 J’écoute"); lgo.type = "button";
-      lgo.addEventListener("click", function () { LS.sound = lx.id; goTo("audition"); });
+      lgo.addEventListener("click", function () { LS.pick = lx.id; goTo("audition"); });
     }
     if (nx) {
       var snd = soundById(nx.sound);
@@ -3815,7 +3927,7 @@
       txt.appendChild(el("p", "", "Ta prochaine étape : " + kindInfo(nx.kind).name.toLowerCase() + " du son " + q(snd.label) + "."));
       if (lx) txt.appendChild(el("p", "home-listen-line", "Prochaine écoute : son " + q(lx.label) + "."));
       var go = el("button", "primary big-btn", "📖 Je lis"); go.type = "button";
-      go.addEventListener("click", function () { data.sel.sound = nx.sound; data.sel.kind = nx.kind; save(); goTo("lecture"); });
+      go.addEventListener("click", function () { goTo("lecture"); if (S.phase !== "running") lireLaunch("train", nx.sound, nx.kind); });
       acts.appendChild(go);
       if (lx) acts.appendChild(lgo);
       txt.appendChild(acts);
@@ -3913,7 +4025,7 @@
       b.appendChild(stars);
       b.appendChild(el("div", "cap", !unl ? "verrouillé" : (done ? "👂 " + cap(ch.nom) : (n ? n + " sur " + need : "à écouter"))));
       b.setAttribute("aria-label", x.label + " : " + (!unl ? "verrouillé" : (done ? "son reconnu" : n + " réussite" + (n > 1 ? "s" : "") + " sur " + need)));
-      b.addEventListener("click", function () { LS.sound = x.id; goTo("audition"); });
+      b.addEventListener("click", function () { LS.pick = x.id; goTo("audition"); });
       grid.appendChild(b);
     });
     var gc = el("div", "card"); gc.appendChild(grid);
@@ -5492,6 +5604,7 @@
     data.sel.sid = sid; data.sel.sound = sound; data.sel.kind = kind; save();
     if (ses.role === "teacher") enterStudent(sid, true, true);
     show("lecture");
+    if (ses.role === "student" && !ses.viaTeacher) lireLaunch("train", sound, lireKind(sid, sound, "train"));
   }
 
   /* Récapitulatif, courbe et historique : partagés entre le maître(sse) et l’élève */
