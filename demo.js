@@ -274,7 +274,7 @@
   var zooDemo = window.zooDemo = {
     state: function () { return S; },
     save: persist,
-    restart: function () { try { sessionStorage.removeItem(KEY); } catch (e) {} location.href = (onTeacher ? "enseignants.html" : "zoo-connecte.html") + "?demo=1&new=1"; },
+    restart: function () { try { sessionStorage.removeItem(KEY); } catch (e) {} location.href = "zoo-connecte.html?demo=1&new=1"; },   /* toujours depuis le Zoo de Léo, avec la visite au début */
     exit: function (to) {
       try { sessionStorage.removeItem(KEY); sessionStorage.removeItem("zoo_student_token"); sessionStorage.removeItem("zoo_student_name"); sessionStorage.removeItem("zoo_demo_tour"); } catch (e) {}
       location.href = to || (onTeacher ? "enseignants.html" : "eleve.html");
@@ -310,6 +310,6 @@
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bar); else bar();
   /* Visite guidée (bulles pas à pas) */
-  var tour = document.createElement("script"); tour.src = "demo-tour.js?v=2"; tour.defer = true;
+  var tour = document.createElement("script"); tour.src = "demo-tour.js?v=3"; tour.defer = true;
   (document.head || document.documentElement).appendChild(tour);
 })();

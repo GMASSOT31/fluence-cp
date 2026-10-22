@@ -24,7 +24,7 @@
 
   var STEPS = [
     { page: "zoo", center: true, title: "Bienvenue dans la démo 👋",
-      text: "Vous êtes Léo, élève de CP dans la classe « CP des Tigres ». En 3 minutes : son Zoo de Lecture, puis votre espace enseignant. Rien n'est enregistré.",
+      text: "Vous êtes Léo, élève de CP dans la classe « CP des Tigres ». Rien n'est enregistré.",
       primary: "C'est parti !", secondary: "Explorer seul" },
     { page: "zoo", enter: function () { go("home"); }, target: ".home-hero", title: "Une seule chose à faire",
       text: "Chaque jour, l'élève voit sa prochaine action. Le bouton 🔊 lit la consigne à voix haute, pour ceux qui ne lisent pas encore." },
@@ -47,7 +47,7 @@
       text: "Objectif atteint : l'étape est certifiée 🏅. Les objectifs (syllabes, mots, texte) se règlent dans votre espace.",
       primary: "Enregistrer",
       run: async function () { click("#btn-save"); await wait(function () { return $(".evo-acts:not([hidden])"); }, 6000); } },
-    { page: "zoo", target: ".evo-card", title: "L'animal évolue",
+    { page: "zoo", target: ".evo-card", glass: true, title: "L'animal évolue",
       text: "Chaque son est un animal : l'œuf éclot, puis l'animal grandit à chaque étape certifiée. Les élèves ont envie de retrouver leur zoo.",
       primary: "Lancer la roue",
       run: async function () { click(".evo-acts button"); await wait(function () { return visible($("#btn-spin")); }); } },
@@ -56,9 +56,9 @@
       primary: "Faire tourner",
       run: async function () { var b = $("#btn-spin"); if (visible(b) && !b.disabled) b.click(); await wait(function () { return visible($("#btn-wheel-done")); }, 10000); await sleep(1200); } },
     { page: "zoo", enter: function () { go("jeux"); }, target: ".cabs", title: "La salle d'arcade",
-      text: "8 jeux pour dépenser ses parties. 1 pièce si l'objectif est atteint, 3 pour un record personnel, 10 si on prend le record d'un camarade." },
+      text: "8 jeux favorisant le renforcement positif de l'élève, avec des records personnels et collectifs de classe. C'est l'émulation ! Mais seulement après le travail de lecture !" },
     { page: "zoo", enter: function () { go("audition"); }, target: "#audition-body .zoo-card", title: "J'écoute",
-      text: "Le deuxième exercice : l'élève entend un son et retrouve la bonne syllabe, sans avoir besoin de lire la consigne. Essayez-le !",
+      text: "Le deuxième exercice : l'élève entend le son, la syllabe ou le mot, et doit retrouver son écriture. Essayez-le !",
       primary: "Essayer l'écoute",
       run: async function () {
         var card = $("#audition-body .zoo-card"); if (card) card.click();
@@ -80,11 +80,11 @@
     { page: "teacher", enter: function () { tab("progression"); }, target: function () {
         return Array.prototype.filter.call(document.querySelectorAll(".progress-row"), function (r) { return /Léo/.test(r.textContent); })[0] || $(".progress-row") || $("#progressList");
       }, title: "Le suivi de la classe",
-      text: "Pour chaque élève : étapes certifiées 🏅, entraînements, dernière fluence, pièces. Léo vient d'être certifié." },
+      text: "Un suivi détaillé de chaque élève, avec le détail de ses scores de fluence et de son activité d'entraînement et de jeux." },
     { page: "teacher", enter: function () { tab("eleves"); click('[data-sub-btn="ajout"]'); }, target: "#studentForm", title: "Ajouter vos élèves",
       text: "Un pseudo suffit : le code secret de départ est 1234. « Et maintenant ? » imprime les fiches de connexion à découper (PDF)." },
     { page: "teacher", enter: function () { tab("reglages"); }, target: '.sub-picker[data-section="reglages"]', title: "Vos réglages",
-      text: "Modifiez les exercices, l'ordre des sons et l'évaluation. Ils ne s'appliquent qu'à vos élèves." },
+      text: "Vos réglages pédagogiques : vos progressions personnelles, faciles à paramétrer, les exercices à personnaliser à l'envie, ainsi que l'ordre des sons étudiés (par défaut, la progression de la méthode PIANO CP)." },
     { page: "teacher", center: true, title: "C'est tout ! 🎉",
       text: "Créez votre compte gratuit pour votre classe : 3 élèves pour commencer, davantage sur simple demande.",
       primary: "Créer mon compte", secondary: "Continuer à explorer", third: "Recommencer la démo",
@@ -100,6 +100,7 @@
     "#tour-spot{position:fixed;z-index:60;border-radius:16px;box-shadow:0 0 0 4px #ffe37c,0 0 0 9999px rgba(10,8,25,.5);pointer-events:none;transition:all .3s ease}" +
     "#tour-bubble{position:fixed;z-index:61;width:min(380px,calc(100vw - 24px));background:#fff;color:#1b2433;border-radius:18px;padding:16px 18px;" +
     "box-shadow:0 14px 40px rgba(0,0,0,.35);font:15px/1.45 Figtree,system-ui,sans-serif;transition:top .3s ease,left .3s ease}" +
+    "#tour-bubble.tb-glass{background:rgba(255,255,255,.62);box-shadow:0 10px 30px rgba(0,0,0,.25)}#tour-bubble.tb-glass:hover{background:rgba(255,255,255,.95)}" +
     "#tour-bubble .tb-step{font-size:12px;font-weight:800;color:#7960d4;text-transform:uppercase;letter-spacing:.04em}" +
     "#tour-bubble h3{margin:4px 0 6px;font-size:18px;color:#1b2433}#tour-bubble p{margin:0 0 12px}" +
     "#tour-bubble .tb-acts{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;align-items:center}" +
@@ -162,6 +163,7 @@
     if (s.enter) { try { s.enter(); } catch (e) {} }
     if (s.target && !s.center) await wait(function () { return targetOf(s); }, 3000);
     bubble.innerHTML = "";
+    bubble.classList.toggle("tb-glass", !!s.glass);
     var st = document.createElement("div"); st.className = "tb-step"; st.textContent = T.step === 0 ? "Visite guidée" : "Étape " + T.step + " sur " + LAST;
     var h = document.createElement("h3"); h.textContent = s.title;
     var p = document.createElement("p"); p.textContent = s.text;
