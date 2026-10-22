@@ -100,7 +100,6 @@ main{max-width:1050px}
 #classes .class-item>span:first-child{font-weight:700;color:#1b2433}
 .rec-warn{margin:10px 0 6px;padding:12px 14px;border-radius:12px;background:#fff6e0;border:2px solid #f0c25a;color:#4a3410;line-height:1.45}.rec-warn.flash{animation:recflash 1.2s ease 2}@keyframes recflash{50%{background:#ffe08a}}
 .class-created{margin-top:14px;padding:14px 16px;border-radius:14px;background:#eef7ee;border:2px solid #9fd3a4}.class-created p{margin:0 0 10px;font-weight:700}
-.pdf-ready{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0 14px;padding:14px;border-radius:14px;background:#efeaff;border:2px solid #cfc4f5}.pdf-ready .muted{flex-basis:100%;margin:0}.pdf-btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:10px 16px;border-radius:12px;border:0;background:#6d5dfc;color:#fff;font:800 1rem Figtree,system-ui,sans-serif;text-decoration:none;cursor:pointer}.pdf-btn:hover{background:#5a49e6}
 .quota-full{margin:10px 0 0;padding:12px 14px;border-radius:12px;background:#fdecec;border:2px solid #e8a3a3;color:#5a1d1d;font-weight:700}.seat-highlight{border:2px solid #7960d4;box-shadow:0 0 0 4px #7960d422}
 .next-steps{margin-top:20px;padding:16px 18px;border-radius:15px;background:#eef7ee;border:2px solid #9fd3a4}.next-steps h3{margin:0 0 8px}.next-steps ol{margin:0;padding-left:20px;line-height:1.6}.next-steps li{margin:6px 0}.next-steps .actions{margin-top:6px}.link-btn{background:none;border:0;padding:0;color:#2d6fd0;font:inherit;font-weight:700;text-decoration:underline;cursor:pointer;box-shadow:none}
 .class-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:16px}.class-head h4.class-tag{margin:0;font-size:1rem;padding:5px 12px;border-radius:10px;border-left:5px solid var(--cg);background:color-mix(in srgb,var(--cg) 12%,white)}.class-head .actions button{padding:6px 12px;font-size:.9rem}
@@ -352,25 +351,13 @@ function loadJsPdf(){
  return jsPdfLoading;
 }
 function pdfText(t){return String(t||"").normalize("NFC").replace(/[^\x20-\x7E\u00A0-\u00FF\u0152\u0153\u2019\u20AC]/g,"").trim();}
-/* Sous le message : boutons pour ouvrir, télécharger ou partager (puis imprimer) le PDF, à l’endroit où l’on regarde */
-function showPdfReady(msgId,blob,file,phone){
- const old=$("pdfReady");if(old)old.remove();
- const url=URL.createObjectURL(blob),box=document.createElement("div");box.id="pdfReady";box.className="pdf-ready";
- const mk=(label,href,dl)=>{const a=document.createElement("a");a.className="pdf-btn";a.textContent=label;a.href=href;if(dl){a.download=file}else{a.target="_blank";a.rel="noopener";}return a;};
- box.append(mk("📄 Ouvrir le PDF",url,false),mk("⬇️ Télécharger",url,true));
- try{const f=new File([blob],file,{type:"application/pdf"});
-  if(navigator.canShare&&navigator.canShare({files:[f]})){const b=document.createElement("button");b.type="button";b.className="pdf-btn";b.textContent="📤 Partager / Imprimer";
-   b.onclick=()=>navigator.share({files:[f],title:"Fiches de connexion"}).catch(()=>{});box.prepend(b);}}catch(e){}
- const tip=document.createElement("p");tip.className="muted";
- tip.textContent=phone?"Sur téléphone : appuie sur « Partager / Imprimer » puis choisis « Imprimer », ou ouvre le PDF depuis le dossier Téléchargements.":"Le PDF est aussi enregistré dans tes téléchargements. Imprime en A4, puis découpe les cartes.";
- box.append(tip);
- $(msgId).after(box);box.scrollIntoView({block:"center",behavior:"smooth"});
-}
 async function printLoginCards(c,msgId,btn){
  const kids=allStudents.filter(s=>s.class_id===c.id&&!s.ghosted_at);
  if(!kids.length){msg(msgId,"Aucun élève actif dans « "+c.name+" ».",true);return;}
  if(!c.access_code){msg(msgId,"Cette classe n’a pas encore de code : change-le dans Réglages généraux › Mots de passe.",true);return;}
  if(btn)btn.disabled=true;
+ /* Un seul geste : la fenêtre est ouverte tout de suite (le navigateur l’autorise pendant le clic), puis elle affiche le PDF une fois prêt */
+ let win=null;try{win=window.open("","_blank");if(win)win.document.write("<p style=\"font:20px system-ui;padding:24px\">Création des fiches…</p>");}catch(e){win=null;}
  try{
   const JsPDF=await loadJsPdf();
   const doc=new JsPDF({unit:"mm",format:"a4",orientation:"portrait"});
@@ -392,11 +379,11 @@ async function printLoginCards(c,msgId,btn){
    doc.text(pdfText("Classe : "+c.name).slice(0,60),x+9,y+H-6);doc.text("Garde cette carte !",x+W-9,y+H-6,{align:"right"});
   });
   const file="fiches-connexion-"+(pdfText(c.name).normalize("NFD").replace(/[^A-Za-z0-9]+/g,"-").replace(/^-|-$/g,"").toLowerCase()||"classe")+".pdf";
-  const blob=doc.output("blob"),phone=matchMedia("(pointer:coarse)").matches||/Android|iPhone|iPad/i.test(navigator.userAgent);
-  if(!phone)doc.save(file);   /* ordinateur : téléchargement direct ; téléphone : on passe par des boutons bien visibles (un téléchargement silencieux passe inaperçu) */
-  msg(msgId,"🖨️ "+kids.length+" fiche(s) prête(s) pour « "+c.name+" » ("+file+"). Imprime en A4, puis découpe les cartes.");
-  showPdfReady(msgId,blob,file,phone);
- }catch(e){msg(msgId,e.message||"Impossible de créer le PDF.",true);}
+  const url=URL.createObjectURL(doc.output("blob"));
+  if(win&&!win.closed)win.location.href=url;
+  else{const a=document.createElement("a");a.href=url;a.target="_blank";a.rel="noopener";a.download=file;document.body.append(a);a.click();a.remove();}   /* fenêtre refusée : téléchargement */
+  msg(msgId,"🖨️ "+kids.length+" fiche(s) pour « "+c.name+" » : le PDF s’ouvre (sinon, regarde dans tes téléchargements). Imprime en A4, puis découpe les cartes.");
+ }catch(e){try{if(win)win.close();}catch(x){}msg(msgId,e.message||"Impossible de créer le PDF.",true);}
  finally{if(btn)btn.disabled=false;}
 }
 async function renameClass(c,msgId){
