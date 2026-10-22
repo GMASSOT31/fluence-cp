@@ -109,6 +109,7 @@ main{max-width:1050px}
 #progressList{display:grid;gap:18px}
 .class-group{border:2px solid #e3e7ef;border-left:6px solid var(--cg);border-radius:16px;background:#fff;overflow:hidden}
 .class-group-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;background:color-mix(in srgb,var(--cg) 12%,white);border-bottom:1px solid color-mix(in srgb,var(--cg) 25%,white)}
+.game-rank-row{display:block}.game-rank-bar{height:8px;margin-top:6px;border-radius:99px;background:#ece8fb;overflow:hidden}.game-rank-bar i{display:block;height:100%;background:linear-gradient(90deg,#ffd23f,#ff7a1a);border-radius:99px}
 .class-group-head h4{margin:0;font-size:1.08rem;color:#1b2433}
 .class-group-head span{font-size:.85rem;font-weight:800;color:var(--cg);background:#fff;border-radius:999px;padding:4px 10px}
 .class-group .progress-row{padding:12px 16px;margin:0;border-top:1px solid #eef1f6}
@@ -532,7 +533,37 @@ async function renderRecordings(){
  recordings.forEach(({student,review})=>{const line=document.createElement("div");line.className="row";line.textContent=student+" · "+({s:"syllabes",m:"mots",t:"texte"}[review.kind]||"lecture")+" du son « "+(review.sound||"?")+" »"+(review.secs?" · "+review.secs+" s":"")+" · "+(review.ts?new Date(review.ts).toLocaleDateString("fr-FR"):"");list.append(line)});
 }
 
+/* Administrateur : jeux classés par nombre de parties terminées (tous les enseignants), sans aucun nom d’élève */
+const GAME_NAMES={memory:"🃏 Memory des animaux",snake:"🐍 Le serpent",flap:"🐤 L’oiseau volant",order:"⏱️ Dans l’ordre",simon:"🧠 Répète les animaux",safari:"🦁 Safari des animaux",stack:"🦒 Tour d’animaux",ballons:"🎈 Ballons des sons",count:"🔢 Compte les animaux (ancien jeu)",catch:"🎯 Attrape-les (ancien jeu)"};
+async function renderGameRanking(){
+ const old=$("gameRanking");if(old)old.remove();
+ if(currentRole!=="admin")return;
+ try{
+  const {data,error}=await client.from("student_progress").select("hi:progress->hi").limit(5000);
+  if(error)throw error;
+  const tot={};
+  (data||[]).forEach(r=>{const hi=r.hi||(r.progress&&r.progress.hi);if(!hi||typeof hi!=="object")return;
+   Object.entries(hi).forEach(([id,v])=>{if(!v||typeof v!=="object")return;const n=Number(v.n)||0;if(n<=0&&v.best==null)return;const t=tot[id]||(tot[id]={parties:0,eleves:0});t.parties+=Math.max(n,1);t.eleves++;});});
+  const list=Object.entries(tot).sort((a,b)=>b[1].parties-a[1].parties);
+  const box=document.createElement("div");box.id="gameRanking";box.className="class-group";box.style.setProperty("--cg","#d48b2d");
+  const head=document.createElement("div");head.className="class-group-head";
+  const h=document.createElement("h4");h.textContent="🎮 Jeux les plus joués";
+  const all=list.reduce((a,[,t])=>a+t.parties,0);
+  const cnt=document.createElement("span");cnt.textContent=all+" partie"+(all>1?"s":"");head.append(h,cnt);box.append(head);
+  if(!list.length){const e=document.createElement("p");e.className="muted class-group-empty";e.textContent="Aucune partie terminée pour le moment.";box.append(e);}
+  const max=list.length?list[0][1].parties:1;
+  list.forEach(([id,t],i)=>{
+   const row=document.createElement("div");row.className="row game-rank-row";
+   const info=document.createElement("div");const name=document.createElement("strong");name.textContent=(i+1)+". "+(GAME_NAMES[id]||id);
+   const sub=document.createElement("div");sub.className="muted";sub.textContent=t.parties+" partie"+(t.parties>1?"s":"")+" · "+t.eleves+" élève"+(t.eleves>1?"s":"");
+   const bar=document.createElement("div");bar.className="game-rank-bar";const fill=document.createElement("i");fill.style.width=Math.max(4,Math.round(t.parties/max*100))+"%";bar.append(fill);
+   info.append(name,sub,bar);row.append(info);box.append(row);});
+  const note=document.createElement("p");note.className="muted class-group-empty";note.textContent="Parties terminées, tous enseignants confondus. Les parties abandonnées ne sont pas comptées.";box.append(note);
+  $("progressList").before(box);
+ }catch(e){console.warn("Classement des jeux indisponible",e);}
+}
 async function renderProgress(students,classes){
+ renderGameRanking();
  const container=$("progressList");container.replaceChildren();
  const {data:rows,error}=await client.from("student_progress").select("student_id,progress,updated_at,pending_coins").eq("teacher_id",currentUser.id);
  if(error){msg("progressMsg","Impossible de charger les progressions : "+errorText(error),true);return;}
