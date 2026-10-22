@@ -977,6 +977,9 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   .home-act-row .home-next, .home-act-row .home-alt { flex: 1 1 auto; min-width: 0; }
   .home-say { flex: 0 0 auto; margin: 0; min-width: 62px; padding: 0 12px; font-size: 1.6rem; line-height: 1; border-radius: 16px; }
   .home-or { margin: 4px 0 -2px; font-size: .9rem; font-weight: 700; color: var(--muted); }
+  .home-next .home-sub { display: block; margin-top: 4px; font-size: .78em; font-weight: 600; opacity: .9; }
+  .home-more { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .home-small { margin: 0; min-height: 44px; padding: 8px 14px; font-size: .95rem; white-space: normal; }
   .home-alt { margin: 0; min-height: 60px; font-size: 1.15rem; line-height: 1.25; padding: 12px 16px; white-space: normal; text-align: left; }
   .home-alt.listen-alt { border: 2px solid #14b8a6; color: #14b8a6; background: rgba(20, 184, 166, .1); }
   .home-done { font-size: 1.3rem; font-weight: 800; margin: 0; }
@@ -2776,7 +2779,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     }
     if (S.train) {
       var tt = "";
-      if (S.phase === "ready") tt = "Au signal, touche Démarrer. Celui qui t’écoute touchera les mots où tu te trompes.";
+      if (S.phase === "ready") tt = "👥 Lis avec un adulte ou un camarade qui t’écoute. Au signal, touche Démarrer : il touchera les mots où tu te trompes.";
       if (S.phase === "running") tt = "Celui qui écoute touche un mot quand tu te trompes ou que tu le sautes. Retouche-le pour annuler.";
       if (S.phase === "ending") tt = S.mode === "end" ? "Touche le dernier mot lu." : "Touche un mot pour marquer ou retirer une erreur.";
       $("instruction").textContent = tt;
@@ -4156,7 +4159,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     /* Une seule prochaine action, bien visible, avec sa consigne lue à voix haute (🔊) pour les CP */
     var nx = nextStep(sid), lx = listenNext(sid), wheels = data.reward ? pendingWheels(sid).length : 0;
     var KW = { s: "les syllabes", m: "les mots", t: "le texte" };
-    function readAct() { var snd = soundById(nx.sound); return { pet: nx.sound, btn: "📖 Je lis " + KW[nx.kind] + " du son " + q(snd.label), say: "Tu vas lire " + KW[nx.kind] + " du son " + snd.label + ". Touche le gros bouton pour commencer.", go: function () { goTo("lecture"); } }; }
+    /* « Je m’entraîne » ouvre directement l’exercice recommandé, prêt à démarrer (le choix d’une autre activité reste en dessous) */
+    function readAct() { var snd = soundById(nx.sound); return { pet: nx.sound, btn: "🏋️ Je m’entraîne", sub: "Je lis " + KW[nx.kind] + " du son " + q(snd.label), say: "Tu vas t’entraîner à lire " + KW[nx.kind] + " du son " + snd.label + ", avec un adulte ou un camarade qui t’écoute. Touche le gros bouton pour commencer.", go: function () { openStep(sid, nx.sound, nx.kind); } }; }
     function listenAct() { return { pet: lx.id, cls: " listen-go", btn: "👂 J’écoute le son " + q(lx.label), say: "Tu vas écouter et retrouver le son " + lx.label + ". Touche le gros bouton pour commencer.", go: function () { LS.pick = lx.id; goTo("audition"); } }; }
     var act = null, other = null;
     if (wheels) { act = { cls: " wheel-go", btn: "🎡 Lance ta roue !", say: (wheels > 1 ? "Des roues t’attendent." : "Une roue t’attend.") + " Touche le gros bouton pour la lancer.", go: function () { openWheel(sid); } }; other = nx ? readAct() : (lx ? listenAct() : null); }
@@ -4182,6 +4186,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if (act) {
       var mainRow = el("div", "home-act-row");
       var go = el("button", "primary big-btn home-next" + (act.cls || ""), act.btn); go.type = "button";
+      if (act.sub) go.appendChild(el("small", "home-sub", act.sub));
       go.addEventListener("click", act.go);
       mainRow.appendChild(go); mainRow.appendChild(sayBtn(say, "Écouter la consigne"));
       col.appendChild(mainRow);
@@ -4198,6 +4203,15 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       ob.addEventListener("click", other.go);
       altRow.appendChild(ob); altRow.appendChild(sayBtn(other.say.replace("le gros bouton", "ce bouton"), "Écouter la consigne"));
       col.appendChild(altRow);
+    }
+    /* Autres parcours : choisir une autre activité, ou faire son évaluation avec l’enseignant */
+    if (nx) {
+      var more = el("div", "home-more");
+      var chooseB = el("button", "secondary home-small", "↔️ Choisir une autre activité"); chooseB.type = "button";
+      chooseB.addEventListener("click", function () { goTo("lecture"); });
+      var evalB = el("button", "secondary home-small", "🏅 Faire mon évaluation avec l’enseignant"); evalB.type = "button";
+      evalB.addEventListener("click", function () { goTo("lecture"); LR.goal = "eval"; renderSetup(); });
+      more.appendChild(chooseB); more.appendChild(evalB); col.appendChild(more);
     }
     row.appendChild(col);
     card.appendChild(row);
