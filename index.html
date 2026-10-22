@@ -1,7 +1,227 @@
 <!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Zoo de Lecture</title>
-<meta http-equiv="refresh" content="0; url=eleve.html">
-<script>location.replace("eleve.html" + location.search + location.hash);</script>
-<style>body{margin:0;font-family:system-ui,-apple-system,sans-serif;background:#f6f3ff;color:#242044;display:grid;place-items:center;min-height:100vh;text-align:center}a{color:#7046ce;font-weight:700}</style>
-</head><body><p>🦁 Zoo de Lecture<br><a href="eleve.html">Entrer dans le Zoo</a> · <a href="enseignants.html">Espace enseignant</a></p></body></html>
+<title>Zoo de Lecture · Lecture et écoute pour le CP</title>
+<meta name="description" content="Zoo de Lecture : des activités de lecture et d’écoute pour les élèves de CP, un zoo qui grandit avec leurs progrès et un suivi simple pour l’enseignant. Gratuit, à essayer sans inscription.">
+<link rel="canonical" href="https://zoodelecture.fr/">
+<meta property="og:type" content="website"><meta property="og:locale" content="fr_FR"><meta property="og:url" content="https://zoodelecture.fr/">
+<meta property="og:title" content="Zoo de Lecture : la lecture devient une aventure">
+<meta property="og:description" content="Lecture et écoute pour les élèves de CP, un zoo qui grandit avec leurs progrès, un suivi simple pour l’enseignant.">
+<meta name="theme-color" content="#14151c">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A6%99%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700;800&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#14151c;--card:#1e2230;--line:#2e3446;--ink:#eef0f7;--muted:#a3abbf;--yellow:#ffe56c;--cyan:#4be5f0;--violet:#6d5dfc;--pink:#ff87d2;--deep:#21104f}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 1.06rem/1.55 Figtree,system-ui,sans-serif}
+a{color:#7fd7ff}
+img{max-width:100%;height:auto}
+h1,h2,h3{font-family:Fredoka,Figtree,system-ui,sans-serif;line-height:1.1;margin:0}
+.wrap{max-width:1040px;margin:auto;padding:0 16px}
+.skip{position:absolute;left:-999px;top:8px;background:var(--yellow);color:var(--deep);padding:8px 14px;border-radius:10px;font-weight:800;z-index:100}
+.skip:focus{left:8px}
+:focus-visible{outline:3px solid var(--cyan);outline-offset:3px}
+
+/* Barre du haut : logo + trois accès */
+.bar{position:sticky;top:0;z-index:50;display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:10px max(16px,calc((100% - 1040px)/2 + 16px));background:rgba(20,21,28,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.logo{flex:1 1 auto;text-decoration:none;font:700 1.55rem/1 Fredoka,Figtree,sans-serif;color:#fff;letter-spacing:-.02em;text-shadow:0 3px 0 #201049;white-space:nowrap}
+.logo span{color:var(--yellow)}
+.bar nav{display:contents}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 18px;border-radius:14px;border:2px solid transparent;font:800 1rem/1.15 Figtree,system-ui,sans-serif;text-decoration:none;text-align:center;cursor:pointer}
+.btn-eleve{background:var(--yellow);color:var(--deep);font-size:1.08rem;box-shadow:0 4px 0 #b99a1e}
+.btn-eleve:hover{background:#ffd54a}
+.btn-ens{background:#2a3042;color:var(--ink);border-color:#3b4360}
+.btn-ens:hover{background:#343c55}
+.btn-demo{background:transparent;color:var(--yellow);border-color:var(--yellow)}
+.btn-demo:hover{background:rgba(255,229,108,.12)}
+.btn .m{display:none}
+.btn-big{min-height:54px;padding:14px 24px;font-size:1.12rem}
+.btn-line{background:transparent;color:#fff;border-color:rgba(255,255,255,.7)}
+.btn-line:hover{background:rgba(255,255,255,.12)}
+
+/* Premier écran */
+.hero{margin:22px auto 0;position:relative;isolation:isolate;overflow:hidden;border:3px solid var(--cyan);border-radius:28px;color:#fff;
+  background:radial-gradient(circle at 83% 18%,rgba(255,69,181,.46),transparent 32%),radial-gradient(circle at 22% 120%,rgba(22,213,225,.4),transparent 45%),linear-gradient(125deg,#21104f 0%,#3e1680 57%,#15134b 100%);
+  box-shadow:0 8px 0 #130a33;display:grid;grid-template-columns:1.15fr .85fr;align-items:center;gap:18px;padding:36px 34px}
+.hero::before{content:"";position:absolute;inset:0;z-index:-1;opacity:.16;background-image:linear-gradient(rgba(255,255,255,.22) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.22) 1px,transparent 1px);background-size:34px 34px}
+.kicker{display:inline-block;color:#fff18d;font-size:.74rem;font-weight:900;letter-spacing:.13em;margin-bottom:10px}
+.hero h1{font-size:clamp(2.2rem,5.4vw,3.9rem);font-weight:700;letter-spacing:-.03em;text-shadow:0 4px 0 #201049}
+.hero h1 span{color:var(--yellow)}
+.lead{font-size:clamp(1.05rem,2.2vw,1.25rem);color:#e6e9ff;margin:16px 0 22px;max-width:34em}
+.ctas{display:flex;flex-wrap:wrap;gap:12px}
+.hint{margin:14px 0 0;color:#bafaff;font-weight:700;font-size:.92rem}
+
+/* Œuf qui éclot (animation CSS : 8 s, en boucle) */
+.stage{position:relative;width:min(300px,72vw);aspect-ratio:1;margin:auto}
+.stage .e{position:absolute;inset:0;display:grid;place-items:center;font-size:clamp(6rem,17vw,9.5rem);line-height:1}
+.egg{animation:egg 8s ease-in-out infinite}
+.pet{opacity:0;animation:pet 8s ease-in-out infinite}
+.flash{background:radial-gradient(circle,#fff 0,rgba(255,236,150,.85) 30%,transparent 62%);opacity:0;animation:flash 8s ease-out infinite}
+.stars{position:absolute;left:0;right:0;bottom:-6px;display:flex;justify-content:center;gap:10px;font-size:2rem;color:rgba(255,255,255,.28)}
+.stars span:nth-child(1){animation:star1 8s infinite}.stars span:nth-child(2){animation:star2 8s infinite}.stars span:nth-child(3){animation:star3 8s infinite}
+.mini{position:absolute;display:grid;place-items:center;width:58px;height:58px;border-radius:17px;border:3px solid rgba(255,255,255,.85);background:linear-gradient(145deg,#fff2a1,#ff9d62);box-shadow:0 5px 0 rgba(15,8,65,.65);font-size:2.1rem}
+.mini.b{top:0;left:-6px;transform:rotate(-10deg)}.mini.o{top:6px;right:-8px;transform:rotate(14deg);background:linear-gradient(145deg,#ffc5f0,#ffb96a)}
+@keyframes egg{0%{transform:none;opacity:1}8%{transform:rotate(-8deg)}12%{transform:rotate(8deg)}16%{transform:rotate(-10deg)}20%{transform:rotate(10deg)}24%{transform:rotate(-12deg)}28%{transform:rotate(12deg)}34%{transform:scale(1.07)}40%{transform:scale(1.1);opacity:1}42%,100%{transform:scale(1.4);opacity:0}}
+@keyframes pet{0%,40%{opacity:0;transform:scale(.3)}44%{opacity:1;transform:scale(1.25)}50%{transform:scale(1)}80%{opacity:1;transform:scale(1.14)}93%{opacity:1;transform:scale(1.14)}98%,100%{opacity:0;transform:scale(.6)}}
+@keyframes flash{0%,40%{opacity:0;transform:scale(.4)}42%{opacity:.95;transform:scale(.6)}54%,100%{opacity:0;transform:scale(2.2)}}
+@keyframes star1{0%,45%{color:rgba(255,255,255,.28)}47%,94%{color:var(--yellow);text-shadow:0 0 14px #ffdb4c}98%,100%{color:rgba(255,255,255,.28)}}
+@keyframes star2{0%,62%{color:rgba(255,255,255,.28)}64%,94%{color:var(--yellow);text-shadow:0 0 14px #ffdb4c}98%,100%{color:rgba(255,255,255,.28)}}
+@keyframes star3{0%,78%{color:rgba(255,255,255,.28)}80%,94%{color:var(--yellow);text-shadow:0 0 14px #ffdb4c}98%,100%{color:rgba(255,255,255,.28)}}
+@media (prefers-reduced-motion:no-preference){.mini.b{animation:fl 3s ease-in-out infinite}.mini.o{animation:fl 3.6s ease-in-out -1.2s infinite}@keyframes fl{0%,100%{translate:0 0}50%{translate:0 -8px}}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.stage .egg,.stage .flash{display:none}.pet{opacity:1;animation:none}.stars span{animation:none!important;color:var(--yellow)}}
+
+/* Sections */
+section{padding:56px 0 0}
+h2{font-size:clamp(1.7rem,4vw,2.4rem);text-align:center;color:#fff;letter-spacing:-.02em}
+.sub{text-align:center;color:var(--muted);margin:10px auto 0;max-width:36em}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:28px 0 0;padding:0;list-style:none}
+.step{background:var(--card);border:2px solid var(--line);border-radius:22px;padding:22px 20px;text-align:center}
+.step .ico{display:grid;place-items:center;width:84px;height:84px;margin:0 auto 12px;border-radius:24px;font-size:2.8rem;background:linear-gradient(145deg,#fff2a1,#ff9d62);box-shadow:0 5px 0 rgba(15,8,65,.65)}
+.step:nth-child(2) .ico{background:linear-gradient(145deg,#bafaff,#a1a2ff)}
+.step:nth-child(3) .ico{background:linear-gradient(145deg,#ffc5f0,#ffb96a)}
+.step h3{font-size:1.35rem;color:var(--yellow);margin-bottom:8px}
+.step p{margin:0;color:#d5d9ea}
+.teach{display:grid;grid-template-columns:1.2fr .8fr;gap:26px;align-items:center;margin-top:28px}
+.shot{margin:0;border:3px solid var(--line);border-radius:20px;overflow:hidden;background:#fff;box-shadow:0 10px 0 #0c0d12}
+.shot img{display:block;width:100%}
+.shot figcaption{padding:8px 12px;background:var(--card);color:var(--muted);font-size:.85rem}
+.benefits{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.benefits li{display:flex;gap:12px;align-items:flex-start;background:var(--card);border:2px solid var(--line);border-radius:16px;padding:14px 16px;font-weight:600}
+.benefits b{flex:0 0 auto;font-size:1.5rem;line-height:1.2}
+.center{text-align:center;margin-top:24px}
+.maker{display:flex;gap:22px;align-items:center;background:var(--card);border:2px solid var(--line);border-radius:24px;padding:26px;margin-top:26px}
+.maker .face{flex:0 0 auto;display:grid;place-items:center;width:96px;height:96px;border-radius:28px;font-size:3.4rem;background:linear-gradient(145deg,#bafaff,#a1a2ff);box-shadow:0 6px 0 rgba(15,8,65,.65)}
+.maker blockquote{margin:0;font-size:1.15rem;color:#f1f3ff}
+.faq{max-width:760px;margin:26px auto 0;display:grid;gap:10px}
+.faq details{background:var(--card);border:2px solid var(--line);border-radius:16px;padding:0}
+.faq summary{cursor:pointer;list-style:none;padding:16px 18px;font-weight:800;font-size:1.05rem;display:flex;justify-content:space-between;gap:12px;align-items:center}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";flex:0 0 auto;font:700 1.5rem/1 Fredoka,sans-serif;color:var(--yellow)}
+.faq details[open] summary::after{content:"–"}
+.faq details[open]{border-color:#4b547a}
+.faq p{margin:0;padding:0 18px 16px;color:#d5d9ea}
+.final{margin-top:60px;text-align:center;padding:40px 18px;border-radius:28px;border:3px solid var(--cyan);background:radial-gradient(circle at 80% 10%,rgba(255,69,181,.4),transparent 38%),linear-gradient(125deg,#21104f,#3e1680 60%,#15134b);box-shadow:0 8px 0 #130a33}
+.final h2{color:#fff}
+.final .btn{margin-top:18px}
+footer{margin-top:44px;border-top:1px solid var(--line);padding:26px 0 40px;color:var(--muted);font-size:.95rem}
+footer .row{display:flex;flex-wrap:wrap;gap:8px 22px;justify-content:center}
+footer p{margin:14px 0 0;text-align:center}
+
+@media (max-width:860px){
+  .hero{grid-template-columns:1fr;padding:26px 20px;text-align:center}
+  .hero .lead{margin-left:auto;margin-right:auto}.ctas{justify-content:center}
+  .stage{width:min(230px,60vw)}
+  .steps{grid-template-columns:1fr}
+  .teach{grid-template-columns:1fr}
+  .maker{flex-direction:column;text-align:center}
+}
+@media (max-width:640px){
+  .bar{padding:8px 12px;gap:8px;top:-52px}
+  .btn .d{display:none}.btn .m{display:inline}
+  .logo{font-size:1.3rem}
+  .btn-eleve{flex:0 0 auto;padding:10px 14px;font-size:1rem}
+  .btn-ens,.btn-demo{flex:1 1 44%;min-height:40px;padding:8px 10px;font-size:.92rem}
+  .hero{margin-top:14px;border-radius:22px}
+  .ctas .btn{width:100%}
+  section{padding-top:44px}
+}
+</style></head><body>
+<a class="skip" href="#contenu">Aller au contenu</a>
+
+<header class="bar">
+  <a class="logo" href="./" aria-label="Zoo de Lecture, accueil">Zoo de <span>Lecture</span></a>
+  <nav aria-label="Accès rapides">
+    <a class="btn btn-eleve" href="eleve.html">🎒 Connexion élève</a>
+    <a class="btn btn-ens" href="enseignants.html">🧑‍🏫 <span class="d">Connexion enseignant</span><span class="m">Enseignant</span></a>
+    <a class="btn btn-demo" href="zoo-connecte.html?demo=1&amp;new=1">✨ <span class="d">Essayer la démo</span><span class="m">Démo</span></a>
+  </nav>
+</header>
+
+<main id="contenu" class="wrap">
+  <div class="hero">
+    <div>
+      <span class="kicker">✦ POUR LES ÉLÈVES DE CP ✦</span>
+      <h1>La lecture devient une <span>aventure.</span></h1>
+      <p class="lead">Des activités de lecture et d’écoute pour les élèves de CP, un zoo qui grandit avec leurs progrès et un suivi simple pour l’enseignant.</p>
+      <div class="ctas">
+        <a class="btn btn-eleve btn-big" href="zoo-connecte.html?demo=1&amp;new=1&amp;tour=short">✨ Découvrir en 2 minutes</a>
+        <a class="btn btn-line btn-big" href="enseignants.html#inscription">🧑‍🏫 Créer ma classe gratuitement</a>
+      </div>
+      <p class="hint">Gratuit pour les enseignants · démo sans inscription</p>
+    </div>
+    <div class="stage" role="img" aria-label="Un œuf qui éclot : un animal en sort et grandit à chaque étape réussie">
+      <span class="e egg" aria-hidden="true">🥚</span>
+      <span class="e flash" aria-hidden="true"></span>
+      <span class="e pet" aria-hidden="true">🦙</span>
+      <span class="mini b" aria-hidden="true">🐝</span><span class="mini o" aria-hidden="true">🦉</span>
+      <div class="stars" aria-hidden="true"><span>★</span><span>★</span><span>★</span></div>
+    </div>
+  </div>
+
+  <section aria-labelledby="t-etapes">
+    <h2 id="t-etapes">Comment ça marche ?</h2>
+    <ol class="steps">
+      <li class="step"><span class="ico" aria-hidden="true">📖</span><h3>Je m’entraîne</h3><p>Lecture de syllabes, de mots et de textes, activités d’écoute</p></li>
+      <li class="step"><span class="ico" aria-hidden="true">🐣</span><h3>Mon zoo grandit</h3><p>L’enseignant certifie les étapes et les animaux évoluent</p></li>
+      <li class="step"><span class="ico" aria-hidden="true">🎮</span><h3>Je gagne des récompenses</h3><p>Des pièces et des parties encouragent les efforts</p></li>
+    </ol>
+  </section>
+
+  <section aria-labelledby="t-ens">
+    <h2 id="t-ens">Un suivi simple pour l’enseignant</h2>
+    <p class="sub">Le tableau de progression montre où en est chaque élève, d’un coup d’œil.</p>
+    <div class="teach">
+      <figure class="shot">
+        <img src="img/tableau-enseignant.jpg" width="1000" height="791" loading="lazy" alt="Tableau de progression de l’espace enseignant : pour chaque élève de la classe fictive « CP des Tigres », les étapes certifiées, les évaluations, la dernière fluence en mots corrects par minute, les pièces et les jeux.">
+        <figcaption>Exemple avec une classe fictive.</figcaption>
+      </figure>
+      <ul class="benefits">
+        <li><b aria-hidden="true">🎛️</b><span>Adapter les contenus et l’ordre des sons.</span></li>
+        <li><b aria-hidden="true">📈</b><span>Suivre les résultats de chaque élève.</span></li>
+        <li><b aria-hidden="true">🎧</b><span>Évaluer en direct ou utiliser les lectures enregistrées localement.</span></li>
+        <li><b aria-hidden="true">🖨️</b><span>Préparer les connexions grâce aux fiches imprimables.</span></li>
+      </ul>
+    </div>
+    <p class="center"><a class="btn btn-eleve btn-big" href="enseignants.html#inscription">🧑‍🏫 Créer ma classe gratuitement</a></p>
+  </section>
+
+  <section aria-labelledby="t-auteur">
+    <h2 id="t-auteur">Conçu par un enseignant de CP</h2>
+    <div class="maker">
+      <span class="face" aria-hidden="true">🧑‍🏫</span>
+      <blockquote>Enseignant de CP depuis plusieurs années, il me fallait un outil efficace, flexible et surtout adopté par les élèves. Aucun outil abordable utilisant la syllabique ne le proposait. Tous mes élèves en sont fans !</blockquote>
+    </div>
+    <!-- Témoignages de collègues : à ajouter ici quand ils auront été donnés (aucun faux témoignage). -->
+  </section>
+
+  <section aria-labelledby="t-faq">
+    <h2 id="t-faq">Les réponses pratiques</h2>
+    <div class="faq">
+      <details><summary>De quel matériel a-t-on besoin ?</summary><p>D’un navigateur récent, sur une tablette, un ordinateur ou un téléphone, avec une connexion internet. Rien à installer. Pour la lecture enregistrée, l’appareil doit avoir un micro : l’élève l’autorise la première fois.</p></details>
+      <details><summary>Comment fonctionnent les évaluations ?</summary><p>De deux façons. En direct : l’enseignant écoute la minute de lecture de l’élève et la valide. Ou à distance : l’élève lit seul en s’enregistrant et l’enseignant écoute et note plus tard. Quand l’objectif est atteint, l’étape est certifiée et l’animal évolue. Les enregistrements audio restent sur l’appareil de l’élève : ils ne sont pas envoyés sur internet.</p></details>
+      <details><summary>Les élèves ont-ils besoin d’un compte ?</summary><p>Non. Ils entrent avec le code de la classe, leur pseudo et leur code secret. Pas d’adresse e-mail, pas de nom de famille.</p></details>
+      <details><summary>Que deviennent les données des élèves ?</summary><p>Le Zoo garde la progression de chaque élève (scores, animaux, pièces) sous son pseudo. Les données sont stockées sur des serveurs en France, sans publicité ni revente. L’enseignant peut supprimer un élève ou une classe à tout moment. Tous les détails sont dans la page <a href="confidentialite.html">Confidentialité</a>.</p></details>
+      <details><summary>C’est gratuit ? Combien de places ?</summary><p>Oui, c’est gratuit pour les enseignants. Un nouveau compte accueille 3 élèves pour essayer ; on peut ensuite demander des places supplémentaires depuis l’espace enseignant.</p></details>
+    </div>
+  </section>
+
+  <div class="final">
+    <h2>Envie de voir le Zoo de l’intérieur ?</h2>
+    <p class="sub" style="color:#d5d9ea">La démo se visite en 2 minutes, sans compte et sans rien envoyer.</p>
+    <a class="btn btn-eleve btn-big" href="zoo-connecte.html?demo=1&amp;new=1">✨ Essayer sans inscription</a>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="row">
+      <a href="eleve.html">🎒 Connexion élève</a>
+      <a href="enseignants.html">🧑‍🏫 Connexion enseignant</a>
+      <a href="enseignants.html">✉️ Contact</a>
+      <a href="mentions-legales.html">Mentions légales</a>
+      <a href="confidentialite.html">Confidentialité</a>
+    </div>
+    <p>Contact : depuis l’onglet « Améliorations » de votre espace enseignant. · Zoo de Lecture · zoodelecture.fr</p>
+  </div>
+</footer>
+</body></html>
