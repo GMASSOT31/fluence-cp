@@ -92,6 +92,8 @@ h2{font-size:clamp(1.7rem,4vw,2.4rem);text-align:center;color:#fff;letter-spacin
 .maker{display:flex;gap:22px;align-items:center;background:var(--card);border:2px solid var(--line);border-radius:24px;padding:26px;margin-top:26px}
 .maker .face{flex:0 0 auto;display:grid;place-items:center;width:96px;height:96px;border-radius:28px;font-size:3.4rem;background:linear-gradient(145deg,#bafaff,#a1a2ff);box-shadow:0 6px 0 rgba(15,8,65,.65)}
 .maker blockquote{margin:0;font-size:1.15rem;color:#f1f3ff}
+.chips{list-style:none;margin:16px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
+.chips li{background:rgba(255,229,108,.12);border:2px solid rgba(255,229,108,.5);color:var(--yellow);border-radius:999px;padding:6px 14px;font-weight:800;font-size:.95rem}
 .faq{max-width:760px;margin:26px auto 0;display:grid;gap:10px}
 .faq details{background:var(--card);border:2px solid var(--line);border-radius:16px;padding:0}
 .faq summary{cursor:pointer;list-style:none;padding:16px 18px;font-weight:800;font-size:1.05rem;display:flex;justify-content:space-between;gap:12px;align-items:center}
@@ -114,6 +116,7 @@ footer p{margin:14px 0 0;text-align:center}
   .steps{grid-template-columns:1fr}
   .teach{grid-template-columns:1fr}
   .maker{flex-direction:column;text-align:center}
+  .chips{justify-content:center}
 }
 @media (max-width:640px){
   .bar{padding:8px 12px;gap:8px;top:-52px}
@@ -147,7 +150,7 @@ footer p{margin:14px 0 0;text-align:center}
         <a class="btn btn-eleve btn-big" href="zoo-connecte.html?demo=1&amp;new=1&amp;tour=short">✨ Découvrir en 2 minutes</a>
         <a class="btn btn-line btn-big" href="enseignants.html#inscription">🧑‍🏫 Créer ma classe gratuitement</a>
       </div>
-      <p class="hint">Gratuit pour les enseignants · démo sans inscription</p>
+      <p class="hint">Gratuit pour les enseignants · 3 élèves pour commencer · places supplémentaires sur demande</p>
     </div>
     <div class="stage" role="img" aria-label="Un œuf qui éclot : un animal en sort et grandit à chaque étape réussie">
       <span class="e egg" aria-hidden="true">🥚</span>
@@ -189,7 +192,10 @@ footer p{margin:14px 0 0;text-align:center}
     <h2 id="t-auteur">Conçu par un enseignant de CP</h2>
     <div class="maker">
       <span class="face" aria-hidden="true">🧑‍🏫</span>
-      <blockquote>Enseignant de CP depuis plusieurs années, il me fallait un outil efficace, flexible et surtout adopté par les élèves. Aucun outil abordable utilisant la syllabique ne le proposait. Tous mes élèves en sont fans !</blockquote>
+      <div class="why">
+        <blockquote>Enseignant de CP depuis plusieurs années, je cherchais pour ma classe un outil qui suive ma démarche : entrer dans la lecture par les syllabes, puis les mots et les textes, avec un ordre des sons que je puisse adapter à ma progression. Il devait aussi être simple pour moi, et assez ludique pour que les élèves aient envie d’y revenir. Je n’ai pas trouvé d’outil abordable qui réunisse tout cela : j’ai donc créé le Zoo de Lecture. Aujourd’hui, mes élèves en sont fans !</blockquote>
+        <ul class="chips"><li>🔤 Approche syllabique</li><li>🔀 Ordre des sons adaptable</li><li>🎮 Adopté par les élèves</li></ul>
+      </div>
     </div>
     <!-- Témoignages de collègues : à ajouter ici quand ils auront été donnés (aucun faux témoignage). -->
   </section>
@@ -198,7 +204,7 @@ footer p{margin:14px 0 0;text-align:center}
     <h2 id="t-faq">Les réponses pratiques</h2>
     <div class="faq">
       <details><summary>De quel matériel a-t-on besoin ?</summary><p>D’un navigateur récent, sur une tablette, un ordinateur ou un téléphone, avec une connexion internet. Rien à installer. Pour la lecture enregistrée, l’appareil doit avoir un micro : l’élève l’autorise la première fois.</p></details>
-      <details><summary>Comment fonctionnent les évaluations ?</summary><p>De deux façons. En direct : l’enseignant écoute la minute de lecture de l’élève et la valide. Ou à distance : l’élève lit seul en s’enregistrant et l’enseignant écoute et note plus tard. Quand l’objectif est atteint, l’étape est certifiée et l’animal évolue. Les enregistrements audio restent sur l’appareil de l’élève : ils ne sont pas envoyés sur internet.</p></details>
+      <details><summary>Comment fonctionnent les évaluations ?</summary><p>De deux façons. En direct : l’enseignant écoute la minute de lecture de l’élève et la valide. Ou en différé : l’élève s’enregistre seul ; l’enseignant écoute et évalue plus tard, sur ce même appareil. Quand l’objectif est atteint, l’étape est certifiée et l’animal évolue. Les enregistrements audio restent sur l’appareil de l’élève : ils ne sont pas envoyés sur internet.</p></details>
       <details><summary>Les élèves ont-ils besoin d’un compte ?</summary><p>Non. Ils entrent avec le code de la classe, leur pseudo et leur code secret. Pas d’adresse e-mail, pas de nom de famille.</p></details>
       <details><summary>Que deviennent les données des élèves ?</summary><p>Le Zoo garde la progression de chaque élève (scores, animaux, pièces) sous son pseudo. Les données sont stockées sur des serveurs en France, sans publicité ni revente. L’enseignant peut supprimer un élève ou une classe à tout moment. Tous les détails sont dans la page <a href="confidentialite.html">Confidentialité</a>.</p></details>
       <details><summary>C’est gratuit ? Combien de places ?</summary><p>Oui, c’est gratuit pour les enseignants. Un nouveau compte accueille 3 élèves pour essayer ; on peut ensuite demander des places supplémentaires depuis l’espace enseignant.</p></details>
