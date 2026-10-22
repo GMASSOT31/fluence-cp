@@ -476,7 +476,6 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   .flap-bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #ffd23f, #ff7a1a); }
   .tiles-model { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 0 0 8px; padding: 6px 10px; border-radius: 14px; background: #1b2150; color: #fff; font-weight: 800; font-size: 1.1rem; }
   .tiles-model b { min-width: 3ch; padding: 2px 14px; border-radius: 12px; background: #fde047; color: #1b2150; font-family: Fredoka, Figtree, sans-serif; font-size: 2.2rem; line-height: 1.2; text-align: center; }
-  .tiles-say { width: 44px; height: 44px; border: 0; border-radius: 50%; background: rgba(255, 255, 255, .15); font-size: 1.3rem; cursor: pointer; }
   .flap-btn { display: block; width: 100%; min-height: 64px; margin-top: 6px; font-size: 1.5rem; touch-action: none; }
   .safari-controls { display: flex; justify-content: space-between; gap: 12px; margin: 12px 0; touch-action: none; user-select: none; }
   .safari-control { min-width: 60px; min-height: 56px; font-size: 1.2rem; touch-action: none; }
@@ -3293,7 +3292,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     { id: "simon", name: "Répète les animaux", ico: "🧠", neon: "#a78bfa", tag: "Retiens la suite", mode: "max", fmt: function (v) { return nb(v, "animal", "animaux"); } },
     { id: "safari", name: "Safari des animaux", ico: "🦁", neon: "#ffcf4b", tag: "10 étoiles en moins de 30 secondes !", mode: "min", fmt: function (v) { return (v / 1000).toFixed(2).replace(".", ",") + " s"; } },
     { id: "stack", name: "Tour d’animaux", ico: "🦒", neon: "#f97316", tag: "Empile le plus haut possible", mode: "max", fmt: function (v) { return nb(v, "étage", "étages"); } },
-    { id: "tiles", name: "Tuiles des sons", ico: "🎹", neon: "#ef4444", tag: "Touche seulement le bon son", mode: "max", fmt: function (v) { return nb(v, "tuile", "tuiles"); } }
+    { id: "tiles", name: "Tuiles des sons", ico: "🎹", neon: "#ef4444", tag: "Distingue le d du b", mode: "max", fmt: function (v) { return nb(v, "tuile", "tuiles"); } }
   ];
   function gameInfo(id) { return GAMES.filter(function (g) { return g.id === id; })[0] || GAMES[0]; }
   function gameName(id) { return gameInfo(id).name; }
@@ -5197,30 +5196,13 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
      3 colonnes, 3 vies, 150 s au plus, la vitesse monte. Score = bonnes tuiles ; 20 donnent la pièce d’or. */
   var TILES_MAX = 150, TILES_GOAL = 20, TILES_LIVES = 3, TILES_STEP = 20;   /* palier de vitesse toutes les 20 s */
   var TILES_MELODY = [523, 587, 659, 523, 523, 587, 659, 523, 659, 698, 784, 659, 698, 784, 784, 880, 784, 698, 659, 523, 784, 880, 784, 698, 659, 523, 523, 392, 523, 523, 392, 523];
-  /* Le son de l’élève (celui qu’il travaille) : un modèle écrit, le même toute la partie.
-     row() fabrique une rangée de 3 tuiles : 1 identique au modèle, 2 pièges */
-  function tilesTarget(sid) {
-    var ls = listenSounds().filter(function (s) { return listenUnlocked(sid, s.id); });
-    var cur = listenNext(sid);
-    function rowOf(s, it, model) {
-      var qq = it.syl ? listenBuildSyl(sid, it) : listenBuild(sid, s, it);
-      if (!qq || !qq.choices) return null;
-      var goods = qq.choices.filter(function (c) { return c.good && (!model || c.g === model); });
-      var bads = shuffle(qq.choices.filter(function (c) { return !c.good; })).slice(0, 2);
-      if (!goods.length || bads.length < 2) return null;
-      return { item: qq.item, cells: shuffle([goods[Math.floor(Math.random() * goods.length)]].concat(bads)) };
-    }
-    for (var k = 0; k < 25 && ls.length; k++) {
-      var s = (cur && k < 15) ? cur : ls[Math.floor(Math.random() * ls.length)];
-      var items = listenSylItems(sid, s) || listenItems(s);
-      if (!items || !items.length) continue;
-      var it = items[Math.floor(Math.random() * items.length)];
-      var r = rowOf(s, it, null);
-      if (!r) continue;
-      var model = r.cells.filter(function (c) { return c.good; })[0].g;
-      return { item: r.item, model: model, row: function () { for (var j = 0; j < 30; j++) { var x = rowOf(s, it, model); if (x) return x.cells; } return null; } };
-    }
-    return null;
+  /* Modèle toujours « d » : on le distingue de « b » (et de « p », « q »), lettres miroir souvent confondues en script.
+     row() fabrique une rangée de 3 tuiles : un « d » et 2 pièges (au moins un « b ») */
+  function tilesTarget() {
+    return { model: "d", row: function () {
+      var other = ["b", "p", "q"][Math.floor(Math.random() * 3)];
+      return shuffle([{ g: "d", good: true }, { g: "b", good: false }, { g: other, good: false }]);
+    } };
   }
   function startTiles(sid) {
     var area = $("game-area");
@@ -5231,19 +5213,18 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     hud.appendChild(timeEl); hud.appendChild(livesEl); hud.appendChild(scoreEl);
     var canvas = document.createElement("canvas"), dpr = Math.min(2, window.devicePixelRatio || 1);
     canvas.width = W * dpr; canvas.height = H * dpr; canvas.className = "flap-canvas"; canvas.style.aspectRatio = W + " / " + H; canvas.style.background = "#1b2150";
-    canvas.setAttribute("role", "img"); canvas.setAttribute("aria-label", "Jeu des tuiles : touche seulement les tuiles identiques au modèle");
+    canvas.setAttribute("role", "img"); canvas.setAttribute("aria-label", "Jeu des tuiles : touche seulement les lettres d");
     var bar = el("div", "flap-bar"), fill = document.createElement("i"); bar.appendChild(fill);
-    var modelEl = el("div", "tiles-model", ""), again = el("button", "tiles-say", "🔊"); again.type = "button"; again.setAttribute("aria-label", "Écouter le modèle");
+    var modelEl = el("div", "tiles-model", "");
     wrap.appendChild(hud); wrap.appendChild(modelEl); wrap.appendChild(canvas); wrap.appendChild(bar);
-    wrap.appendChild(el("p", "muted", "Touche seulement les tuiles identiques au modèle."));
+    wrap.appendChild(el("p", "muted", "Touche seulement les « d » : attention aux « b », « p » et « q »."));
     area.appendChild(wrap);
     var ctx = canvas.getContext("2d");
     if (!ctx) { $("game-msg").textContent = "Ce navigateur ne peut pas lancer ce jeu."; return; }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    var target = tilesTarget(sid);
-    if (!target) { $("game-msg").textContent = "Pas encore de son à travailler : lis ou écoute d’abord un son !"; return; }
-    modelEl.appendChild(el("span", "", "Touche : ")); modelEl.appendChild(el("b", "", target.model)); modelEl.appendChild(again);
-    $("game-msg").textContent = "Regarde bien le modèle en haut, puis touche seulement les tuiles identiques. Tu as " + TILES_LIVES + " vies. " + TILES_GOAL + " bonnes tuiles donnent une pièce d’or !";
+    var target = tilesTarget();
+    modelEl.appendChild(el("span", "", "Touche : ")); modelEl.appendChild(el("b", "", target.model));
+    $("game-msg").textContent = "Touche seulement les « d » ! Attention aux « b », « p » et « q ». Tu as " + TILES_LIVES + " vies. " + TILES_GOAL + " bonnes tuiles donnent une pièce d’or !";
     var rows = [], parts = [], t = 0, started = false, dead = false, ended = false, raf = null, last = 0, lives = TILES_LIVES, inv = 0, score = 0;
     var deadT = 0, shake = 0, banner = null, nextChange = TILES_STEP, lastSec = -1, mel = 0, bob = 0;
     function showLives() { var h = ""; for (var i = 0; i < TILES_LIVES; i++) h += i < lives ? "❤️" : "🖤"; livesEl.textContent = h; livesEl.setAttribute("aria-label", nb(lives, "vie", "vies")); }
@@ -5252,7 +5233,6 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       var v = 1.6 + 3.6 * Math.pow(Math.min(1, t / 90), 0.9);
       return t > 90 ? v + 0.4 * ((t - 90) / 20) : v;
     }
-    function say() { if (target && !ended) listenSay(target.item); }
     function burst(x, y, n, cols) {
       for (var k = 0; k < n; k++) { var a = Math.random() * 6.3, v = 1 + Math.random() * 3; parts.push({ x: x, y: y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 26, max: 26, r: 2 + Math.random() * 3, col: cols[k % cols.length] }); }
     }
@@ -5274,7 +5254,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     function tap(e) {
       e.preventDefault();
       if (ended || dead) return;
-      if (!started) { started = true; $("game-msg").textContent = "Touche seulement les tuiles identiques au modèle !"; return; }
+      if (!started) { started = true; $("game-msg").textContent = "Touche seulement les « d » !"; return; }
       var x = (e.clientX - canvas.getBoundingClientRect().left - canvas.clientLeft) / canvas.clientWidth * W;
       var y = (e.clientY - canvas.getBoundingClientRect().top - canvas.clientTop) / canvas.clientHeight * H;
       var col = Math.max(0, Math.min(COLS - 1, Math.floor(x / CW)));
@@ -5293,9 +5273,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       }
     }
     canvas.addEventListener("pointerdown", tap);
-    again.addEventListener("click", say);
     document.body.classList.add("flapping");
-    G.cleanup = function () { ended = true; if (raf !== null) cancelAnimationFrame(raf); document.body.classList.remove("flapping"); listenStopVoice(); };
+    G.cleanup = function () { ended = true; if (raf !== null) cancelAnimationFrame(raf); document.body.classList.remove("flapping"); };
     function update(dt) {
       if (!started) { bob += 0.08 * dt; return; }
       if (dead) { deadT += dt; if (deadT > 40) finish(false); return; }
@@ -5355,7 +5334,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
         var yy = 190 + Math.sin(bob * 1.5) * 4;
         ctx.strokeText("Touche pour commencer", W / 2, yy); ctx.fillText("Touche pour commencer", W / 2, yy);
         ctx.font = "700 20px Fredoka, Figtree, sans-serif"; ctx.fillStyle = "#ffe66d";
-        ctx.fillText("Touche les tuiles du modèle", W / 2, yy + 44);
+        ctx.fillText("Touche seulement les « d »", W / 2, yy + 44);
       }
       if (banner) {
         ctx.globalAlpha = Math.min(1, banner.life / 25); ctx.font = "800 32px Fredoka, Figtree, sans-serif"; ctx.lineWidth = 7; ctx.strokeStyle = "rgba(19,24,63,.95)"; ctx.fillStyle = "#ffe66d";
