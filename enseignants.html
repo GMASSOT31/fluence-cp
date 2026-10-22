@@ -78,6 +78,11 @@ main{max-width:1050px}
 .pd-more{align-self:flex-start;margin-top:auto;padding:5px 11px;font-size:.82rem;border-radius:9px;background:#fff;color:#1b2433;border:1px solid #cdd5e4}
 .pd-list{margin:6px 0 0;padding:0;list-style:none;font-size:.84rem;color:#33405a;display:grid;gap:3px}
 .pd-foot{width:100%;font-size:.82rem;color:#5a6476;padding:6px 0}
+/* Guide de démarrage */
+.guide{border-top:5px solid #2e9b91;background:linear-gradient(#f4fbf9,#fff)}.guide h2{margin:0 0 4px;font-size:1.35rem}.guide .muted{margin:0 0 12px}
+.guide ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}.guide li{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;background:#fff;border:1px solid #dfe5f0}
+.guide li.done{background:#eef7ee;border-color:#9fd3a4}.guide .g-ico{font-size:1.4rem}.guide .g-txt{flex:1;font-weight:750}.guide li.done .g-txt{text-decoration:line-through;color:#5a6476}
+.guide li button{padding:8px 13px;font-size:.88rem;border-radius:10px;white-space:nowrap}.guide .g-foot{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.guide .g-ready{font-size:1.15rem;font-weight:800;margin:12px 0 0}
 /* Progression : une ligne par élève */
 .progress-row{flex-wrap:wrap;align-items:center}
 .progress-row>div:first-child{flex:1 1 320px;min-width:0}
@@ -277,6 +282,7 @@ body:not(.teacher-mode) main{color:#eef0f7}
  </aside>
  <div class="teacher-content">
   <p id="spaceMsg" class="msg" role="status"></p>
+  <section class="panel guide hidden" id="guide" aria-live="polite"></section>
 <div class="sub-picker two" data-section="eleves" role="group" aria-label="Choisir une rubrique"><button type="button" data-sub-btn="classes"><span class="sp-ico">📚</span><strong>Créer une classe</strong><small>Son nom et le code que taperont les élèves</small></button><button type="button" data-sub-btn="ajout"><span class="sp-ico">🧒</span><strong>Ajout d’élève</strong><small>Inscrire un élève dans une classe</small></button></div>
 <section class="panel feature-card classes-card" id="classesSettings" data-section="eleves" data-sub="classes">
   <div class="section-head"><div class="section-icon">📚</div><div><h2>Créer une classe</h2><p class="muted">Les codes des classes déjà créées sont dans « Réglages généraux › Mots de passe ».</p></div></div>
@@ -468,7 +474,7 @@ async function refresh(){
  if(profile.data.role!=="admin"&&activeTab==="enseignants")activeTab="eleves";
 
  renderAdmin(profile.data.role).catch(e=>msg("adminMsg",errorText(e),true));
- allStudents=students.data;allClasses=classes.data;$("nextSteps").classList.toggle("hidden",!allStudents.some(s=>s.teacher_id===currentUser.id));
+ allStudents=students.data;allClasses=classes.data;$("nextSteps").classList.toggle("hidden",!allStudents.some(s=>s.teacher_id===currentUser.id));renderGuide();
  renderStudentsTab(profile.data.role).catch(e=>msg("studentsMsg",errorText(e),true));
  const settings=await client.from("teacher_zoo_settings").select("settings").eq("teacher_id",currentUser.id).maybeSingle();
  if(!settings.error&&settings.data){const cfg=settings.data.settings||{};listenPassesCfg=Math.min(10,Math.max(1,Math.round(Number(cfg.listenCfg&&cfg.listenCfg.passes))||2));cfgSounds=Array.isArray(cfg.sounds)&&cfg.sounds.length?cfg.sounds:structuredClone(ORIGINAL_SOUNDS);cfgTexts=cfg.texts||{};cfgRewards=Array.isArray(cfg.rewards)?cfg.rewards:[];const t=cfg.thr||{};$("thrS").value=t.s??25;$("thrM").value=t.m??20;$("thrT").value=t.t??15;$("lockSounds").checked=cfg.lock??true;$("rewardMode").checked=cfg.reward??true;$("soundEffects").checked=cfg.sfx??true;$("musicEnabled").checked=cfg.music??true;$("pinChange").checked=cfg.pinChange??true;$("allowRec").checked=cfg.allowRec??false;$("evalCode").checked=cfg.evalCode??true;{const mp=cfg.maxPlays??6;$("unlimitedPlays").checked=mp===0;$("maxPlays").value=mp===0?6:mp;$("maxPlays").disabled=mp===0;}$("packPrice").value=cfg.packPrice??10;$("wheelPrice").value=cfg.wheelPrice??7;}
@@ -748,6 +754,32 @@ function applyQuota(){const q=quotaState,full=q.limit>0&&q.used>=q.limit;$("addS
 $("goAddStudents").onclick=()=>{const id=$("goAddStudents").dataset.classId;$("classCreated").classList.add("hidden");document.querySelector('[data-sub-btn="ajout"]').click();if(id&&[...$("classSelect").options].some(o=>o.value===id))$("classSelect").value=id;if(!$("nickname").disabled)$("nickname").focus();};
 $("printCards").onclick=()=>{const c=allClasses.find(x=>x.id===$("classSelect").value);if(!c){msg("cardsMsg","Choisis d’abord une classe.",true);return;}printLoginCards(c,"cardsMsg",$("printCards"));};
 $("goProgress").onclick=()=>showTab("progression");
+/* Guide de démarrage : 4 étapes pour un nouveau compte (2 se cochent seules, 2 au clic) ; mémorisé sur cet appareil */
+function guideState(){try{return JSON.parse(localStorage.getItem("zoo_guide_"+currentUser.id)||"{}")||{}}catch(e){return{}}}
+function guideSave(st){try{localStorage.setItem("zoo_guide_"+currentUser.id,JSON.stringify(st))}catch(e){}}
+function renderGuide(){
+ const box=$("guide");if(!currentUser){box.classList.add("hidden");return}
+ const st=guideState(),mineC=allClasses.filter(c=>c.teacher_id===currentUser.id),mineS=allStudents.filter(s=>s.teacher_id===currentUser.id&&!s.ghosted_at);
+ const recent=Date.now()-Date.parse(currentUser.created_at||"")<30*864e5;
+ if(st.hide||!(recent||(!mineC.length&&!mineS.length))){box.classList.add("hidden");return}
+ const mk=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
+ const steps=[
+  {done:mineC.length>0,ico:"📚",txt:"Créer ma classe",btn:"Créer",go:()=>{showTab("eleves");document.querySelector('[data-sub-btn="classes"]').click()}},
+  {done:mineS.length>0,ico:"🧒",txt:"Ajouter mon premier élève",btn:"Ajouter",go:()=>{showTab("eleves");document.querySelector('[data-sub-btn="ajout"]').click()},off:!mineC.length},
+  {done:!!st.print,ico:"🖨️",txt:"Imprimer sa fiche de connexion",btn:"Imprimer",go:()=>{document.querySelector('[data-sub-btn="ajout"]').click();const c=mineC[0];if(c)$("classSelect").value=c.id;$("printCards").click();st.print=1;guideSave(st);renderGuide()},off:!mineS.length},
+  {done:!!st.test,ico:"🦁",txt:"Tester le Zoo comme un élève",btn:"Essayer",go:()=>{window.open("zoo-connecte.html?demo=1&new=1","_blank","noopener");st.test=1;guideSave(st);renderGuide()}}
+ ];
+ const all=steps.every(x=>x.done);
+ box.replaceChildren(mk("h2",null,"Bienvenue dans Zoo de Lecture 🦁"),mk("p","muted","4 petites étapes pour démarrer. Les deux premières se cochent toutes seules."));
+ const ul=mk("ul");
+ steps.forEach(x=>{const li=mk("li",x.done?"done":"");li.append(mk("span","g-ico",x.done?"✅":x.ico),mk("span","g-txt",x.txt));if(!x.done){const b=mk("button",null,x.btn);b.type="button";b.disabled=!!x.off;if(x.off)b.title="Termine d’abord l’étape précédente";b.onclick=x.go;li.append(b)}ul.append(li)});
+ box.append(ul);
+ if(all)box.append(mk("p","g-ready","🎉 Ta classe est prête !"));
+ const foot=mk("div","g-foot");
+ if(all){const adv=mk("button",null,"⚙️ Voir les réglages avancés");adv.type="button";adv.onclick=()=>{st.hide=1;guideSave(st);renderGuide();document.querySelector('[data-tab="reglages"]').click()};foot.append(adv)}
+ const hide=mk("button","secondary",all?"Terminer":"Masquer le guide");hide.type="button";hide.onclick=()=>{st.hide=1;guideSave(st);renderGuide()};foot.append(hide);box.append(foot);
+ box.classList.remove("hidden");
+}
 $("studentForm").onsubmit=e=>{e.preventDefault();busy("addStudent",async()=>{if(!currentUser)return;const nick=$("nickname").value.trim();const {data:created,error}=await client.from("students").insert({teacher_id:currentUser.id,class_id:$("classSelect").value,nickname:nick}).select("id").single();if(error){msg("spaceMsg",errorText(error),true);return;}const pinRes=await client.rpc("set_student_pin",{p_student:created.id,p_pin:DEFAULT_PIN});$("nickname").value="";await refresh();if(pinRes.error)msg("spaceMsg","Élève ajouté, mais le PIN n’a pas pu être créé : "+errorText(pinRes.error),true);else msg("spaceMsg","✅ "+nick+" ajouté(e). PIN : "+DEFAULT_PIN+".");}).then(()=>{applyQuota();if(!$("nickname").disabled)$("nickname").focus();})};
 function frDate(v){const d=new Date(v);return isNaN(d)?"":d.toLocaleDateString("fr-FR",{day:"numeric",month:"long"})}
 function renderSeatRequest(p){const n=p&&p.seat_request;$("seatInfo").textContent=n?"⏳ Demande en cours : +"+n+" élève(s)"+(p.seat_request_at?", envoyée le "+frDate(p.seat_request_at):"")+". L’administrateur va la traiter.":"Toutes tes places sont prises ? Demande des places en plus à l’administrateur.";$("seatCancel").classList.toggle("hidden",!n);$("seatSend").textContent=n?"Modifier la demande":"Envoyer la demande";if(n)$("seatCount").value=String(n)}
