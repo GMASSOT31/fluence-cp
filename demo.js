@@ -7,7 +7,7 @@
   "use strict";
   var KEY = "zoo_demo_state", TOKEN = "demo";
   var DAY = 86400000, NOW = Date.now();
-  var MODES = { memory: "min", order: "min", safari: "min", catch: "max", count: "max", simon: "max", stack: "max", ballons: "max", snake: "max" };
+  var MODES = { memory: "min", order: "min", safari: "min", catch: "max", count: "max", flap: "max", simon: "max", stack: "max", ballons: "max", snake: "max" };
   var NOT_IN_DEMO = { message: "Pas disponible dans la démo : crée ton compte pour utiliser cette fonction." };
 
   /* ---------- Données de départ : la classe « CP des Tigres » ---------- */
@@ -40,7 +40,7 @@
         hi: { snake: hi(14, 2), stack: hi(12, 1) }, listen: { passes: { voy: 2 }, done: {}, tries: 3 } },
       "s-jade": { coins: 9, credits: 3, avatar: "👧🏼",
         results: [res("s-jade", "voy", "s", 31, 9), res("s-jade", "l", "s", 28, 5), res("s-jade", "l", "m", 21, 3)],
-        hi: { order: hi(24, 2), count: hi(5980, 3) }, listen: { passes: { voy: 3 }, done: { voy: true }, tries: 3 } },
+        hi: { order: hi(24, 2), flap: hi(32, 3) }, listen: { passes: { voy: 3 }, done: { voy: true }, tries: 3 } },
       "s-malo": { coins: 3, credits: 0, avatar: "👦🏻",
         results: [res("s-malo", "voy", "s", 22, 6, "train"), res("s-malo", "voy", "s", 27, 2)],
         hi: { memory: hi(22, 1) }, listen: { passes: {}, done: {}, tries: 1 } },
