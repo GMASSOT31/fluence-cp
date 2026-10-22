@@ -5638,7 +5638,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   }
 
   /* Répète les animaux : la pièce se gagne à 5, puis la partie continue jusqu’à 8 pour le défi */
-  var SIMON_GOAL = 5, SIMON_MAX = 12;
+  var SIMON_GOAL = 5, SIMON_MAX = 25;
   function startSimon(sid) {
     var gp = gamePool(sid);
     var pool = shuffle(gp.mine).concat(shuffle(gp.extra)).slice(0, 4);
