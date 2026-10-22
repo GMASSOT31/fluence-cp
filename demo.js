@@ -72,7 +72,7 @@
   if (!S || S.v !== 1) S = seed();
   function persist() { try { sessionStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
   persist();
-  if (params.has("new")) { params.delete("new"); try { history.replaceState(null, "", location.pathname + "?" + params.toString() + location.hash); } catch (e) {} }
+  if (params.has("new")) { try { sessionStorage.setItem("zoo_demo_tour", JSON.stringify({ on: true, step: 0 })); } catch (e) {} params.delete("new"); try { history.replaceState(null, "", location.pathname + "?" + params.toString() + location.hash); } catch (e) {} }
   try { sessionStorage.setItem("zoo_student_token", TOKEN); sessionStorage.setItem("zoo_student_name", "Léo"); } catch (e) {}
   function copy(o) { return JSON.parse(JSON.stringify(o)); }
   function uid(p) { S.n++; return p + S.n + "-" + Date.now().toString(36); }
@@ -309,4 +309,7 @@
     if (toStudent) toStudent.href = "zoo-connecte.html?demo=1";
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bar); else bar();
+  /* Visite guidée (bulles pas à pas) */
+  var tour = document.createElement("script"); tour.src = "demo-tour.js?v=1"; tour.defer = true;
+  (document.head || document.documentElement).appendChild(tour);
 })();

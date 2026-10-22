@@ -6135,6 +6135,19 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       location.replace("eleve.html");
     }
   }
+  /* Démo sans compte : quelques commandes pour la visite guidée (demo-tour.js), seulement avec ?demo */
+  if (window.ZOO_DEMO) window.zooDemoApp = {
+    goTo: function (v) { goTo(v); },
+    phase: function () { return S.phase; },
+    /* « Montre-moi » : une lecture d’environ 50 secondes, avec une erreur, terminée tout de suite */
+    fakeRead: function () {
+      if (S.phase !== "running") $("btn-start").click();
+      S.startTs = Date.now() - 50000;
+      if (S.words.length > 3) S.errs[2] = true;
+      paintWords();
+      $("btn-finished").click();
+    }
+  };
   if(!cloudMode){setMode();show("login");document.documentElement.classList.remove("booting");}bootCloud();
 })();
 </script>
