@@ -913,7 +913,6 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   .home-listen-line { margin: 4px 0 0; color: var(--muted); }
   .short-chip { margin-left: 6px; background: #fff3d6; color: #7a4b00; }
   .score.short { opacity: .45; text-decoration: line-through; }
-  .tk-rules { margin: 4px 0 0; font-size: .85rem; font-weight: 700; opacity: .85; }
   .buy-confirm .bc-icon { font-size: 3.2rem; text-align: center; }
   .buy-confirm .bc-price { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 1.3rem; font-weight: 800; margin: 6px 0 14px; }
   .simon-ready { display: block; margin: 0 auto 14px; min-height: 64px; font-size: 1.3rem; }
@@ -1076,6 +1075,42 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     #v-roue #wheel-msg { margin: 0; font-size: 1rem; }
     #v-roue .wheel-wrap { --size: min(78vw, 340px, max(180px, calc(100dvh - 330px))); margin: 26px auto 16px; }
     #v-roue .row { margin-top: 0; }
+  }
+  /* Salle de jeux : en-tête compact et symboles des récompenses */
+  .arc-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px 18px; flex-wrap: wrap; margin-bottom: 12px; }
+  .arc-left { flex: 1 1 240px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+  .arc-head .arcade-sign { margin: 0 !important; }
+  .arc-legend { list-style: none; margin: 0; padding: 6px 12px; border: 1.5px solid var(--line); border-radius: 12px; display: grid; grid-template-columns: auto 1fr auto; column-gap: 7px; row-gap: 1px; align-items: center; font-size: .82rem; line-height: 1.45; }
+  .arc-legend li { display: contents; }
+  .arc-legend .lg-sym { font-size: 1rem; }
+  .arc-legend .lg-label { color: var(--muted); font-weight: 600; }
+  .arc-legend .lg-short { display: none; }
+  .arc-legend .lg-gain { font-weight: 800; white-space: nowrap; text-align: right; }
+  .arc-legend .gold-coin { width: .95em; height: .95em; vertical-align: -2px; }
+  .arc-status { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; }
+  .arc-pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 13px; border-radius: 999px; background: rgba(109, 93, 252, .14); color: var(--ink); font-weight: 800; font-size: .92rem; line-height: 1.3; }
+  .arc-pill.soft { background: transparent; border: 1.5px solid var(--line); font-weight: 600; color: var(--muted); }
+  .arc-pill.warn { background: #fff3d6; color: #7a4b00; border-radius: 12px; }
+  #v-jeux .cab-hi.cab-sym { display: flex !important; flex-direction: column; align-items: stretch; gap: 1px !important; padding: 7px 0 0 !important; background: none; border: 0; border-top: 1px solid var(--line); border-radius: 0; }
+  #v-jeux .cab-sym .cab-line { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+  #v-jeux .cab-sym .cab-line b { font-family: Figtree, system-ui, sans-serif; font-size: .95rem; font-weight: 800; line-height: 1.35; color: var(--ink); text-shadow: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #v-jeux .cab-sym .cab-line.abs b { font-weight: 600; color: var(--muted); }
+  #v-jeux .cab-sym .cab-s { flex: 0 0 auto; font-size: 1.05rem; }
+  #v-jeux .cab-sym .last { display: block !important; font-size: .78rem; color: var(--muted); text-align: left; }
+  @media (max-width: 600px) {
+    #v-jeux .cab-hi.cab-sym { padding-top: 4px !important; }
+    #v-jeux .cab-sym .cab-line b { font-size: .78rem; }
+    #v-jeux .cab-sym .cab-s { font-size: .85rem; }
+    #v-jeux .cab-sym .last { display: none !important; }
+  }
+  @media (max-width: 600px) {
+    .arc-head { flex-direction: column; align-items: stretch; }
+    .arc-left { flex: 0 0 auto; gap: 6px; }
+    .arc-pill { font-size: .85rem; padding: 5px 11px; }
+    .arc-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; padding: 5px 10px; }
+    .arc-legend li { display: inline-flex; align-items: center; gap: 4px; }
+    .arc-legend .lg-long { display: none; }
+    .arc-legend .lg-short { display: inline; }
   }
 </style>
 </head>
@@ -3995,23 +4030,22 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       card.appendChild(el("p", "instruction", "Il faut au plus " + nb(cfg.maxErrors, "erreur", "erreurs") + ". Écoute bien et recommence, tu vas y arriver !"));
     }
     var row = el("div", "row");
-    if (nowDone && pendingWheels(sid).length) {
-      var spin = el("button", "primary big-btn", "🎡 Lancer la roue !"); spin.type = "button";
-      spin.addEventListener("click", function () { listenFocus(false); openWheel(sid, "Bravo, tu as réussi le son " + q(R.sound.label) + " à l’écoute !", charFor(id).e); });
-      row.appendChild(spin);
+    if (nowDone) {
+      /* Son validé : continuer avec le son suivant, ou arrêter l’écoute */
+      var nx = listenNext(sid);
+      var cont = el("button", "primary big-btn", "Continuer"); cont.type = "button";
+      cont.addEventListener("click", function () { if (nx) { LS.sound = nx.id; listenStart(sid, nx.id); } else { LS.pick = null; renderAudition(); } });
+      var stopB = el("button", "secondary big-btn", "Arrêter"); stopB.type = "button";
+      stopB.addEventListener("click", function () { listenStopVoice(); listenFocus(false); goTo("home"); });
+      row.appendChild(cont); row.appendChild(stopB);
+    } else {
+      var again = el("button", "primary big-btn", "Rejouer"); again.type = "button";
+      again.addEventListener("click", function () { listenStart(sid, id); });
+      row.appendChild(again);
+      var back = el("button", "secondary", "Choisir un son"); back.type = "button";
+      back.addEventListener("click", function () { LS.pick = id; renderAudition(); });
+      row.appendChild(back);
     }
-    var again = el("button", (nowDone && pendingWheels(sid).length ? "secondary" : "primary") + " big-btn", "Rejouer"); again.type = "button";
-    again.addEventListener("click", function () { listenStart(sid, id); });
-    row.appendChild(again);
-    var nx = nowDone ? listenNext(sid) : null;
-    if (nx) {
-      var nb2 = el("button", "secondary big-btn", "Son suivant : " + nx.label); nb2.type = "button";
-      nb2.addEventListener("click", function () { LS.sound = nx.id; listenStart(sid, nx.id); });
-      row.appendChild(nb2);
-    }
-    var back = el("button", "secondary", "Choisir un son"); back.type = "button";
-    back.addEventListener("click", function () { LS.pick = id; renderAudition(); });
-    row.appendChild(back);
     card.appendChild(row);
     body.appendChild(card);
     if (nowDone) showEvolution({ ch: charFor(id), from: { got: 0, total: 1 }, to: { got: 1, total: 1 }, listen: true, sid: sid, zoo: "reconnues" }, function () {
@@ -4205,22 +4239,22 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     cab.appendChild(el("div", "cab-marquee", g.name));
     var screen = el("div", "cab-screen");
     var ico = el("span", "cab-ico", g.ico); ico.setAttribute("aria-hidden", "true");
-    screen.appendChild(ico); screen.appendChild(el("span", "cab-tag", g.tag));
+    screen.appendChild(ico); screen.appendChild(el("span", "cab-tag", "🎯 " + g.tag));
     cab.appendChild(screen);
+    /* Records : 🏆 le tien, 👑 celui de la classe (la légende est en haut de la salle) */
     var h = hiOf(sid, g.id);
-    var hi = el("div", "cab-hi");
-    hi.appendChild(el("small", "", "Record"));
-    hi.appendChild(el("b", "", h.best !== null ? g.fmt(h.best) : "—"));
-    var lastTxt = h.lastTry ? "Dernière partie : " + nb(h.lastTry.stars, "étoile", "étoiles") + " sur " + h.lastTry.goal : (h.n ? "Dernier score : " + g.fmt(h.last) : "Établis ton premier record !");
-    hi.appendChild(el("span", "last", lastTxt));
-    cab.appendChild(hi);
-    var absTxt = absText(g.id, sid);
-    if (absTxt) {
-      var ab = el("div", "cab-abs");
-      var crown = el("span", "crown", "👑"); crown.setAttribute("aria-hidden", "true");
-      ab.appendChild(crown); ab.appendChild(document.createTextNode(absTxt));
-      cab.appendChild(ab);
+    var hi = el("div", "cab-hi cab-sym");
+    function symLine(sym, label, text, cls) {
+      var l = el("div", "cab-line" + (cls ? " " + cls : ""));
+      var sp = el("span", "cab-s", sym); sp.setAttribute("role", "img"); sp.setAttribute("aria-label", label); sp.title = label;
+      l.appendChild(sp); l.appendChild(el("b", "", text)); return l;
     }
+    hi.appendChild(symLine("🏆", "Ton record", h.best !== null ? g.fmt(h.best) : "à établir"));
+    var a = absRecord(g.id), mates = cloudMode ? classSize : data.students.length;
+    if (a || mates >= 2) hi.appendChild(symLine("👑", "Record de la classe", a ? g.fmt(a.value) + " · " + (a.sid === sid ? "toi !" : holderName(a)) : "à établir", "abs"));
+    var lastTxt = h.lastTry ? "Dernière partie : " + nb(h.lastTry.stars, "étoile", "étoiles") + " sur " + h.lastTry.goal : (h.n ? "Dernier score : " + g.fmt(h.last) : "");
+    if (lastTxt) hi.appendChild(el("span", "last", lastTxt));
+    cab.appendChild(hi);
     /* Les commandes décoratives ont été retirées pour libérer la place des boutons Jouer. */
     var b = el("button", "cab-play", off ? (lim ? "Reviens demain" : "Il te faut une partie") : "Jouer !"); b.type = "button";
     b.disabled = off;
@@ -4237,20 +4271,29 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if (!studentById(sid)) return;
     takeNote(body);
     var room = el("div", "arcade");
-    room.appendChild(arcadeSign());
+    /* En-tête compact : titre à gauche, légende des récompenses à droite, puis l’état des parties en deux pastilles */
+    var head = el("div", "arc-head"), headLeft = el("div", "arc-left");
+    headLeft.appendChild(arcadeSign());
+    head.appendChild(headLeft);
+    var legend = el("ul", "arc-legend"); legend.setAttribute("aria-label", "Pièces gagnées dans les jeux");
+    [["🎯", "Objectif réussi", "objectif", 1], ["🏆", "Ton record battu", "ton record", 3], ["👑", "Record pris à un camarade", "record de la classe", 10]].forEach(function (it) {
+      var li = el("li");
+      li.appendChild(el("span", "lg-sym", it[0]));
+      var lb = el("span", "lg-label"); lb.appendChild(el("span", "lg-long", it[1])); lb.appendChild(el("span", "lg-short", it[2])); li.appendChild(lb);
+      var gain = el("span", "lg-gain"); gain.appendChild(document.createTextNode("+" + it[3] + " ")); gain.appendChild(coinEl()); li.appendChild(gain);
+      legend.appendChild(li);
+    });
+    head.appendChild(legend);
+    room.appendChild(head);
     var today = playsToday(sid);
-    room.appendChild(el("p", "tk-today", "🎮 Parties jouées aujourd’hui : " + today + (data.maxPlays > 0 ? " sur " + data.maxPlays : " (sans limite)")));
-    wheelCard(room, sid);
     var cr = credits(sid), lim = limitReached(sid);
-    var bar = el("div", "tokens");
-    var tk = el("div", "tk-row"); tk.setAttribute("aria-hidden", "true");
-    for (var i = 0; i < Math.min(cr, 8); i++) tk.appendChild(el("span", "token", "★"));
-    if (cr > 8) tk.appendChild(el("span", "tk-more", "+" + (cr - 8)));
-    if (cr <= 0) tk.appendChild(el("span", "tk-empty", "Aucun jeton"));
-    bar.appendChild(tk);
-    bar.appendChild(el("p", "tk-text", lim ? "Tu as terminé tes parties pour aujourd’hui. Reviens demain !" : (cr > 0 ? cr + (cr > 1 ? " parties disponibles" : " partie disponible") + ". Choisis ta machine !" : "Tu n’as plus de partie. Va à la boutique ou gagne des parties en lecture et en écoute.")));
-    bar.appendChild(el("p", "tk-rules", "🎯 Objectif réussi : 1 pièce · 🏆 Ton record battu : 3 pièces · 👑 Record pris à un camarade : 10 pièces"));
-    room.appendChild(bar);
+    var status = el("div", "arc-status");
+    if (lim) status.appendChild(el("span", "arc-pill warn", "Tu as terminé tes parties pour aujourd’hui. Reviens demain !"));
+    else if (cr <= 0) status.appendChild(el("span", "arc-pill warn", "Tu n’as plus de partie. Va à la boutique ou gagne des parties en lecture et en écoute."));
+    else status.appendChild(el("span", "arc-pill", "🎮 " + nb(cr, "partie", "parties") + " à jouer"));
+    if (!lim) status.appendChild(el("span", "arc-pill soft", "📅 Aujourd’hui : " + today + (data.maxPlays > 0 ? " sur " + data.maxPlays : "")));
+    headLeft.appendChild(status);
+    wheelCard(room, sid);
     var floor = el("div", "cabs");
     GAMES.forEach(function (g) { floor.appendChild(cabinet(g, sid, cr, lim)); });
     room.appendChild(floor);
