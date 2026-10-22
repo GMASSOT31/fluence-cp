@@ -357,7 +357,9 @@ async function printLoginCards(c,msgId,btn){
  if(!c.access_code){msg(msgId,"Cette classe n’a pas encore de code : change-le dans Réglages généraux › Mots de passe.",true);return;}
  if(btn)btn.disabled=true;
  /* Un seul geste : la fenêtre est ouverte tout de suite (le navigateur l’autorise pendant le clic), puis elle affiche le PDF une fois prêt */
- const iosAlt=/CriOS|FxiOS|EdgiOS|OPiOS/.test(navigator.userAgent);   /* Chrome, Firefox, Edge sur iPhone : ils ne savent ni ouvrir ni télécharger un fichier fabriqué par la page ; on passe par la feuille de partage de l’iPhone */
+ const ua=navigator.userAgent,iosLike=/iPhone|iPad|iPod/.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+ /* Chrome/Firefox/Edge sur iPhone se reconnaissent à leur nom dans l’identité du navigateur, ou (en « site pour ordinateur », où ils se font passer pour Safari) à leur code interne */
+ const iosAlt=/CriOS|FxiOS|EdgiOS|OPiOS/.test(ua)||!!window.__gCrWeb||!!window.__firefox__;   /* Chrome, Firefox, Edge sur iPhone : ils ne savent ni ouvrir ni télécharger un fichier fabriqué par la page ; on passe par la feuille de partage de l’iPhone */
  let win=null;if(!iosAlt){try{win=window.open("","_blank");if(win)win.document.write("<p style=\"font:20px system-ui;padding:24px\">Création des fiches…</p>");}catch(e){win=null;}}
  try{
   const JsPDF=await loadJsPdf();
@@ -392,7 +394,7 @@ async function printLoginCards(c,msgId,btn){
   }
   if(win&&!win.closed)win.location.href=url;
   else{const a=document.createElement("a");a.href=url;a.target="_blank";a.rel="noopener";a.download=file;document.body.append(a);a.click();a.remove();}   /* fenêtre refusée : téléchargement */
-  msg(msgId,"🖨️ "+kids.length+" fiche(s) pour « "+c.name+" » : le PDF s’ouvre (sinon, regarde dans tes téléchargements). Imprime en A4, puis découpe les cartes.");
+  msg(msgId,"🖨️ "+kids.length+" fiche(s) pour « "+c.name+" » : le PDF s’ouvre (sinon, regarde dans tes téléchargements). Imprime en A4, puis découpe les cartes."+(iosLike?" (Safari détecté)":""));
  }catch(e){try{if(win)win.close();}catch(x){}msg(msgId,e.message||"Impossible de créer le PDF.",true);}
  finally{if(btn)btn.disabled=false;}
 }
