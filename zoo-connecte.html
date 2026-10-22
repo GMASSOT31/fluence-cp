@@ -2315,7 +2315,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   }
   function stopEverything() {
     if (S.timerId) { clearInterval(S.timerId); S.timerId = null; }
-    S.phase = "idle"; current = null;
+    S.phase = "idle"; current = null; setReadingFocus("idle");
     $("session").hidden = true; $("setup").hidden = false;
     stopGame(); wheelCleanup(); abortRecording(); listenStop();
   }
@@ -3054,6 +3054,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   function leaveSession(suggest) {
     if (S.timerId) { clearInterval(S.timerId); S.timerId = null; }
     S.phase = "idle"; current = null;
+    setReadingFocus("idle");   /* sinon les menus du Zoo restent cachés après « Changer d’étape » */
     $("session").hidden = true;
     $("setup").hidden = false;
     if (suggest) { applySuggestion(); save(); }
