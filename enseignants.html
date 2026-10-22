@@ -123,6 +123,7 @@ main{max-width:1050px}
 .class-created{margin-top:14px;padding:14px 16px;border-radius:14px;background:#eef7ee;border:2px solid #9fd3a4}.class-created p{margin:0 0 10px;font-weight:700}
 .quota-full{margin:10px 0 0;padding:12px 14px;border-radius:12px;background:#fdecec;border:2px solid #e8a3a3;color:#5a1d1d;font-weight:700}.seat-highlight{border:2px solid #7960d4;box-shadow:0 0 0 4px #7960d422}
 .next-steps{margin-top:20px;padding:16px 18px;border-radius:15px;background:#eef7ee;border:2px solid #9fd3a4}.next-steps h3{margin:0 0 8px}.next-steps ol{margin:0;padding-left:20px;line-height:1.6}.next-steps li{margin:6px 0}.next-steps .actions{margin-top:6px}.link-btn{background:none;border:0;padding:0;color:#2d6fd0;font:inherit;font-weight:700;text-decoration:underline;cursor:pointer;box-shadow:none}
+.class-code{display:inline-flex;align-items:center;gap:8px;padding:4px 6px 4px 12px;border-radius:10px;background:#f6f8fc;border:1px solid #dfe5f0;font-size:.92rem}.class-code strong{font-family:ui-monospace,Menlo,monospace;font-size:1rem;letter-spacing:.5px}.class-code button{padding:5px 10px;font-size:.82rem;border-radius:8px}
 .class-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:16px}.class-head h4.class-tag{margin:0;font-size:1rem;padding:5px 12px;border-radius:10px;border-left:5px solid var(--cg);background:color-mix(in srgb,var(--cg) 12%,white)}.class-head .actions button{padding:6px 12px;font-size:.9rem}
 #pinPart h4.class-tag{display:inline-block;margin:16px 0 6px;padding:5px 12px;border-radius:10px;border-left:5px solid var(--cg);background:color-mix(in srgb,var(--cg) 12%,white)}
 .rec-choice{display:flex;gap:10px;align-items:center;font-weight:700;margin:6px 0 8px}
@@ -288,7 +289,7 @@ body:not(.teacher-mode) main{color:#eef0f7}
   <section class="panel guide hidden" id="guide" aria-live="polite"></section>
 <div class="sub-picker two" data-section="eleves" role="group" aria-label="Choisir une rubrique"><button type="button" data-sub-btn="classes"><span class="sp-ico">📚</span><strong>Créer une classe</strong><small>Son nom et le code que taperont les élèves</small></button><button type="button" data-sub-btn="ajout"><span class="sp-ico">🧒</span><strong>Ajout d’élève</strong><small>Inscrire un élève dans une classe</small></button></div>
 <section class="panel feature-card classes-card" id="classesSettings" data-section="eleves" data-sub="classes">
-  <div class="section-head"><div class="section-icon">📚</div><div><h2>Créer une classe</h2><p class="muted">Les codes des classes déjà créées sont dans « Réglages généraux › Mots de passe ».</p></div></div>
+  <div class="section-head"><div class="section-icon">📚</div><div><h2>Créer une classe</h2><p class="muted">Le code d’une classe déjà créée est affiché sur sa carte, dans l’onglet « Élèves » (avec « Copier » et « Fiches de connexion »).</p></div></div>
   <div class="form-zone"><form id="classForm"><label for="className">Nom de la classe</label><input id="className" required maxlength="80" placeholder="Ex. CP A"><label for="classCode">Code de classe (que tes élèves taperont)</label><input id="classCode" maxlength="30" autocomplete="off" autocapitalize="none" placeholder="Ex. cpmassot"><p class="muted" style="margin:4px 0 0">4 à 20 lettres ou chiffres. Majuscules, accents et espaces ne comptent pas. Évite les codes trop faciles comme 1234.</p><div class="actions"><button>+ Ajouter la classe</button></div></form><div class="class-created hidden" id="classCreated"><p id="classCreatedText"></p><button type="button" id="goAddStudents">➕ Ajouter mes élèves à cette classe</button></div></div>
  </section>
  <section class="panel feature-card student-card" id="addStudentSettings" data-section="eleves" data-sub="ajout">
@@ -852,8 +853,13 @@ async function renderStudentsTab(role){
    const cdel=document.createElement("button");cdel.type="button";cdel.className="danger";cdel.textContent="🗑️ Supprimer la classe";cdel.onclick=()=>manageClass(c,"delete",[cghost,cdel]);
    if(admin||c.teacher_id===currentUser.id){const cren=document.createElement("button");cren.type="button";cren.className="secondary";cren.textContent="✏️ Renommer";cren.onclick=()=>renameClass(c,"studentsMsg");cact.append(cren);}
    if(!window.__pdfWarm){window.__pdfWarm=1;loadJsPdf().catch(()=>{});}   /* prêt avant l’appui : le partage doit suivre le clic de très près */
-   if(allStudents.some(s=>s.class_id===c.id&&!s.ghosted_at)){const cpr=document.createElement("button");cpr.type="button";cpr.className="secondary";cpr.textContent="🖨️ Fiches (PDF)";cpr.onclick=()=>printLoginCards(c,"studentsMsg",cpr);cact.append(cpr);}
-   cact.append(cghost,cdel);head.append(h,cact);box.append(head);
+   if(allStudents.some(s=>s.class_id===c.id&&!s.ghosted_at)){const cpr=document.createElement("button");cpr.type="button";cpr.className="secondary";cpr.textContent="🖨️ Fiches de connexion";cpr.title="Fiches de connexion à imprimer (PDF)";cpr.onclick=()=>printLoginCards(c,"studentsMsg",cpr);cact.append(cpr);}
+   cact.append(cghost,cdel);head.append(h);
+   /* Code de la classe (celui que les élèves tapent), avec « Copier » */
+   if(c.access_code){const cc=document.createElement("span");cc.className="class-code";cc.append("🔑 Code élèves : ");const cv=document.createElement("strong");cv.textContent=c.access_code;cc.append(cv);
+    const cb=document.createElement("button");cb.type="button";cb.className="secondary";cb.textContent="📋 Copier";cb.title="Copier le code de la classe";cb.onclick=async()=>{try{await navigator.clipboard.writeText(c.access_code)}catch(e){const ta=document.createElement("textarea");ta.value=c.access_code;ta.style.cssText="position:fixed;opacity:0";document.body.append(ta);ta.select();try{document.execCommand("copy")}catch(e2){}ta.remove()}cb.textContent="✅ Copié";setTimeout(()=>{cb.textContent="📋 Copier"},1800)};cc.append(cb);head.append(cc);}
+   else{const cc=document.createElement("span");cc.className="class-code muted";cc.textContent="Pas encore de code (Réglages généraux › Mots de passe)";head.append(cc);}
+   head.append(cact);box.append(head);
    const members=sts.filter(s=>s.class_id===c.id);
    if(!members.length){const p=document.createElement("p");p.className="muted";p.textContent="Aucun élève dans cette classe.";box.append(p);}
    members.forEach(st=>{
