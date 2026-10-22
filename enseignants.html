@@ -761,7 +761,7 @@ function renderGuide(){
  const box=$("guide");if(!currentUser){box.classList.add("hidden");return}
  const st=guideState(),mineC=allClasses.filter(c=>c.teacher_id===currentUser.id),mineS=allStudents.filter(s=>s.teacher_id===currentUser.id&&!s.ghosted_at);
  const recent=Date.now()-Date.parse(currentUser.created_at||"")<30*864e5;
- if(st.hide||!(recent||(!mineC.length&&!mineS.length))){box.classList.add("hidden");return}
+ if(st.hide||!recent||currentRole==="admin"){box.classList.add("hidden");return}   /* seulement les comptes enseignants récents, jamais l’admin */
  const mk=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
  const steps=[
   {done:mineC.length>0,ico:"📚",txt:"Créer ma classe",btn:"Créer",go:()=>{showTab("eleves");document.querySelector('[data-sub-btn="classes"]').click()}},
