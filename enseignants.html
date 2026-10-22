@@ -65,6 +65,9 @@ main{max-width:1050px}
   @media (prefers-reduced-motion: no-preference) { header .zoo-bee { animation: zoo-float 3s ease-in-out infinite; } header .zoo-llama { animation: zoo-float 3.6s ease-in-out -1.2s infinite; } @keyframes zoo-float { 0%,100% { translate: 0 0; } 50% { translate: 0 -8px; } } }
 
 
+/* Progression : coup d’œil sur la ligne de l’élève */
+.pg-row{display:flex;flex-wrap:wrap;gap:6px 8px;margin-top:6px}.pg-chip{display:inline-block;padding:4px 10px;border-radius:999px;font-size:.84rem;font-weight:700;background:#f2f5fb;color:#33405a;border:1px solid #dfe5f0}
+.pg-chip.ok{background:#eef7ee;border-color:#9fd3a4;color:#1f5f25}.pg-chip.warn{background:#fff3e0;border-color:#f0c27a;color:#8a4b00}.pg-chip.alert{background:#fdecec;border-color:#f0a3a3;color:#8b1c1c}.pg-chip.next{background:#eaf2ff;border-color:#a9c4f0;color:#1d4f9a}
 /* Détails de progression : 4 cartes visuelles */
 .pd-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;width:100%;padding:12px 0 4px;color:#1b2433}
 .pd-card{display:flex;flex-direction:column;gap:6px;padding:14px;border-radius:14px;background:#f6f8fc;border:1px solid #e4e8f0}
@@ -639,11 +642,20 @@ async function renderProgress(students,classes){
    const lisOk=lisRows.filter(r=>r.ok).length;
    const wrap=document.createElement("div");wrap.className="row progress-row";
    const info=document.createElement("div");const name=document.createElement("strong");name.textContent=s.nickname;
-   const summary=document.createElement("div");summary.className="muted";summary.textContent=matchMedia("(max-width:600px)").matches
-    ?"🏅"+certified.length+" · ✓"+alone.length+" · 📝"+evaluations.length+" · 🏋️"+training.length+(latestEval?" · ⚡"+fmt(latestEval.mclm)+"/min":"")+" · 🪙"+fmt(p.coins)+(row&&row.pending_coins>0?"(+"+row.pending_coins+")":"")+" · 👂"+lisOk+(fraudN?" · 🚩"+fraudN:"")+" · 🎮"+games.length
-    :certified.length+" 🏅 certifiée(s) · "+alone.length+" ✓ validée(s) seul · "+evaluations.length+" évaluation(s) · "+training.length+" entraînement(s)"+(latestEval?" · Dernière fluence : "+fmt(latestEval.mclm)+" corrects/min":"")+" · "+fmt(p.coins)+" pièce(s)"+(row&&row.pending_coins>0?" (+"+row.pending_coins+" en attente)":"")+" · "+lisOk+" son(s) écouté(s) réussi(s)"+(fraudN?" · 🚩 "+fraudN+" score(s) truqué(s)":"")+" · "+games.length+" jeu(x)";
+   const summary=document.createElement("div");summary.className="muted";summary.textContent=certified.length+" 🏅 certifiée(s) · "+alone.length+" ✓ validée(s) seul · "+evaluations.length+" évaluation(s) · "+training.length+" entraînement(s)"+(latestEval?" · Dernière fluence : "+fmt(latestEval.mclm)+" corrects/min":"")+" · "+fmt(p.coins)+" pièce(s)"+(row&&row.pending_coins>0?" (+"+row.pending_coins+" en attente)":"")+" · "+lisOk+" son(s) écouté(s) réussi(s)"+(fraudN?" · 🚩 "+fraudN+" score(s) truqué(s)":"")+" · "+games.length+" jeu(x)";
    summary.title=certified.length+" certifiée(s), "+alone.length+" validée(s) seul, "+evaluations.length+" évaluation(s), "+training.length+" entraînement(s), "+fmt(p.coins)+" pièce(s), "+games.length+" jeu(x)";
-   info.append(name,summary);wrap.append(info);
+   /* Coup d’œil : dernière activité, prochaine étape, besoin de validation (les autres chiffres sont dans « Détails ») */
+   const gk=(cls,t)=>{const e=document.createElement("span");e.className="pg-chip "+cls;e.textContent=t;return e};
+   const tsAll=[...readings.map(r=>Number(r&&r.ts)||0),...games.map(([,h])=>Number(h&&h.bts)||0),Date.parse(row&&row.updated_at||"")||0].filter(x=>x>0),lastTs=tsAll.length?Math.max(...tsAll):0;
+   const days=lastTs?Math.floor((Date.now()-lastTs)/864e5):null;
+   const when=days===null?"aucune activité":days<=0?"aujourd’hui":days===1?"hier":days<31?"il y a "+days+" jours":new Date(lastTs).toLocaleDateString("fr-FR");
+   const doneKeys=new Set([...certified,...alone]),KN={s:"syllabes",m:"mots",t:"texte"};
+   let nextTxt="";for(const x of cfgSounds){if(!x||!x.id||x.id==="h"||x.id==="sz")continue;const kd=["s","m","t"].find(k=>(!x.only||x.only.includes(k))&&!doneKeys.has(x.id+":"+k));if(kd){nextTxt=(x.label||x.id)+" · "+KN[kd];break}}
+   const waitingRec=Array.isArray(p.reviews)?p.reviews.length:0,toValidate=alone.length;
+   const glance=document.createElement("div");glance.className="pg-row";
+   glance.append(gk(days===null||days>=7?"warn":"ok","🕒 Dernière activité : "+when),gk("next","➡️ Prochaine étape : "+(nextTxt||"toutes faites 🎉")));
+   glance.append(toValidate||waitingRec?gk("alert","✋ À valider : "+[toValidate?toValidate+" étape(s) à certifier":"",waitingRec?waitingRec+" lecture(s) à écouter":""].filter(Boolean).join(" · ")):gk("ok","✅ Rien à valider"));
+   info.append(name,glance);wrap.append(info);
    const btn=document.createElement("button");btn.type="button";btn.className="secondary";btn.textContent="Détails";btn.setAttribute("aria-expanded","false");btn.title="Voir les détails de "+s.nickname;
    const details=document.createElement("div");details.className="muted hidden";details.style.cssText="width:100%";
    const mk=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e};
@@ -688,7 +700,7 @@ async function renderProgress(students,classes){
     const big=mk("div","pd-big",String(played));big.append(mk("small",null," partie(s) jouée(s)"));
     c.append(big,mk("div","pd-note",games.length+" jeu(x) différent(s) essayé(s)"));
     more(c,games.map(([g,h])=>(GAME_NAMES[g]||g)+" : "+((h&&Number(h.n))||0)+" partie(s) · record "+(h&&h.best!=null?h.best:"non défini")));grid.append(c)}
-   details.append(grid,mk("div","pd-foot",row?"Dernière sauvegarde : "+new Date(row.updated_at).toLocaleString("fr-FR"):"Aucune progression enregistrée sur le Zoo connecté."));
+   details.append(grid,mk("div","pd-foot","En chiffres : "+summary.textContent),mk("div","pd-foot",row?"Dernière sauvegarde : "+new Date(row.updated_at).toLocaleString("fr-FR"):"Aucune progression enregistrée sur le Zoo connecté."));
    btn.onclick=()=>{details.classList.toggle("hidden");const open=!details.classList.contains("hidden");btn.textContent=open?"Masquer":"Détails";btn.setAttribute("aria-expanded",String(open))};
    const acts=document.createElement("div");acts.className="row-actions";
    if(s.teacher_id===currentUser.id){const gift=document.createElement("button");gift.type="button";gift.textContent="🎁 +10";gift.title="Donner 10 pièces d’or à "+s.nickname;
