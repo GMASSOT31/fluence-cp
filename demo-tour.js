@@ -40,6 +40,11 @@
     text: "Créez votre compte gratuit pour votre classe : 3 élèves pour commencer, davantage sur simple demande.",
     primary: "Créer mon compte", secondary: "Continuer à explorer", third: "Recommencer la démo",
     run: function () { T.on = false; save(); if (window.zooDemo) window.zooDemo.exit("enseignants.html#inscription"); return new Promise(function () {}); } };
+  if (window.zooDemo && window.zooDemo.member) {   /* compte déjà créé : retour à son espace */
+    THE_END.text = "Tu as fait le tour du Zoo ! Retourne dans ton espace pour continuer à préparer ta classe.";
+    THE_END.primary = "Retour à mon espace";
+    THE_END.run = function () { T.on = false; save(); if (window.zooDemo) window.zooDemo.exit("enseignants.html"); return new Promise(function () {}); };
+  }
   function toTeacher() { T.step++; save(); location.href = "enseignants.html?demo=1"; return new Promise(function () {}); }
 
   /* « Découvrir l'essentiel en 2 minutes » : 5 étapes */
