@@ -5298,7 +5298,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
 
   /* L’oiseau volant : on touche pour battre des ailes et on passe entre les bambous. 1 seule vie, 60 s au plus.
      Score = secondes tenues (plus grand = meilleur) ; 20 secondes donnent la pièce d’or. */
-  var FLAP_MAX = 90, FLAP_GEAR = 60, FLAP_GOAL = 20, FLAP_LIVES = 3;   /* 1 min 30 au plus ; une vitesse de plus à partir de 1 min */
+  var FLAP_MAX = 150, FLAP_GEAR = 60, FLAP_STEP = 30, FLAP_GOAL = 20, FLAP_LIVES = 3;   /* 2 min 30 au plus ; une vitesse de plus à 1 min, 1 min 30 et 2 min */
+  var FLAP_BANNERS = [20, 40, 60, 90, 120];
   function startFlap(sid) {
     var area = $("game-area");
     area.innerHTML = "";
@@ -5317,22 +5318,24 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var ctx = canvas.getContext("2d");
     if (!ctx) { $("game-msg").textContent = "Ce navigateur ne peut pas lancer ce jeu."; return; }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    $("game-msg").textContent = "Touche pour battre des ailes et passe entre les bambous. Tu as " + FLAP_LIVES + " vies. Tiens " + FLAP_GOAL + " secondes pour gagner une pièce d’or : 1 minute 30 au maximum !";
+    $("game-msg").textContent = "Touche pour battre des ailes et passe entre les bambous. Tu as " + FLAP_LIVES + " vies. Tiens " + FLAP_GOAL + " secondes pour gagner une pièce d’or : 2 minutes 30 au maximum !";
     var EMOJI = "32px 'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif";
     var bird = { x: 110, y: FLOOR * 0.45, vy: 0, rot: 0 };
     var pipes = [], parts = [], clouds = [], t = 0, started = false, dead = false, won = false, ended = false, raf = null, last = 0, lives = FLAP_LIVES, inv = 0;
     function showLives() { var h = ""; for (var i = 0; i < FLAP_LIVES; i++) h += i < lives ? "❤️" : "🖤"; livesEl.textContent = h; livesEl.setAttribute("aria-label", nb(lives, "vie", "vies")); }
     showLives();
-    var scroll = 0, since = 0, lastC = FLOOR * 0.5, passed = 0, deadT = 0, winT = 0, shake = 0, banner = null, nextBanner = 20, lastSec = -1, bob = 0;
+    var scroll = 0, since = 0, lastC = FLOOR * 0.5, passed = 0, deadT = 0, winT = 0, shake = 0, banner = null, bi = 0, lastSec = -1, bob = 0;
     var sky = ctx.createLinearGradient(0, 0, 0, FLOOR); sky.addColorStop(0, "#7cc8ff"); sky.addColorStop(0.6, "#c9ebff"); sky.addColorStop(1, "#fff6d1");
     for (var ci = 0; ci < 5; ci++) clouds.push({ x: ci * 95 + Math.random() * 40, y: 28 + Math.random() * 170, s: 0.7 + Math.random() * 0.8 });
     function wrapX(v, span) { return ((v % span) + span) % span; }
     function speed() {   /* px par image à 60 i/s : ×2,3 pendant la première minute, puis une vitesse de plus (+1) qui continue de monter */
       if (!started) return 1.4;
       var v = 2.3 + 3.0 * Math.pow(Math.min(1, t / FLAP_GEAR), 0.85);
-      return t >= FLAP_GEAR ? v + 1.0 + 0.7 * Math.min(1, (t - FLAP_GEAR) / (FLAP_MAX - FLAP_GEAR)) : v;
+      if (t < FLAP_GEAR) return v;
+      var g = Math.floor((t - FLAP_GEAR) / FLAP_STEP) + 1;   /* 1 à 1 min, 2 à 1 min 30, 3 à 2 min : +1 par vitesse, puis une petite montée dans chaque palier */
+      return v + g + 0.5 * (((t - FLAP_GEAR) % FLAP_STEP) / FLAP_STEP);
     }
-    function gapH() { return 195 - 50 * Math.min(1, t / FLAP_GEAR) - (t > FLAP_GEAR ? 10 * Math.min(1, (t - FLAP_GEAR) / (FLAP_MAX - FLAP_GEAR)) : 0); }
+    function gapH() { return 195 - 50 * Math.min(1, t / FLAP_GEAR) - (t > FLAP_GEAR ? 10 * Math.min(1, (t - FLAP_GEAR) / FLAP_STEP) : 0); }
     function addPipe() {
       var gh = gapH(), lo = 60 + gh / 2, hi = FLOOR - 50 - gh / 2;
       var c = Math.max(lo, Math.min(hi, lastC + (Math.random() * 2 - 1) * (t >= FLAP_GEAR ? 105 : 120)));   /* écart toujours atteignable */
@@ -5385,7 +5388,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       if (ended) return;
       ended = true;
       var secs = Math.max(0, Math.min(FLAP_MAX, Math.floor(t + 0.0001)));
-      var msg = max ? "Tu as tenu 1 minute 30 entière !" : "Tu as volé " + nb(secs, "seconde", "secondes") + ".";
+      var msg = max ? "Tu as tenu 2 minutes 30 entières !" : "Tu as volé " + nb(secs, "seconde", "secondes") + ".";
       endGame(sid, area, secs >= FLAP_GOAL, msg, msg + " Il en fallait " + FLAP_GOAL + " pour gagner une pièce d’or.");
       finishScore(sid, area, "flap", secs);
     }
@@ -5419,8 +5422,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       if (inv > 0) inv -= dt;
       if (bird.y + 11 >= FLOOR) { bird.y = FLOOR - 11; if (inv > 0) bird.vy = Math.min(bird.vy, 0); else { hurt(true); if (dead) return; } }
       if (inv <= 0) for (var i = 0; i < pipes.length; i++) if (hitPipe(pipes[i])) { hurt(false); if (dead) return; break; }
-      if (t >= nextBanner && nextBanner <= FLAP_GEAR) { banner = { text: nextBanner === FLAP_GEAR ? "Vitesse supérieure !" : "Plus vite !", life: 90 }; nextBanner += 20; [523, 659, 784].forEach(function (f, k) { tone(f, k * 0.08, 0.15, "triangle", 0.1); }); }
-      if (t >= FLAP_MAX) { t = FLAP_MAX; won = true; winT = 0; banner = { text: "1 min 30 ! 🎉", life: 120 }; $("game-msg").textContent = "Bravo, 1 minute 30 entière !"; [523, 659, 784, 1047].forEach(function (f, k) { tone(f, k * 0.1, 0.22, "triangle", 0.14); }); }
+      if (bi < FLAP_BANNERS.length && t >= FLAP_BANNERS[bi]) { banner = { text: FLAP_BANNERS[bi] >= FLAP_GEAR ? "Vitesse supérieure !" : "Plus vite !", life: 90 }; bi++; [523, 659, 784].forEach(function (f, k) { tone(f, k * 0.08, 0.15, "triangle", 0.1); }); }
+      if (t >= FLAP_MAX) { t = FLAP_MAX; won = true; winT = 0; banner = { text: "2 min 30 ! 🎉", life: 120 }; $("game-msg").textContent = "Bravo, 2 minutes 30 entières !"; [523, 659, 784, 1047].forEach(function (f, k) { tone(f, k * 0.1, 0.22, "triangle", 0.14); }); }
     }
     function drawPipe(p) {
       var gt = p.c - p.h / 2, gb = p.c + p.h / 2, x0 = p.x - p.w / 2;
