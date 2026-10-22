@@ -22,10 +22,67 @@
   function click(sel) { var e = typeof sel === "string" ? $(sel) : sel; if (e) e.click(); return e; }
   function tab(name) { click('[data-tab="' + name + '"]'); }
 
+  /* Étapes communes aux deux parcours */
+  async function openReading() {
+    go("lecture");
+    await wait(function () { return visible($(".lire-eval")); });
+    click(".lire-eval");
+    var card = await wait(function () { var c = document.querySelectorAll("#lire-menu .zoo-card"); return c.length ? c[0] : null; });
+    if (card) card.click();
+    var open = await wait(function () { var b = $("#btn-open"); return visible(b) ? b : null; });
+    if (open) open.click();
+    var start = await wait(function () { var b = $("#btn-start"); return visible(b) ? b : null; });
+    if (start && app() && app().phase() !== "running") start.click();
+  }
+  var WELCOME = { page: "zoo", center: true, welcome: true, title: "Bienvenue dans la démo 👋",
+    text: "Vous êtes Léo, élève de CP dans la classe « CP des Tigres ». Rien n'est enregistré." };
+  var THE_END = { page: "teacher", center: true, title: "C'est tout ! 🎉",
+    text: "Créez votre compte gratuit pour votre classe : 3 élèves pour commencer, davantage sur simple demande.",
+    primary: "Créer mon compte", secondary: "Continuer à explorer", third: "Recommencer la démo",
+    run: function () { T.on = false; save(); if (window.zooDemo) window.zooDemo.exit("enseignants.html#inscription"); return new Promise(function () {}); } };
+  function toTeacher() { T.step++; save(); location.href = "enseignants.html?demo=1"; return new Promise(function () {}); }
+
+  /* « Découvrir l'essentiel en 2 minutes » : 5 étapes */
+  var SHORT = [
+    WELCOME,
+    { page: "zoo", stage: 1, enter: function () { go("home"); }, target: ".home-hero", title: "La prochaine activité",
+      text: "Chaque jour, l'élève voit une seule action à faire, avec 🔊 pour entendre la consigne.",
+      primary: "Lire", run: openReading },
+    { page: "zoo", stage: 2, target: "#session", title: "Une lecture d'une minute",
+      text: "L'élève lit à voix haute ; vous touchez les mots où il bute. Le score : les mots lus correctement par minute.",
+      primary: "Montre-moi",
+      run: async function () {
+        if (app()) app().fakeRead();
+        await wait(function () { return visible($("#result")); });
+        await sleep(900);
+        click("#btn-save");
+        await wait(function () { return $(".evo-acts:not([hidden])"); }, 6000);
+      } },
+    { page: "zoo", stage: 3, target: ".evo-card", glass: true, title: "L'animal et la récompense",
+      text: "Étape certifiée 🏅 : l'animal du son évolue, puis la roue offre des pièces ou des parties de jeu.",
+      primary: "Lancer la roue",
+      run: async function () {
+        click(".evo-acts button");
+        var b = await wait(function () { var x = $("#btn-spin"); return visible(x) && !x.disabled ? x : null; });
+        if (b) b.click();
+        await wait(function () { return visible($("#btn-wheel-done")); }, 10000);
+        await sleep(1200);
+      } },
+    { page: "zoo", stage: 3, target: "#v-roue .wheel-card", title: "Pièces et parties de jeu",
+      text: "Les pièces s'échangent à la boutique contre vos récompenses ; les parties se jouent dans la salle d'arcade, après la lecture.",
+      primary: "Voir l'espace enseignant", run: toTeacher },
+    { page: "teacher", stage: 4, enter: function () { tab("progression"); }, target: function () {
+        return Array.prototype.filter.call(document.querySelectorAll(".progress-row"), function (r) { return /Léo/.test(r.textContent); })[0] || $(".progress-row");
+      }, title: "Le suivi enseignant",
+      text: "Un suivi détaillé de chaque élève, avec le détail de ses scores de fluence et de son activité d'entraînement et de jeux." },
+    { page: "teacher", stage: 5, enter: function () { tab("eleves"); click('[data-sub-btn="classes"]'); }, target: "#classesSettings", title: "Créer votre classe",
+      text: "Créez votre classe, ajoutez vos élèves (code secret de départ : 1234) et imprimez leurs fiches de connexion. Tout est prêt !" },
+    THE_END
+  ];
+
+  /* Visite complète */
   var STEPS = [
-    { page: "zoo", center: true, title: "Bienvenue dans la démo 👋",
-      text: "Vous êtes Léo, élève de CP dans la classe « CP des Tigres ». Rien n'est enregistré.",
-      primary: "C'est parti !", secondary: "Explorer seul" },
+    WELCOME,
     { page: "zoo", enter: function () { go("home"); }, target: ".home-hero", title: "Une seule chose à faire",
       text: "Chaque jour, l'élève voit sa prochaine action. Le bouton 🔊 lit la consigne à voix haute, pour ceux qui ne lisent pas encore." },
     { page: "zoo", enter: function () { go("lecture"); }, target: ".lire-choice", title: "Lire : s'entraîner ou faire valider",
@@ -85,13 +142,11 @@
       text: "Un pseudo suffit : le code secret de départ est 1234. « Et maintenant ? » imprime les fiches de connexion à découper (PDF)." },
     { page: "teacher", enter: function () { tab("reglages"); }, target: '.sub-picker[data-section="reglages"]', title: "Vos réglages",
       text: "Vos réglages pédagogiques : vos progressions personnelles, faciles à paramétrer, les exercices à personnaliser à l'envie, ainsi que l'ordre des sons étudiés (par défaut, la progression de la méthode PIANO CP)." },
-    { page: "teacher", center: true, title: "C'est tout ! 🎉",
-      text: "Créez votre compte gratuit pour votre classe : 3 élèves pour commencer, davantage sur simple demande.",
-      primary: "Créer mon compte", secondary: "Continuer à explorer", third: "Recommencer la démo",
-      run: function () { T.on = false; save(); if (window.zooDemo) window.zooDemo.exit("enseignants.html"); return new Promise(function () {}); } }
+    THE_END
   ];
-  var LAST = STEPS.length - 1;
-  var FIRST_TEACHER = STEPS.map(function (s) { return s.page; }).indexOf("teacher");
+  function list() { return T.mode === "short" ? SHORT : STEPS; }
+  function lastIndex() { return list().length - 1; }
+  function firstTeacher() { return list().map(function (x) { return x.page; }).indexOf("teacher"); }
 
   /* ---------- Affichage ---------- */
   var css = document.createElement("style");
@@ -121,10 +176,11 @@
     for (var i = 0; i < list.length; i++) { var e = $(list[i].trim()); if (visible(e)) return e; }
     return null;
   }
+  var running = false;
   function hide() { [dim, spot, bubble].forEach(function (e) { if (e.parentNode) e.parentNode.removeChild(e); }); current = null; }
   function place() {
-    if (!current) return;
-    var s = STEPS[T.step], t = s.center ? null : targetOf(s);
+    if (!current || running) return;
+    var s = list()[T.step], t = s.center ? null : targetOf(s);
     if (!t) {
       if (spot.parentNode) spot.parentNode.removeChild(spot);
       if (!dim.parentNode) document.body.appendChild(dim);
@@ -150,33 +206,48 @@
   function stop() { T.on = false; save(); hide(); }
   async function show() {
     if (!T.on) { hide(); return; }
-    var s = STEPS[T.step];
+    var L = list(), s = L[T.step], LAST = lastIndex(), FIRST_TEACHER = firstTeacher();
     if (!s) { stop(); return; }
     var page = onTeacher ? "teacher" : "zoo";
     if (s.page !== page) {
       /* Arrivée côté enseignant en cours de visite : on reprend à la première étape enseignant ; et inversement */
       if (onTeacher && T.step < FIRST_TEACHER) T.step = FIRST_TEACHER;
       else if (!onTeacher && T.step >= FIRST_TEACHER) { hide(); return; }
-      save(); s = STEPS[T.step];
+      save(); s = L[T.step];
     }
-    current = s;
+    current = s; running = false;
+    bubble.style.visibility = "";
     if (s.enter) { try { s.enter(); } catch (e) {} }
     if (s.target && !s.center) await wait(function () { return targetOf(s); }, 3000);
     bubble.innerHTML = "";
     bubble.classList.toggle("tb-glass", !!s.glass);
-    var st = document.createElement("div"); st.className = "tb-step"; st.textContent = T.step === 0 ? "Visite guidée" : "Étape " + T.step + " sur " + LAST;
+    var st = document.createElement("div"); st.className = "tb-step";
+    st.textContent = T.step === 0 ? "Visite guidée" : (T.mode === "short" ? (s.stage ? "L'essentiel · étape " + s.stage + " sur 5" : "L'essentiel") : "Étape " + T.step + " sur " + LAST);
     var h = document.createElement("h3"); h.textContent = s.title;
     var p = document.createElement("p"); p.textContent = s.text;
     var acts = document.createElement("div"); acts.className = "tb-acts";
     if (T.step > 0 && T.step < LAST) acts.appendChild(button("tb-skip", "Quitter la visite", stop));
+    if (s.welcome) {
+      /* Bienvenue : choisir le parcours */
+      acts.appendChild(button("tb-skip", "Explorer seul", stop));
+      acts.appendChild(button("tb-alt", "Visite complète (14 étapes)", function () { T.mode = "full"; T.step = 1; save(); show(); }));
+      var quick = button("tb-main", "L'essentiel en 2 minutes", function () { T.mode = "short"; T.step = 1; save(); show(); });
+      acts.appendChild(quick);
+      bubble.appendChild(st); bubble.appendChild(h); bubble.appendChild(p); bubble.appendChild(acts);
+      if (!bubble.parentNode) document.body.appendChild(bubble);
+      place(); quick.focus({ preventScroll: true });
+      return;
+    }
     if (s.secondary) acts.appendChild(button("tb-alt", s.secondary, stop));
-    if (s.third) acts.appendChild(button("tb-alt", s.third, function () { T.on = true; T.step = 0; save(); if (window.zooDemo) window.zooDemo.restart(); }));
+    if (s.third) acts.appendChild(button("tb-alt", s.third, function () { T.on = true; T.step = 0; T.mode = null; save(); if (window.zooDemo) window.zooDemo.restart(); }));
     var main = button("tb-main", s.primary || "Suivant", async function () {
       if (busy) return; busy = true; main.disabled = true;
+      /* Pendant l'action (lecture, éclosion, roue…), la bulle s'efface pour laisser voir l'animation */
+      if (s.run) { running = true; bubble.style.visibility = "hidden"; [dim, spot].forEach(function (e) { if (e.parentNode) e.parentNode.removeChild(e); }); }
       try { if (s.run) await s.run(); } catch (e) {}
       busy = false;
-      if (T.step === STEPS.indexOf(s)) { T.step++; save(); }
-      if (T.step > LAST) stop(); else show();
+      if (T.step === list().indexOf(s)) { T.step++; save(); }
+      if (T.step > lastIndex()) stop(); else show();
     });
     acts.appendChild(main);
     bubble.appendChild(st); bubble.appendChild(h); bubble.appendChild(p); bubble.appendChild(acts);
@@ -191,7 +262,7 @@
   function addBarButton() {
     var bar = document.getElementById("demo-bar");
     if (!bar || document.getElementById("tour-restart")) return;
-    var b = button("", "🧭 Visite guidée", function () { T.on = true; T.step = onTeacher ? FIRST_TEACHER : 0; save(); show(); });
+    var b = button("", "🧭 Visite guidée", function () { T.on = true; if (onTeacher) { T.mode = "full"; T.step = firstTeacher(); } else { T.mode = null; T.step = 0; } save(); show(); });
     b.id = "tour-restart";
     bar.insertBefore(b, bar.children[1] || null);
   }
@@ -201,6 +272,6 @@
     if (!onTeacher) wait(function () { return !document.documentElement.classList.contains("booting") && visible($(".home-hero")); }, 8000).then(function () { setTimeout(show, 300); });
     else wait(function () { return visible($("#space")); }, 8000).then(function () { setTimeout(show, 300); });
   }
-  window.zooTour = { start: function (step) { T.on = true; T.step = step || 0; save(); show(); }, stop: stop, state: function () { return T; } };
+  window.zooTour = { start: function (step, mode) { T.on = true; T.step = step || 0; if (mode) T.mode = mode; save(); show(); }, stop: stop, state: function () { return T; } };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
 })();
