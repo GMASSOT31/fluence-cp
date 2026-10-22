@@ -346,7 +346,7 @@ body:not(.teacher-mode) main{color:#eef0f7}
  <p class="msg" id="fbAdminMsg" role="status"></p><div id="fbList" class="content-list"></div>
 </section>
 </div>
-</section></main><script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=14"><\/script>':'<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"><\/script>');})();</script><script>
+</section></main><script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=15"><\/script>':'<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"><\/script>');})();</script><script>
 (function(){
 "use strict";
 /* Retour du lien « Mot de passe oublié » : on lit l’adresse avant que la bibliothèque Supabase ne la nettoie */
@@ -767,7 +767,7 @@ function renderGuide(){
   {done:mineC.length>0,ico:"📚",txt:"Créer ma classe",btn:"Créer",go:()=>{showTab("eleves");document.querySelector('[data-sub-btn="classes"]').click()}},
   {done:mineS.length>0,ico:"🧒",txt:"Ajouter mon premier élève",btn:"Ajouter",go:()=>{showTab("eleves");document.querySelector('[data-sub-btn="ajout"]').click()},off:!mineC.length},
   {done:!!st.print,ico:"🖨️",txt:"Imprimer sa fiche de connexion",btn:"Imprimer",go:()=>{document.querySelector('[data-sub-btn="ajout"]').click();const c=mineC[0];if(c)$("classSelect").value=c.id;$("printCards").click();st.print=1;guideSave(st);renderGuide()},off:!mineS.length},
-  {done:!!st.test,ico:"🦁",txt:"Tester le Zoo comme un élève",btn:"Essayer",go:()=>{window.open("zoo-connecte.html?demo=1&new=1","_blank","noopener");st.test=1;guideSave(st);renderGuide()}}
+  {done:!!st.test,ico:"🦁",txt:"Tester le Zoo comme un élève",btn:"Essayer",go:()=>{window.open("zoo-connecte.html?demo=1&new=1&compte=1","_blank","noopener");st.test=1;guideSave(st);renderGuide()}}
  ];
  const all=steps.every(x=>x.done);
  box.replaceChildren(mk("h2",null,"Bienvenue dans Zoo de Lecture 🦁"),mk("p","muted","4 petites étapes pour démarrer. Les deux premières se cochent toutes seules."));

@@ -67,6 +67,9 @@
 
   /* ---------- État de la démo (sessionStorage) ---------- */
   var params = new URLSearchParams(location.search);
+  /* Enseignant qui a déjà son compte (démo ouverte depuis le guide de démarrage) : on ne lui propose pas d'en créer un */
+  var MEMBER = false;
+  try { if (params.get("compte") === "1") sessionStorage.setItem("zoo_demo_member", "1"); MEMBER = sessionStorage.getItem("zoo_demo_member") === "1"; } catch (e) {}
   var S = null;
   try { if (!params.has("new")) S = JSON.parse(sessionStorage.getItem(KEY) || "null"); } catch (e) {}
   if (!S || S.v !== 1) S = seed();
@@ -278,11 +281,12 @@
   /* ---------- Bandeau « Démo » et navigation ---------- */
   var onTeacher = /enseignants\.html$/.test(location.pathname);
   var zooDemo = window.zooDemo = {
+    member: MEMBER,
     state: function () { return S; },
     save: persist,
     restart: function () { try { sessionStorage.removeItem(KEY); } catch (e) {} location.href = "zoo-connecte.html?demo=1&new=1"; },   /* toujours depuis le Zoo de Léo, avec la visite au début */
     exit: function (to) {
-      try { sessionStorage.removeItem(KEY); sessionStorage.removeItem("zoo_student_token"); sessionStorage.removeItem("zoo_student_name"); sessionStorage.removeItem("zoo_demo_tour"); } catch (e) {}
+      try { sessionStorage.removeItem(KEY); sessionStorage.removeItem("zoo_student_token"); sessionStorage.removeItem("zoo_student_name"); sessionStorage.removeItem("zoo_demo_tour"); sessionStorage.removeItem("zoo_demo_member"); } catch (e) {}
       location.href = to || (onTeacher ? "enseignants.html" : "eleve.html");
     }
   };
@@ -307,7 +311,8 @@
     if (onTeacher) link("🧒 Voir le Zoo de Léo", "zoo-connecte.html?demo=1");
     else link("🧑‍🏫 Espace enseignant", "enseignants.html?demo=1");
     btn("↺ Recommencer", zooDemo.restart);
-    btn("✨ Créer mon compte", function () { zooDemo.exit("enseignants.html#inscription"); });
+    if (MEMBER) btn("↩ Mon espace", function () { zooDemo.exit("enseignants.html"); });
+    else btn("✨ Créer mon compte", function () { zooDemo.exit("enseignants.html#inscription"); });
     btn("✕ Quitter", function () { zooDemo.exit(); });
     document.body.insertBefore(b, document.body.firstChild);
     /* Liens de la page qui mèneraient hors de la démo */
@@ -316,6 +321,6 @@
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bar); else bar();
   /* Visite guidée (bulles pas à pas) */
-  var tour = document.createElement("script"); tour.src = "demo-tour.js?v=8"; tour.defer = true;
+  var tour = document.createElement("script"); tour.src = "demo-tour.js?v=9"; tour.defer = true;
   (document.head || document.documentElement).appendChild(tour);
 })();

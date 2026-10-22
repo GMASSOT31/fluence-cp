@@ -14,7 +14,7 @@ Appli web de fluence de lecture pour des classes de CP, en ligne sur https://zoo
 
 ## 3. Fichiers
 - `index.html` landing · `eleve.html` connexion élève · `zoo-connecte.html` Zoo élève (~400 Ko, une grande IIFE) · `enseignants.html` espace enseignant/admin (`#inscription` = création de compte) · `mentions-legales.html`, `confidentialite.html` · `img/` captures · `CNAME`.
-- `demo.js` (faux serveur de la démo, sessionStorage) et `demo-tour.js` (visite guidée « L'essentiel » 5 étapes ou « complète » 14) : **augmenter les numéros de version** `demo.js?v=` (dans zoo-connecte.html et enseignants.html) et `demo-tour.js?v=` (dans demo.js) à chaque modification. Actuels : demo.js v14, demo-tour.js v8. Paramètres d'adresse : `?demo=1&new=1` (démo), `&tour=short` (visite courte directe).
+- `demo.js` (faux serveur de la démo, sessionStorage) et `demo-tour.js` (visite guidée « L'essentiel » 5 étapes ou « complète » 14) : **augmenter les numéros de version** `demo.js?v=` (dans zoo-connecte.html et enseignants.html) et `demo-tour.js?v=` (dans demo.js) à chaque modification. Actuels : demo.js v15, demo-tour.js v9. Paramètres d'adresse : `?demo=1&new=1` (démo), `&tour=short` (visite courte directe).
 - `supabase/migrations/*.sql` : une migration par changement. `tools/` : outils de test (voir `tools/README.md`).
 - `zoo-local.html` : ancienne version locale, non maintenue.
 - Tables : teachers, classes, students, student_progress (JSON versionné), student_sessions, student_login_attempts, teacher_zoo_settings (JSON libre), teacher_feedback.
