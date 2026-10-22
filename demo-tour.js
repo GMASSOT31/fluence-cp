@@ -57,8 +57,22 @@
       run: async function () { var b = $("#btn-spin"); if (visible(b) && !b.disabled) b.click(); await wait(function () { return visible($("#btn-wheel-done")); }, 10000); await sleep(1200); } },
     { page: "zoo", enter: function () { go("jeux"); }, target: ".cabs", title: "La salle d'arcade",
       text: "8 jeux pour dépenser ses parties. 1 pièce si l'objectif est atteint, 3 pour un record personnel, 10 si on prend le record d'un camarade." },
-    { page: "zoo", enter: function () { go("audition"); }, target: "#audition-body .zoo-card, #audition-body", title: "J'écoute",
-      text: "L'élève entend un son et retrouve la bonne syllabe. Chaque son réussi fait éclore une carte « reconnue »… et donne un tour de roue." },
+    { page: "zoo", enter: function () { go("audition"); }, target: "#audition-body .zoo-card", title: "J'écoute",
+      text: "Le deuxième exercice : l'élève entend un son et retrouve la bonne syllabe, sans avoir besoin de lire la consigne. Essayez-le !",
+      primary: "Essayer l'écoute",
+      run: async function () {
+        var card = $("#audition-body .zoo-card"); if (card) card.click();
+        await wait(function () { return visible($(".listen-choice")); }, 5000);
+      } },
+    { page: "zoo", target: "#audition-body .listen-choices", dock: "top", title: "Écoutez, puis touchez",
+      text: "Le Zoo dit un son (🔊 pour réécouter) : touchez la bonne réponse. Chaque son réussi fait éclore une carte et donne un tour de roue.",
+      primary: "Suivant",
+      run: async function () {
+        var stopB = Array.prototype.filter.call(document.querySelectorAll("#audition-body button"), function (b) { return /Arrêter/.test(b.textContent); })[0];
+        if (stopB) stopB.click();
+        document.body.classList.remove("listen-focus");
+        await sleep(300);
+      } },
     { page: "zoo", enter: function () { go("home"); }, center: true, title: "À vous, côté enseignant",
       text: "Voyons maintenant votre espace : la progression de Léo, que vous venez de certifier, y est déjà.",
       primary: "Ouvrir l'espace enseignant",
@@ -77,6 +91,7 @@
       run: function () { T.on = false; save(); if (window.zooDemo) window.zooDemo.exit("enseignants.html"); return new Promise(function () {}); } }
   ];
   var LAST = STEPS.length - 1;
+  var FIRST_TEACHER = STEPS.map(function (s) { return s.page; }).indexOf("teacher");
 
   /* ---------- Affichage ---------- */
   var css = document.createElement("style");
@@ -123,6 +138,9 @@
     spot.style.width = (r.width + pad * 2) + "px"; spot.style.height = (r.height + pad * 2) + "px";
     if (window.innerWidth <= 600) return;
     var bw = bubble.offsetWidth, bh = bubble.offsetHeight, gap = 16;
+    bubble.style.width = s.dock === "top" ? "min(640px, calc(100vw - 24px))" : "";
+    bw = bubble.offsetWidth; bh = bubble.offsetHeight;
+    if (s.dock === "top") { bubble.style.left = Math.max(12, (window.innerWidth - bw) / 2) + "px"; bubble.style.top = "12px"; return; }
     var top = r.bottom + gap + bh < window.innerHeight ? r.bottom + gap : (r.top - gap - bh > 0 ? r.top - gap - bh : window.innerHeight - bh - 12);
     var left = Math.min(window.innerWidth - bw - 12, Math.max(12, r.left + r.width / 2 - bw / 2));
     bubble.style.left = left + "px"; bubble.style.top = Math.max(12, top) + "px";
@@ -136,8 +154,8 @@
     var page = onTeacher ? "teacher" : "zoo";
     if (s.page !== page) {
       /* Arrivée côté enseignant en cours de visite : on reprend à la première étape enseignant ; et inversement */
-      if (onTeacher && T.step < 10) T.step = 10;
-      else if (!onTeacher && T.step >= 10) { hide(); return; }
+      if (onTeacher && T.step < FIRST_TEACHER) T.step = FIRST_TEACHER;
+      else if (!onTeacher && T.step >= FIRST_TEACHER) { hide(); return; }
       save(); s = STEPS[T.step];
     }
     current = s;
@@ -171,7 +189,7 @@
   function addBarButton() {
     var bar = document.getElementById("demo-bar");
     if (!bar || document.getElementById("tour-restart")) return;
-    var b = button("", "🧭 Visite guidée", function () { T.on = true; T.step = onTeacher ? 10 : 0; save(); show(); });
+    var b = button("", "🧭 Visite guidée", function () { T.on = true; T.step = onTeacher ? FIRST_TEACHER : 0; save(); show(); });
     b.id = "tour-restart";
     bar.insertBefore(b, bar.children[1] || null);
   }

@@ -310,6 +310,6 @@
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bar); else bar();
   /* Visite guidée (bulles pas à pas) */
-  var tour = document.createElement("script"); tour.src = "demo-tour.js?v=1"; tour.defer = true;
+  var tour = document.createElement("script"); tour.src = "demo-tour.js?v=2"; tour.defer = true;
   (document.head || document.documentElement).appendChild(tour);
 })();
