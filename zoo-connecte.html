@@ -1928,7 +1928,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       var d = JSON.parse(raw);
       if (d && typeof d === "object") {
         if (Array.isArray(d.students)) data.students = d.students;
-        if (Array.isArray(d.results)) data.results = d.results;
+        if (Array.isArray(d.results)) data.results = cleanFraud(d.results);
         if (d.thr && typeof d.thr === "object") ["s", "m", "t"].forEach(function (k) { if (typeof d.thr[k] === "number") data.thr[k] = d.thr[k]; });
         if (d.texts && typeof d.texts === "object") data.texts = d.texts;
         if (Array.isArray(d.sounds) && d.sounds.length) data.sounds = d.sounds;
@@ -2957,6 +2957,11 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if (prev !== null && mclm > prev) msg += " Nouveau record !";
     $("r-msg").textContent = msg;
   }
+  /* Au-delà de 250 par minute, le score est impossible (triche) : il vaut 0, ne valide rien et ne donne aucune récompense */
+  var MCLM_MAX = 250;
+  function cleanFraud(list) {   /* anciennes lectures impossibles : score à 0, valeur d’origine gardée dans `fraud` */
+    return list.map(function (r) { return r && Number(r.mclm) > MCLM_MAX ? Object.assign({}, r, { fraud: Number(r.mclm), mclm: 0 }) : r; });
+  }
   function showResult() {
     var n = S.endIdx + 1, e = 0, k;
     for (k in S.errs) { if (S.errs[k] && parseInt(k, 10) <= S.endIdx) e++; }
@@ -2964,18 +2969,21 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var t = Math.max(1, S.elapsed);
     var mclm = Math.round(c / t * 60);
     var short = S.train && t < MIN_TRAIN_SEC;
-    current = { n: n, e: e, c: c, t: Math.round(t), mclm: mclm, short: short };
+    var fraud = mclm > MCLM_MAX ? mclm : undefined;
+    if (fraud) mclm = 0;
+    current = { n: n, e: e, c: c, t: Math.round(t), mclm: mclm, short: short, fraud: fraud };
     var info = kindInfo(S.kind);
     $("r-big").textContent = mclm;
     $("r-label").textContent = (S.kind === "s" ? "Syllabes lues" : "Mots lus") + " correctement en une minute";
     var det = n + " " + info.unit + " lus, " + e + (e > 1 ? " erreurs" : " erreur");
     if (t < DURATION - 1) det += ", en " + Math.round(t) + " secondes (ramené à une minute)";
     if (t < 15) det += ". Durée très courte : ce score est une estimation peu fiable.";
+    if (fraud) det = "🚩 Score impossible : lis vraiment chaque " + (S.kind === "s" ? "syllabe" : "mot") + ", sans aller trop vite. Cette lecture ne compte pas.";
     $("r-detail").textContent = det;
     var thr = data.thr[S.kind];
-    var ok = mclm >= thr && !short;
+    var ok = mclm >= thr && !short && !fraud;
     var badge = $("r-badge");
-    badge.textContent = S.train
+    badge.textContent = fraud ? "🚩 Lecture non validée : score impossible" : S.train
       ? (short ? "⏱️ Lecture trop courte : lis au moins " + MIN_TRAIN_SEC + " secondes pour valider l’étape" : ok ? "✓ Objectif atteint : étape validée" : "Objectif : " + thr + " par minute")
       : (ok ? "🏅 Objectif atteint : étape certifiée" : "Objectif : " + thr + " par minute") + (t < MIN_TRAIN_SEC ? " · ⏱️ lecture très courte, à vérifier" : "");
     badge.className = "badge" + (ok ? " ok" : "");
@@ -2987,7 +2995,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     paintWords();
   }
   function saveTraining() {
-    data.results.push({ id: uid(), sid: S.sid, sound: S.sound, k: S.kind, n: current.n, e: current.e, t: current.t, mclm: current.mclm, ts: Date.now(), src: "train", short: current.short || undefined });
+    data.results.push({ id: uid(), sid: S.sid, sound: S.sound, k: S.kind, n: current.n, e: current.e, t: current.t, mclm: current.mclm, ts: Date.now(), src: "train", short: current.short || undefined, fraud: current.fraud });
     data.sel.sid = S.sid;
     save();
   }
@@ -3015,7 +3023,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if (current.t < MIN_TRAIN_SEC && !confirm("Lecture très courte (" + current.t + " s) : le score n’est pas fiable. Enregistrer quand même ?")) return;
     var intro = $("r-msg").textContent, petEmoji = charFor(S.sound).e;
     var was = isValid(S.sid, S.sound, S.kind), petBefore = petState(S.sid, S.sound), evoSound = S.sound;
-    data.results.push({ id: uid(), sid: S.sid, sound: S.sound, k: S.kind, n: current.n, e: current.e, t: current.t, mclm: current.mclm, ts: Date.now() });
+    data.results.push({ id: uid(), sid: S.sid, sound: S.sound, k: S.kind, n: current.n, e: current.e, t: current.t, mclm: current.mclm, ts: Date.now(), fraud: current.fraud });
     data.sel.sid = S.sid;
     var newly = !was && isValid(S.sid, S.sound, S.kind);
     var sid = S.sid;
@@ -6075,7 +6083,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var n = RV.endIdx + 1, e = 0, k;
     for (k in RV.errs) { if (RV.errs[k] && parseInt(k, 10) <= RV.endIdx) e++; }
     var c = Math.max(0, n - e), t = Math.max(1, Math.min(DURATION, rv.secs));
-    return { n: n, e: e, c: c, t: t, mclm: Math.round(c / t * 60) };
+    var m = Math.round(c / t * 60);
+    return { n: n, e: e, c: c, t: t, mclm: m > MCLM_MAX ? 0 : m, fraud: m > MCLM_MAX ? m : undefined };
   }
   function renderReview(body) {
     var rv = data.reviews.filter(function (r) { return r.id === RV.id; })[0];
@@ -6190,7 +6199,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   }
   function saveReview(rv, r) {
     var was = isValid(rv.sid, rv.sound, rv.kind), petBefore = petState(rv.sid, rv.sound);
-    data.results.push({ id: uid(), sid: rv.sid, sound: rv.sound, k: rv.kind, n: r.n, e: r.e, t: Math.round(r.t), mclm: r.mclm, ts: rv.ts, src: "rec" });
+    data.results.push({ id: uid(), sid: rv.sid, sound: rv.sound, k: rv.kind, n: r.n, e: r.e, t: Math.round(r.t), mclm: r.mclm, ts: rv.ts, src: "rec", fraud: r.fraud });
     var newly = !was && isValid(rv.sid, rv.sound, rv.kind);
     var thr = data.thr[rv.kind];
     var note = "Le maître(sse) a écouté ta lecture : " + r.mclm + " " + kindInfo(rv.kind).unit + " par minute.";
@@ -6591,7 +6600,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
 
       cloudStudentId=st.student_id;
       data.students=[{id:st.student_id,name:st.nickname,avatar:typeof p.avatar==="string"?p.avatar:undefined}];
-      data.results=Array.isArray(p.results)?p.results:[];
+      data.results=Array.isArray(p.results)?cleanFraud(p.results):[];
       data.coins={[st.student_id]:Number(p.coins)||0};
       data.credits={[st.student_id]:Number(p.credits)||0};
       data.wheels=Array.isArray(p.wheels)?p.wheels:[];
