@@ -1881,6 +1881,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     hiv: 2,
     reviews: [],
     notes: [],
+    evos: [],   /* scènes d’évolution en attente (lecture notée plus tard par le maître) */
     listen: {},
     listenCfg: listenCfgClean(null),
     v: 3,
@@ -1925,6 +1926,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
         });
         if (Array.isArray(d.reviews)) data.reviews = d.reviews;
         if (Array.isArray(d.notes)) data.notes = d.notes;
+        if (Array.isArray(d.evos)) data.evos = d.evos;
         if (d.listen && typeof d.listen === "object") Object.keys(d.listen).forEach(function (k) { data.listen[k] = listenClean(d.listen[k]); });
         if (d.listenCfg) data.listenCfg = listenCfgClean(d.listenCfg);
         /* anciens jeux gagnés : repris sous forme de parties à jouer */
@@ -1975,6 +1977,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       reviews:data.reviews.filter(function(x){return x.sid===sid}),
       listen:data.listen[sid]||{},
       notes:data.notes.filter(function(x){return x.sid===sid}),
+      evos:data.evos.filter(function(x){return x.sid===sid}),
       avatar:(studentById(sid)||{}).avatar||null,
       selSound:data.sel.sound||null, selKind:data.sel.kind||"s",
       shop:data.shop, maxPlays:data.maxPlays, reward:data.reward, sfx:data.sfx };
@@ -3085,6 +3088,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
         data.reviews.filter(function (r) { return r.sid === s.id; }).forEach(function (r) { audioDelete(r.id); });
         data.reviews = data.reviews.filter(function (r) { return r.sid !== s.id; });
         data.notes = data.notes.filter(function (n) { return n.sid !== s.id; });
+        data.evos = data.evos.filter(function (n) { return n.sid !== s.id; });
         delete data.credits[s.id]; delete data.coins[s.id]; delete data.hi[s.id];
         if (data.sel.sid === s.id) data.sel.sid = null;
         save(); renderStudents();
@@ -4090,6 +4094,20 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
 
   var QUOTES = ["Chaque mot que tu lis te rend un peu plus fort.","Se tromper, c’est apprendre : on recommence et ça vient !","Lire, c’est ouvrir une porte vers mille histoires.","Aujourd’hui, tu vas faire de ton mieux, et c’est déjà super.","Petit à petit, tu deviens un grand lecteur.","Ton cerveau grandit chaque fois que tu t’entraînes.","Prends ton temps : bien lire, c’est mieux que lire vite.","Tu as le droit de ne pas savoir encore. Tu vas y arriver !","Chaque son appris est un trésor de plus dans ton sac.","Respire, regarde bien les lettres, et lance-toi !","Les erreurs sont des marches pour monter plus haut.","Tu sais déjà lire plus de mots qu’hier.","Un livre, c’est un ami qui te raconte des secrets.","Ton maître(sse) est fier(ère) de tous tes efforts.","Courage ! Les grands lecteurs ont tous commencé comme toi.","Lire à voix haute, c’est faire chanter les mots.","Chaque jour, un petit pas. Et un jour, un grand voyage !","Tu es capable de belles choses. Montre-le !","Quand c’est difficile, c’est que tu es en train d’apprendre.","Bravo d’être là : ton zoo t’attendait !"];
   var sessionQuote = QUOTES[Math.floor(Math.random() * QUOTES.length)];
+  /* Évolutions gagnées pendant l’absence de l’élève (lecture notée plus tard) : une scène chacune, puis la roue */
+  function playPendingEvos(sid) {
+    var mine = data.evos.filter(function (v) { return v.sid === sid && soundById(v.sound) && v.from && v.to; });
+    if (data.evos.some(function (v) { return v.sid === sid; }) && !mine.length) { data.evos = data.evos.filter(function (v) { return v.sid !== sid; }); save(); return; }
+    if (!mine.length) return;
+    var ev = mine[0];
+    data.evos = data.evos.filter(function (v) { return v.id !== ev.id; });
+    save();
+    showEvolution({ ch: charFor(ev.sound), from: ev.from, to: ev.to, sid: sid, zoo: "cartes" }, function () {
+      if (data.evos.some(function (v) { return v.sid === sid; })) { playPendingEvos(sid); return; }
+      if (data.reward && pendingWheels(sid).length) openWheel(sid, "Bravo, ton animal a évolué !", charFor(ev.sound).e);
+      else renderHome();
+    });
+  }
   function renderHome() {
     if (cloudToken) claimGifts();
     var body = $("home-body");
@@ -4100,6 +4118,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var myNotes = data.notes.filter(function (n) { return n.sid === sid; });
     myNotes.forEach(function (n) { body.appendChild(el("div", "note", n.text)); });
     if (myNotes.length) { data.notes = data.notes.filter(function (n) { return n.sid !== sid; }); save(); }
+    playPendingEvos(sid);
     /* Une seule prochaine action, bien visible, avec sa consigne lue à voix haute (🔊) pour les CP */
     var nx = nextStep(sid), lx = listenNext(sid), wheels = data.reward ? pendingWheels(sid).length : 0;
     var KW = { s: "les syllabes", m: "les mots", t: "le texte" };
@@ -5758,7 +5777,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     paint();
   }
   function saveReview(rv, r) {
-    var was = isValid(rv.sid, rv.sound, rv.kind);
+    var was = isValid(rv.sid, rv.sound, rv.kind), petBefore = petState(rv.sid, rv.sound);
     data.results.push({ id: uid(), sid: rv.sid, sound: rv.sound, k: rv.kind, n: r.n, e: r.e, t: Math.round(r.t), mclm: r.mclm, ts: rv.ts, src: "rec" });
     var newly = !was && isValid(rv.sid, rv.sound, rv.kind);
     var thr = data.thr[rv.kind];
@@ -5766,6 +5785,9 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if (newly) {
       note += " Étape validée !";
       if (data.reward) data.wheels.push({ id: uid(), sid: rv.sid, ts: Date.now() });
+      /* L’élève n’est pas là : son animal évoluera à sa prochaine arrivée sur l’accueil */
+      var petAfter = petState(rv.sid, rv.sound);
+      data.evos.push({ id: uid(), sid: rv.sid, sound: rv.sound, from: { got: petBefore.got, total: petBefore.total }, to: { got: petAfter.got, total: petAfter.total } });
     } else if (r.mclm >= thr) {
       note += " Beau travail !";
     } else if (r.mclm >= thr * 0.75) {
@@ -6164,6 +6186,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       data.vouchers=Array.isArray(p.vouchers)?p.vouchers:[];
       data.reviews=Array.isArray(p.reviews)?p.reviews:[];
       data.notes=Array.isArray(p.notes)?p.notes:[];
+      data.evos=Array.isArray(p.evos)?p.evos:[];
       data.listen={};data.listen[st.student_id]=listenClean(p.listen);
       data.listenCfg=listenCfgClean(teacherSettings.listenCfg);
       if(p.shop&&typeof p.shop==="object"&&Array.isArray(p.shop.rewards)&&!Array.isArray(teacherSettings.rewards))data.shop=p.shop;

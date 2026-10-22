@@ -28,7 +28,7 @@ LOADER = re.compile(r"<script>/\* Démo sans compte.*?</script>", re.S)
 HOOK_AT = 'if(!cloudMode){setMode();show("login");'
 HOOK = ("window.__t={data:data,LS:LS,G:G,finishScore:finishScore,winCoin:winCoin,coins:coins,listenEnd:listenEnd,"
         "listenMine:listenMine,listenNeed:listenNeed,pendingWheels:pendingWheels,renderHome:renderHome,renderJeux:renderJeux,"
-        "openWheel:openWheel,showEvolution:showEvolution,charFor:charFor,uid:uid};")
+        "openWheel:openWheel,showEvolution:showEvolution,charFor:charFor,uid:uid,saveReview:saveReview,petState:petState,isValid:isValid};")
 
 
 def read(name):
