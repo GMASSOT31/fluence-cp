@@ -6301,7 +6301,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     data.sel.sid = sid; data.sel.sound = sound; data.sel.kind = kind; save();
     if (ses.role === "teacher") enterStudent(sid, true, true);
     show("lecture");
-    if (ses.role === "student" && !ses.viaTeacher) lireLaunch("train", sound, lireKind(sid, sound, "train"));
+    if (ses.role === "student" && !ses.viaTeacher) lireLaunch("train", sound, kind);   /* le niveau de la case cliquée (syllabes, mots ou texte), pas le premier non validé */
   }
 
   /* Récapitulatif, courbe et historique : partagés entre le maître(sse) et l’élève */
