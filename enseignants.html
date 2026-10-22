@@ -68,6 +68,7 @@ main{max-width:1050px}
 /* Progression : coup d’œil sur la ligne de l’élève */
 .pg-row{display:flex;flex-wrap:wrap;gap:6px 8px;margin-top:6px}.pg-chip{display:inline-block;padding:4px 10px;border-radius:999px;font-size:.84rem;font-weight:700;background:#f2f5fb;color:#33405a;border:1px solid #dfe5f0}
 .pg-chip.ok{background:#eef7ee;border-color:#9fd3a4;color:#1f5f25}.pg-chip.warn{background:#fff3e0;border-color:#f0c27a;color:#8a4b00}.pg-chip.alert{background:#fdecec;border-color:#f0a3a3;color:#8b1c1c}.pg-chip.next{background:#eaf2ff;border-color:#a9c4f0;color:#1d4f9a}
+.pg-act{padding:4px 11px;font-size:.82rem;border-radius:999px;background:#fff;color:#1b2433;border:1px solid #cdd5e4;font-weight:700}.pg-help{margin-top:8px;padding:10px 12px;border-radius:12px;background:#fff8e6;border:1px solid #f0d9a0;font-size:.88rem;color:#4a3a10}.pg-help a{font-weight:700}
 /* Détails de progression : 4 cartes visuelles */
 .pd-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;width:100%;padding:12px 0 4px;color:#1b2433}
 .pd-card{display:flex;flex-direction:column;gap:6px;padding:14px;border-radius:14px;background:#f6f8fc;border:1px solid #e4e8f0}
@@ -654,8 +655,16 @@ async function renderProgress(students,classes){
    const waitingRec=Array.isArray(p.reviews)?p.reviews.length:0,toValidate=alone.length;
    const glance=document.createElement("div");glance.className="pg-row";
    glance.append(gk(days===null||days>=7?"warn":"ok","🕒 Dernière activité : "+when),gk("next","➡️ Prochaine étape : "+(nextTxt||"toutes faites 🎉")));
-   glance.append(toValidate||waitingRec?gk("alert","✋ À valider : "+[toValidate?toValidate+" étape(s) à certifier":"",waitingRec?waitingRec+" lecture(s) à écouter":""].filter(Boolean).join(" · ")):gk("ok","✅ Rien à valider"));
-   info.append(name,glance);wrap.append(info);
+   /* Besoin de validation : une action explicite selon ce qui existe vraiment */
+   const gb=(txt,fn)=>{const b2=document.createElement("button");b2.type="button";b2.className="pg-act";b2.textContent=txt;b2.onclick=fn;return b2};
+   const toCert=[...alone].filter(k=>!certified.includes(k)).map(k=>{const [sn,kd]=k.split(":");const x=cfgSounds.find(z=>z&&z.id===sn);return (x?(x.label||x.id):sn)+" · "+KN[kd]});
+   const evalHelp=document.createElement("div");evalHelp.className="pg-help hidden";
+   if(waitingRec)glance.append(gk("alert","🎧 "+waitingRec+" lecture(s) enregistrée(s) à écouter"),gb("Écouter la lecture",()=>document.querySelector('[data-tab="ecouter"]').click()));
+   if(toValidate){glance.append(gk("warn","✓ "+toValidate+" étape(s) réussie(s) en entraînement, pas encore certifiée(s)"),gb("Prévoir une évaluation",()=>{evalHelp.classList.toggle("hidden")}));
+    evalHelp.append("À évaluer avec "+s.nickname+" : "+toCert.join(", ")+". Quand tu es à côté de l’élève, dans son Zoo : Lire › Valider un son, puis choisis le son"+($("evalCode")&&$("evalCode").checked?" et tape ton mot de passe":"")+". ");
+    const lk=document.createElement("a");lk.href="eleve.html";lk.target="_blank";lk.rel="noopener";lk.textContent="Ouvrir l’espace élève";evalHelp.append(lk)}
+   if(!waitingRec&&!toValidate)glance.append(gk("ok","✅ Rien à valider"));
+   info.append(name,glance,evalHelp);wrap.append(info);
    const btn=document.createElement("button");btn.type="button";btn.className="secondary";btn.textContent="Détails";btn.setAttribute("aria-expanded","false");btn.title="Voir les détails de "+s.nickname;
    const details=document.createElement("div");details.className="muted hidden";details.style.cssText="width:100%";
    const mk=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e};
