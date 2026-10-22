@@ -346,7 +346,7 @@ body:not(.teacher-mode) main{color:#eef0f7}
  <p class="msg" id="fbAdminMsg" role="status"></p><div id="fbList" class="content-list"></div>
 </section>
 </div>
-</section></main><script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=15"><\/script>':'<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"><\/script>');})();</script><script>
+</section></main><script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=16"><\/script>':'<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"><\/script>');})();</script><script>
 (function(){
 "use strict";
 /* Retour du lien « Mot de passe oublié » : on lit l’adresse avant que la bibliothèque Supabase ne la nettoie */
@@ -663,7 +663,9 @@ async function renderProgress(students,classes){
     more(c,readings.slice().sort((a,b)=>(Number(b.ts)||0)-(Number(a.ts)||0)).slice(0,20).filter(Boolean).map(r=>(r.src==="train"?"🟡 Entraînement":"🟢 Évaluation")+" · "+dfmt(r.ts)+" · "+soundName(r.sound)+" · "+kindOf(r.k)+" · "+scoreTxt(r)+" · "+fmt(r.e)+" erreur(s)"+(r.short?" · durée insuffisante":"")));grid.append(c)}
    /* 3. Fluence */
    {const c=pcard("⚡ Fluence (évaluations)","pd-flu");
-    const allPts=evaluations.filter(r=>r&&!r.short&&Number(r.mclm)>0).slice().sort((a,b)=>(Number(a.ts)||0)-(Number(b.ts)||0));
+    const okEv=evaluations.filter(r=>r&&!r.short&&Number(r.mclm)>0),cnt={s:0,m:0,t:0};okEv.forEach(r=>{if(cnt[r.k]!=null)cnt[r.k]++});
+    const chartK=["s","m","t"].reduce((b,k)=>cnt[k]>cnt[b]?k:b,"s");   /* une seule courbe : le type de lecture le plus évalué (on compare ce qui est comparable) */
+    const allPts=okEv.filter(r=>r.k===chartK||cnt[chartK]===0).slice().sort((a,b)=>(Number(a.ts)||0)-(Number(b.ts)||0));
     /* Au plus 20 points : on garde le meilleur score de chaque tranche de temps, et toujours la 1re et la dernière évaluation */
     const pts=allPts.length<=20?allPts:(()=>{const keep=new Set([0,allPts.length-1]),step=(allPts.length-1)/19;for(let k=1;k<19;k++){const lo=Math.max(1,Math.round((k-0.5)*step)+1),hi=Math.min(allPts.length-2,Math.round((k+0.5)*step));let bi=-1;for(let i=lo;i<=hi;i++)if(bi<0||fmt(allPts[i].mclm)>fmt(allPts[bi].mclm))bi=i;if(bi>=0)keep.add(bi)}return allPts.filter((_,i)=>keep.has(i))})();
     if(pts.length){const last=fmt(pts[pts.length-1].mclm),first=fmt(pts[0].mclm);
@@ -672,7 +674,7 @@ async function renderProgress(students,classes){
      const NS="http://www.w3.org/2000/svg",svg=document.createElementNS(NS,"svg");svg.setAttribute("viewBox","0 0 "+W+" "+H);svg.setAttribute("class","pd-chart");svg.setAttribute("role","img");svg.setAttribute("aria-label","Évolution de la fluence : "+pts.map(r=>fmt(r.mclm)).join(", "));
      const line=document.createElementNS(NS,"polyline");line.setAttribute("points",pts.map((r,i)=>X(i).toFixed(1)+","+Y(fmt(r.mclm)).toFixed(1)).join(" "));line.setAttribute("fill","none");line.setAttribute("stroke","#e0a21b");line.setAttribute("stroke-width","3");svg.append(line);
      pts.forEach((r,i)=>{const d=document.createElementNS(NS,"circle");d.setAttribute("cx",X(i));d.setAttribute("cy",Y(fmt(r.mclm)));d.setAttribute("r","4");d.setAttribute("fill","#c27b00");const t=document.createElementNS(NS,"title");t.textContent=dfmt(r.ts)+" · "+soundName(r.sound)+" · "+fmt(r.mclm)+"/min";d.append(t);svg.append(d)});
-     c.append(svg);const dl=last-first;c.append(mk("div","pd-note",pts.length>1?(dl>=0?"📈 +":"📉 ")+dl+" corrects/min depuis la 1re évaluation ("+(allPts.length>pts.length?pts.length+" points les plus significatifs sur "+allPts.length:pts.length+" points")+")":"1 seule évaluation pour l’instant"));
+     c.append(svg);const dl=last-first;c.append(mk("div","pd-note",pts.length>1?(dl>=0?"📈 +":"📉 ")+dl+" corrects/min depuis la 1re évaluation de "+kindOf(chartK)+" ("+(allPts.length>pts.length?pts.length+" points les plus significatifs sur "+allPts.length:pts.length+" points")+")":"1 seule évaluation pour l’instant"));
     }else{c.append(mk("div","pd-big","–"),mk("div","pd-note","Pas encore d’évaluation chronométrée."))}
     if(fraudN)c.append(mk("div","pd-note","🚩 "+fraudN+" score(s) truqué(s) écarté(s)"));
     more(c,evaluations.slice().sort((a,b)=>(Number(b.ts)||0)-(Number(a.ts)||0)).filter(Boolean).slice(0,20).map(r=>dfmt(r.ts)+" · "+soundName(r.sound)+" · "+kindOf(r.k)+" · "+scoreTxt(r)+" · "+fmt(r.n)+" lu(s) · "+fmt(r.e)+" erreur(s)"+(r.short?" · durée insuffisante":"")));grid.append(c)}

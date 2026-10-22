@@ -45,6 +45,17 @@
     THE_END.primary = "Retour à mon espace";
     THE_END.run = function () { T.on = false; save(); if (window.zooDemo) window.zooDemo.exit("enseignants.html"); return new Promise(function () {}); };
   }
+  /* Suivi enseignant : on ouvre le « Détails » de Léo pour montrer les 4 cartes (sons écoutés, sons lus, courbe de fluence, jeux) */
+  function leoRow() { return Array.prototype.filter.call(document.querySelectorAll(".progress-row"), function (r) { return /Léo/.test(r.textContent); })[0] || null; }
+  function leoGrid() { var r = leoRow(), g = r && r.querySelector(".pd-grid"); return g && visible(g) ? g : null; }
+  async function openLeoDetails() {
+    tab("progression");
+    var r = await wait(leoRow, 4000);
+    if (!r || leoGrid()) return;
+    var b = Array.prototype.filter.call(r.querySelectorAll("button"), function (x) { return /Détails/.test(x.textContent); })[0];
+    if (b) b.click();
+  }
+  var LEO_TEXT = "Pour chaque élève, « Détails » ouvre 4 cartes : sons écoutés, sons lus, courbe de progrès de la fluence et activité de jeux. Chaque carte donne ses dates et scores.";
   function toTeacher() { T.step++; save(); location.href = "enseignants.html?demo=1"; return new Promise(function () {}); }
 
   /* « Découvrir l'essentiel en 2 minutes » : 5 étapes */
@@ -76,10 +87,8 @@
     { page: "zoo", stage: 3, target: "#v-roue .wheel-card", title: "Pièces et parties de jeu",
       text: "Les pièces s'échangent à la boutique contre vos récompenses ; les parties se jouent dans la salle d'arcade, après la lecture.",
       primary: "Voir l'espace enseignant", run: toTeacher },
-    { page: "teacher", stage: 4, enter: function () { tab("progression"); }, target: function () {
-        return Array.prototype.filter.call(document.querySelectorAll(".progress-row"), function (r) { return /Léo/.test(r.textContent); })[0] || $(".progress-row");
-      }, title: "Le suivi enseignant",
-      text: "Un suivi détaillé de chaque élève, avec le détail de ses scores de fluence et de son activité d'entraînement et de jeux." },
+    { page: "teacher", stage: 4, enter: openLeoDetails, target: leoGrid, title: "Le suivi enseignant",
+      text: LEO_TEXT },
     { page: "teacher", stage: 5, enter: function () { tab("eleves"); click('[data-sub-btn="classes"]'); }, target: "#classesSettings", title: "Créer votre classe",
       text: "Créez votre classe, ajoutez vos élèves (code secret de départ : 1234) et imprimez leurs fiches de connexion. Tout est prêt !" },
     THE_END
@@ -139,10 +148,8 @@
       text: "Voyons maintenant votre espace : la progression de Léo, que vous venez de certifier, y est déjà.",
       primary: "Ouvrir l'espace enseignant",
       run: function () { T.step++; save(); location.href = "enseignants.html?demo=1"; return new Promise(function () {}); } },
-    { page: "teacher", enter: function () { tab("progression"); }, target: function () {
-        return Array.prototype.filter.call(document.querySelectorAll(".progress-row"), function (r) { return /Léo/.test(r.textContent); })[0] || $(".progress-row") || $("#progressList");
-      }, title: "Le suivi de la classe",
-      text: "Un suivi détaillé de chaque élève, avec le détail de ses scores de fluence et de son activité d'entraînement et de jeux." },
+    { page: "teacher", enter: openLeoDetails, target: leoGrid, title: "Le suivi de la classe",
+      text: LEO_TEXT },
     { page: "teacher", enter: function () { tab("eleves"); click('[data-sub-btn="ajout"]'); }, target: "#studentForm", title: "Ajouter vos élèves",
       text: "Un pseudo suffit : le code secret de départ est 1234. « Et maintenant ? » imprime les fiches de connexion à découper (PDF)." },
     { page: "teacher", enter: function () { tab("reglages"); }, target: '.sub-picker[data-section="reglages"]', title: "Vos réglages",
