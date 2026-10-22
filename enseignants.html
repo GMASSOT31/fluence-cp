@@ -65,6 +65,19 @@ main{max-width:1050px}
   @media (prefers-reduced-motion: no-preference) { header .zoo-bee { animation: zoo-float 3s ease-in-out infinite; } header .zoo-llama { animation: zoo-float 3.6s ease-in-out -1.2s infinite; } @keyframes zoo-float { 0%,100% { translate: 0 0; } 50% { translate: 0 -8px; } } }
 
 
+/* Détails de progression : 4 cartes visuelles */
+.pd-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;width:100%;padding:12px 0 4px;color:#1b2433}
+.pd-card{display:flex;flex-direction:column;gap:6px;padding:14px;border-radius:14px;background:#f6f8fc;border:1px solid #e4e8f0}
+.pd-card h5{margin:0;font-size:.95rem}
+.pd-big{font-size:1.7rem;font-weight:850;line-height:1.1}.pd-big small{font-size:.9rem;font-weight:700;color:#5a6476}
+.pd-bar{height:14px;border-radius:99px;background:#dfe5f0;overflow:hidden;display:flex}
+.pd-bar i{display:block;height:100%}
+.pd-listen i{background:#2e9b91}.pd-read i{background:#367bc4}.pd-read i.alone{background:#9db8e8}
+.pd-note{font-size:.82rem;color:#5a6476}
+.pd-chart{width:100%;height:80px;display:block}
+.pd-more{align-self:flex-start;margin-top:auto;padding:5px 11px;font-size:.82rem;border-radius:9px;background:#fff;color:#1b2433;border:1px solid #cdd5e4}
+.pd-list{margin:6px 0 0;padding:0;list-style:none;font-size:.84rem;color:#33405a;display:grid;gap:3px}
+.pd-foot{width:100%;font-size:.82rem;color:#5a6476;padding:6px 0}
 /* Progression : une ligne par élève */
 .progress-row{flex-wrap:wrap;align-items:center}
 .progress-row>div:first-child{flex:1 1 320px;min-width:0}
@@ -620,15 +633,44 @@ async function renderProgress(students,classes){
    summary.title=certified.length+" certifiée(s), "+alone.length+" validée(s) seul, "+evaluations.length+" évaluation(s), "+training.length+" entraînement(s), "+fmt(p.coins)+" pièce(s), "+games.length+" jeu(x)";
    info.append(name,summary);wrap.append(info);
    const btn=document.createElement("button");btn.type="button";btn.className="secondary";btn.textContent="Détails";btn.setAttribute("aria-expanded","false");btn.title="Voir les détails de "+s.nickname;
-   const details=document.createElement("div");details.className="muted hidden";details.style.cssText="width:100%;padding:10px 0;white-space:pre-wrap";
-   const lines=[];
-   if(row)lines.push("Dernière sauvegarde : "+new Date(row.updated_at).toLocaleString("fr-FR"));
-   else lines.push("Aucune progression enregistrée sur le Zoo connecté.");
-   readings.slice().sort((a,b)=>(Number(b.ts)||0)-(Number(a.ts)||0)).slice(0,20).forEach(r=>{if(!r)return;const kind=r.k==="s"?"syllabes":r.k==="m"?"mots":r.k==="t"?"texte":"lecture";const when=Number.isFinite(Number(r.ts))?new Date(Number(r.ts)).toLocaleDateString("fr-FR"):"date inconnue";lines.push((r.src==="train"?"🟡 Entraînement":"🟢 Évaluation")+" · "+when+" · "+(r.sound||"son non précisé")+" · "+kind+" · "+fmt(r.n)+" lu(s) · "+fmt(r.e)+" erreur(s) · "+fmt(r.mclm)+" corrects/min"+(r.short?" · ⏱️ durée insuffisante (non retenu)":""))});
-   lines.push("👂 J’écoute : "+lisOk+" son(s) réussi(s) sur "+lisOrder.length+" · "+(Number(lis.tries)||0)+" exercice(s) fait(s)");
-   lisRows.forEach(r=>lines.push("   "+(r.ok?"✅":"⏳")+" "+(r.x.label||r.x.id)+" : "+Math.min(r.n,lisNeed(r.x.id))+"/"+lisNeed(r.x.id)+" réussite(s)"+(r.ok?" · validé":" · en cours")));
-   games.forEach(([game,h])=>{lines.push("Jeu "+game+" : record "+(h&&h.best!=null?h.best:"non défini"))});
-   details.textContent=lines.join("\n");
+   const details=document.createElement("div");details.className="muted hidden";details.style.cssText="width:100%";
+   const mk=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e};
+   const dfmt=ts=>Number.isFinite(Number(ts))&&Number(ts)>0?new Date(Number(ts)).toLocaleDateString("fr-FR"):"date inconnue";
+   const kindOf=k=>k==="s"?"syllabes":k==="m"?"mots":k==="t"?"texte":"lecture";
+   const soundName=id=>{const x=cfgSounds.find(z=>z&&z.id===id);return x?(x.label||x.id):(id||"son non précisé")};
+   const pcard=(title,cls)=>{const c=mk("div","pd-card "+(cls||""));c.append(mk("h5",null,title));return c};
+   const more=(c,items)=>{const ul=mk("ul","pd-list hidden");(items.length?items:["Rien pour l’instant."]).forEach(t=>ul.append(mk("li",null,t)));const bt=mk("button","pd-more","Voir le détail");bt.type="button";bt.onclick=()=>{const h=ul.classList.toggle("hidden");bt.textContent=h?"Voir le détail":"Masquer le détail"};c.append(bt,ul)};
+   const bar=(parts,cls)=>{const b=mk("div","pd-bar "+cls);parts.forEach(([pct,c2])=>{const i=document.createElement("i");i.style.width=Math.min(100,pct)+"%";if(c2)i.className=c2;b.append(i)});return b};
+   const grid=mk("div","pd-grid");
+   /* 1. Sons écoutés */
+   {const c=pcard("👂 Sons écoutés","pd-listen"),tot=Math.max(1,lisOrder.length);
+    const big=mk("div","pd-big",String(lisOk));big.append(mk("small",null," / "+lisOrder.length+" sons"));
+    c.append(big,bar([[lisOk/tot*100]],"pd-listen"),mk("div","pd-note",(Number(lis.tries)||0)+" exercice(s) fait(s)"));
+    more(c,lisRows.map(r=>(r.ok?"✅ ":"⏳ ")+(r.x.label||r.x.id)+" : "+Math.min(r.n,lisNeed(r.x.id))+"/"+lisNeed(r.x.id)+" réussite(s)"));grid.append(c)}
+   /* 2. Sons lus */
+   {const c=pcard("📖 Sons lus","pd-read"),tot=Math.max(1,cfgSounds.length),sOf=k=>k.split(":")[0];
+    const cs=new Set(certified.map(sOf)),as=new Set(alone.map(sOf).filter(x=>!cs.has(x)));
+    const big=mk("div","pd-big",String(cs.size));big.append(mk("small",null," / "+cfgSounds.length+" sons"));
+    c.append(big,bar([[cs.size/tot*100],[as.size/tot*100,"alone"]],"pd-read"),mk("div","pd-note","🏅 certifiés par l’évaluation"+(as.size?" · "+as.size+" validé(s) seul (clair)":"")));
+    more(c,readings.slice().sort((a,b)=>(Number(b.ts)||0)-(Number(a.ts)||0)).slice(0,20).filter(Boolean).map(r=>(r.src==="train"?"🟡 Entraînement":"🟢 Évaluation")+" · "+dfmt(r.ts)+" · "+soundName(r.sound)+" · "+kindOf(r.k)+" · "+fmt(r.mclm)+"/min · "+fmt(r.e)+" erreur(s)"+(r.short?" · durée insuffisante":"")));grid.append(c)}
+   /* 3. Fluence */
+   {const c=pcard("⚡ Fluence (évaluations)","pd-flu");
+    const pts=evaluations.filter(r=>r&&!r.short&&Number(r.mclm)>0).slice().sort((a,b)=>(Number(a.ts)||0)-(Number(b.ts)||0));
+    if(pts.length){const last=fmt(pts[pts.length-1].mclm),first=fmt(pts[0].mclm);
+     const big=mk("div","pd-big",String(last));big.append(mk("small",null," corrects/min"));c.append(big);
+     const W=220,H=70,mx=Math.max(...pts.map(r=>fmt(r.mclm)),1),mn=Math.min(...pts.map(r=>fmt(r.mclm)),mx),span=Math.max(1,mx-mn),X=i=>pts.length>1?8+i*(W-16)/(pts.length-1):W/2,Y=v=>H-8-(v-mn)/span*(H-16);
+     const NS="http://www.w3.org/2000/svg",svg=document.createElementNS(NS,"svg");svg.setAttribute("viewBox","0 0 "+W+" "+H);svg.setAttribute("class","pd-chart");svg.setAttribute("role","img");svg.setAttribute("aria-label","Évolution de la fluence : "+pts.map(r=>fmt(r.mclm)).join(", "));
+     const line=document.createElementNS(NS,"polyline");line.setAttribute("points",pts.map((r,i)=>X(i).toFixed(1)+","+Y(fmt(r.mclm)).toFixed(1)).join(" "));line.setAttribute("fill","none");line.setAttribute("stroke","#e0a21b");line.setAttribute("stroke-width","3");svg.append(line);
+     pts.forEach((r,i)=>{const d=document.createElementNS(NS,"circle");d.setAttribute("cx",X(i));d.setAttribute("cy",Y(fmt(r.mclm)));d.setAttribute("r","4");d.setAttribute("fill","#c27b00");const t=document.createElementNS(NS,"title");t.textContent=dfmt(r.ts)+" · "+soundName(r.sound)+" · "+fmt(r.mclm)+"/min";d.append(t);svg.append(d)});
+     c.append(svg);const dl=last-first;c.append(mk("div","pd-note",pts.length>1?(dl>=0?"📈 +":"📉 ")+dl+" corrects/min depuis la 1re évaluation ("+pts.length+" points)":"1 seule évaluation pour l’instant"));
+    }else{c.append(mk("div","pd-big","–"),mk("div","pd-note","Pas encore d’évaluation chronométrée."))}
+    more(c,evaluations.slice().sort((a,b)=>(Number(b.ts)||0)-(Number(a.ts)||0)).filter(Boolean).slice(0,20).map(r=>dfmt(r.ts)+" · "+soundName(r.sound)+" · "+kindOf(r.k)+" · "+fmt(r.mclm)+" corrects/min · "+fmt(r.n)+" lu(s) · "+fmt(r.e)+" erreur(s)"+(r.short?" · durée insuffisante":"")));grid.append(c)}
+   /* 4. Jeux */
+   {const c=pcard("🎮 Jeux","pd-games"),played=games.reduce((n,[,h])=>n+(h&&typeof h==="object"?(Number(h.n)>0?Number(h.n):(h.best!=null?1:0)):0),0);
+    const big=mk("div","pd-big",String(played));big.append(mk("small",null," partie(s) jouée(s)"));
+    c.append(big,mk("div","pd-note",games.length+" jeu(x) différent(s) essayé(s)"));
+    more(c,games.map(([g,h])=>(GAME_NAMES[g]||g)+" : "+((h&&Number(h.n))||0)+" partie(s) · record "+(h&&h.best!=null?h.best:"non défini")));grid.append(c)}
+   details.append(grid,mk("div","pd-foot",row?"Dernière sauvegarde : "+new Date(row.updated_at).toLocaleString("fr-FR"):"Aucune progression enregistrée sur le Zoo connecté."));
    btn.onclick=()=>{details.classList.toggle("hidden");const open=!details.classList.contains("hidden");btn.textContent=open?"Masquer":"Détails";btn.setAttribute("aria-expanded",String(open))};
    const acts=document.createElement("div");acts.className="row-actions";
    if(s.teacher_id===currentUser.id){const gift=document.createElement("button");gift.type="button";gift.textContent="🎁 +10";gift.title="Donner 10 pièces d’or à "+s.nickname;
