@@ -2960,7 +2960,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if (prev !== null && mclm > prev) msg += " Nouveau record !";
     $("r-msg").textContent = msg;
   }
-  /* Au-delà de 250 par minute, le score est impossible (triche) : il vaut 0, ne valide rien et ne donne aucune récompense */
+  /* Au-delà de 250 par minute, le score est inhabituel (mauvais clic, lecture trop courte…) : il vaut 0, ne valide rien et ne donne aucune récompense */
   var MCLM_MAX = 250;
   function cleanFraud(list) {   /* anciennes lectures impossibles : score à 0, valeur d’origine gardée dans `fraud` */
     return list.map(function (r) { return r && Number(r.mclm) > MCLM_MAX ? Object.assign({}, r, { fraud: Number(r.mclm), mclm: 0 }) : r; });
@@ -2981,12 +2981,12 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var det = n + " " + info.unit + " lus, " + e + (e > 1 ? " erreurs" : " erreur");
     if (t < DURATION - 1) det += ", en " + Math.round(t) + " secondes (ramené à une minute)";
     if (t < 15) det += ". Durée très courte : ce score est une estimation peu fiable.";
-    if (fraud) det = "🚩 Score impossible : lis vraiment chaque " + (S.kind === "s" ? "syllabe" : "mot") + ", sans aller trop vite. Cette lecture ne compte pas.";
+    if (fraud) det = "⚠️ Résultat écarté : la lecture a été trop courte ou trop rapide pour être comptée. Recommence tranquillement, en lisant chaque " + (S.kind === "s" ? "syllabe" : "mot") + ".";
     $("r-detail").textContent = det;
     var thr = data.thr[S.kind];
     var ok = mclm >= thr && !short && !fraud;
     var badge = $("r-badge");
-    badge.textContent = fraud ? "🚩 Lecture non validée : score impossible" : S.train
+    badge.textContent = fraud ? "⚠️ Résultat écarté : durée trop courte ou score inhabituel" : S.train
       ? (short ? "⏱️ Lecture trop courte : lis au moins " + MIN_TRAIN_SEC + " secondes pour valider l’étape" : ok ? "✓ Objectif atteint : étape validée" : "Objectif : " + thr + " par minute")
       : (ok ? "🏅 Objectif atteint : étape certifiée" : "Objectif : " + thr + " par minute") + (t < MIN_TRAIN_SEC ? " · ⏱️ lecture très courte, à vérifier" : "");
     badge.className = "badge" + (ok ? " ok" : "");

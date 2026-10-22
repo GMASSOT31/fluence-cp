@@ -642,7 +642,7 @@ async function renderProgress(students,classes){
    const lisOk=lisRows.filter(r=>r.ok).length;
    const wrap=document.createElement("div");wrap.className="row progress-row";
    const info=document.createElement("div");const name=document.createElement("strong");name.textContent=s.nickname;
-   const summary=document.createElement("div");summary.className="muted";summary.textContent=certified.length+" 🏅 certifiée(s) · "+alone.length+" ✓ validée(s) seul · "+evaluations.length+" évaluation(s) · "+training.length+" entraînement(s)"+(latestEval?" · Dernière fluence : "+fmt(latestEval.mclm)+" corrects/min":"")+" · "+fmt(p.coins)+" pièce(s)"+(row&&row.pending_coins>0?" (+"+row.pending_coins+" en attente)":"")+" · "+lisOk+" son(s) écouté(s) réussi(s)"+(fraudN?" · 🚩 "+fraudN+" score(s) truqué(s)":"")+" · "+games.length+" jeu(x)";
+   const summary=document.createElement("div");summary.className="muted";summary.textContent=certified.length+" 🏅 certifiée(s) · "+alone.length+" ✓ validée(s) seul · "+evaluations.length+" évaluation(s) · "+training.length+" entraînement(s)"+(latestEval?" · Dernière fluence : "+fmt(latestEval.mclm)+" corrects/min":"")+" · "+fmt(p.coins)+" pièce(s)"+(row&&row.pending_coins>0?" (+"+row.pending_coins+" en attente)":"")+" · "+lisOk+" son(s) écouté(s) réussi(s)"+(fraudN?" · ⚠️ "+fraudN+" résultat(s) écarté(s)":"")+" · "+games.length+" jeu(x)";
    summary.title=certified.length+" certifiée(s), "+alone.length+" validée(s) seul, "+evaluations.length+" évaluation(s), "+training.length+" entraînement(s), "+fmt(p.coins)+" pièce(s), "+games.length+" jeu(x)";
    /* Coup d’œil : dernière activité, prochaine étape, besoin de validation (les autres chiffres sont dans « Détails ») */
    const gk=(cls,t)=>{const e=document.createElement("span");e.className="pg-chip "+cls;e.textContent=t;return e};
@@ -660,7 +660,7 @@ async function renderProgress(students,classes){
    const details=document.createElement("div");details.className="muted hidden";details.style.cssText="width:100%";
    const mk=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e};
    const dfmt=ts=>Number.isFinite(Number(ts))&&Number(ts)>0?new Date(Number(ts)).toLocaleDateString("fr-FR"):"date inconnue";
-   const scoreTxt=r=>Number(r.fraud)>0?"🚩 score impossible ("+fmt(r.fraud)+")":fmt(r.mclm)+" corrects/min";
+   const scoreTxt=r=>Number(r.fraud)>0?"⚠️ Résultat écarté : durée trop courte ou score inhabituel ("+fmt(r.fraud)+")":fmt(r.mclm)+" corrects/min";
    const kindOf=k=>k==="s"?"syllabes":k==="m"?"mots":k==="t"?"texte":"lecture";
    const soundName=id=>{const x=cfgSounds.find(z=>z&&z.id===id);return x?(x.label||x.id):(id||"son non précisé")};
    const pcard=(title,cls)=>{const c=mk("div","pd-card "+(cls||""));c.append(mk("h5",null,title));return c};
@@ -693,7 +693,7 @@ async function renderProgress(students,classes){
      pts.forEach((r,i)=>{const d=document.createElementNS(NS,"circle");d.setAttribute("cx",X(i));d.setAttribute("cy",Y(fmt(r.mclm)));d.setAttribute("r","4");d.setAttribute("fill","#c27b00");const t=document.createElementNS(NS,"title");t.textContent=dfmt(r.ts)+" · "+soundName(r.sound)+" · "+fmt(r.mclm)+"/min";d.append(t);svg.append(d)});
      c.append(svg);const dl=last-first;c.append(mk("div","pd-note",pts.length>1?(dl>=0?"📈 +":"📉 ")+dl+" corrects/min depuis la 1re évaluation de "+kindOf(chartK)+" ("+(allPts.length>pts.length?pts.length+" points les plus significatifs sur "+allPts.length:pts.length+" points")+")":"1 seule évaluation pour l’instant"));
     }else{c.append(mk("div","pd-big","–"),mk("div","pd-note","Pas encore d’évaluation chronométrée."))}
-    if(fraudN)c.append(mk("div","pd-note","🚩 "+fraudN+" score(s) truqué(s) écarté(s)"));
+    if(fraudN)c.append(mk("div","pd-note","⚠️ "+fraudN+" résultat(s) écarté(s) : durée trop courte ou score inhabituel"));
     more(c,evaluations.slice().sort((a,b)=>(Number(b.ts)||0)-(Number(a.ts)||0)).filter(Boolean).slice(0,20).map(r=>dfmt(r.ts)+" · "+soundName(r.sound)+" · "+kindOf(r.k)+" · "+scoreTxt(r)+" · "+fmt(r.n)+" lu(s) · "+fmt(r.e)+" erreur(s)"+(r.short?" · durée insuffisante":"")));grid.append(c)}
    /* 4. Jeux */
    {const c=pcard("🎮 Jeux","pd-games"),played=games.reduce((n,[,h])=>n+(h&&typeof h==="object"?(Number(h.n)>0?Number(h.n):(h.best!=null?1:0)):0),0);
