@@ -327,7 +327,7 @@ body:not(.teacher-mode) main{color:#eef0f7}
  <p class="msg" id="fbAdminMsg" role="status"></p><div id="fbList" class="content-list"></div>
 </section>
 </div>
-</section></main><script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=13"><\/script>':'<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"><\/script>');})();</script><script>
+</section></main><script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=14"><\/script>':'<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"><\/script>');})();</script><script>
 (function(){
 "use strict";
 /* Retour du lien « Mot de passe oublié » : on lit l’adresse avant que la bibliothèque Supabase ne la nettoie */
@@ -551,7 +551,7 @@ async function renderRecordings(){
 }
 
 /* Administrateur : jeux classés par nombre de parties terminées (tous les enseignants), sans aucun nom d’élève */
-const GAME_NAMES={memory:"🃏 Memory des animaux",snake:"🐍 Le serpent",flap:"🐤 L’oiseau volant",order:"⏱️ Dans l’ordre",simon:"🧠 Répète les animaux",safari:"🦁 Safari des animaux",stack:"🦒 Tour d’animaux",ballons:"🎈 Ballons des sons",count:"🔢 Compte les animaux (ancien jeu)",catch:"🎯 Attrape-les (ancien jeu)"};
+const GAME_NAMES={memory:"🃏 Memory des animaux",snake:"🐍 Le serpent",flap:"🐤 L’oiseau volant",order:"⏱️ Dans l’ordre",simon:"🧠 Répète les animaux",safari:"🦁 Safari des animaux",stack:"🦒 Tour d’animaux",tiles:"🎹 Tuiles des sons",count:"🔢 Compte les animaux (ancien jeu)",catch:"🎯 Attrape-les (ancien jeu)"};
 async function renderGameRanking(){
  const old=$("gameRanking");if(old)old.remove();
  if(currentRole!=="admin")return;

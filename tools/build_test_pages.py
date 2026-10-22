@@ -27,6 +27,7 @@ CDN = '<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/um
 LOADER = re.compile(r"<script>/\* Démo sans compte.*?</script>", re.S)
 FLAP_HOOK = ("window.__flap={bird:bird,pipes:pipes,state:function(){return{t:t,dead:dead,won:won,started:started,ended:ended,passed:passed,scroll:scroll,lives:lives,inv:inv}},"
              "setT:function(v){t=v;bi=FLAP_BANNERS.filter(function(x){return x<=v}).length}};")
+TILES_HOOK = ("window.__tiles={rows:function(){return rows},state:function(){return{t:t,lives:lives,score:score,dead:dead,ended:ended,started:started,target:target.key}},setT:function(v){t=v}};")
 HOOK_AT = 'if(!cloudMode){setMode();show("login");'
 HOOK = ("window.__t={data:data,LS:LS,G:G,finishScore:finishScore,winCoin:winCoin,coins:coins,listenEnd:listenEnd,"
         "listenMine:listenMine,listenNeed:listenNeed,pendingWheels:pendingWheels,renderHome:renderHome,renderJeux:renderJeux,"
@@ -59,6 +60,7 @@ def main():
     if HOOK_AT in zoo:
         zoo = zoo.replace(HOOK_AT, HOOK + HOOK_AT, 1)
     zoo = zoo.replace("/*TEST_HOOK_FLAP*/", FLAP_HOOK, 1)   # accès à l'oiseau pour les tests (uniquement ici)
+    zoo = zoo.replace("/*TEST_HOOK_TILES*/", TILES_HOOK, 1)
     write("zoo-test.html", zoo)
     write("enseignants-test.html", swap_backend(read("enseignants.html"), "fake-auth.js"))
     write("eleve-test.html", swap_backend(read("eleve.html"), "fake-auth.js"))
