@@ -754,7 +754,7 @@ function applyQuota(){const q=quotaState,full=q.limit>0&&q.used>=q.limit;$("addS
 $("goAddStudents").onclick=()=>{const id=$("goAddStudents").dataset.classId;$("classCreated").classList.add("hidden");document.querySelector('[data-sub-btn="ajout"]').click();if(id&&[...$("classSelect").options].some(o=>o.value===id))$("classSelect").value=id;if(!$("nickname").disabled)$("nickname").focus();};
 $("printCards").onclick=()=>{const c=allClasses.find(x=>x.id===$("classSelect").value);if(!c){msg("cardsMsg","Choisis d’abord une classe.",true);return;}printLoginCards(c,"cardsMsg",$("printCards"));};
 $("goProgress").onclick=()=>showTab("progression");
-/* Guide de démarrage : 4 étapes pour un nouveau compte (2 se cochent seules, 2 au clic) ; mémorisé sur cet appareil */
+/* Guide de démarrage : 3 étapes pour un nouveau compte (2 se cochent seules, 1 au clic) ; mémorisé sur cet appareil */
 function guideState(){try{return JSON.parse(localStorage.getItem("zoo_guide_"+currentUser.id)||"{}")||{}}catch(e){return{}}}
 function guideSave(st){try{localStorage.setItem("zoo_guide_"+currentUser.id,JSON.stringify(st))}catch(e){}}
 function renderGuide(){
@@ -766,11 +766,10 @@ function renderGuide(){
  const steps=[
   {done:mineC.length>0,ico:"📚",txt:"Créer ma classe",btn:"Créer",go:()=>{showTab("eleves");document.querySelector('[data-sub-btn="classes"]').click()}},
   {done:mineS.length>0,ico:"🧒",txt:"Ajouter mon premier élève",btn:"Ajouter",go:()=>{showTab("eleves");document.querySelector('[data-sub-btn="ajout"]').click()},off:!mineC.length},
-  {done:!!st.print,ico:"🖨️",txt:"Imprimer sa fiche de connexion",btn:"Imprimer",go:()=>{document.querySelector('[data-sub-btn="ajout"]').click();const c=mineC[0];if(c)$("classSelect").value=c.id;$("printCards").click();st.print=1;guideSave(st);renderGuide()},off:!mineS.length},
-  {done:!!st.test,ico:"🦁",txt:"Tester le Zoo comme un élève",btn:"Essayer",go:()=>{window.open("zoo-connecte.html?demo=1&new=1&compte=1","_blank","noopener");st.test=1;guideSave(st);renderGuide()}}
+  {done:!!st.print,ico:"🖨️",txt:"Imprimer sa fiche de connexion",btn:"Imprimer",go:()=>{document.querySelector('[data-sub-btn="ajout"]').click();const c=mineC[0];if(c)$("classSelect").value=c.id;$("printCards").click();st.print=1;guideSave(st);renderGuide()},off:!mineS.length}
  ];
  const all=steps.every(x=>x.done);
- box.replaceChildren(mk("h2",null,"Bienvenue dans Zoo de Lecture 🦁"),mk("p","muted","4 petites étapes pour démarrer. Les deux premières se cochent toutes seules."));
+ box.replaceChildren(mk("h2",null,"Bienvenue dans Zoo de Lecture 🦁"),mk("p","muted","3 petites étapes pour démarrer. Les deux premières se cochent toutes seules."));
  const ul=mk("ul");
  steps.forEach(x=>{const li=mk("li",x.done?"done":"");li.append(mk("span","g-ico",x.done?"✅":x.ico),mk("span","g-txt",x.txt));if(!x.done){const b=mk("button",null,x.btn);b.type="button";b.disabled=!!x.off;if(x.off)b.title="Termine d’abord l’étape précédente";b.onclick=x.go;li.append(b)}ul.append(li)});
  box.append(ul);
