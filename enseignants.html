@@ -655,14 +655,16 @@ async function renderProgress(students,classes){
     more(c,readings.slice().sort((a,b)=>(Number(b.ts)||0)-(Number(a.ts)||0)).slice(0,20).filter(Boolean).map(r=>(r.src==="train"?"🟡 Entraînement":"🟢 Évaluation")+" · "+dfmt(r.ts)+" · "+soundName(r.sound)+" · "+kindOf(r.k)+" · "+fmt(r.mclm)+"/min · "+fmt(r.e)+" erreur(s)"+(r.short?" · durée insuffisante":"")));grid.append(c)}
    /* 3. Fluence */
    {const c=pcard("⚡ Fluence (évaluations)","pd-flu");
-    const pts=evaluations.filter(r=>r&&!r.short&&Number(r.mclm)>0).slice().sort((a,b)=>(Number(a.ts)||0)-(Number(b.ts)||0));
+    const allPts=evaluations.filter(r=>r&&!r.short&&Number(r.mclm)>0).slice().sort((a,b)=>(Number(a.ts)||0)-(Number(b.ts)||0));
+    /* Au plus 20 points : on garde le meilleur score de chaque tranche de temps, et toujours la 1re et la dernière évaluation */
+    const pts=allPts.length<=20?allPts:(()=>{const keep=new Set([0,allPts.length-1]),step=(allPts.length-1)/19;for(let k=1;k<19;k++){const lo=Math.max(1,Math.round((k-0.5)*step)+1),hi=Math.min(allPts.length-2,Math.round((k+0.5)*step));let bi=-1;for(let i=lo;i<=hi;i++)if(bi<0||fmt(allPts[i].mclm)>fmt(allPts[bi].mclm))bi=i;if(bi>=0)keep.add(bi)}return allPts.filter((_,i)=>keep.has(i))})();
     if(pts.length){const last=fmt(pts[pts.length-1].mclm),first=fmt(pts[0].mclm);
      const big=mk("div","pd-big",String(last));big.append(mk("small",null," corrects/min"));c.append(big);
      const W=220,H=70,mx=Math.max(...pts.map(r=>fmt(r.mclm)),1),mn=Math.min(...pts.map(r=>fmt(r.mclm)),mx),span=Math.max(1,mx-mn),X=i=>pts.length>1?8+i*(W-16)/(pts.length-1):W/2,Y=v=>H-8-(v-mn)/span*(H-16);
      const NS="http://www.w3.org/2000/svg",svg=document.createElementNS(NS,"svg");svg.setAttribute("viewBox","0 0 "+W+" "+H);svg.setAttribute("class","pd-chart");svg.setAttribute("role","img");svg.setAttribute("aria-label","Évolution de la fluence : "+pts.map(r=>fmt(r.mclm)).join(", "));
      const line=document.createElementNS(NS,"polyline");line.setAttribute("points",pts.map((r,i)=>X(i).toFixed(1)+","+Y(fmt(r.mclm)).toFixed(1)).join(" "));line.setAttribute("fill","none");line.setAttribute("stroke","#e0a21b");line.setAttribute("stroke-width","3");svg.append(line);
      pts.forEach((r,i)=>{const d=document.createElementNS(NS,"circle");d.setAttribute("cx",X(i));d.setAttribute("cy",Y(fmt(r.mclm)));d.setAttribute("r","4");d.setAttribute("fill","#c27b00");const t=document.createElementNS(NS,"title");t.textContent=dfmt(r.ts)+" · "+soundName(r.sound)+" · "+fmt(r.mclm)+"/min";d.append(t);svg.append(d)});
-     c.append(svg);const dl=last-first;c.append(mk("div","pd-note",pts.length>1?(dl>=0?"📈 +":"📉 ")+dl+" corrects/min depuis la 1re évaluation ("+pts.length+" points)":"1 seule évaluation pour l’instant"));
+     c.append(svg);const dl=last-first;c.append(mk("div","pd-note",pts.length>1?(dl>=0?"📈 +":"📉 ")+dl+" corrects/min depuis la 1re évaluation ("+(allPts.length>pts.length?pts.length+" points les plus significatifs sur "+allPts.length:pts.length+" points")+")":"1 seule évaluation pour l’instant"));
     }else{c.append(mk("div","pd-big","–"),mk("div","pd-note","Pas encore d’évaluation chronométrée."))}
     more(c,evaluations.slice().sort((a,b)=>(Number(b.ts)||0)-(Number(a.ts)||0)).filter(Boolean).slice(0,20).map(r=>dfmt(r.ts)+" · "+soundName(r.sound)+" · "+kindOf(r.k)+" · "+fmt(r.mclm)+" corrects/min · "+fmt(r.n)+" lu(s) · "+fmt(r.e)+" erreur(s)"+(r.short?" · durée insuffisante":"")));grid.append(c)}
    /* 4. Jeux */
