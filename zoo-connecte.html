@@ -4033,23 +4033,18 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     } else if (!ok) {
       card.appendChild(el("p", "instruction", "Il faut au plus " + nb(cfg.maxErrors, "erreur", "erreurs") + ". Écoute bien et recommence, tu vas y arriver !"));
     }
+    /* Fin de série : toujours deux choix. Continuer = le même son (pour gagner les étoiles suivantes ou réessayer),
+       ou le son suivant s’il vient d’être validé ; Arrêter = retour à l’accueil */
     var row = el("div", "row");
-    if (nowDone) {
-      /* Son validé : continuer avec le son suivant, ou arrêter l’écoute */
-      var nx = listenNext(sid);
-      var cont = el("button", "primary big-btn", "Continuer"); cont.type = "button";
-      cont.addEventListener("click", function () { if (nx) { LS.sound = nx.id; listenStart(sid, nx.id); } else { LS.pick = null; renderAudition(); } });
-      var stopB = el("button", "secondary big-btn", "Arrêter"); stopB.type = "button";
-      stopB.addEventListener("click", function () { listenStopVoice(); listenFocus(false); goTo("home"); });
-      row.appendChild(cont); row.appendChild(stopB);
-    } else {
-      var again = el("button", "primary big-btn", "Rejouer"); again.type = "button";
-      again.addEventListener("click", function () { listenStart(sid, id); });
-      row.appendChild(again);
-      var back = el("button", "secondary", "Choisir un son"); back.type = "button";
-      back.addEventListener("click", function () { LS.pick = id; renderAudition(); });
-      row.appendChild(back);
-    }
+    var nx = nowDone ? listenNext(sid) : null;
+    var cont = el("button", "primary big-btn", "Continuer"); cont.type = "button";
+    cont.addEventListener("click", function () {
+      if (!nowDone) { listenStart(sid, id); return; }
+      if (nx) { LS.sound = nx.id; listenStart(sid, nx.id); } else { LS.pick = null; renderAudition(); }
+    });
+    var stopB = el("button", "secondary big-btn", "Arrêter"); stopB.type = "button";
+    stopB.addEventListener("click", function () { listenStopVoice(); listenFocus(false); goTo("home"); });
+    row.appendChild(cont); row.appendChild(stopB);
     card.appendChild(row);
     body.appendChild(card);
     if (nowDone) showEvolution({ ch: charFor(id), from: { got: 0, total: 1 }, to: { got: 1, total: 1 }, listen: true, sid: sid, zoo: "reconnues" }, function () {
