@@ -93,6 +93,11 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   .walker { position: absolute; bottom: 14px; left: 0; font-size: 2.4rem; line-height: 1; transition: left 0.1s linear; }
   .goal { position: absolute; right: 0; bottom: 14px; font-size: 2rem; line-height: 1; }
   .timer { font-size: clamp(3rem, 12vw, 4.6rem); font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -0.03em; }
+  .game-top-actions { display: flex; align-items: center; gap: 8px; }
+  .music-btn { min-width: 48px; min-height: 44px; padding: 6px 12px; font-size: 1.3rem; line-height: 1; }
+  .music-btn[hidden] { display: none; }
+  #v-jeux .arcade { position: relative; }
+  #v-jeux .arcade > .music-btn { position: absolute; top: 12px; right: 12px; z-index: 2; }
   .timer-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
   .who { font-weight: 600; }
 
@@ -1411,7 +1416,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     <div class="card arcade-screen">
       <div class="timer-row">
         <h2 id="game-title" style="margin:0">Jeu</h2>
-        <button type="button" class="secondary" id="game-back">Retour aux jeux</button>
+        <div class="game-top-actions"><button type="button" class="secondary music-btn"></button><button type="button" class="secondary" id="game-back">Retour aux jeux</button></div>
       </div>
       <p class="game-record" id="game-record"></p>
       <p class="game-abs" id="game-abs"></p>
@@ -1610,7 +1615,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
 </main>
 <div class="toast" id="toast" role="status"></div>
 
-<script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=11"><\/script>':'<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"><\/script>');})();</script>
+<script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=12"><\/script>':'<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"><\/script>');})();</script>
 <script>
 (function () {
   "use strict";
@@ -1889,6 +1894,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     lock: true,
     reward: true,
     sfx: true,
+    music: true,   /* musique de la salle de jeux : réglage du maître(sse), lu à la connexion */
     allowRec: false,  /* décochée par défaut ; le maître(sse) peut l’activer (réglages péda) */
     evalCode: true,   /* mot de passe du maître(sse) demandé pour une évaluation en direct (réglages péda) */
     credits: {},
@@ -2342,6 +2348,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if (TEACHER_VIEWS.indexOf(v) >= 0 && ses.role !== "teacher") v = "login";
     if (v !== "jeu") { stopGame(); gameFullscreen(false); }
     closeGameResult();
+    Music.sync(v);
     document.body.classList.toggle("playing", v === "jeu");
     if (v !== "roue") wheelCleanup();
     if (v !== "eleves") $("codes-out").innerHTML = "";
@@ -3389,10 +3396,11 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     }
     var back = el("button", "secondary", "Retour aux jeux"); back.type = "button";
     back.addEventListener("click", function () { closeGameResult(); show("jeux"); });
+    acts.appendChild(musicBtn());
     acts.appendChild(back);
     card.appendChild(acts);
     ov.appendChild(card);
-    document.body.appendChild(ov);
+    document.body.appendChild(ov); Music.refresh();
     var first = acts.querySelector("button"); if (first) first.focus({ preventScroll: true });
   }
   function showScoreResult(sid, area, id, value, res) {
@@ -4330,6 +4338,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       legend.appendChild(li);
     });
     head.appendChild(legend);
+    room.appendChild(musicBtn());   /* en haut à droite de la salle (voir .arcade > .music-btn) */
     room.appendChild(head);
     var today = playsToday(sid);
     var cr = credits(sid), lim = limitReached(sid);
@@ -4345,6 +4354,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     room.appendChild(floor);
     if (!lim && cr <= 0) room.appendChild(el("p", "arcade-hint", "Fais certifier une étape par ton maître ou ta maîtresse, ou réussis un son dans J’écoute, pour gagner des parties."));
     body.appendChild(room);
+    Music.refresh();
   }
 
 
@@ -4409,6 +4419,77 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       o.start(t0); o.stop(t0 + dur + 0.05);
     } catch (e) {}
   }
+  /* Musique de la salle de jeux : composée ici avec Web Audio (aucun fichier). Elle joue dans la salle de jeux et pendant les parties,
+     se coupe avec le bouton 🎵/🔇 (choix gardé sur l’appareil) et n’existe pas si le maître(sse) l’a désactivée ou coupé les bruitages. */
+  var Music = (function () {
+    var BPM = 124, STEP = 60 / BPM / 2, LOOK = 0.35;
+    var ROOT = [48, 43, 45, 41, 48, 43, 41, 43];   /* do, sol, la, fa, do, sol, fa, sol */
+    var THIRD = [4, 4, 3, 4, 4, 4, 4, 4];
+    var MEL = [[76, 79, 76, 72, 76, 79, 81, 79], [74, 79, 74, 71, 74, 79, 83, 79], [72, 76, 72, 69, 72, 76, 81, 76], [77, 81, 77, 72, 77, 81, 84, 81],
+               [79, 76, 79, 84, 79, 76, 72, 76], [79, 74, 79, 83, 79, 74, 71, 74], [81, 77, 81, 84, 81, 77, 72, 77], [79, 83, 79, 74, 79, 83, 84, 0]];
+    var running = false, timer = null, step = 0, next = 0, master = null, noise = null, ctx = null, view = "";
+    function hz(m) { return 440 * Math.pow(2, (m - 69) / 12); }
+    function voice(type, m, t, d, vol) {
+      var o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = type; o.frequency.value = hz(m);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+      o.connect(g); g.connect(master); o.start(t); o.stop(t + d + 0.03);
+    }
+    function hit(t, d, vol, freq, q, kind) {
+      var src = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+      src.buffer = noise; f.type = kind; f.frequency.value = freq; f.Q.value = q;
+      g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+      src.connect(f); f.connect(g); g.connect(master); src.start(t, Math.random() * 0.5); src.stop(t + d + 0.02);
+    }
+    function kick(t) {
+      var o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = "sine"; o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(48, t + 0.12);
+      g.gain.setValueAtTime(0.5, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+      o.connect(g); g.connect(master); o.start(t); o.stop(t + 0.2);
+    }
+    function play(n, t) {
+      var bar = Math.floor(n / 8) % 8, s = n % 8, pass = Math.floor(n / 64), root = ROOT[bar], m = MEL[bar][s];
+      if (m) voice("square", m + (pass % 2 && bar >= 4 ? 12 : 0), t, STEP * 0.85, 0.045);
+      if (s % 2 === 0) { kick(t); voice("triangle", root + 12 + (s === 4 ? 7 : 0), t, STEP * 1.7, 0.2); }
+      else { var tr = root + 12; [0, THIRD[bar], 7].forEach(function (i) { voice("square", tr + i, t, STEP * 0.4, 0.022); }); hit(t, 0.04, 0.05, 7000, 0.7, "highpass"); }
+      if (s === 2 || s === 6) hit(t, 0.12, 0.16, 1800, 0.8, "bandpass");
+    }
+    function pump() {
+      if (!running || !ctx) return;
+      while (next < ctx.currentTime + LOOK) { play(step, next); next += STEP; step++; }
+    }
+    function muted() { try { return localStorage.getItem("zoo_music_off") === "1"; } catch (e) { return false; } }
+    function allowed() { return ses.role === "student" && data.sfx && data.music !== false && !muted(); }
+    function start() {
+      if (running || !allowed()) return;
+      ctx = audioCtx(); if (!ctx) return;
+      if (!noise) { noise = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate); var ch = noise.getChannelData(0); for (var i = 0; i < ch.length; i++) ch[i] = Math.random() * 2 - 1; }
+      master = ctx.createGain(); master.gain.setValueAtTime(0.0001, ctx.currentTime); master.gain.exponentialRampToValueAtTime(0.8, ctx.currentTime + 0.6); master.connect(ctx.destination);
+      running = true; step = 0; next = ctx.currentTime + 0.08;
+      timer = setInterval(pump, 100); pump();
+    }
+    function stop() {
+      if (!running) return;
+      running = false; clearInterval(timer); timer = null;
+      var m = master; master = null;
+      try { m.gain.cancelScheduledValues(ctx.currentTime); m.gain.setValueAtTime(Math.max(0.0001, m.gain.value), ctx.currentTime); m.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.3); } catch (e) {}
+      setTimeout(function () { try { m.disconnect(); } catch (e) {} }, 500);
+    }
+    function sync() { if (allowed() && (view === "jeux" || view === "jeu") && !document.hidden) start(); else stop(); refresh(); }
+    function refresh() {
+      var off = muted(), hide = !(data.sfx && data.music !== false);
+      Array.prototype.forEach.call(document.querySelectorAll(".music-btn"), function (b) {
+        b.hidden = hide; b.textContent = off ? "🔇" : "🎵";
+        b.setAttribute("aria-label", off ? "Remettre la musique" : "Couper la musique"); b.title = off ? "Remettre la musique" : "Couper la musique";
+        b.setAttribute("aria-pressed", off ? "true" : "false");
+      });
+    }
+    function toggle() { try { localStorage.setItem("zoo_music_off", muted() ? "0" : "1"); } catch (e) {} sync(); }
+    document.addEventListener("click", function (e) { var b = e.target.closest && e.target.closest(".music-btn"); if (b) toggle(); });
+    document.addEventListener("visibilitychange", sync);
+    return { sync: function (v) { if (v !== undefined) view = v; sync(); }, refresh: refresh, isOn: function () { return running; } };
+  })();
+  function musicBtn() { var b = el("button", "secondary music-btn"); b.type = "button"; return b; }
   /* Petits sons discrets : bonne réponse (deux notes qui montent), erreur (note grave qui descend) */
   function sfxGood() { tone(660, 0, 0.12, "sine", 0.07); tone(990, 0.08, 0.16, "sine", 0.06); }
   function sfxBad() { tone(233, 0, 0.16, "triangle", 0.08); tone(175, 0.09, 0.22, "triangle", 0.07); }
@@ -6367,6 +6448,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       if(typeof teacherSettings.lock==="boolean")data.lock=teacherSettings.lock;
       if(typeof teacherSettings.reward==="boolean")data.reward=teacherSettings.reward;
       if(typeof teacherSettings.sfx==="boolean")data.sfx=teacherSettings.sfx;
+      if(typeof teacherSettings.music==="boolean")data.music=teacherSettings.music;
       if(typeof teacherSettings.allowRec==="boolean")data.allowRec=teacherSettings.allowRec;
       if(typeof teacherSettings.evalCode==="boolean")data.evalCode=teacherSettings.evalCode;
       if(Number.isInteger(teacherSettings.maxPlays)&&teacherSettings.maxPlays>=0&&teacherSettings.maxPlays<=500)data.maxPlays=teacherSettings.maxPlays;
