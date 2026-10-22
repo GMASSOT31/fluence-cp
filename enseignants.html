@@ -573,6 +573,7 @@ async function renderGameRanking(){
    const bar=document.createElement("div");bar.className="game-rank-bar";const fill=document.createElement("i");fill.style.width=Math.max(4,Math.round(t.parties/max*100))+"%";bar.append(fill);
    info.append(name,sub,bar);row.append(info);box.append(row);});
   const note=document.createElement("p");note.className="muted class-group-empty";note.textContent="Parties terminées, tous enseignants confondus. Les parties abandonnées ne sont pas comptées.";box.append(note);
+  document.querySelectorAll("#gameRanking").forEach(x=>x.remove());   /* plusieurs chargements peuvent finir en même temps : un seul tableau reste */
   $("progressList").before(box);
  }catch(e){console.warn("Classement des jeux indisponible",e);}
 }
