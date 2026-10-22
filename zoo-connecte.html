@@ -951,9 +951,13 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   .home-next:not(.listen-go):not(.wheel-go) { background: linear-gradient(135deg, #6d5dfc, #3b82f6); color: #fff; border-color: #4f6af0; }
   .home-next { box-shadow: 0 6px 18px rgba(80, 90, 240, .35); }
   .wheel-go { background: linear-gradient(135deg, #f5a623, #e2572c); color: #fff; border-color: #e2572c; }
-  .home-say { align-self: flex-start; margin: 0; }
+  .home-act-row { display: flex; align-items: stretch; gap: 8px; }
+  .home-act-row .home-next, .home-act-row .home-alt { flex: 1 1 auto; min-width: 0; }
+  .home-say { flex: 0 0 auto; margin: 0; min-width: 62px; padding: 0 12px; font-size: 1.6rem; line-height: 1; border-radius: 16px; }
+  .home-or { margin: 4px 0 -2px; font-size: .9rem; font-weight: 700; color: var(--muted); }
+  .home-alt { margin: 0; min-height: 60px; font-size: 1.15rem; line-height: 1.25; padding: 12px 16px; white-space: normal; text-align: left; }
+  .home-alt.listen-alt { border: 2px solid #14b8a6; color: #14b8a6; background: rgba(20, 184, 166, .1); }
   .home-done { font-size: 1.3rem; font-weight: 800; margin: 0; }
-  .home-other { display: block; margin: 14px 0 0; background: none; border: 0; padding: 4px 0; color: var(--muted); font-weight: 700; text-decoration: underline; cursor: pointer; box-shadow: none; text-align: left; }
   @media (max-width: 520px) { .home-hero .home-step { flex-direction: column; align-items: stretch; } .home-pet { align-self: center; } .home-next { font-size: 1.25rem; } }
   /* Pendant une partie : le jeu occupe tout l’écran */
   body.playing header, body.playing #panel-left, body.playing #panel-right, body.playing .bottom-nav { display: none !important; }
@@ -1584,7 +1588,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
 </main>
 <div class="toast" id="toast" role="status"></div>
 
-<script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=2"><\/script>':'<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"><\/script>');})();</script>
+<script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=3"><\/script>':'<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"><\/script>');})();</script>
 <script>
 (function () {
   "use strict";
@@ -4120,23 +4124,35 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     petWrap.addEventListener("click", function () { listenSpeak(say); });
     row.appendChild(petWrap);
     var col = el("div", "home-col");
+    /* Chaque action a son bouton 🔊, collé à droite, qui lit sa consigne */
+    function sayBtn(text, label) {
+      var b = el("button", "secondary home-say", "🔊"); b.type = "button";
+      b.setAttribute("aria-label", label); b.title = label;
+      b.addEventListener("click", function () { listenSpeak(text); });
+      return b;
+    }
     if (act) {
+      var mainRow = el("div", "home-act-row");
       var go = el("button", "primary big-btn home-next" + (act.cls || ""), act.btn); go.type = "button";
       go.addEventListener("click", act.go);
-      col.appendChild(go);
+      mainRow.appendChild(go); mainRow.appendChild(sayBtn(say, "Écouter la consigne"));
+      col.appendChild(mainRow);
     } else {
-      col.appendChild(el("p", "home-done", "Tu as tout réussi. Bravo ! 🎉"));
+      var doneRow = el("div", "home-act-row");
+      doneRow.appendChild(el("p", "home-done", "Tu as tout réussi. Bravo ! 🎉"));
+      doneRow.appendChild(sayBtn(say, "Écouter"));
+      col.appendChild(doneRow);
     }
-    var hear = el("button", "secondary home-say", "🔊 Écouter la consigne"); hear.type = "button";
-    hear.addEventListener("click", function () { listenSpeak(say); });
-    col.appendChild(hear);
+    if (other) {
+      col.appendChild(el("p", "home-or", "Ou bien :"));
+      var altRow = el("div", "home-act-row");
+      var ob = el("button", "secondary big-btn home-alt" + (/listen/.test(other.cls || "") ? " listen-alt" : ""), other.btn); ob.type = "button";
+      ob.addEventListener("click", other.go);
+      altRow.appendChild(ob); altRow.appendChild(sayBtn(other.say.replace("le gros bouton", "ce bouton"), "Écouter la consigne"));
+      col.appendChild(altRow);
+    }
     row.appendChild(col);
     card.appendChild(row);
-    if (other) {
-      var ob = el("button", "home-other", "Ou bien : " + other.btn); ob.type = "button";
-      ob.addEventListener("click", other.go);
-      card.appendChild(ob);
-    }
     body.appendChild(card);
     var qc = el("div", "card quote-card"); qc.appendChild(el("blockquote", "", "«\u00a0" + sessionQuote + "\u00a0»")); body.appendChild(qc);
     var waiting = data.reviews.filter(function (r) { return r.sid === sid; }).length;
