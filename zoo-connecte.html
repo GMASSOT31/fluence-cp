@@ -890,6 +890,27 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   .arcade-screen .instruction { color: var(--ink); }
   .arcade-screen .secondary { color: var(--ink); border-color: var(--line); background: transparent; }
   .arcade-screen .muted { color: var(--muted); }
+  /* Fond de zoo en journée derrière les jeux : ciel, nuages, herbe, barrière en bois, arbres et animaux.
+     Les couleurs de texte sont fixées ici pour rester lisibles même si le reste de l’appli passe en thème sombre. */
+  .arcade-screen {
+    --ink: #1b2433; --muted: #475569; --card: #fff; --line: #cbd5e1;
+    position: relative; isolation: isolate; color: var(--ink); border: 2px solid #7cc4ef;
+    background:
+      linear-gradient(#a4672f, #a4672f) left bottom 62px / 100% 6px no-repeat,
+      linear-gradient(#a4672f, #a4672f) left bottom 44px / 100% 6px no-repeat,
+      repeating-linear-gradient(90deg, #8a5524 0 8px, transparent 8px 44px) left 12px bottom 36px / 100% 44px no-repeat,
+      linear-gradient(#86dd5c, #43a83a) left bottom / 100% 40px no-repeat,
+      radial-gradient(ellipse 110px 30px at 14% 16%, rgba(255,255,255,.95), transparent 72%),
+      radial-gradient(ellipse 140px 34px at 78% 30%, rgba(255,255,255,.9), transparent 72%),
+      radial-gradient(ellipse 100px 26px at 46% 8%, rgba(255,255,255,.85), transparent 72%),
+      linear-gradient(180deg, #8fd3ff 0%, #c9ebff 50%, #fff6d1 100%);
+  }
+  .arcade-screen::after {
+    content: "🌳 🦒 🌴 🐘 🌳 🦓 🌴 🦁 🌳"; position: absolute; z-index: -1; left: 0; right: 0; bottom: 4px; padding: 0 3%;
+    font-size: clamp(1.4rem, 4vw, 2.4rem); line-height: 1; white-space: normal; text-align: justify; text-align-last: justify; pointer-events: none;
+  }
+  .arcade-screen .secondary { background: rgba(255, 255, 255, .85); }
+  .arcade-screen .muted { background: rgba(255, 255, 255, .72); border-radius: 8px; padding: 2px 8px; }
   .arcade .card { background: var(--card); color: var(--ink); border: 1.5px solid var(--line); box-shadow: none; }
   .arcade .card h2 { color: var(--ink); }
   .arcade .muted, .arcade .hint { color: var(--muted); }
