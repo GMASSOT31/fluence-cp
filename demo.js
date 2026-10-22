@@ -60,7 +60,7 @@
       classes: [{ id: C, name: "CP des Tigres", access_code: "DEMO", teacher_id: T, school_year: null, ghosted_at: null }],
       students: kids.map(function (k) { return { id: k.id, nickname: k.nickname, class_id: C, teacher_id: T, pin_hash: "demo", ghosted_at: null }; }),
       progress: progress,
-      settings: { reward: true, sfx: true, evalCode: false, allowRec: false, maxPlays: 6, lock: true },
+      settings: { reward: true, sfx: true, music: true, evalCode: false, allowRec: false, maxPlays: 6, lock: true },
       n: 0
     };
   }
