@@ -162,7 +162,7 @@
     "#tour-bubble button{font:inherit;font-weight:800;border-radius:999px;padding:8px 14px;cursor:pointer;min-height:0;box-shadow:none}" +
     "#tour-bubble .tb-main{background:#6d5dfc;color:#fff;border:0}#tour-bubble .tb-main:disabled{opacity:.6;cursor:wait}" +
     "#tour-bubble .tb-alt{background:#f1effa;color:#3a3360;border:0}#tour-bubble .tb-skip{background:none;border:0;color:#7a7f8f;font-weight:600;text-decoration:underline;margin-right:auto;padding:8px 4px}" +
-    "@media(max-width:600px){#tour-bubble{left:12px!important;right:12px;top:auto!important;bottom:12px;width:auto}}";
+    "@media(max-width:600px){#tour-bubble{left:12px!important;right:12px;top:auto!important;bottom:12px;width:auto}#tour-bubble.tb-top{top:12px!important;bottom:auto}}";
   document.head.appendChild(css);
   var dim = document.createElement("div"); dim.id = "tour-dim";
   var spot = document.createElement("div"); spot.id = "tour-spot";
@@ -177,13 +177,17 @@
     return null;
   }
   var running = false;
-  function hide() { [dim, spot, bubble].forEach(function (e) { if (e.parentNode) e.parentNode.removeChild(e); }); current = null; }
+  /* Téléphone : un espace en bas de page permet de faire remonter l'élément éclairé au-dessus de la bulle */
+  var room = document.createElement("div"); room.id = "tour-room"; room.style.cssText = "pointer-events:none;width:1px";
+  function fitSpace(h) { room.style.height = h + "px"; if (!room.parentNode) document.body.appendChild(room); }
+  function hide() { if (room.parentNode) room.parentNode.removeChild(room); [dim, spot, bubble].forEach(function (e) { if (e.parentNode) e.parentNode.removeChild(e); }); current = null; }
   function place() {
     if (!current || running) return;
     var s = list()[T.step], t = s.center ? null : targetOf(s);
     if (!t) {
       if (spot.parentNode) spot.parentNode.removeChild(spot);
       if (!dim.parentNode) document.body.appendChild(dim);
+      bubble.classList.remove("tb-top");
       if (window.innerWidth > 600) { bubble.style.left = Math.max(12, (window.innerWidth - bubble.offsetWidth) / 2) + "px"; bubble.style.top = Math.max(12, (window.innerHeight - bubble.offsetHeight) / 2) + "px"; }
       return;
     }
@@ -193,7 +197,15 @@
     if (r.top < 0 || r.bottom > window.innerHeight) { if (!t.__tourScrolled) { t.__tourScrolled = true; t.scrollIntoView({ block: "center", behavior: "smooth" }); } }
     spot.style.left = (r.left - pad) + "px"; spot.style.top = (r.top - pad) + "px";
     spot.style.width = (r.width + pad * 2) + "px"; spot.style.height = (r.height + pad * 2) + "px";
-    if (window.innerWidth <= 600) return;
+    if (window.innerWidth <= 600) {
+      /* Téléphone : bulle en bas ; si elle recouvrirait l'élément éclairé, on la monte en haut (quand la place y est) */
+      var pb = bubble.offsetHeight + 24;
+      var hits = r.bottom + pad > window.innerHeight - pb, up = hits && r.top - pad > pb;
+      bubble.classList.toggle("tb-top", up);
+      /* Élément trop grand pour tenir au-dessus ou en dessous : on le remonte en haut de l'écran, au-dessus de la bulle */
+      if (hits && !up && r.height + pad * 2 <= window.innerHeight - pb - 8 && !t.__tourFit) { t.__tourFit = true; fitSpace(pb); window.scrollBy(0, r.top - pad - 8); }
+      return;
+    }
     var bw = bubble.offsetWidth, bh = bubble.offsetHeight, gap = 16;
     bubble.style.width = s.dock === "top" ? "min(640px, calc(100vw - 24px))" : "";
     bw = bubble.offsetWidth; bh = bubble.offsetHeight;
