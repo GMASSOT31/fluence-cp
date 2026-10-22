@@ -5158,7 +5158,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
 
   /* L’oiseau volant : on touche pour battre des ailes et on passe entre les bambous. 1 seule vie, 60 s au plus.
      Score = secondes tenues (plus grand = meilleur) ; 20 secondes donnent la pièce d’or. */
-  var FLAP_MAX = 60, FLAP_GOAL = 20, FLAP_LIVES = 3;
+  var FLAP_MAX = 90, FLAP_GEAR = 60, FLAP_GOAL = 20, FLAP_LIVES = 3;   /* 1 min 30 au plus ; une vitesse de plus à partir de 1 min */
   function startFlap(sid) {
     var area = $("game-area");
     area.innerHTML = "";
@@ -5177,7 +5177,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var ctx = canvas.getContext("2d");
     if (!ctx) { $("game-msg").textContent = "Ce navigateur ne peut pas lancer ce jeu."; return; }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    $("game-msg").textContent = "Touche pour battre des ailes et passe entre les bambous. Tu as " + FLAP_LIVES + " vies. Tiens " + FLAP_GOAL + " secondes pour gagner une pièce d’or : 1 minute au maximum !";
+    $("game-msg").textContent = "Touche pour battre des ailes et passe entre les bambous. Tu as " + FLAP_LIVES + " vies. Tiens " + FLAP_GOAL + " secondes pour gagner une pièce d’or : 1 minute 30 au maximum !";
     var EMOJI = "32px 'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif";
     var bird = { x: 110, y: FLOOR * 0.45, vy: 0, rot: 0 };
     var pipes = [], parts = [], clouds = [], t = 0, started = false, dead = false, won = false, ended = false, raf = null, last = 0, lives = FLAP_LIVES, inv = 0;
@@ -5187,11 +5187,15 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var sky = ctx.createLinearGradient(0, 0, 0, FLOOR); sky.addColorStop(0, "#7cc8ff"); sky.addColorStop(0.6, "#c9ebff"); sky.addColorStop(1, "#fff6d1");
     for (var ci = 0; ci < 5; ci++) clouds.push({ x: ci * 95 + Math.random() * 40, y: 28 + Math.random() * 170, s: 0.7 + Math.random() * 0.8 });
     function wrapX(v, span) { return ((v % span) + span) % span; }
-    function speed() { return started ? 2.3 + 3.0 * Math.pow(Math.min(1, t / FLAP_MAX), 0.85) : 1.4; }   /* px par image à 60 i/s : ×2,3 entre le début et la fin */
-    function gapH() { return 195 - 50 * Math.min(1, t / FLAP_MAX); }
+    function speed() {   /* px par image à 60 i/s : ×2,3 pendant la première minute, puis une vitesse de plus (+1) qui continue de monter */
+      if (!started) return 1.4;
+      var v = 2.3 + 3.0 * Math.pow(Math.min(1, t / FLAP_GEAR), 0.85);
+      return t >= FLAP_GEAR ? v + 1.0 + 0.7 * Math.min(1, (t - FLAP_GEAR) / (FLAP_MAX - FLAP_GEAR)) : v;
+    }
+    function gapH() { return 195 - 50 * Math.min(1, t / FLAP_GEAR) - (t > FLAP_GEAR ? 10 * Math.min(1, (t - FLAP_GEAR) / (FLAP_MAX - FLAP_GEAR)) : 0); }
     function addPipe() {
       var gh = gapH(), lo = 60 + gh / 2, hi = FLOOR - 50 - gh / 2;
-      var c = Math.max(lo, Math.min(hi, lastC + (Math.random() * 2 - 1) * 120));   /* écart toujours atteignable */
+      var c = Math.max(lo, Math.min(hi, lastC + (Math.random() * 2 - 1) * (t >= FLAP_GEAR ? 105 : 120)));   /* écart toujours atteignable */
       lastC = c; pipes.push({ x: W + 30, c: c, h: gh, w: 56, passed: false });
     }
     function burst(n, cols, vmax) {
@@ -5241,7 +5245,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       if (ended) return;
       ended = true;
       var secs = Math.max(0, Math.min(FLAP_MAX, Math.floor(t + 0.0001)));
-      var msg = max ? "Tu as tenu 1 minute entière !" : "Tu as volé " + nb(secs, "seconde", "secondes") + ".";
+      var msg = max ? "Tu as tenu 1 minute 30 entière !" : "Tu as volé " + nb(secs, "seconde", "secondes") + ".";
       endGame(sid, area, secs >= FLAP_GOAL, msg, msg + " Il en fallait " + FLAP_GOAL + " pour gagner une pièce d’or.");
       finishScore(sid, area, "flap", secs);
     }
@@ -5266,7 +5270,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       bird.rot = Math.max(-0.45, Math.min(1.1, bird.vy * 0.07));
       if (bird.y < 14) { bird.y = 14; if (bird.vy < 0) bird.vy = 0; }
       since += sp * dt;
-      if (since >= 240 + (sp - 2.3) * 30) { since = 0; addPipe(); }
+      if (since >= 240 + (sp - 2.3) * 38) { since = 0; addPipe(); }
       pipes.forEach(function (p) { p.x -= sp * dt; });
       pipes = pipes.filter(function (p) { return p.x > -60; });
       pipes.forEach(function (p) {
@@ -5275,8 +5279,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       if (inv > 0) inv -= dt;
       if (bird.y + 11 >= FLOOR) { bird.y = FLOOR - 11; if (inv > 0) bird.vy = Math.min(bird.vy, 0); else { hurt(true); if (dead) return; } }
       if (inv <= 0) for (var i = 0; i < pipes.length; i++) if (hitPipe(pipes[i])) { hurt(false); if (dead) return; break; }
-      if (t >= nextBanner && nextBanner < FLAP_MAX) { nextBanner += 20; banner = { text: "Plus vite !", life: 80 }; [523, 659, 784].forEach(function (f, k) { tone(f, k * 0.08, 0.15, "triangle", 0.1); }); }
-      if (t >= FLAP_MAX) { t = FLAP_MAX; won = true; winT = 0; banner = { text: "1 minute ! 🎉", life: 120 }; $("game-msg").textContent = "Bravo, 1 minute entière !"; [523, 659, 784, 1047].forEach(function (f, k) { tone(f, k * 0.1, 0.22, "triangle", 0.14); }); }
+      if (t >= nextBanner && nextBanner <= FLAP_GEAR) { banner = { text: nextBanner === FLAP_GEAR ? "Vitesse supérieure !" : "Plus vite !", life: 90 }; nextBanner += 20; [523, 659, 784].forEach(function (f, k) { tone(f, k * 0.08, 0.15, "triangle", 0.1); }); }
+      if (t >= FLAP_MAX) { t = FLAP_MAX; won = true; winT = 0; banner = { text: "1 min 30 ! 🎉", life: 120 }; $("game-msg").textContent = "Bravo, 1 minute 30 entière !"; [523, 659, 784, 1047].forEach(function (f, k) { tone(f, k * 0.1, 0.22, "triangle", 0.14); }); }
     }
     function drawPipe(p) {
       var gt = p.c - p.h / 2, gb = p.c + p.h / 2, x0 = p.x - p.w / 2;
@@ -5312,7 +5316,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       parts = parts.filter(function (q) {
         q.x += q.vx * 1; q.y += q.vy; q.life--; ctx.globalAlpha = Math.max(0, q.life / q.max); ctx.fillStyle = q.col; ctx.beginPath(); ctx.arc(q.x, q.y, q.r, 0, 6.3); ctx.fill(); ctx.globalAlpha = 1; return q.life > 0;
       });
-      ctx.save(); if (inv > 0 && !dead && Math.floor(inv / 6) % 2) ctx.globalAlpha = 0.35; ctx.translate(bird.x, bird.y); ctx.rotate(bird.rot); ctx.font = EMOJI.replace("32px", "42px"); ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("🐤", 0, 2); ctx.restore(); ctx.globalAlpha = 1;
+      ctx.save(); if (inv > 0 && !dead && Math.floor(inv / 6) % 2) ctx.globalAlpha = 0.35; ctx.translate(bird.x, bird.y); ctx.rotate(bird.rot); ctx.scale(-1, 1); ctx.font = EMOJI.replace("32px", "42px"); ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("🐤", 0, 2); ctx.restore(); ctx.globalAlpha = 1;
       ctx.textAlign = "center"; ctx.textBaseline = "middle";
       if (!started) {
         ctx.font = "800 26px Fredoka, Figtree, sans-serif"; ctx.lineWidth = 6; ctx.strokeStyle = "rgba(38,52,117,.85)"; ctx.fillStyle = "#fff";
