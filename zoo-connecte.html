@@ -859,7 +859,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   .quote-card { text-align: center; padding: 16px 20px; }
   .quote-card blockquote { margin: 0; font-size: 1.15rem; font-weight: 700; line-height: 1.45; color: var(--ink); font-style: italic; }
 
-  .bottom-nav .bn-logout { display: none; }
+  .bottom-nav .bn-logout, .bottom-nav .bn-pin { display: none; }
   /* Salle de jeux : design sobre (remplace néons, guirlande et lignes d'écran) */
   #v-jeux .arcade { background: var(--card); color: var(--ink); border: 1.5px solid var(--line); border-radius: 18px; box-shadow: none; font-family: Figtree, system-ui, sans-serif; padding: 16px 16px 18px; }
   #v-jeux .arcade::before, #v-jeux .arcade::after { display: none; }
@@ -1044,6 +1044,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     body.mode-student #panel-left .pcard:has(#btn-back-teacher[hidden]) { display: none; }
     body.mode-student #panel-left:has(#btn-back-teacher[hidden]):has(#btn-panel-wheel[hidden]) { display: none; }
     body.mode-student .bottom-nav .bn-logout { display: flex; flex: 0.8; }
+    body.mode-student .bottom-nav .bn-pin { display: flex; flex: 0 0 38px; min-width: 0; padding-left: 0; padding-right: 0; }
+    body.mode-student .bottom-nav .bn-pin[hidden] { display: none; }
     body.mode-student .bottom-nav [data-go="cartes"], body.mode-student .bottom-nav [data-go="progres"] { display: none; }
     body.mode-student .home-zoo-count { display: none; }
     /* Boutique */
@@ -1181,6 +1183,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
         <div class="avatar-profile"><button type="button" class="avatar-trigger" id="btn-avatar" aria-label="Choisir mon avatar" title="Personnaliser mon avatar"><span id="pl-avatar" aria-hidden="true">🧑</span><span class="avatar-edit" aria-hidden="true">✎</span></button><div class="avatar-profile-name"><div class="who-name" id="pl-name"></div><span class="avatar-hint">Touche ton avatar pour le changer</span></div></div>
         <div class="row">
           <button type="button" class="ghost-sm" id="btn-logout">Me déconnecter</button>
+          <button type="button" class="ghost-sm" id="btn-pin-left" title="Changer mon code secret" aria-label="Changer mon code secret" hidden>🔑</button>
           <button type="button" class="ghost-sm" id="btn-back-teacher" hidden>Retour au maître(sse)</button>
         </div>
       </div>
@@ -1614,6 +1617,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     <button type="button" class="panel-nav" data-go="cartes"><span class="pn-ico" aria-hidden="true">🐾</span><span>Cartes</span></button>
     <button type="button" class="panel-nav" data-go="progres"><span class="pn-ico" aria-hidden="true">📈</span><span>Progrès</span></button>
     <button type="button" class="panel-nav bn-logout" id="bn-logout"><span class="pn-ico" aria-hidden="true">🚪</span><span>Quitter</span></button>
+    <button type="button" class="panel-nav bn-pin" id="bn-pin" title="Changer mon code secret" aria-label="Changer mon code secret" hidden><span class="pn-ico" aria-hidden="true">🔑</span></button>
   </nav>
   <div class="confetti" id="confetti" aria-hidden="true"></div>
 </main>
@@ -6542,6 +6546,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       bar.append(document.createTextNode("☁️ Connecté(e) · "+st.nickname));cloudStatusNode=bar;bar.dataset.nickname=st.nickname;
       refreshClassRecords(true);claimGifts(true);
       var link=document.createElement("a");link.href="eleve.html";link.textContent=" · Déconnexion";link.style.color="#ffe37c";link.onclick=function(ev){ev.preventDefault();logout()};bar.append(link);
+      ["btn-pin-left","bn-pin"].forEach(function(id){var pb=document.getElementById(id);if(pb){pb.hidden=data.pinChange===false;pb.onclick=openPinDialog;}});
       if(data.pinChange!==false){var key=document.createElement("button");key.type="button";key.id="btn-pin";key.textContent="🔑";key.title="Changer mon code secret";key.setAttribute("aria-label","Changer mon code secret");key.style.cssText="margin-left:8px;border:0;border-radius:8px;background:rgba(255,255,255,.18);color:#fff;font-size:15px;line-height:1;padding:3px 8px;cursor:pointer";key.onclick=openPinDialog;bar.append(key);}document.body.append(bar);
     } catch(e) {
       alert("Impossible de charger ton Zoo : "+(e.message||"session expirée")+". Reconnecte-toi.");
