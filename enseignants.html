@@ -357,7 +357,8 @@ async function printLoginCards(c,msgId,btn){
  if(!c.access_code){msg(msgId,"Cette classe n’a pas encore de code : change-le dans Réglages généraux › Mots de passe.",true);return;}
  if(btn)btn.disabled=true;
  /* Un seul geste : la fenêtre est ouverte tout de suite (le navigateur l’autorise pendant le clic), puis elle affiche le PDF une fois prêt */
- let win=null;try{win=window.open("","_blank");if(win)win.document.write("<p style=\"font:20px system-ui;padding:24px\">Création des fiches…</p>");}catch(e){win=null;}
+ const iosAlt=/CriOS|FxiOS|EdgiOS|OPiOS/.test(navigator.userAgent);   /* Chrome, Firefox, Edge sur iPhone : ils ne savent ni ouvrir ni télécharger un fichier fabriqué par la page ; on passe par la feuille de partage de l’iPhone */
+ let win=null;if(!iosAlt){try{win=window.open("","_blank");if(win)win.document.write("<p style=\"font:20px system-ui;padding:24px\">Création des fiches…</p>");}catch(e){win=null;}}
  try{
   const JsPDF=await loadJsPdf();
   const doc=new JsPDF({unit:"mm",format:"a4",orientation:"portrait"});
@@ -379,7 +380,16 @@ async function printLoginCards(c,msgId,btn){
    doc.text(pdfText("Classe : "+c.name).slice(0,60),x+9,y+H-6);doc.text("Garde cette carte !",x+W-9,y+H-6,{align:"right"});
   });
   const file="fiches-connexion-"+(pdfText(c.name).normalize("NFD").replace(/[^A-Za-z0-9]+/g,"-").replace(/^-|-$/g,"").toLowerCase()||"classe")+".pdf";
-  const url=URL.createObjectURL(doc.output("blob"));
+  const blob=doc.output("blob"),url=URL.createObjectURL(blob);
+  if(iosAlt){
+   const f=new File([blob],file,{type:"application/pdf"});
+   if(navigator.canShare&&navigator.canShare({files:[f]})){
+    try{await navigator.share({files:[f],title:"Fiches de connexion"});msg(msgId,"🖨️ Fiches de « "+c.name+" » : choisis « Imprimer » ou « Enregistrer dans Fichiers ».");return;}
+    catch(e){if(e&&e.name==="AbortError")return;}   /* partage refusé : on ouvre le PDF dans l’onglet */
+   }
+   msg(msgId,"🖨️ Fiches de « "+c.name+" » : le PDF s’ouvre dans cet onglet (reviens avec la flèche du navigateur).");
+   location.href=url;return;
+  }
   if(win&&!win.closed)win.location.href=url;
   else{const a=document.createElement("a");a.href=url;a.target="_blank";a.rel="noopener";a.download=file;document.body.append(a);a.click();a.remove();}   /* fenêtre refusée : téléchargement */
   msg(msgId,"🖨️ "+kids.length+" fiche(s) pour « "+c.name+" » : le PDF s’ouvre (sinon, regarde dans tes téléchargements). Imprime en A4, puis découpe les cartes.");
@@ -746,6 +756,7 @@ async function renderStudentsTab(role){
    const cghost=document.createElement("button");cghost.type="button";cghost.className="secondary";cghost.textContent=c.ghosted_at?"Réactiver la classe":"👻 Ghoster la classe";cghost.onclick=()=>manageClass(c,c.ghosted_at?"unghost":"ghost",[cghost,cdel]);
    const cdel=document.createElement("button");cdel.type="button";cdel.className="danger";cdel.textContent="🗑️ Supprimer la classe";cdel.onclick=()=>manageClass(c,"delete",[cghost,cdel]);
    if(admin||c.teacher_id===currentUser.id){const cren=document.createElement("button");cren.type="button";cren.className="secondary";cren.textContent="✏️ Renommer";cren.onclick=()=>renameClass(c,"studentsMsg");cact.append(cren);}
+   if(!window.__pdfWarm){window.__pdfWarm=1;loadJsPdf().catch(()=>{});}   /* prêt avant l’appui : le partage doit suivre le clic de très près */
    if(allStudents.some(s=>s.class_id===c.id&&!s.ghosted_at)){const cpr=document.createElement("button");cpr.type="button";cpr.className="secondary";cpr.textContent="🖨️ Fiches (PDF)";cpr.onclick=()=>printLoginCards(c,"studentsMsg",cpr);cact.append(cpr);}
    cact.append(cghost,cdel);head.append(h,cact);box.append(head);
    const members=sts.filter(s=>s.class_id===c.id);
