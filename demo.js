@@ -99,6 +99,12 @@
   function checkVersion(v) { if (v !== row(S.me).version) throw { message: "SYNC_CONFLICT" }; }
   var studentApi = {
     student_session_profile: function () { var s = student(S.me); return { student_id: s.id, nickname: s.nickname }; },
+    /* Démo : le code de Léo est 1234 ; rien n’est gardé */
+    student_change_pin: function (a) {
+      if (!/^[0-9]{4,8}$/.test(a.p_new_pin || "")) throw { message: "Le code doit avoir de 4 à 8 chiffres." };
+      if (a.p_old_pin === a.p_new_pin) throw { message: "Le nouveau code doit être différent de l'ancien." };
+      return a.p_old_pin === "1234" ? { ok: true } : { ok: false, code: "bad_old" };
+    },
     student_get_progress_v2: function () { var r = row(S.me); return { progress: copy(r.progress), version: r.version }; },
     student_get_progress: function () { return copy(row(S.me).progress); },
     student_save_progress_v2: function (a) {
