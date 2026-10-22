@@ -1,6 +1,6 @@
 /* Faux client Supabase : reproduit les règles de student_submit_score / student_get_class_records */
 (function () {
-  var MODES = { memory: "min", order: "min", safari: "min", catch: "max", count: "max", flap: "max", simon: "max", stack: "max", ballons: "max", snake: "max" };
+  var MODES = { memory: "min", order: "min", safari: "min", catch: "max", count: "max", flap: "max", simon: "max", stack: "max", tiles: "max", snake: "max" };
   var srv = window.__srv = {
     offline: false, calls: [], pending: 10,
     version: 0,
