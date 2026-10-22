@@ -13,7 +13,9 @@ Chaque modification sur la branche `main` est ensuite publiée automatiquement.
 
 ## Pages
 
-- `index.html` : page d’accueil de zoodelecture.fr, elle renvoie vers `eleve.html`.
+- `index.html` : page d’accueil de zoodelecture.fr (présentation, accès élève, enseignant et démo).
+- `mentions-legales.html`, `confidentialite.html` : pages légales.
+- `img/` : captures utilisées par la page d’accueil.
 - `eleve.html` : connexion élève (code de classe, prénom, PIN), puis `zoo-connecte.html` (le Zoo, sauvegardé sur Supabase).
 - `enseignants.html` : espace enseignant et administration.
 - `zoo-local.html` : ancienne version du Zoo, sans serveur (données dans le navigateur). Plus utilisée, gardée pour mémoire.
