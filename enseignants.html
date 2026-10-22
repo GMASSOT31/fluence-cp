@@ -619,7 +619,8 @@ async function renderProgress(students,classes){
    const certified=Object.keys(bestE).filter(k=>bestE[k]>=thrOf[k.split(":").pop()]);
    const alone=Object.keys(bestT).filter(k=>bestT[k]>=thrOf[k.split(":").pop()]&&!certified.includes(k));
    const training=readings.filter(r=>r&&r.src==="train");
-   const latestEval=evaluations.slice().sort((a,b)=>(Number(b.ts)||0)-(Number(a.ts)||0))[0];
+   const fraudN=readings.filter(r=>r&&Number(r.fraud)>0).length;
+   const latestEval=evaluations.filter(r=>!(Number(r.fraud)>0)).slice().sort((a,b)=>(Number(b.ts)||0)-(Number(a.ts)||0))[0];
    const lis=p.listen&&typeof p.listen==="object"?p.listen:{},lisPasses=lis.passes&&typeof lis.passes==="object"?lis.passes:{},lisDone=lis.done&&typeof lis.done==="object"?lis.done:{};
    const lisOrder=cfgSounds.filter(x=>x&&x.id!=="h"&&x.id!=="sz"),lisIr=lisOrder.findIndex(x=>x.id==="r");
    const lisNeed=id=>listenPassesCfg+(lisIr>=0&&lisOrder.findIndex(x=>x.id===id)>=lisIr?1:0);
@@ -628,14 +629,15 @@ async function renderProgress(students,classes){
    const wrap=document.createElement("div");wrap.className="row progress-row";
    const info=document.createElement("div");const name=document.createElement("strong");name.textContent=s.nickname;
    const summary=document.createElement("div");summary.className="muted";summary.textContent=matchMedia("(max-width:600px)").matches
-    ?"🏅"+certified.length+" · ✓"+alone.length+" · 📝"+evaluations.length+" · 🏋️"+training.length+(latestEval?" · ⚡"+fmt(latestEval.mclm)+"/min":"")+" · 🪙"+fmt(p.coins)+(row&&row.pending_coins>0?"(+"+row.pending_coins+")":"")+" · 👂"+lisOk+" · 🎮"+games.length
-    :certified.length+" 🏅 certifiée(s) · "+alone.length+" ✓ validée(s) seul · "+evaluations.length+" évaluation(s) · "+training.length+" entraînement(s)"+(latestEval?" · Dernière fluence : "+fmt(latestEval.mclm)+" corrects/min":"")+" · "+fmt(p.coins)+" pièce(s)"+(row&&row.pending_coins>0?" (+"+row.pending_coins+" en attente)":"")+" · "+lisOk+" son(s) écouté(s) réussi(s) · "+games.length+" jeu(x)";
+    ?"🏅"+certified.length+" · ✓"+alone.length+" · 📝"+evaluations.length+" · 🏋️"+training.length+(latestEval?" · ⚡"+fmt(latestEval.mclm)+"/min":"")+" · 🪙"+fmt(p.coins)+(row&&row.pending_coins>0?"(+"+row.pending_coins+")":"")+" · 👂"+lisOk+(fraudN?" · 🚩"+fraudN:"")+" · 🎮"+games.length
+    :certified.length+" 🏅 certifiée(s) · "+alone.length+" ✓ validée(s) seul · "+evaluations.length+" évaluation(s) · "+training.length+" entraînement(s)"+(latestEval?" · Dernière fluence : "+fmt(latestEval.mclm)+" corrects/min":"")+" · "+fmt(p.coins)+" pièce(s)"+(row&&row.pending_coins>0?" (+"+row.pending_coins+" en attente)":"")+" · "+lisOk+" son(s) écouté(s) réussi(s)"+(fraudN?" · 🚩 "+fraudN+" score(s) truqué(s)":"")+" · "+games.length+" jeu(x)";
    summary.title=certified.length+" certifiée(s), "+alone.length+" validée(s) seul, "+evaluations.length+" évaluation(s), "+training.length+" entraînement(s), "+fmt(p.coins)+" pièce(s), "+games.length+" jeu(x)";
    info.append(name,summary);wrap.append(info);
    const btn=document.createElement("button");btn.type="button";btn.className="secondary";btn.textContent="Détails";btn.setAttribute("aria-expanded","false");btn.title="Voir les détails de "+s.nickname;
    const details=document.createElement("div");details.className="muted hidden";details.style.cssText="width:100%";
    const mk=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e};
    const dfmt=ts=>Number.isFinite(Number(ts))&&Number(ts)>0?new Date(Number(ts)).toLocaleDateString("fr-FR"):"date inconnue";
+   const scoreTxt=r=>Number(r.fraud)>0?"🚩 score impossible ("+fmt(r.fraud)+")":fmt(r.mclm)+" corrects/min";
    const kindOf=k=>k==="s"?"syllabes":k==="m"?"mots":k==="t"?"texte":"lecture";
    const soundName=id=>{const x=cfgSounds.find(z=>z&&z.id===id);return x?(x.label||x.id):(id||"son non précisé")};
    const pcard=(title,cls)=>{const c=mk("div","pd-card "+(cls||""));c.append(mk("h5",null,title));return c};
@@ -652,7 +654,7 @@ async function renderProgress(students,classes){
     const cs=new Set(certified.map(sOf)),as=new Set(alone.map(sOf).filter(x=>!cs.has(x)));
     const big=mk("div","pd-big",String(cs.size));big.append(mk("small",null," / "+cfgSounds.length+" sons"));
     c.append(big,bar([[cs.size/tot*100],[as.size/tot*100,"alone"]],"pd-read"),mk("div","pd-note","🏅 certifiés par l’évaluation"+(as.size?" · "+as.size+" validé(s) seul (clair)":"")));
-    more(c,readings.slice().sort((a,b)=>(Number(b.ts)||0)-(Number(a.ts)||0)).slice(0,20).filter(Boolean).map(r=>(r.src==="train"?"🟡 Entraînement":"🟢 Évaluation")+" · "+dfmt(r.ts)+" · "+soundName(r.sound)+" · "+kindOf(r.k)+" · "+fmt(r.mclm)+"/min · "+fmt(r.e)+" erreur(s)"+(r.short?" · durée insuffisante":"")));grid.append(c)}
+    more(c,readings.slice().sort((a,b)=>(Number(b.ts)||0)-(Number(a.ts)||0)).slice(0,20).filter(Boolean).map(r=>(r.src==="train"?"🟡 Entraînement":"🟢 Évaluation")+" · "+dfmt(r.ts)+" · "+soundName(r.sound)+" · "+kindOf(r.k)+" · "+scoreTxt(r)+" · "+fmt(r.e)+" erreur(s)"+(r.short?" · durée insuffisante":"")));grid.append(c)}
    /* 3. Fluence */
    {const c=pcard("⚡ Fluence (évaluations)","pd-flu");
     const allPts=evaluations.filter(r=>r&&!r.short&&Number(r.mclm)>0).slice().sort((a,b)=>(Number(a.ts)||0)-(Number(b.ts)||0));
@@ -666,7 +668,8 @@ async function renderProgress(students,classes){
      pts.forEach((r,i)=>{const d=document.createElementNS(NS,"circle");d.setAttribute("cx",X(i));d.setAttribute("cy",Y(fmt(r.mclm)));d.setAttribute("r","4");d.setAttribute("fill","#c27b00");const t=document.createElementNS(NS,"title");t.textContent=dfmt(r.ts)+" · "+soundName(r.sound)+" · "+fmt(r.mclm)+"/min";d.append(t);svg.append(d)});
      c.append(svg);const dl=last-first;c.append(mk("div","pd-note",pts.length>1?(dl>=0?"📈 +":"📉 ")+dl+" corrects/min depuis la 1re évaluation ("+(allPts.length>pts.length?pts.length+" points les plus significatifs sur "+allPts.length:pts.length+" points")+")":"1 seule évaluation pour l’instant"));
     }else{c.append(mk("div","pd-big","–"),mk("div","pd-note","Pas encore d’évaluation chronométrée."))}
-    more(c,evaluations.slice().sort((a,b)=>(Number(b.ts)||0)-(Number(a.ts)||0)).filter(Boolean).slice(0,20).map(r=>dfmt(r.ts)+" · "+soundName(r.sound)+" · "+kindOf(r.k)+" · "+fmt(r.mclm)+" corrects/min · "+fmt(r.n)+" lu(s) · "+fmt(r.e)+" erreur(s)"+(r.short?" · durée insuffisante":"")));grid.append(c)}
+    if(fraudN)c.append(mk("div","pd-note","🚩 "+fraudN+" score(s) truqué(s) écarté(s)"));
+    more(c,evaluations.slice().sort((a,b)=>(Number(b.ts)||0)-(Number(a.ts)||0)).filter(Boolean).slice(0,20).map(r=>dfmt(r.ts)+" · "+soundName(r.sound)+" · "+kindOf(r.k)+" · "+scoreTxt(r)+" · "+fmt(r.n)+" lu(s) · "+fmt(r.e)+" erreur(s)"+(r.short?" · durée insuffisante":"")));grid.append(c)}
    /* 4. Jeux */
    {const c=pcard("🎮 Jeux","pd-games"),played=games.reduce((n,[,h])=>n+(h&&typeof h==="object"?(Number(h.n)>0?Number(h.n):(h.best!=null?1:0)):0),0);
     const big=mk("div","pd-big",String(played));big.append(mk("small",null," partie(s) jouée(s)"));
