@@ -26,7 +26,7 @@ OUT = os.path.join(ROOT, "tools", "test-site")
 CDN = '<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>'
 LOADER = re.compile(r"<script>/\* Démo sans compte.*?</script>", re.S)
 FLAP_HOOK = ("window.__flap={bird:bird,pipes:pipes,state:function(){return{t:t,dead:dead,won:won,started:started,ended:ended,passed:passed,scroll:scroll,lives:lives,inv:inv}},"
-             "setT:function(v){t=v;nextBanner=Math.max(nextBanner,Math.ceil(v/20)*20)}};")
+             "setT:function(v){t=v;bi=FLAP_BANNERS.filter(function(x){return x<=v}).length}};")
 HOOK_AT = 'if(!cloudMode){setMode();show("login");'
 HOOK = ("window.__t={data:data,LS:LS,G:G,finishScore:finishScore,winCoin:winCoin,coins:coins,listenEnd:listenEnd,"
         "listenMine:listenMine,listenNeed:listenNeed,pendingWheels:pendingWheels,renderHome:renderHome,renderJeux:renderJeux,"
