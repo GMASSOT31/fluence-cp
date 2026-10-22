@@ -101,11 +101,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   .game-top-actions { display: flex; align-items: center; gap: 8px; }
   .music-btn { min-width: 48px; min-height: 44px; padding: 6px 12px; font-size: 1.3rem; line-height: 1; }
   .music-btn[hidden] { display: none; }
-  .music-btn .lbl { font-size: .95rem; font-weight: 700; }
-  #v-jeu .music-btn .lbl { display: none; }
-  @media (min-width: 601px) { #v-jeu .music-btn .lbl { display: inline; } }
-  #v-jeux .arcade { position: relative; }
-  #v-jeux .arcade > .music-btn { position: absolute; top: 12px; right: 12px; z-index: 2; }
+  .arc-status .music-btn { min-width: 40px; min-height: 34px; padding: 2px 10px; font-size: 1.1rem; border-radius: 999px; }
   .timer-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
   .who { font-weight: 600; }
 
@@ -4347,7 +4343,6 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       legend.appendChild(li);
     });
     head.appendChild(legend);
-    room.appendChild(musicBtn());   /* en haut à droite de la salle (voir .arcade > .music-btn) */
     room.appendChild(head);
     var today = playsToday(sid);
     var cr = credits(sid), lim = limitReached(sid);
@@ -4356,6 +4351,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     else if (cr <= 0) status.appendChild(el("span", "arc-pill warn", "Tu n’as plus de partie. Va à la boutique ou gagne des parties en lecture et en écoute."));
     else status.appendChild(el("span", "arc-pill", "🎮 " + nb(cr, "partie", "parties") + " à jouer"));
     if (!lim) status.appendChild(el("span", "arc-pill soft", "📅 Aujourd’hui : " + today + (data.maxPlays > 0 ? " sur " + data.maxPlays : "")));
+    status.appendChild(musicBtn());   /* juste à côté du compteur « Aujourd’hui » */
     headLeft.appendChild(status);
     wheelCard(room, sid);
     var floor = el("div", "cabs");
@@ -4538,8 +4534,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       var off = muted(), hide = !(data.sfx && data.music !== false);
       Array.prototype.forEach.call(document.querySelectorAll(".music-btn"), function (b) {
         b.hidden = hide;
-        if (!b.firstChild || !b.querySelector(".mi")) { b.textContent = ""; var mi = document.createElement("span"); mi.className = "mi"; var lb = document.createElement("span"); lb.className = "lbl"; b.appendChild(mi); b.appendChild(lb); }
-        b.querySelector(".mi").textContent = off ? "🔇" : "🎵"; b.querySelector(".lbl").textContent = " " + (off ? "Musique coupée" : "Musique");
+        b.textContent = off ? "🔇" : "🎵";
         b.setAttribute("aria-label", off ? "Remettre la musique" : "Couper la musique"); b.title = off ? "Remettre la musique" : "Couper la musique";
         b.setAttribute("aria-pressed", off ? "true" : "false");
       });
