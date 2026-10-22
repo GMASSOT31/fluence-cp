@@ -232,7 +232,8 @@ body:not(.teacher-mode) main{color:#eef0f7}
  #space .fb-item .tag{font-size:.72rem;padding:4px 7px}
  #space #fbReplyNote{margin:0 0 8px;padding:8px 10px;font-size:.88rem}
 }
-.demo-link{text-align:center;margin:16px 0 0}.demo-link a{display:inline-block;padding:10px 18px;border-radius:999px;background:#ffe37c;color:#3b2a00;font-weight:800;text-decoration:none}.demo-link a:hover{background:#ffd54a}.demo-link small{display:block;margin-top:6px;color:#8b93a8;font-size:.8rem}
+.demo-link{text-align:center;margin:16px 0 0}.demo-link a{display:inline-block;padding:10px 18px;border-radius:999px;background:#ffe37c;color:#3b2a00 !important;font-weight:800;text-decoration:none}.demo-link a:hover{background:#ffd54a}.demo-link small{display:block;margin-top:6px;color:#8b93a8;font-size:.8rem}
+#auth .link-btn{background:none;border:0;padding:6px 2px;color:#2d6fd0;font:inherit;font-weight:700;text-decoration:underline;cursor:pointer;box-shadow:none}
 </style></head><body><main><header class="hero">    <div class="zoo-hero">
       <div class="zoo-hero-copy">
         <span class="zoo-kicker">✦ LE GRAND JEU DE LA LECTURE ✦</span>
@@ -243,7 +244,7 @@ body:not(.teacher-mode) main{color:#eef0f7}
       <div class="banner-user" id="bannerUser"><span id="who"></span><a href="eleve.html" id="toStudent" title="Espace élève"><span aria-hidden="true">🎒</span><span class="bu-label">&nbsp;Espace élève</span></a><button id="logout" class="secondary" type="button" title="Déconnexion"><span class="bu-ico" aria-hidden="true">🚪</span><span class="bu-label">Déconnexion</span></button></div>
     </div>
 </header>
-<section class="panel" id="auth"><h2 class="auth-title">🧑‍🏫 Se connecter</h2><form id="authForm"><label for="email" class="sr-only">Adresse e-mail</label><input id="email" type="email" autocomplete="email" required maxlength="254" placeholder="Adresse e-mail"><label for="password" class="sr-only">Mot de passe</label><input id="password" type="password" autocomplete="current-password" minlength="8" required placeholder="Mot de passe"><div class="actions auth-actions"><button id="signin" type="submit">Me connecter</button><button id="reset" type="button" class="secondary">Mot de passe oublié</button><button id="signup" type="button" class="secondary">Créer un compte</button><small class="signup-note">Inscription libre. Chaque compte dispose de 3 places d'élèves par défaut.</small></div></form><p class="demo-link"><a href="zoo-connecte.html?demo=1&amp;new=1">✨ Essayer la démo, sans compte</a><small>Une classe fictive : le Zoo d'un élève, puis l'espace enseignant.</small></p><p class="msg" id="authMsg" role="status"></p><p class="auth-student">🎒 Élève ? <a href="eleve.html" id="authToStudent">Entre ici avec ton code de classe</a></p></section>
+<section class="panel" id="auth"><h2 class="auth-title">🧑‍🏫 Se connecter</h2><form id="authForm"><label for="email" class="sr-only">Adresse e-mail</label><input id="email" type="email" autocomplete="email" required maxlength="254" placeholder="Adresse e-mail"><label for="password" class="sr-only">Mot de passe</label><input id="password" type="password" autocomplete="current-password" minlength="8" required placeholder="Mot de passe"><div class="actions auth-actions"><button id="signin" type="submit">Me connecter</button><button id="reset" type="button" class="secondary">Mot de passe oublié</button><button id="signup" type="button" class="secondary">Créer un compte</button><button id="toLogin" type="button" class="link-btn hidden">J’ai déjà un compte : me connecter</button><small class="signup-note">Inscription libre. Chaque compte dispose de 3 places d'élèves par défaut.</small></div></form><p class="demo-link"><a href="zoo-connecte.html?demo=1&amp;new=1">✨ Essayer la démo, sans compte</a><small>Une classe fictive : le Zoo d'un élève, puis l'espace enseignant.</small></p><p class="msg" id="authMsg" role="status"></p><p class="auth-student">🎒 Élève ? <a href="eleve.html" id="authToStudent">Entre ici avec ton code de classe</a></p></section>
 <section class="panel hidden" id="recovery"><h2>🔒 Choisis ton nouveau mot de passe</h2><p class="muted" id="recoveryWho">Tu es arrivée ici par le lien de l’e-mail « Mot de passe oublié ».</p><form id="recoveryForm"><label for="newPassword">Nouveau mot de passe (au moins 8 caractères)</label><input id="newPassword" type="password" autocomplete="new-password" minlength="8" maxlength="72" required><label for="newPassword2">Écris-le une deuxième fois</label><input id="newPassword2" type="password" autocomplete="new-password" minlength="8" maxlength="72" required><div class="actions"><button id="recoverySave" type="submit">Enregistrer mon nouveau mot de passe</button></div></form><p class="msg" id="recoveryMsg" role="status"></p></section>
 <section class="hidden teacher-space" id="space">
  <aside class="panel teacher-header" aria-label="Menu de l’espace enseignant">
@@ -324,7 +325,7 @@ body:not(.teacher-mode) main{color:#eef0f7}
  <p class="msg" id="fbAdminMsg" role="status"></p><div id="fbList" class="content-list"></div>
 </section>
 </div>
-</section></main><script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=4"><\/script>':'<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"><\/script>');})();</script><script>
+</section></main><script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=5"><\/script>':'<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"><\/script>');})();</script><script>
 (function(){
 "use strict";
 /* Retour du lien « Mot de passe oublié » : on lit l’adresse avant que la bibliothèque Supabase ne la nettoie */
@@ -588,14 +589,31 @@ $("reloadProgress").onclick=()=>refresh();
 
 
 async function busy(id,action){const b=$(id);b.disabled=true;try{await action()}catch(e){msg("authMsg",errorText(e),true);msg("spaceMsg",errorText(e),true)}finally{b.disabled=false}}
-$("signup").onclick=()=>busy("signup",async()=>{
+/* Deux vues : « Se connecter » et « Créer mon compte enseignant » (zoodelecture.fr/enseignants.html#inscription) */
+let signupMode=false;
+function setAuthMode(signup){
+ signupMode=signup;
+ document.querySelector("#auth .auth-title").textContent=signup?"🧑‍🏫 Créer mon compte enseignant":"🧑‍🏫 Se connecter";
+ $("signup").textContent=signup?"Créer mon compte":"Créer un compte";
+ $("signup").classList.toggle("secondary",!signup);
+ $("signin").classList.toggle("hidden",signup);$("reset").classList.toggle("hidden",signup);$("toLogin").classList.toggle("hidden",!signup);
+ $("password").autocomplete=signup?"new-password":"current-password";
+ $("password").placeholder=signup?"Mot de passe (8 caractères minimum)":"Mot de passe";
+ if(signup)$("signup").parentNode.insertBefore($("signup"),$("signup").parentNode.firstChild);
+ else $("signin").parentNode.insertBefore($("signin"),$("signin").parentNode.firstChild);
+ msg("authMsg","");
+}
+$("toLogin").onclick=()=>{setAuthMode(false);history.replaceState(null,"",location.pathname+location.search);$("email").focus();};
+if(location.hash==="#inscription")setAuthMode(true);
+$("signup").onclick=()=>{if(!signupMode){setAuthMode(true);history.replaceState(null,"",location.pathname+location.search+"#inscription");$("email").focus();return;}doSignup();};
+const doSignup=()=>busy("signup",async()=>{
  const email=$("email").value.trim(),password=$("password").value;
  if(!email||password.length<8){msg("authMsg","Saisis un e-mail et un mot de passe d'au moins 8 caractères.",true);return;}
  const {data,error}=await client.auth.signUp({email,password,options:{emailRedirectTo:location.origin+location.pathname}});
  if(error){msg("authMsg",errorText(error),true);return;}
  msg("authMsg",data.session?"Compte créé, connexion en cours.":"Vérifie ta boîte mail pour confirmer ton inscription. Pense aussi aux courriers indésirables.");if(data.session)await refresh();
 });
-$("authForm").onsubmit=e=>{e.preventDefault();busy("signin",async()=>{const {error}=await client.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});if(error)msg("authMsg",errorText(error),true);else await refresh()})};
+$("authForm").onsubmit=e=>{e.preventDefault();if(signupMode){doSignup();return;}busy("signin",async()=>{const {error}=await client.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});if(error)msg("authMsg",errorText(error),true);else await refresh()})};
 $("reset").onclick=()=>busy("reset",async()=>{const email=$("email").value.trim();if(!email){msg("authMsg","Écris d’abord ton adresse e-mail dans la case ci-dessus, puis clique sur « Mot de passe oublié ».",true);return;}const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo:pageUrl});msg("authMsg",error?errorText(error):"C’est envoyé ! Regarde ta boîte mail (et les courriers indésirables), puis clique sur le lien depuis cet appareil. Tu pourras alors choisir un nouveau mot de passe.",!!error)});
 function checkNewPassword(a,b,out){
  if(a.length<8){msg(out,"Le mot de passe doit faire au moins 8 caractères.",true);return false;}
