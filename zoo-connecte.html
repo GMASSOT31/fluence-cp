@@ -2932,7 +2932,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       h0.appendChild(buildPet(st0, charFor(S.sound)));
       var thr0 = data.thr[S.kind], stars0 = ok ? 3 : (mclm >= thr0 * 0.75 ? 2 : 1);
       soundStars(S.sid, S.sound, S.kind, ok, false);
-      $("r-msg").textContent = ok ? "Bravo, tu atteins l’objectif ! Enregistre ton entraînement : l’étape sera validée ✓ et tu passeras à la suite. Pour la faire certifier 🏅 et gagner la roue, demande ton évaluation."
+      $("r-msg").textContent = ok ? "Bravo, tu atteins l’objectif ! Enregistre ton entraînement : l’étape sera « réussie en entraînement » ✓ et tu passeras à la suite. Pour la faire certifier 🏅 et gagner la roue, demande ton évaluation."
         : (mclm >= thr0 * 0.75 ? "Presque ! Encore un entraînement et tu y es." : "Bien joué ! Chaque entraînement te fait progresser.");
       return;
     }
@@ -2987,8 +2987,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var ok = mclm >= thr && !short && !fraud;
     var badge = $("r-badge");
     badge.textContent = fraud ? "⚠️ Résultat écarté : durée trop courte ou score inhabituel" : S.train
-      ? (short ? "⏱️ Lecture trop courte : lis au moins " + MIN_TRAIN_SEC + " secondes pour valider l’étape" : ok ? "✓ Objectif atteint : étape validée" : "Objectif : " + thr + " par minute")
-      : (ok ? "🏅 Objectif atteint : étape certifiée" : "Objectif : " + thr + " par minute") + (t < MIN_TRAIN_SEC ? " · ⏱️ lecture très courte, à vérifier" : "");
+      ? (short ? "⏱️ Lecture trop courte : lis au moins " + MIN_TRAIN_SEC + " secondes pour que ce soit compté" : ok ? "✓ Réussi en entraînement" : "Objectif : " + thr + " par minute")
+      : (ok ? "🏅 Certifié par l’enseignant" : "Objectif : " + thr + " par minute") + (t < MIN_TRAIN_SEC ? " · ⏱️ lecture très courte, à vérifier" : "");
     badge.className = "badge" + (ok ? " ok" : "");
     $("btn-save").textContent = S.train ? "Enregistrer mon entraînement" : "Enregistrer";
     $("btn-ask-eval").hidden = !(S.train && ok);
@@ -3018,7 +3018,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       saveTraining();
       var nowPassed = !wasPassed && isPassed(S.sid, S.sound, S.kind);
       if (nowPassed) { data.sel.sid = S.sid; applySuggestion(); save(); }
-      toast(nowPassed ? "Étape validée ✓ : tu passes à la suite !" : "Entraînement enregistré");
+      toast(nowPassed ? "Réussi en entraînement ✓ : tu passes à la suite !" : "Entraînement enregistré");
       leaveSession(false);
       renderPanels();
       return;
@@ -3033,7 +3033,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     zooNote = "";
     if (newly) {
       if (data.reward) data.wheels.push({ id: uid(), sid: sid, ts: Date.now() });
-      else zooNote = "Étape validée !";
+      else zooNote = "Étape certifiée 🏅 !";
     }
     save();
     /* Une évaluation en direct consomme l’autorisation du maître(sse). */
@@ -3045,7 +3045,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       ses.mode = "live";
       setMode();
     }
-    toast(newly ? "Enregistré : étape validée" : "Résultat enregistré");
+    toast(newly ? "Enregistré : certifié par l’enseignant 🏅" : "Résultat enregistré");
     leaveSession(true);
     renderPanels();
     if (newly) {
@@ -3532,9 +3532,10 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var allSteps = stepsList();
     var doneSteps = allSteps.filter(function (x) { return isValid(sid, x.sound, x.kind); }).length;
     var passedSteps = allSteps.filter(function (x) { return isPassed(sid, x.sound, x.kind); }).length;
-    $("pr-prog").textContent = nb(passedSteps, "étape réussie", "étapes réussies") + " · " + doneSteps + (doneSteps > 1 ? " certifiées" : " certifiée");
-    $("pl-level").textContent = "N" + doneSteps;
-    $("top-level").textContent = "N" + doneSteps;
+    $("pr-prog").textContent = "✓ " + nb(passedSteps, "réussie en entraînement", "réussies en entraînement") + " · 🏅 " + nb(doneSteps, "certifiée", "certifiées");
+    /* Le niveau compte les étapes réussies (les certifications se comptent à part) : la réussite ne vaut jamais zéro */
+    $("pl-level").textContent = "N" + passedSteps;
+    $("top-level").textContent = "N" + passedSteps;
     var lvl = listenLevel(sid), lnx = listenNext(sid);
     $("top-listen").textContent = "E" + lvl;
     $("top-listen-box").setAttribute("aria-label", "Niveau d’écoute " + lvl + " : " + nb(lvl, "son validé", "sons validés"));
@@ -3548,8 +3549,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var animal = animalSound ? charFor(animalSound) : null;
     $("st-level").querySelector(".sym").textContent = animal ? animal.e : "🥚";
     $("top-animal").textContent = animal ? animal.e : "🥚";
-    $("st-level").setAttribute("aria-label", "Niveau de lecture " + doneSteps + " : " + nb(doneSteps, "étape validée", "étapes validées"));
-    $("st-level").title = "Niveau de lecture : " + nb(doneSteps, "étape validée", "étapes validées");
+    $("st-level").setAttribute("aria-label", "Niveau de lecture " + passedSteps + " : " + nb(passedSteps, "étape réussie", "étapes réussies") + ", dont " + nb(doneSteps, "certifiée", "certifiées"));
+    $("st-level").title = "Niveau de lecture : " + nb(passedSteps, "étape réussie", "étapes réussies") + ", dont " + nb(doneSteps, "certifiée", "certifiées");
   }
 
   /* ---------- Écouter : progression, questions, voix ---------- */
@@ -6198,7 +6199,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       var thr = data.thr[rv.kind], ok = r.mclm >= thr;
       resultBox.innerHTML = "";
       resultBox.appendChild(el("h2", "", r.mclm + " " + kindInfo(rv.kind).unit + " par minute"));
-      resultBox.appendChild(el("p", "muted", r.n + " lus, " + nb(r.e, "erreur", "erreurs") + ", sur " + r.t + " secondes. Objectif : " + thr + ". " + (ok ? "Atteint : l’étape sera validée." : "Pas atteint.")));
+      resultBox.appendChild(el("p", "muted", r.n + " lus, " + nb(r.e, "erreur", "erreurs") + ", sur " + r.t + " secondes. Objectif : " + thr + ". " + (ok ? "Atteint : l’étape sera certifiée 🏅." : "Pas atteint.")));
       var row = el("div", "row");
       var okb = el("button", "primary", "Valider et enregistrer"); okb.type = "button";
       okb.addEventListener("click", function () { saveReview(rv, r); });
@@ -6219,7 +6220,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var thr = data.thr[rv.kind];
     var note = "Le maître(sse) a écouté ta lecture : " + r.mclm + " " + kindInfo(rv.kind).unit + " par minute.";
     if (newly) {
-      note += " Étape validée !";
+      note += " Étape certifiée 🏅 !";
       if (data.reward) data.wheels.push({ id: uid(), sid: rv.sid, ts: Date.now() });
       /* L’élève n’est pas là : son animal évoluera à sa prochaine arrivée sur l’accueil */
       var petAfter = petState(rv.sid, rv.sound);
@@ -6234,7 +6235,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     data.notes.push({ sid: rv.sid, text: note });
     removeReview(rv.id);
     closeReviewMedia();
-    toast(newly ? "Résultat enregistré : étape validée" : "Résultat enregistré");
+    toast(newly ? "Résultat enregistré : certifié par l’enseignant 🏅" : "Résultat enregistré");
     renderEcoute();
   }
   function redoReview(rv) {
@@ -6327,7 +6328,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var passedN = steps.filter(function (st) { return isPassed(sid, st.sound, st.kind); }).length;
     var card = el("div", "card");
     card.appendChild(el("h2", "", forStudent ? "Mes étapes" : "Récapitulatif par son"));
-    card.appendChild(el("p", "muted", nb(validated, "étape certifiée 🏅", "étapes certifiées 🏅") + " · " + passedN + " validée" + (passedN > 1 ? "s" : "") + " ✓ sur " + steps.length + ". 🏅 = certifiée par ton maître(sse) (roue et niveau) · ✓ = validée à l’entraînement. Touche une case pour lancer cette étape."));
+    card.appendChild(el("p", "muted", "✓ " + passedN + " sur " + steps.length + " réussie" + (passedN > 1 ? "s" : "") + " en entraînement · 🏅 " + nb(validated, "certifiée", "certifiées") + " par l’enseignant (roue et récompenses). Touche une case pour lancer cette étape."));
     var rows = data.sounds.filter(function (s) {
       return KINDS.some(function (k) { return hasContent(s.id, k.k) || best(sid, s.id, k.k) !== null; });
     });
@@ -6357,8 +6358,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
             var btn = el("button", "cell " + (ok ? "ok" : (pass ? "pass" : (b !== null ? "try" : ""))));
             btn.type = "button";
             btn.textContent = ok ? "🏅 " + b : (pass ? "✓ " + bt : (b !== null ? String(b) : "–"));
-            if (pass) btn.title = "Validée à l’entraînement : demande ton évaluation pour la certifier 🏅";
-            btn.setAttribute("aria-label", k.name + ", son " + s.label + " : " + (ok ? "validé, meilleur score " + b : (b !== null ? "pas encore validé, meilleur score " + b : "pas encore lu")));
+            if (pass) btn.title = "Réussi en entraînement : demande ton évaluation avec l’enseignant pour le faire certifier 🏅";
+            btn.setAttribute("aria-label", k.name + ", son " + s.label + " : " + (ok ? "certifié par l’enseignant, meilleur score " + b : (pass ? "réussi en entraînement, meilleur score " + bt : (b !== null ? "à travailler, meilleur score " + b : "à travailler, pas encore lu"))));
             btn.disabled = !hasContent(s.id, k.k) || !unl;
             if (!unl) btn.setAttribute("aria-label", k.name + ", son " + s.label + " : verrouillé");
             btn.addEventListener("click", function () { openStep(sid, s.id, k.k); });
@@ -6370,9 +6371,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       });
       table.appendChild(tbody); wrap.appendChild(table); card.appendChild(wrap);
       var lg = el("div", "legend");
-      lg.appendChild(el("span", "", "🏅 certifiée par le maître(sse) · ✓ validée à l’entraînement, avec le meilleur score"));
-      lg.appendChild(el("span", "", "chiffre seul : lu, objectif pas atteint"));
-      lg.appendChild(el("span", "", "– : pas encore lu"));
+      lg.appendChild(el("span", "", "🏅 Certifié par l’enseignant · ✓ Réussi en entraînement (meilleur score)"));
+      lg.appendChild(el("span", "", "chiffre seul ou – : À travailler"));
       if (data.lock) lg.appendChild(el("span", "", "ligne grisée : son verrouillé"));
       card.appendChild(lg);
     }

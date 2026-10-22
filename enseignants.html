@@ -642,8 +642,8 @@ async function renderProgress(students,classes){
    const lisOk=lisRows.filter(r=>r.ok).length;
    const wrap=document.createElement("div");wrap.className="row progress-row";
    const info=document.createElement("div");const name=document.createElement("strong");name.textContent=s.nickname;
-   const summary=document.createElement("div");summary.className="muted";summary.textContent=certified.length+" 🏅 certifiée(s) · "+alone.length+" ✓ validée(s) seul · "+evaluations.length+" évaluation(s) · "+training.length+" entraînement(s)"+(latestEval?" · Dernière fluence : "+fmt(latestEval.mclm)+" corrects/min":"")+" · "+fmt(p.coins)+" pièce(s)"+(row&&row.pending_coins>0?" (+"+row.pending_coins+" en attente)":"")+" · "+lisOk+" son(s) écouté(s) réussi(s)"+(fraudN?" · ⚠️ "+fraudN+" résultat(s) écarté(s)":"")+" · "+games.length+" jeu(x)";
-   summary.title=certified.length+" certifiée(s), "+alone.length+" validée(s) seul, "+evaluations.length+" évaluation(s), "+training.length+" entraînement(s), "+fmt(p.coins)+" pièce(s), "+games.length+" jeu(x)";
+   const summary=document.createElement("div");summary.className="muted";summary.textContent=certified.length+" 🏅 certifié(s) par l’enseignant · "+alone.length+" ✓ réussi(s) en entraînement seulement · "+evaluations.length+" évaluation(s) · "+training.length+" entraînement(s)"+(latestEval?" · Dernière fluence : "+fmt(latestEval.mclm)+" corrects/min":"")+" · "+fmt(p.coins)+" pièce(s)"+(row&&row.pending_coins>0?" (+"+row.pending_coins+" en attente)":"")+" · "+lisOk+" son(s) écouté(s) réussi(s)"+(fraudN?" · ⚠️ "+fraudN+" résultat(s) écarté(s)":"")+" · "+games.length+" jeu(x)";
+   summary.title=certified.length+" certifié(s) par l’enseignant, "+alone.length+" réussi(s) en entraînement seulement, "+evaluations.length+" évaluation(s), "+training.length+" entraînement(s), "+fmt(p.coins)+" pièce(s), "+games.length+" jeu(x)";
    /* Coup d’œil : dernière activité, prochaine étape, besoin de validation (les autres chiffres sont dans « Détails ») */
    const gk=(cls,t)=>{const e=document.createElement("span");e.className="pg-chip "+cls;e.textContent=t;return e};
    const tsAll=[...readings.map(r=>Number(r&&r.ts)||0),...games.map(([,h])=>Number(h&&h.bts)||0),Date.parse(row&&row.updated_at||"")||0].filter(x=>x>0),lastTs=tsAll.length?Math.max(...tsAll):0;
@@ -673,10 +673,10 @@ async function renderProgress(students,classes){
     c.append(big,bar([[lisOk/tot*100]],"pd-listen"),mk("div","pd-note",(Number(lis.tries)||0)+" exercice(s) fait(s)"));
     more(c,lisRows.map(r=>(r.ok?"✅ ":"⏳ ")+(r.x.label||r.x.id)+" : "+Math.min(r.n,lisNeed(r.x.id))+"/"+lisNeed(r.x.id)+" réussite(s)"));grid.append(c)}
    /* 2. Sons lus */
-   {const c=pcard("📖 Sons lus","pd-read"),tot=Math.max(1,cfgSounds.length),sOf=k=>k.split(":")[0];
+   {const c=pcard("📖 Sons lus : réussis et certifiés","pd-read"),tot=Math.max(1,cfgSounds.length),sOf=k=>k.split(":")[0];
     const cs=new Set(certified.map(sOf)),as=new Set(alone.map(sOf).filter(x=>!cs.has(x)));
-    const big=mk("div","pd-big",String(cs.size));big.append(mk("small",null," / "+cfgSounds.length+" sons"));
-    c.append(big,bar([[cs.size/tot*100],[as.size/tot*100,"alone"]],"pd-read"),mk("div","pd-note","🏅 certifiés par l’évaluation"+(as.size?" · "+as.size+" validé(s) seul (clair)":"")));
+    const big=mk("div","pd-big",String(cs.size+as.size));big.append(mk("small",null," / "+cfgSounds.length+" sons réussis"));
+    c.append(big,bar([[cs.size/tot*100],[as.size/tot*100,"alone"]],"pd-read"),mk("div","pd-note","🏅 "+cs.size+" certifié(s) par l’enseignant · ✓ "+as.size+" réussi(s) en entraînement seulement (en clair)"));
     more(c,readings.slice().sort((a,b)=>(Number(b.ts)||0)-(Number(a.ts)||0)).slice(0,20).filter(Boolean).map(r=>(r.src==="train"?"🟡 Entraînement":"🟢 Évaluation")+" · "+dfmt(r.ts)+" · "+soundName(r.sound)+" · "+kindOf(r.k)+" · "+scoreTxt(r)+" · "+fmt(r.e)+" erreur(s)"+(r.short?" · durée insuffisante":"")));grid.append(c)}
    /* 3. Fluence */
    {const c=pcard("⚡ Fluence (évaluations)","pd-flu");
