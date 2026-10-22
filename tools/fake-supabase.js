@@ -20,7 +20,17 @@
   var api = {
     student_get_progress_v2: function () { return { progress: JSON.parse(JSON.stringify(srv.me.progress)), version: srv.version }; },
     student_session_profile: function () { return { student_id: srv.me.id, nickname: srv.me.nickname }; },
-    student_get_teacher_settings: function () { return { reward: true, maxPlays: /illimite/.test(location.search) ? 0 : 50, wheelPrice: /prix4/.test(location.search) ? 4 : 7, evalCode: !/sanscode/.test(location.search) }; },
+    student_change_pin: function (a) {
+      srv.pinCalls = (srv.pinCalls || []).concat([{ old: a.p_old_pin, neu: a.p_new_pin }]);
+      if (srv.pinOff) throw { message: "Ton maître(sse) a désactivé ce changement." };
+      if (!/^[0-9]{4,8}$/.test(a.p_new_pin || "")) throw { message: "Le code doit avoir de 4 à 8 chiffres." };
+      if (a.p_old_pin === a.p_new_pin) throw { message: "Le nouveau code doit être différent de l'ancien." };
+      srv.pin = srv.pin || "1234";
+      if (srv.pinFails >= 5) return { ok: false, code: "locked" };
+      if (a.p_old_pin !== srv.pin) { srv.pinFails = (srv.pinFails || 0) + 1; return { ok: false, code: "bad_old" }; }
+      srv.pin = a.p_new_pin; srv.pinFails = 0; return { ok: true };
+    },
+    student_get_teacher_settings: function () { return { pinChange: !/sanspin/.test(location.search), reward: true, maxPlays: /illimite/.test(location.search) ? 0 : 50, wheelPrice: /prix4/.test(location.search) ? 4 : 7, evalCode: !/sanscode/.test(location.search) }; },
     student_get_class_records: function () {
       var r = {}; Object.keys(MODES).forEach(function (g) { var b = best(g); if (b) { delete b.ts; r[g] = b; } });
       return { classSize: all().length, records: all().length < 2 ? {} : r };

@@ -93,9 +93,17 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   .walker { position: absolute; bottom: 14px; left: 0; font-size: 2.4rem; line-height: 1; transition: left 0.1s linear; }
   .goal { position: absolute; right: 0; bottom: 14px; font-size: 2rem; line-height: 1; }
   .timer { font-size: clamp(3rem, 12vw, 4.6rem); font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -0.03em; }
+  .pin-form { display: grid; gap: 12px; text-align: left; }
+  .pin-label { display: grid; gap: 4px; font-weight: 700; }
+  .pin-input { width: 100%; padding: 12px; font-size: 1.4rem; letter-spacing: .3em; text-align: center; border-radius: 12px; border: 2px solid var(--line); background: var(--bg); color: var(--ink); }
+  .pin-msg { margin: 0; min-height: 1.4em; font-weight: 700; text-align: center; }
+  .pin-msg.bad { color: #b42318; } .pin-msg.good { color: #1a7f37; }
   .game-top-actions { display: flex; align-items: center; gap: 8px; }
   .music-btn { min-width: 48px; min-height: 44px; padding: 6px 12px; font-size: 1.3rem; line-height: 1; }
   .music-btn[hidden] { display: none; }
+  .music-btn .lbl { font-size: .95rem; font-weight: 700; }
+  #v-jeu .music-btn .lbl { display: none; }
+  @media (min-width: 601px) { #v-jeu .music-btn .lbl { display: inline; } }
   #v-jeux .arcade { position: relative; }
   #v-jeux .arcade > .music-btn { position: absolute; top: 12px; right: 12px; z-index: 2; }
   .timer-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
@@ -1615,7 +1623,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
 </main>
 <div class="toast" id="toast" role="status"></div>
 
-<script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=12"><\/script>':'<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"><\/script>');})();</script>
+<script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=13"><\/script>':'<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"><\/script>');})();</script>
 <script>
 (function () {
   "use strict";
@@ -1894,6 +1902,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     lock: true,
     reward: true,
     sfx: true,
+    pinChange: true,   /* l’élève peut changer son code secret : réglage du maître(sse), lu à la connexion */
     music: true,   /* musique de la salle de jeux : réglage du maître(sse), lu à la connexion */
     allowRec: false,  /* décochée par défaut ; le maître(sse) peut l’activer (réglages péda) */
     evalCode: true,   /* mot de passe du maître(sse) demandé pour une évaluation en direct (réglages péda) */
@@ -4419,6 +4428,55 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       o.start(t0); o.stop(t0 + dur + 0.05);
     } catch (e) {}
   }
+  /* Changer son code secret (élève connecté) : ancien code, nouveau code deux fois ; le serveur vérifie tout (student_change_pin) */
+  function openPinDialog() {
+    if (document.querySelector(".pin-dialog")) return;
+    var ov = el("div", "game-result pin-dialog"); ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true"); ov.setAttribute("aria-label", "Changer mon code secret");
+    var card = el("div", "game-result-card");
+    card.appendChild(el("h2", "gr-title", "🔑 Changer mon code secret"));
+    var form = el("form", "pin-form"), inputs = {};
+    [["old", "Mon code actuel"], ["n1", "Mon nouveau code (4 à 8 chiffres)"], ["n2", "Mon nouveau code, encore une fois"]].forEach(function (f) {
+      var lab = el("label", "pin-label", f[1]), inp = document.createElement("input");
+      inp.type = "password"; inp.inputMode = "numeric"; inp.maxLength = 8; inp.autocomplete = "off"; inp.className = "pin-input";
+      lab.appendChild(inp); form.appendChild(lab); inputs[f[0]] = inp;
+    });
+    var msgEl = el("p", "pin-msg"); msgEl.setAttribute("role", "status");
+    var acts = el("div", "gr-actions"), ok = el("button", "primary", "Changer"), cancel = el("button", "secondary", "Annuler");
+    ok.type = "submit"; cancel.type = "button";
+    acts.appendChild(ok); acts.appendChild(cancel);
+    form.appendChild(msgEl); form.appendChild(acts); card.appendChild(form); ov.appendChild(card); document.body.appendChild(ov);
+    function close() { if (ov.parentNode) ov.parentNode.removeChild(ov); }
+    cancel.addEventListener("click", close);
+    ov.addEventListener("click", function (e) { if (e.target === ov) close(); });
+    function say(t, bad) { msgEl.textContent = t; msgEl.className = "pin-msg" + (bad ? " bad" : " good"); }
+    var re = /^[0-9]{4,8}$/;
+    form.addEventListener("submit", async function (e) {
+      e.preventDefault();
+      var o = inputs.old.value, a = inputs.n1.value, b = inputs.n2.value;
+      if (!re.test(o)) { say("Écris ton code actuel (des chiffres).", true); return; }
+      if (!re.test(a)) { say("Le nouveau code doit avoir de 4 à 8 chiffres.", true); return; }
+      if (a !== b) { say("Les deux nouveaux codes ne sont pas pareils.", true); return; }
+      if (a === o) { say("Le nouveau code doit être différent de l’ancien.", true); return; }
+      ok.disabled = true; say("Un instant…", false);
+      try {
+        var res = await cloudClient.rpc("student_change_pin", { p_token: cloudToken, p_old_pin: o, p_new_pin: a });
+        if (res.error) throw res.error;
+        var r = res.data || {};
+        if (r.ok) {
+          say("✅ C’est fait ! Retiens bien ton nouveau code.", false);
+          Object.keys(inputs).forEach(function (k) { inputs[k].value = ""; inputs[k].disabled = true; });
+          ok.hidden = true; cancel.textContent = "Fermer"; cancel.className = "primary"; cancel.focus();
+          return;
+        }
+        say(r.code === "locked" ? "Trop d’essais. Réessaie dans 15 minutes, ou demande à ton maître(sse)." : "Ton code actuel n’est pas bon.", true);
+      } catch (err) {
+        var m = String((err && err.message) || "");
+        say(/Session expir/.test(m) ? "Ta connexion a expiré : reconnecte-toi." : (/désactivé|4 à 8|différent/.test(m) ? m : "Impossible de changer le code pour le moment."), true);
+      }
+      ok.disabled = false;
+    });
+    inputs.old.focus();
+  }
   /* Musique de la salle de jeux : composée ici avec Web Audio (aucun fichier). Elle joue dans la salle de jeux et pendant les parties,
      se coupe avec le bouton 🎵/🔇 (choix gardé sur l’appareil) et n’existe pas si le maître(sse) l’a désactivée ou coupé les bruitages. */
   var Music = (function () {
@@ -4479,7 +4537,9 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     function refresh() {
       var off = muted(), hide = !(data.sfx && data.music !== false);
       Array.prototype.forEach.call(document.querySelectorAll(".music-btn"), function (b) {
-        b.hidden = hide; b.textContent = off ? "🔇" : "🎵";
+        b.hidden = hide;
+        if (!b.firstChild || !b.querySelector(".mi")) { b.textContent = ""; var mi = document.createElement("span"); mi.className = "mi"; var lb = document.createElement("span"); lb.className = "lbl"; b.appendChild(mi); b.appendChild(lb); }
+        b.querySelector(".mi").textContent = off ? "🔇" : "🎵"; b.querySelector(".lbl").textContent = " " + (off ? "Musique coupée" : "Musique");
         b.setAttribute("aria-label", off ? "Remettre la musique" : "Couper la musique"); b.title = off ? "Remettre la musique" : "Couper la musique";
         b.setAttribute("aria-pressed", off ? "true" : "false");
       });
@@ -6449,6 +6509,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       if(typeof teacherSettings.reward==="boolean")data.reward=teacherSettings.reward;
       if(typeof teacherSettings.sfx==="boolean")data.sfx=teacherSettings.sfx;
       if(typeof teacherSettings.music==="boolean")data.music=teacherSettings.music;
+      if(typeof teacherSettings.pinChange==="boolean")data.pinChange=teacherSettings.pinChange;
       if(typeof teacherSettings.allowRec==="boolean")data.allowRec=teacherSettings.allowRec;
       if(typeof teacherSettings.evalCode==="boolean")data.evalCode=teacherSettings.evalCode;
       if(Number.isInteger(teacherSettings.maxPlays)&&teacherSettings.maxPlays>=0&&teacherSettings.maxPlays<=500)data.maxPlays=teacherSettings.maxPlays;
@@ -6485,7 +6546,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       bar.id="cloud-status";bar.className="cs-ok";bar.style.cssText="position:fixed;bottom:10px;left:10px;z-index:9999;background:#372465;color:white;border-radius:12px;padding:8px 12px;font:13px system-ui;box-shadow:0 3px 12px #0005";
       bar.append(document.createTextNode("☁️ Connecté(e) · "+st.nickname));cloudStatusNode=bar;bar.dataset.nickname=st.nickname;
       refreshClassRecords(true);claimGifts(true);
-      var link=document.createElement("a");link.href="eleve.html";link.textContent=" · Déconnexion";link.style.color="#ffe37c";link.onclick=function(ev){ev.preventDefault();logout()};bar.append(link);document.body.append(bar);
+      var link=document.createElement("a");link.href="eleve.html";link.textContent=" · Déconnexion";link.style.color="#ffe37c";link.onclick=function(ev){ev.preventDefault();logout()};bar.append(link);
+      if(data.pinChange!==false){var key=document.createElement("button");key.type="button";key.id="btn-pin";key.textContent="🔑";key.title="Changer mon code secret";key.setAttribute("aria-label","Changer mon code secret");key.style.cssText="margin-left:8px;border:0;border-radius:8px;background:rgba(255,255,255,.18);color:#fff;font-size:15px;line-height:1;padding:3px 8px;cursor:pointer";key.onclick=openPinDialog;bar.append(key);}document.body.append(bar);
     } catch(e) {
       alert("Impossible de charger ton Zoo : "+(e.message||"session expirée")+". Reconnecte-toi.");
       try{sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}catch(ignored){}
