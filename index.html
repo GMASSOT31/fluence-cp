@@ -1,7 +1,8 @@
 <!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Zoo de Lecture · Lecture et écoute pour le CP</title>
-<meta name="description" content="Zoo de Lecture : des activités de lecture et d’écoute pour les élèves de CP, un zoo qui grandit avec leurs progrès et un suivi simple pour l’enseignant. Gratuit, à essayer sans inscription.">
+<title>Lecture CP : syllabes, fluence et ateliers | Zoo de Lecture</title>
+<meta name="description" content="Lecture au CP : syllabes, mots, textes et écoute. Adaptez les sons à votre progression et suivez vos élèves. Démo de Zoo de Lecture sans inscription.">
+<meta name="google-site-verification" content="9JFM7VHCfgxgY39k3PLMZs1_Qh-gnWZlSNG7dmuXJ5I">
 <link rel="canonical" href="https://zoodelecture.fr/">
 <meta property="og:type" content="website"><meta property="og:locale" content="fr_FR"><meta property="og:url" content="https://zoodelecture.fr/">
 <meta property="og:site_name" content="Zoo de Lecture">
@@ -164,8 +165,8 @@ footer p{margin:14px 0 0;text-align:center}
   <div class="hero">
     <div>
       <span class="kicker">✦ POUR LES ÉLÈVES DE CP ✦</span>
-      <h1>La lecture devient une <span>aventure.</span></h1>
-      <p class="lead">Des activités de lecture et d’écoute pour les élèves de CP, un zoo qui grandit avec leurs progrès et un suivi simple pour l’enseignant.</p>
+      <h1>Au CP, la lecture devient une <span>aventure.</span></h1>
+      <p class="lead">Des syllabes, des mots, des textes et des activités d’écoute pour vos ateliers de lecture au CP. Adaptez l’ordre des sons à votre progression et suivez les progrès de chaque élève.</p>
       <div class="ctas">
         <a class="btn btn-eleve btn-big" href="zoo-connecte.html?demo=1&amp;new=1&amp;tour=short">✨ Découvrir en 2 minutes</a>
         <a class="btn btn-line btn-big" href="enseignants.html#inscription">🧑‍🏫 Créer ma classe gratuitement</a>
@@ -203,7 +204,7 @@ footer p{margin:14px 0 0;text-align:center}
   </section>
 
   <section aria-labelledby="t-ens">
-    <h2 id="t-ens">Un suivi simple pour l’enseignant</h2>
+    <h2 id="t-ens">Différencier les entraînements, suivre chaque élève</h2>
     <p class="sub">Le tableau de progression montre où en est chaque élève, d’un coup d’œil : dernière activité, prochaine étape, barres de progression et courbe de fluence.</p>
     <div class="teach">
       <figure class="shot">
@@ -218,6 +219,19 @@ footer p{margin:14px 0 0;text-align:center}
       </ul>
     </div>
     <p class="center"><a class="btn btn-eleve btn-big" href="enseignants.html#inscription">🧑‍🏫 Créer ma classe gratuitement</a></p>
+  </section>
+
+  <section aria-labelledby="t-ateliers">
+    <h2 id="t-ateliers">Préparer vos ateliers de lecture au CP</h2>
+    <p class="sub">Après une prise en main accompagnée, proposez un entraînement connu pendant que vous travaillez avec un petit groupe. L’enseignant reste responsable de la validation des lectures.</p>
+    <ul class="benefits" style="margin-top:24px"><li><span><a href="ateliers-autonomes-lecture-cp.html">Ateliers autonomes de lecture CP </a></span></li><li><span><a href="exercices-syllabes-cp.html">Exercices de syllabes CP </a></span></li><li><span><a href="lecture-tablette-classe.html">Lecture sur tablette en classe de CP </a></span></li><li><span><a href="fluence-lecture-cp.html">Fluence et lecture CP </a></span></li><li><span><a href="differenciation-lecture-cp.html">Différenciation pédagogique en lecture CP </a></span></li></ul>
+  </section>
+  <section aria-labelledby="t-partage">
+    <h2 id="t-partage">À découvrir entre collègues</h2>
+    <p class="sub">Un outil conçu par un enseignant de CP, à essayer sans inscription.</p>
+    <p class="center"><button class="btn btn-eleve" type="button" id="partager-collegue" hidden>Partager avec un collègue</button></p>
+    <p id="partage-message" role="status" class="center"></p>
+    <p class="center"><a href="mailto:?subject=Zoo%20de%20Lecture%20pour%20le%20CP&amp;body=Un%20outil%20de%20lecture%20CP%20avec%20une%20d%C3%A9mo%20sans%20inscription%20%3A%20https%3A%2F%2Fzoodelecture.fr%2F">Préparer un e-mail de partage</a></p>
   </section>
 
   <section aria-labelledby="t-auteur">
@@ -276,4 +290,18 @@ footer p{margin:14px 0 0;text-align:center}
   v.addEventListener("ended",function(){v.currentTime=0;v.load();v.removeAttribute("controls");b.hidden=false;});
 })();
 </script>
-</body></html>
+<script>
+/* Ne partager que l’accueil public : jamais les codes ou l’URL de l’élève. */
+(function(){
+ var b=document.getElementById('partager-collegue'),m=document.getElementById('partage-message');
+ if(!b||!m)return;b.hidden=false;
+ b.addEventListener('click',async function(){
+  var u='https://zoodelecture.fr/';m.textContent='';
+  try{
+   if(navigator.share){await navigator.share({title:'Zoo de Lecture',text:'Des activités de lecture pour le CP, créées par un enseignant. Démo sans inscription.',url:u});return;}
+   if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(u);m.textContent='Lien copié : vous pouvez le partager avec un collègue.';return;}
+  }catch(e){if(e.name==='AbortError')return;}
+  m.textContent='Copiez ce lien pour le partager : '+u;
+ });
+})();
+</script></body></html>
