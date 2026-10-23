@@ -8,7 +8,7 @@
   var KEY = "zoo_demo_state", TOKEN = "demo";
   var DAY = 86400000, NOW = Date.now();
   var MODES = { memory: "min", order: "min", safari: "min", catch: "max", count: "max", flap: "max", simon: "max", stack: "max", tiles: "max", snake: "max" };
-  var NOT_IN_DEMO = { message: "Pas disponible dans la démo : crée ton compte pour utiliser cette fonction." };
+  var NOT_IN_DEMO = { message: "Pas disponible dans la démo : créez votre compte pour utiliser cette fonction." };
 
   /* ---------- Données de départ : la classe « CP des Tigres » ---------- */
   function res(sid, sound, k, mclm, daysAgo, src) {
@@ -162,7 +162,7 @@
       var s = student(a.p_student); if (!s) throw { message: "Élève introuvable" };
       if (a.p_action === "ghost") s.ghosted_at = new Date().toISOString();
       else if (a.p_action === "unghost") s.ghosted_at = null;
-      else if (a.p_action === "delete") { if (s.id === S.me) throw { message: "Dans la démo, Léo reste dans la classe : c'est l'élève que tu incarnes." }; S.students = S.students.filter(function (x) { return x !== s; }); delete S.progress[s.id]; }
+      else if (a.p_action === "delete") { if (s.id === S.me) throw { message: "Dans la démo, Léo reste dans la classe : c'est l'élève que vous incarnez." }; S.students = S.students.filter(function (x) { return x !== s; }); delete S.progress[s.id]; }
       else throw { message: "Action inconnue" };
       return a.p_action;
     },
@@ -326,6 +326,6 @@
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bar); else bar();
   /* Visite guidée (bulles pas à pas) */
-  var tour = document.createElement("script"); tour.src = "demo-tour.js?v=12"; tour.defer = true;
+  var tour = document.createElement("script"); tour.src = "demo-tour.js?v=13"; tour.defer = true;
   (document.head || document.documentElement).appendChild(tour);
 })();
