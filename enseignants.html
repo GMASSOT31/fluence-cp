@@ -38,6 +38,7 @@ main{max-width:1050px}
 .feature-card .row button{flex-shrink:0}
 .content-list:empty:before{content:"Aucune donnée pour le moment";display:block;color:#827c92;padding:12px}
 .form-zone{margin-top:20px;padding:20px;background:var(--soft);border-radius:15px}
+.signup-sent{display:grid;gap:12px;margin:8px 0}.signup-sent p{margin:0;line-height:1.5}.signup-sent strong{overflow-wrap:anywhere}
 .auth-title{font-size:2rem;margin-bottom:10px} .auth-actions{align-items:center} .signup-note{color:#746e86;font-size:.8rem;line-height:1.35;max-width:260px} .seat-request{margin-top:22px;padding:16px 18px;background:var(--soft);border-radius:15px} .seat-request label{display:block;font-weight:800;margin:0 0 8px} .seat-row{display:flex;flex-wrap:wrap;align-items:center;gap:9px} .seat-row input{width:95px;margin:0} .seat-alert{margin-top:4px;color:#a3480b;font-weight:700} .sub-picker.four{grid-template-columns:repeat(2,minmax(0,1fr))} .row.ghosted{opacity:.62} .teacher-group{margin:22px 0 8px;padding:9px 13px;background:#efe9ff;border-radius:12px;font-size:1rem} button.danger{background:#fde8ea;color:#a52239} .teacher-nav button.nav-improve,body.teacher-mode .teacher-header .teacher-nav button.nav-improve{background:linear-gradient(135deg,#ffd166,#ff9f43);color:#3b2300;border-color:#f08c00;margin-top:6px} .teacher-nav button.nav-improve:hover:not(.active),body.teacher-mode .teacher-header .teacher-nav button.nav-improve:hover:not(.active){background:linear-gradient(135deg,#ffe08a,#ffb066)} .teacher-nav button.nav-improve.active,body.teacher-mode .teacher-header .teacher-nav button.nav-improve.active{background:linear-gradient(135deg,#ff9f43,#f76707);color:#fff;border-color:#c25400} .improve-card{border-top-color:#ff9f43} .fb-kinds{margin:6px 0 18px} .fb-kinds button{font-size:.95rem} #fbMessage{display:block;width:100%;padding:13px;border:1px solid #c9bfdf;border-radius:10px;font:inherit;resize:vertical} .fb-item{align-items:flex-start} .fb-item.unread{background:#fff6e0;border-radius:12px;padding:12px;border-bottom-color:transparent;margin-bottom:6px} .fb-text{white-space:pre-wrap;margin:6px 0 0;color:#242044} a.button-link{display:inline-block;padding:10px 14px;border-radius:12px;background:#eee9fb;color:#503292;font-weight:700;text-decoration:none} .fb-reply{margin-top:10px;padding:10px 12px;background:#e6f7ec;border-left:4px solid #2f9e5b;border-radius:10px} .fb-reply-form{margin-top:10px} .fb-reply-form textarea{display:block;width:100%;padding:10px;border:1px solid #c9bfdf;border-radius:10px;font:inherit;resize:vertical} .fb-reply-form button{margin-top:8px} .privacy-note{background:var(--soft);border-radius:12px;padding:12px 14px;line-height:1.5}
 .section-actions{margin:0 0 15px}
 .teacher-footnote{margin:0 0 10px;color:#746e86;font-size:.86rem;text-align:center;line-height:1.5}
@@ -731,7 +732,7 @@ async function busy(id,action){const b=$(id);b.disabled=true;try{await action()}
 /* Deux vues : « Se connecter » et « Créer mon compte enseignant » (zoodelecture.fr/enseignants.html#inscription) */
 let signupMode=false;
 function setAuthMode(signup){
- signupMode=signup;
+ signupMode=signup;if($("signupSent")){$("signupSent").remove();$("authForm").classList.remove("hidden")}
  document.querySelector("#auth .auth-title").textContent=signup?"🧑‍🏫 Créer mon compte enseignant":"🧑‍🏫 Se connecter";
  $("signup").textContent=signup?"Créer mon compte":"Créer un compte";
  $("signup").classList.toggle("secondary",!signup);
@@ -750,8 +751,29 @@ const doSignup=()=>busy("signup",async()=>{
  if(!email||password.length<8){msg("authMsg","Saisis un e-mail et un mot de passe d'au moins 8 caractères.",true);return;}
  const {data,error}=await client.auth.signUp({email,password,options:{emailRedirectTo:location.origin+location.pathname}});
  if(error){msg("authMsg",errorText(error),true);return;}
- msg("authMsg",data.session?"Compte créé, connexion en cours.":"Vérifie ta boîte mail pour confirmer ton inscription. Pense aussi aux courriers indésirables.");if(data.session)await refresh();
+ if(data.session){msg("authMsg","Compte créé, connexion en cours.");await refresh();return;}
+ showSignupSent(email,password);
 });
+/* Après « Créer mon compte » : l’écran change et explique quoi faire une fois l’e-mail confirmé */
+function showSignupSent(email,password){
+ history.replaceState(null,"",location.pathname+location.search);
+ msg("authMsg","");$("authForm").classList.add("hidden");
+ let box=$("signupSent");if(box)box.remove();
+ box=document.createElement("div");box.id="signupSent";box.className="signup-sent";
+ const mk=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
+ document.querySelector("#auth .auth-title").textContent="📬 Vérifie ta boîte mail";
+ const p1=mk("p",null,"Un e-mail de confirmation vient d’être envoyé à ");p1.append(mk("strong",null,email),". Clique sur le lien qu’il contient (pense aussi aux courriers indésirables).");
+ const p2=mk("p",null,"Une fois ton adresse validée, reviens sur cette page et clique ci-dessous : tu seras connecté(e) avec ton e-mail et ton mot de passe.");
+ const acts=mk("div","actions auth-actions");
+ const ok=mk("button",null,"✅ J’ai validé mon e-mail : me connecter");ok.type="button";
+ ok.onclick=()=>busy2(ok,async()=>{const {error}=await client.auth.signInWithPassword({email,password});if(error){msg("authMsg",errorText(error),true);return;}await refresh()});
+ const again=mk("button","secondary","Renvoyer l’e-mail");again.type="button";
+ again.onclick=()=>busy2(again,async()=>{const {error}=await client.auth.resend({type:"signup",email,options:{emailRedirectTo:location.origin+location.pathname}});msg("authMsg",error?errorText(error):"E-mail renvoyé. Regarde aussi les courriers indésirables.",!!error)});
+ const back=mk("button","link-btn","Changer d’adresse e-mail");back.type="button";
+ back.onclick=()=>{box.remove();$("authForm").classList.remove("hidden");setAuthMode(true);$("email").focus()};
+ acts.append(ok,again,back);box.append(p1,p2,acts);$("authForm").after(box);
+}
+function busy2(b,fn){b.disabled=true;Promise.resolve().then(fn).catch(e=>msg("authMsg",errorText(e),true)).finally(()=>{b.disabled=false})}
 $("authForm").onsubmit=e=>{e.preventDefault();if(signupMode){doSignup();return;}busy("signin",async()=>{const {error}=await client.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});if(error)msg("authMsg",errorText(error),true);else await refresh()})};
 $("reset").onclick=()=>busy("reset",async()=>{const email=$("email").value.trim();if(!email){msg("authMsg","Écris d’abord ton adresse e-mail dans la case ci-dessus, puis clique sur « Mot de passe oublié ».",true);return;}const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo:pageUrl});msg("authMsg",error?errorText(error):"C’est envoyé ! Regarde ta boîte mail (et les courriers indésirables), puis clique sur le lien depuis cet appareil. Tu pourras alors choisir un nouveau mot de passe.",!!error)});
 function checkNewPassword(a,b,out){
