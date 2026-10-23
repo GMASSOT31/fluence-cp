@@ -148,6 +148,7 @@ footer p{margin:14px 0 0;text-align:center}
 .video-play[hidden]{display:none}   /* « display:grid » l’emportait sur l’attribut hidden : le bouton restait affiché pendant la lecture */
 .video-play span{display:grid;place-items:center;width:96px;height:96px;border-radius:50%;background:var(--yellow);color:var(--deep);font-size:2.6rem;padding-left:8px;box-shadow:0 6px 0 #b99a1e,0 10px 24px rgba(0,0,0,.45);transition:transform .15s}.video-play:hover span{transform:scale(1.06)}
 .video-play:focus-visible{outline:4px solid var(--cyan);outline-offset:-6px}
+.video-tr{margin:12px 0 0;color:var(--muted)}.video-tr summary{cursor:pointer;font-weight:700;color:#7fd7ff}.video-tr p{margin:8px 0 0}
 .video-cta{margin:18px 0 0}.video-cta .btn{display:inline-flex}
 @media(max-width:600px){.video-box{border-radius:14px}.video-play span{width:76px;height:76px;font-size:2.1rem}}
 /* Ressources et partage */
@@ -203,10 +204,15 @@ footer p{margin:14px 0 0;text-align:center}
     <div class="video-box">
       <video id="presVideo" controls playsinline preload="none" poster="img/presentation-zoo.jpg" width="1280" height="720" aria-label="Vidéo de présentation de Zoo de Lecture, 30 secondes">
         <source src="img/presentation-zoo.mp4" type="video/mp4">
+        <track kind="captions" srclang="fr" label="Français" src="img/presentation-zoo-fr.vtt" default>
         Votre navigateur ne peut pas lire cette vidéo.
       </video>
       <button type="button" class="video-play" id="presPlay" aria-label="Lire la vidéo de présentation (avec le son)" hidden><span aria-hidden="true">▶</span></button>
     </div>
+    <details class="video-tr">
+      <summary>Lire le texte de la vidéo</summary>
+      <p>Pendant que vous accompagnez un groupe, proposez un atelier de lecture avec Zoo de Lecture. Écouter les sons, reconnaître les syllabes, lire des mots : les élèves s’entraînent et font grandir leur zoo. Les étoiles et les animaux encouragent leurs efforts. Dans votre espace enseignant, retrouvez les prochaines étapes de chacun. Créé par un enseignant de CP, Zoo de Lecture transforme la lecture en aventure. Essayez la démo, sans inscription.</p>
+    </details>
     <p class="video-cta"><a class="btn btn-eleve btn-big" href="zoo-connecte.html?demo=1&amp;new=1&amp;tour=short">✨ Essayer la démo sans inscription</a></p>
   </section>
 
