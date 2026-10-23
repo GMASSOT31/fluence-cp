@@ -1214,10 +1214,10 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       </div>
       <p class="bad-msg" id="login-msg" role="alert"></p>
       <button type="button" class="primary big-btn" id="btn-login">Entrer</button>
-      <p style="margin: 18px 0 0"><button type="button" class="link" id="btn-show-teacher">Espace maître(sse)</button></p>
+      <p style="margin: 18px 0 0"><button type="button" class="link" id="btn-show-teacher">Espace enseignant</button></p>
     </div>
     <div class="card login-card" id="login-teacher" hidden>
-      <h2 id="teacher-title">Espace maître(sse)</h2>
+      <h2 id="teacher-title">Espace enseignant</h2>
       <p class="hint" id="teacher-hint"></p>
       <div class="field">
         <label for="in-teacher-code">Code du maître(sse)</label>
@@ -2454,7 +2454,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if(cloudMode){location.href="enseignants.html";return;}
     var create = !data.teacher;
     $("login-student").hidden = true; $("login-teacher").hidden = false;
-    $("teacher-title").textContent = create ? "Crée ton code de maître(sse)" : "Espace maître(sse)";
+    $("teacher-title").textContent = create ? "Crée ton code de maître(sse)" : "Espace enseignant";
     $("teacher-hint").textContent = create
       ? "Première utilisation : choisis un code de 4 caractères au moins. Il ouvre cet espace et valide les lectures. Il ne peut pas être retrouvé : choisis-en un que tu retiendras."
       : "";
