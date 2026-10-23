@@ -462,7 +462,14 @@ function errorText(e){
  if(/session.*missing|not authenticated/i.test(m))return "Ta session a expiré : redemande un e-mail avec « Mot de passe oublié ».";
  return m||"Une erreur est survenue.";
 }
-async function refresh(){
+/* Un seul rafraîchissement à la fois : au démarrage, la connexion déclenche plusieurs événements et deux rafraîchissements en parallèle ajoutaient chacun la liste (classes et élèves en double) */
+let refreshing=null,refreshQueued=false;
+function refresh(){
+ if(refreshing){refreshQueued=true;return refreshing}
+ refreshing=(async()=>{try{do{refreshQueued=false;await refreshNow()}while(refreshQueued)}finally{refreshing=null}})();
+ return refreshing;
+}
+async function refreshNow(){
  try{
  const {data:{user},error}=await client.auth.getUser();currentUser=error?null:user;
  $("recovery").classList.toggle("hidden",!(recoveryMode&&currentUser));
@@ -476,7 +483,7 @@ async function refresh(){
  client.from("students").select("id,nickname,class_id,pin_hash,teacher_id,ghosted_at").order("created_at")]);
  if(profile.error||classes.error||students.error){const reason=errorText(profile.error||classes.error||students.error);msg("spaceMsg","Impossible de charger les données : "+reason,true);$("classRoster").textContent="Erreur de chargement : "+reason;return;}
  msg("spaceMsg","");
- if(profile.data.ghosted_at){await client.auth.signOut();await refresh();msg("authMsg","Ton compte est suspendu. Contacte l’administrateur.",true);return;}
+ if(profile.data.ghosted_at){await client.auth.signOut();await refreshNow();msg("authMsg","Ton compte est suspendu. Contacte l’administrateur.",true);return;}
  $("teachersAdminTab").classList.toggle("hidden",profile.data.role!=="admin");
  currentRole=profile.data.role==="admin"?"admin":"teacher";$("improveLabel").textContent=currentRole==="admin"?"Feedback":"Améliorations";
  if(currentRole==="admin")renderFeedbackAdmin().catch(e=>msg("fbAdminMsg",errorText(e),true));else{setFeedbackBadge(0);renderMyFeedback().catch(e=>msg("fbMsg",errorText(e),true));}
