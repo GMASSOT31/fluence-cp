@@ -64,9 +64,10 @@ def main():
     write("zoo-test.html", zoo)
     write("enseignants-test.html", swap_backend(read("enseignants.html"), "fake-auth.js"))
     write("eleve-test.html", swap_backend(read("eleve.html"), "fake-auth.js"))
-    for name in ["zoo-connecte.html", "enseignants.html", "eleve.html", "index.html", "mentions-legales.html", "confidentialite.html", "demo.js", "demo-tour.js"]:
+    for name in ["zoo-connecte.html", "enseignants.html", "eleve.html", "index.html", "mentions-legales.html", "confidentialite.html", "demo.js", "demo-tour.js", "share.js"]:
         shutil.copy(os.path.join(ROOT, name), os.path.join(OUT, name))
     shutil.copytree(os.path.join(ROOT, "img"), os.path.join(OUT, "img"), dirs_exist_ok=True)
+    shutil.copytree(os.path.join(ROOT, "guides"), os.path.join(OUT, "guides"), dirs_exist_ok=True)
     for name in ["fake-supabase.js", "fake-auth.js"]:
         shutil.copy(os.path.join(ROOT, "tools", name), os.path.join(OUT, name))
     print("Site de test prêt dans tools/test-site/. Lancer :")

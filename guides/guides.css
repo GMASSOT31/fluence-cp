@@ -1,0 +1,67 @@
+/* Pages « guides » de Zoo de Lecture : mêmes couleurs et boutons que l'accueil */
+:root{--bg:#14151c;--card:#1e2230;--line:#2e3446;--ink:#eef0f7;--muted:#a3abbf;--yellow:#ffe56c;--cyan:#4be5f0;--violet:#6d5dfc;--pink:#ff87d2;--deep:#21104f}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 1.06rem/1.65 Figtree,system-ui,sans-serif}
+a{color:#7fd7ff}
+img,svg{max-width:100%;height:auto}
+.wrap{max-width:1040px;margin:auto;padding:0 16px}
+.skip{position:absolute;left:-999px;top:8px;background:var(--yellow);color:var(--deep);padding:8px 14px;border-radius:10px;font-weight:800;z-index:100}
+.skip:focus{left:8px}
+.bar{position:sticky;top:0;z-index:50;display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:10px max(16px,calc((100% - 1040px)/2 + 16px));background:rgba(20,21,28,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.logo{flex:1 1 auto;text-decoration:none;font:700 1.55rem/1 Fredoka,Figtree,sans-serif;color:#fff;letter-spacing:-.02em;text-shadow:0 3px 0 #201049;white-space:nowrap}
+.logo span{color:var(--yellow)}
+.bar nav{display:contents}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 18px;border-radius:14px;border:2px solid transparent;font:800 1rem/1.15 Figtree,system-ui,sans-serif;text-decoration:none;text-align:center;cursor:pointer}
+.btn-eleve{background:var(--yellow);color:var(--deep);font-size:1.08rem;box-shadow:0 4px 0 #b99a1e}
+.btn-eleve:hover{background:#ffd54a}
+.btn-ens{background:#2a3042;color:var(--ink);border-color:#3b4360}
+.btn-demo{background:transparent;color:var(--yellow);border-color:var(--yellow)}
+.btn-big{min-height:54px;padding:14px 24px;font-size:1.12rem}
+/* Article */
+.guide{max-width:760px;margin:0 auto;padding:30px 0 10px}
+.crumb{font-size:.95rem;color:var(--muted);margin:0 0 14px}
+.guide h1{font:700 clamp(1.9rem,5vw,2.8rem)/1.12 Fredoka,Figtree,sans-serif;color:#fff;letter-spacing:-.02em;margin:0 0 12px}
+.meta{color:var(--muted);font-size:.95rem;margin:0 0 22px}
+.lead{font-size:1.2rem;color:#e6e9f6}
+.guide h2{font:700 1.55rem/1.2 Fredoka,Figtree,sans-serif;color:var(--yellow);text-align:left;margin:38px 0 10px;letter-spacing:-.01em}
+.guide h3{font-size:1.15rem;color:#fff;margin:20px 0 6px}
+.guide p{margin:0 0 14px}
+.guide ul,.guide ol{padding-left:1.25em;margin:0 0 16px}
+.guide li{margin:5px 0}
+.tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch}.tablewrap table{min-width:520px}
+.guide table{width:100%;border-collapse:collapse;margin:14px 0 18px;font-size:.98rem}
+.guide caption{text-align:left;color:var(--muted);padding:0 0 8px;font-size:.92rem}
+.guide th,.guide td{border:1px solid var(--line);padding:9px 11px;text-align:left;vertical-align:top}
+.guide th{background:var(--card);color:#fff}
+.fig{margin:20px 0;background:var(--card);border:2px solid var(--line);border-radius:20px;padding:14px}
+.fig figcaption{color:var(--muted);font-size:.92rem;text-align:center;margin-top:8px}
+.note{background:var(--card);border-left:5px solid var(--cyan);border-radius:12px;padding:14px 16px;margin:18px 0}
+.cta{background:linear-gradient(135deg,#2a1d6e,#3b2a91);border:2px solid #5b4bd6;border-radius:22px;padding:22px;margin:34px 0 10px}
+.cta h2{margin:0 0 8px;color:#fff}
+.cta p{margin:0 0 14px}
+.next{margin:26px 0 0;padding:0;list-style:none;display:grid;gap:10px}
+.next a{display:block;background:var(--card);border:2px solid var(--line);border-radius:16px;padding:14px 16px;text-decoration:none;color:var(--ink);font-weight:700}
+.next a:hover{border-color:#5b6bd0}
+/* Partage */
+.share{background:var(--card);border:2px solid var(--line);border-radius:22px;padding:22px;margin:34px 0 0;text-align:center}
+.share h3{margin:0 0 6px;font-size:1.3rem;color:#fff}
+.share p{margin:0 0 14px;color:var(--muted)}
+.share-more{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:14px}
+.share-more[hidden]{display:none}
+.share-more a,.share-more button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:9px 16px;border-radius:12px;border:2px solid var(--line);background:#2a3042;color:var(--ink);font:800 .98rem Figtree,system-ui,sans-serif;text-decoration:none;cursor:pointer}
+.share-more a:hover,.share-more button:hover{border-color:var(--cyan)}
+.share-status{min-height:1.4em;margin:10px 0 0!important;color:var(--cyan)!important;font-weight:800}
+footer{margin-top:44px;border-top:1px solid var(--line);padding:26px 0 40px;color:var(--muted);font-size:.95rem}
+footer .row{display:flex;flex-wrap:wrap;gap:8px 22px;justify-content:center}
+footer p{margin:14px 0 0;text-align:center}
+@media (max-width:640px){
+  .bar{padding:8px 12px;gap:8px}
+  .logo{font-size:1.3rem}
+  .btn .d{display:none}.btn .m{display:inline}
+  .btn-ens,.btn-demo{flex:1 1 44%;min-height:40px;padding:8px 10px;font-size:.92rem}
+  .guide table{font-size:.9rem}
+}
+@media (min-width:641px){.btn .m{display:none}}
+:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
+@media print{.bar,footer,.share,.cta,.skip{display:none!important}body{background:#fff;color:#000}.guide h1,.guide h2,.guide h3{color:#000}.guide th,.guide td{border-color:#999}}
