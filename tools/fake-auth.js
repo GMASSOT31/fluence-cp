@@ -36,6 +36,12 @@
             else if (op === "update") { st.feedback.forEach(function (x) { if ((filt && x[filt[0]] === filt[1]) || (isNull && x[isNull] === null)) Object.assign(x, payload); }); out = { data: null, error: null }; }
             else { var rows = st.feedback.filter(function (x) { return !filt || x[filt[0]] === filt[1]; }).map(function (x) { var tt = st.teachers.filter(function (y) { return y.id === x.teacher_id; })[0]; return Object.assign({ teachers: tt ? { email: tt.email } : null }, x); }); out = { data: rows, error: null }; }
           }
+          else if (table === "contact_messages") {
+            st.contact = st.contact || [{ id: "c1", email: "collegue@ecole.fr", message: "Bonjour, comment avoir ma classe entière ?", created_at: "2026-10-23T09:00:00Z", read_at: null }];
+            if (op === "delete") { var g = st.contact.filter(function (x) { return x[filt[0]] === filt[1]; }); st.contact = st.contact.filter(function (x) { return x[filt[0]] !== filt[1]; }); out = { data: g, error: null }; }
+            else if (op === "update") { st.contact.forEach(function (x) { if (filt && x[filt[0]] === filt[1]) Object.assign(x, payload); }); out = { data: null, error: null }; }
+            else out = { data: st.contact.slice(), error: null };
+          }
           else if (table === "teachers") {
             if (op === "update") { var tr = st.teachers.filter(function (x) { return x[filt[0]] === filt[1]; })[0]; Object.assign(tr, payload); st.teacherUpdates = (st.teacherUpdates || []).concat([payload]); out = { data: null, error: null }; }
             else if (single) out = { data: Object.assign({}, st.teachers.filter(function (x) { return x[filt[0]] === filt[1]; })[0]), error: null };
