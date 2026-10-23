@@ -41,7 +41,7 @@
     primary: "Créer mon compte", secondary: "Continuer à explorer", third: "Recommencer la démo",
     run: function () { T.on = false; save(); if (window.zooDemo) window.zooDemo.exit("enseignants.html#inscription"); return new Promise(function () {}); } };
   if (window.zooDemo && window.zooDemo.member) {   /* compte déjà créé : retour à son espace */
-    THE_END.text = "Tu as fait le tour du Zoo ! Retourne dans ton espace pour continuer à préparer ta classe.";
+    THE_END.text = "Vous avez fait le tour du Zoo ! Retournez dans votre espace pour continuer à préparer votre classe.";
     THE_END.primary = "Retour à mon espace";
     THE_END.run = function () { T.on = false; save(); if (window.zooDemo) window.zooDemo.exit("enseignants.html"); return new Promise(function () {}); };
   }
