@@ -272,7 +272,7 @@ body:not(.teacher-mode) main{color:#eef0f7}
       <div class="banner-user" id="bannerUser"><span id="who"></span><a href="eleve.html" id="toStudent" title="Espace élève"><span aria-hidden="true">🎒</span><span class="bu-label">&nbsp;Espace élève</span></a><button id="logout" class="secondary" type="button" title="Déconnexion"><span class="bu-ico" aria-hidden="true">🚪</span><span class="bu-label">Déconnexion</span></button></div>
     </div>
 </header>
-<section class="panel" id="auth"><h2 class="auth-title">🧑‍🏫 Se connecter</h2><form id="authForm"><label for="email" class="sr-only">Adresse e-mail</label><input id="email" type="email" autocomplete="email" required maxlength="254" placeholder="Adresse e-mail"><label for="password" class="sr-only">Mot de passe</label><input id="password" type="password" autocomplete="current-password" minlength="8" required placeholder="Mot de passe"><div class="actions auth-actions"><button id="signin" type="submit">Me connecter</button><button id="reset" type="button" class="secondary">Mot de passe oublié</button><button id="signup" type="button" class="secondary">Créer un compte</button><button id="toLogin" type="button" class="link-btn hidden">J’ai déjà un compte : me connecter</button><small class="signup-note">Inscription libre. Chaque compte dispose de 3 places d'élèves par défaut.</small></div></form><p class="demo-link"><a href="zoo-connecte.html?demo=1&amp;new=1">✨ Essayer la démo, sans compte</a><small>Une classe fictive : le Zoo d'un élève, puis l'espace enseignant.</small></p><p class="msg" id="authMsg" role="status"></p><p class="auth-student">🎒 Élève ? <a href="eleve.html" id="authToStudent">Entre ici avec ton code de classe</a></p></section>
+<section class="panel" id="auth"><h2 class="auth-title">🧑‍🏫 Se connecter</h2><form id="authForm"><label for="email" class="sr-only">Adresse e-mail</label><input id="email" type="email" autocomplete="email" required maxlength="254" placeholder="Adresse e-mail"><label for="password" class="sr-only">Mot de passe</label><input id="password" type="password" autocomplete="current-password" minlength="8" required placeholder="Mot de passe"><div class="actions auth-actions"><button id="signin" type="submit">Me connecter</button><button id="reset" type="button" class="secondary">Mot de passe oublié</button><button id="signup" type="button" class="secondary">Créer un compte</button><button id="resendConfirm" type="button" class="secondary hidden">📧 Renvoyer l’e-mail de confirmation</button><button id="toLogin" type="button" class="link-btn hidden">J’ai déjà un compte : me connecter</button><small class="signup-note">Inscription libre. Chaque compte dispose de 3 places d'élèves par défaut.</small></div></form><p class="demo-link"><a href="zoo-connecte.html?demo=1&amp;new=1">✨ Essayer la démo, sans compte</a><small>Une classe fictive : le Zoo d'un élève, puis l'espace enseignant.</small></p><p class="msg" id="authMsg" role="status"></p><p class="auth-student">🎒 Élève ? <a href="eleve.html" id="authToStudent">Entre ici avec ton code de classe</a></p></section>
 <section class="panel hidden" id="recovery"><h2>🔒 Choisis ton nouveau mot de passe</h2><p class="muted" id="recoveryWho">Tu es arrivée ici par le lien de l’e-mail « Mot de passe oublié ».</p><form id="recoveryForm"><label for="newPassword">Nouveau mot de passe (au moins 8 caractères)</label><input id="newPassword" type="password" autocomplete="new-password" minlength="8" maxlength="72" required><label for="newPassword2">Écris-le une deuxième fois</label><input id="newPassword2" type="password" autocomplete="new-password" minlength="8" maxlength="72" required><div class="actions"><button id="recoverySave" type="submit">Enregistrer mon nouveau mot de passe</button></div></form><p class="msg" id="recoveryMsg" role="status"></p></section>
 <section class="hidden teacher-space" id="space">
  <aside class="panel teacher-header" aria-label="Menu de l’espace enseignant">
@@ -457,8 +457,8 @@ function errorText(e){
  if(c==="same_password"||/different from the old password/i.test(m))return "Ce mot de passe est le même que l’ancien : choisis-en un autre.";
  if(c==="weak_password"||/password should/i.test(m))return "Mot de passe trop faible : au moins 8 caractères, en mélangeant lettres et chiffres.";
  if(c==="over_email_send_rate_limit"||/rate limit|too many/i.test(m))return "Trop de demandes en peu de temps. Attends quelques minutes puis réessaie.";
- if(c==="otp_expired"||/expired|invalid.*(link|token)/i.test(m))return "Ce lien a expiré ou a déjà servi : redemande un e-mail avec « Mot de passe oublié ».";
- if(c==="email_not_confirmed"||/email not confirmed/i.test(m))return "Ton adresse e-mail n’est pas encore confirmée : clique sur le lien reçu à l’inscription.";
+ if(c==="otp_expired"||/expired|invalid.*(link|token)/i.test(m))return "Ce lien n’est plus valable : il a déjà servi, il est trop ancien ou un e-mail plus récent a été envoyé. Ouvre le dernier e-mail reçu, ou demande un nouvel e-mail (confirmation d’inscription : bouton ci-dessous ; mot de passe oublié : « Mot de passe oublié »).";
+ if(c==="email_not_confirmed"||/email not confirmed/i.test(m))return "Ton adresse e-mail n’est pas encore confirmée. Clique sur le lien du dernier e-mail reçu (les anciens liens ne marchent plus), ou demande un nouvel e-mail avec le bouton ci-dessous.";
  if(/session.*missing|not authenticated/i.test(m))return "Ta session a expiré : redemande un e-mail avec « Mot de passe oublié ».";
  return m||"Une erreur est survenue.";
 }
@@ -750,6 +750,9 @@ function setAuthMode(signup){
  else $("signin").parentNode.insertBefore($("signin"),$("signin").parentNode.firstChild);
  msg("authMsg","");
 }
+/* Confirmation d’e-mail : bouton « Renvoyer » et message clair si le lien cliqué est ancien ou expiré */
+function showResend(show){$("resendConfirm").classList.toggle("hidden",!show)}
+$("resendConfirm").onclick=()=>{const email=$("email").value.trim();if(!email){msg("authMsg","Écris d’abord ton adresse e-mail dans la case ci-dessus.",true);return}busy2($("resendConfirm"),async()=>{const {error}=await client.auth.resend({type:"signup",email,options:{emailRedirectTo:location.origin+location.pathname}});msg("authMsg",error?errorText(error):"Nouvel e-mail envoyé à "+email+". Ouvre le plus récent et clique sur son lien (regarde aussi les courriers indésirables).",!!error)})};
 $("toLogin").onclick=()=>{setAuthMode(false);history.replaceState(null,"",location.pathname+location.search);$("email").focus();};
 if(location.hash==="#inscription")setAuthMode(true);
 $("signup").onclick=()=>{if(!signupMode){setAuthMode(true);history.replaceState(null,"",location.pathname+location.search+"#inscription");$("email").focus();return;}doSignup();};
@@ -781,7 +784,7 @@ function showSignupSent(email,password){
  acts.append(ok,again,back);box.append(p1,p2,acts);$("authForm").after(box);
 }
 function busy2(b,fn){b.disabled=true;Promise.resolve().then(fn).catch(e=>msg("authMsg",errorText(e),true)).finally(()=>{b.disabled=false})}
-$("authForm").onsubmit=e=>{e.preventDefault();if(signupMode){doSignup();return;}busy("signin",async()=>{const {error}=await client.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});if(error)msg("authMsg",errorText(error),true);else await refresh()})};
+$("authForm").onsubmit=e=>{e.preventDefault();if(signupMode){doSignup();return;}busy("signin",async()=>{const {error}=await client.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});if(error){msg("authMsg",errorText(error),true);showResend(error.code==="email_not_confirmed"||/email not confirmed/i.test(error.message||""))}else await refresh()})};
 $("reset").onclick=()=>busy("reset",async()=>{const email=$("email").value.trim();if(!email){msg("authMsg","Écris d’abord ton adresse e-mail dans la case ci-dessus, puis clique sur « Mot de passe oublié ».",true);return;}const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo:pageUrl});msg("authMsg",error?errorText(error):"C’est envoyé ! Regarde ta boîte mail (et les courriers indésirables), puis clique sur le lien depuis cet appareil. Tu pourras alors choisir un nouveau mot de passe.",!!error)});
 function checkNewPassword(a,b,out){
  if(a.length<8){msg(out,"Le mot de passe doit faire au moins 8 caractères.",true);return false;}
@@ -1012,7 +1015,7 @@ async function renderAdmin(role){
  if(!teachers.length)$("adminList").textContent="Aucun compte enseignant.";
 }
 client.auth.onAuthStateChange(event=>{if(event==="PASSWORD_RECOVERY")recoveryMode=true;setTimeout(refresh,0)});
-if(arrivalError){history.replaceState(null,"",pageUrl);msg("authMsg",errorText({code:arrivalError,message:arrival.get("error_description")||""}),true);}
+if(arrivalError){history.replaceState(null,"",pageUrl);msg("authMsg",errorText({code:arrivalError,message:arrival.get("error_description")||""}),true);showResend(arrivalError==="otp_expired");}
 refresh();
 })();
 </script><script>

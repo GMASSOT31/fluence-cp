@@ -60,7 +60,7 @@
       getUser: function () { return Promise.resolve({ data: { user: /out/.test(location.search) ? null : st.user }, error: null }); },
       onAuthStateChange: function (f) { st.listeners.push(f); return { data: { subscription: { unsubscribe: function () {} } } }; },
       updateUser: function () { return Promise.resolve({ error: null }); }, resetPasswordForEmail: function () { return Promise.resolve({ error: null }); },
-      signInWithPassword: function () { return Promise.resolve({ error: null }); }, signOut: function () { return Promise.resolve({}); }, signUp: function () { return Promise.resolve({ data: {} }); }
+      signInWithPassword: function () { return Promise.resolve({ error: null }); }, signOut: function () { return Promise.resolve({}); }, signUp: function () { return Promise.resolve({ data: {} }); }, resend: function () { return Promise.resolve({ error: null }); }
     },
     from: q,
     rpc: function (name, a) {
