@@ -149,6 +149,21 @@ footer p{margin:14px 0 0;text-align:center}
 .video-play:focus-visible{outline:4px solid var(--cyan);outline-offset:-6px}
 .video-cta{margin:18px 0 0}.video-cta .btn{display:inline-flex}
 @media(max-width:600px){.video-box{border-radius:14px}.video-play span{width:76px;height:76px;font-size:2.1rem}}
+/* Ressources et partage */
+.res{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin:26px 0 0;padding:0;list-style:none}
+.res a{display:block;height:100%;background:var(--card);border:2px solid var(--line);border-radius:22px;padding:20px;text-decoration:none;color:var(--ink)}
+.res a:hover{border-color:#5b6bd0}
+.res b{display:block;font:700 1.2rem/1.25 Fredoka,Figtree,sans-serif;color:#fff;margin-bottom:6px}
+.res span{display:block;color:var(--muted);font-size:.98rem}
+.res em{display:inline-block;margin-top:10px;font-style:normal;font-weight:800;color:var(--yellow)}
+.share{background:var(--card);border:2px solid var(--line);border-radius:22px;padding:22px;margin:30px auto 0;max-width:620px;text-align:center}
+.share h3{margin:0 0 6px;font-size:1.3rem;color:#fff}
+.share p{margin:0 0 14px;color:var(--muted)}
+.share-more{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:14px}
+.share-more[hidden]{display:none}
+.share-more a,.share-more button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:9px 16px;border-radius:12px;border:2px solid var(--line);background:#2a3042;color:var(--ink);font:800 .98rem Figtree,system-ui,sans-serif;text-decoration:none;cursor:pointer}
+.share-more a:hover,.share-more button:hover{border-color:var(--cyan)}
+.share-status{min-height:1.4em;margin:10px 0 0!important;color:var(--cyan)!important;font-weight:800}
 </style></head><body>
 <a class="skip" href="#contenu">Aller au contenu</a>
 
@@ -221,6 +236,25 @@ footer p{margin:14px 0 0;text-align:center}
     <p class="center"><a class="btn btn-eleve btn-big" href="enseignants.html#inscription">🧑‍🏫 Créer ma classe gratuitement</a></p>
   </section>
 
+  <section aria-labelledby="t-res">
+    <h2 id="t-res">Ressources pour enseigner la lecture au CP</h2>
+    <p class="sub">Des conseils pratiques et gratuits, pensés par un enseignant pour les enseignants.</p>
+    <ul class="res">
+      <li><a href="guides/ateliers-lecture-cp/"><b>Organiser des ateliers autonomes de lecture en CP</b><span>Routines, rotation sur 40 minutes, différenciation et imprévus.</span><em>Lire le guide →</em></a></li>
+    </ul>
+    <div class="share" data-share>
+      <h3>Vous aimez Zoo de Lecture ?</h3>
+      <p>Faites découvrir cet outil gratuit à vos collègues enseignants !</p>
+      <button type="button" class="btn btn-eleve" data-share-btn>🔗 Partager Zoo de Lecture</button>
+      <div class="share-more" data-share-more hidden>
+        <a data-share-wa href="https://wa.me/">WhatsApp</a>
+        <a data-share-mail href="mailto:">E-mail</a>
+        <button type="button" data-share-copy>Copier le lien</button>
+      </div>
+      <p class="share-status" data-share-status role="status" aria-live="polite"></p>
+    </div>
+  </section>
+
   <section aria-labelledby="t-auteur">
     <h2 id="t-auteur">Conçu par un enseignant de CP</h2>
     <div class="maker">
@@ -257,12 +291,14 @@ footer p{margin:14px 0 0;text-align:center}
       <a href="eleve.html">🎒 Connexion élève</a>
       <a href="enseignants.html">🧑‍🏫 Connexion enseignant</a>
       <a href="enseignants.html">✉️ Contact</a>
+      <a href="guides/ateliers-lecture-cp/">Ressources pédagogiques</a>
       <a href="mentions-legales.html">Mentions légales</a>
       <a href="confidentialite.html">Confidentialité</a>
     </div>
     <p>Contact : depuis l’onglet « Améliorations » de votre espace enseignant. · Zoo de Lecture · zoodelecture.fr</p>
   </div>
 </footer>
+<script src="share.js" defer></script>
 <script>
 /* Vidéo de présentation : lecture au clic seulement (avec le son), jamais de démarrage automatique */
 (function(){
