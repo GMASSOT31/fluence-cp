@@ -40,6 +40,10 @@ img,svg{max-width:100%;height:auto}
 .cta{background:linear-gradient(135deg,#2a1d6e,#3b2a91);border:2px solid #5b4bd6;border-radius:22px;padding:22px;margin:34px 0 10px}
 .cta h2{margin:0 0 8px;color:#fff}
 .cta p{margin:0 0 14px}
+.cta .btn{margin:0 8px 8px 0}
+.cta .cta-note{font-size:.92rem;color:#d5d9ea}
+.share .btn{margin:0 6px 8px}
+[id]{scroll-margin-top:90px}
 .next{margin:26px 0 0;padding:0;list-style:none;display:grid;gap:10px}
 .next a{display:block;background:var(--card);border:2px solid var(--line);border-radius:16px;padding:14px 16px;text-decoration:none;color:var(--ink);font-weight:700}
 .next a:hover{border-color:#5b6bd0}
