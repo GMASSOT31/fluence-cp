@@ -4,7 +4,7 @@
 Appli web de fluence de lecture pour des classes de CP, en ligne sur https://zoodelecture.fr
 - **Élève** (eleve.html → zoo-connecte.html) : lecture d'1 minute par son et par niveau (syllabes, mots, texte), en entraînement ou évaluation ; exercice d'écoute « J'écoute » ; animaux qui éclosent et grandissent ; pièces, roue, 8 jeux, boutique.
 - **Enseignant / admin** (enseignants.html) : classes, élèves, suivi, réglages pédagogiques.
-- **Guides pédagogiques** : `guides/<nom>/index.html` + `guides/guides.css` (mode d'emploi : `guides/README.md`) ; un seul publié pour l'instant (`ateliers-lecture-cp`) ; les 4 autres du cahier des charges (syllabes, tablettes, fluence, différenciation) restent à rédiger. **Partage** : `share.js` (landing, guides, espace enseignant). `sitemap.xml` + `robots.txt` ; aucune mesure d'audience (décision).
+- **Guides pédagogiques** : `guides/<nom>/index.html` + `guides/guides.css` (mode d'emploi : `guides/README.md`) ; 5 publiés : `ateliers-lecture-cp`, `syllabes-lecture-cp`, `tablettes-lecture-cp`, `fluence-lecture-cp`, `differenciation-lecture-cp` (textes relus par Gabriel : à modifier avec son accord). **Partage** : `share.js` (landing, guides, espace enseignant). `sitemap.xml` + `robots.txt` ; aucune mesure d'audience (décision).
 - **Landing page** (index.html) : présente le site, accès élève/enseignant/démo ; **démo sans compte** avec visite guidée.
 - L'utilisateur (Gabriel, enseignant de CP) **n'est pas technique** : faire les manipulations soi-même.
 
