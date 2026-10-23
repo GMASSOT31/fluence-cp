@@ -277,7 +277,7 @@ body:not(.teacher-mode) main{color:#eef0f7}
       <div class="banner-user" id="bannerUser"><span id="who"></span><a href="eleve.html" id="toStudent" title="Espace élève"><span aria-hidden="true">🎒</span><span class="bu-label">&nbsp;Espace élève</span></a><button id="logout" class="secondary" type="button" title="Déconnexion"><span class="bu-ico" aria-hidden="true">🚪</span><span class="bu-label">Déconnexion</span></button></div>
     </div>
 </header>
-<section class="panel" id="auth"><h2 class="auth-title">🧑‍🏫 Se connecter</h2><form id="authForm"><label for="email" class="sr-only">Adresse e-mail</label><input id="email" type="email" autocomplete="email" required maxlength="254" placeholder="Adresse e-mail"><label for="password" class="sr-only">Mot de passe</label><input id="password" type="password" autocomplete="current-password" minlength="8" required placeholder="Mot de passe"><div class="actions auth-actions"><button id="signin" type="submit">Me connecter</button><button id="reset" type="button" class="secondary">Mot de passe oublié</button><button id="signup" type="button" class="secondary">Créer un compte</button><button id="resendConfirm" type="button" class="secondary hidden">📧 Renvoyer l’e-mail de confirmation</button><button id="toLogin" type="button" class="link-btn hidden">J’ai déjà un compte : me connecter</button><small class="signup-note">Inscription libre et gratuite. Ton compte commence avec 3 places d'élèves ; une fois connecté, tu peux demander ta classe entière en un clic (réponse sous 24 h maximum).</small></div></form><p class="demo-link"><a href="zoo-connecte.html?demo=1&amp;new=1">✨ Essayer la démo, sans compte</a><small>Une classe fictive : le Zoo d'un élève, puis l'espace enseignant.</small></p><p class="msg" id="authMsg" role="status"></p><p class="auth-links"><a href="./">← Accueil</a> · <a href="confidentialite.html">Confidentialité</a> · <a href="mentions-legales.html">Mentions légales</a></p>
+<section class="panel" id="auth"><h2 class="auth-title">🧑‍🏫 Se connecter</h2><form id="authForm"><label for="email" class="sr-only">Adresse e-mail</label><input id="email" type="email" autocomplete="email" required maxlength="254" placeholder="Adresse e-mail"><label for="password" class="sr-only">Mot de passe</label><input id="password" type="password" autocomplete="current-password" minlength="8" required placeholder="Mot de passe"><div class="actions auth-actions"><button id="signin" type="submit">Me connecter</button><button id="reset" type="button" class="secondary">Mot de passe oublié</button><button id="signup" type="button" class="secondary">Créer un compte</button><button id="resendConfirm" type="button" class="secondary hidden">📧 Renvoyer l’e-mail de confirmation</button><button id="toLogin" type="button" class="link-btn hidden">J’ai déjà un compte : me connecter</button><small class="signup-note">Inscription libre et gratuite. Ton compte commence avec 3 places d'élèves ; une fois connecté, tu peux demander ta classe entière en un clic (réponse sous 24 h maximum).</small></div></form><p class="demo-link"><a href="zoo-connecte.html?demo=1&amp;new=1">✨ Essayer la démo, sans compte</a><small>Une classe fictive : le Zoo d'un élève, puis l'espace enseignant.</small></p><p class="msg" id="authMsg" role="status"></p><p class="auth-links"><a href="./">← Accueil</a> · <a href="confidentialite.html">Confidentialité</a> · <a href="contact.html">Contact</a> · <a href="mentions-legales.html">Mentions légales</a></p>
 <p class="auth-student">🎒 Élève ? <a href="eleve.html" id="authToStudent">Entre ici avec ton code de classe</a></p></section>
 <section class="panel hidden" id="recovery"><h2>🔒 Choisis ton nouveau mot de passe</h2><p class="muted" id="recoveryWho">Tu es arrivée ici par le lien de l’e-mail « Mot de passe oublié ».</p><form id="recoveryForm"><label for="newPassword">Nouveau mot de passe (au moins 8 caractères)</label><input id="newPassword" type="password" autocomplete="new-password" minlength="8" maxlength="72" required><label for="newPassword2">Écris-le une deuxième fois</label><input id="newPassword2" type="password" autocomplete="new-password" minlength="8" maxlength="72" required><div class="actions"><button id="recoverySave" type="submit">Enregistrer mon nouveau mot de passe</button></div></form><p class="msg" id="recoveryMsg" role="status"></p></section>
 <section class="hidden teacher-space" id="space">
@@ -363,6 +363,7 @@ body:not(.teacher-mode) main{color:#eef0f7}
  <div class="section-head"><div class="section-icon">💡</div><div><h2>Feedback des enseignants</h2><p class="muted">Avis, conseils, idées, bugs et questions envoyés depuis l’onglet « Améliorations ». Les nouveaux messages sont en haut.</p></div></div>
  <div class="seat-row"><select id="fbFilter" aria-label="Filtrer par type" style="width:auto"><option value="">Tous les types</option></select><button type="button" class="secondary" id="fbAllRead">Tout marquer comme lu</button></div>
  <p class="msg" id="fbAdminMsg" role="status"></p><div id="fbList" class="content-list"></div>
+ <h3 style="margin:22px 0 8px">✉️ Messages du formulaire de contact</h3><p class="muted">Écrits sans compte depuis la page Contact du site. Réponds par e-mail.</p><p class="msg" id="ctMsg" role="status"></p><div id="ctList" class="content-list"></div>
 </section>
 </div>
 </section></main><script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=17"><\/script>':'<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"><\/script>');})();</script><script>
@@ -860,7 +861,7 @@ $("seatCancel").onclick=()=>busy("seatCancel",()=>sendSeatRequest(0));
 let adminNotice="";
 function setAdminBadge(n){const b=$("adminBadge");if(!b)return;b.textContent="⚠️ "+(n>99?"99+":String(n));b.classList.toggle("hidden",!n);b.setAttribute("aria-label",n+" demande(s) de places d’élèves")}
 const FB_KINDS=[["avis","💬","Avis général","Ce que tu penses de l’appli dans l’ensemble : ce qui marche bien, ce qui manque…"],["pedago","🎓","Conseil pédagogique","Une idée pour mieux faire apprendre à lire : progression, exercices, textes…"],["ergo","🖐️","Conseil ergonomique","Ce qui est difficile à trouver ou à utiliser, pour toi ou pour les élèves."],["fonction","✨","Idée de fonctionnalité","La fonctionnalité que tu aimerais voir, et à quoi elle servirait en classe."],["bug","🐞","Bug ou erreur","Que faisais-tu ? Qu’est-ce qui s’est passé ? Sur quel appareil (tablette, ordinateur…) ?"],["question","❓","Question","Ta question, le plus précisément possible."]];
-let fbKind="avis",fbNotice="";
+let fbKind="avis",fbNotice="",fbUnreadN=0,ctUnreadN=0;
 function fbInfo(k){return FB_KINDS.find(x=>x[0]===k)||FB_KINDS[0]}
 function renderFbKinds(){const box=$("fbKinds");box.replaceChildren();FB_KINDS.forEach(([k,ico,label])=>{const b=document.createElement("button");b.type="button";b.className=k===fbKind?"active":"";b.setAttribute("role","radio");b.setAttribute("aria-checked",String(k===fbKind));const i=document.createElement("span");i.className="sp-ico";i.textContent=ico;const s=document.createElement("strong");s.textContent=label;b.append(i,s);b.onclick=()=>{fbKind=k;renderFbKinds();$("fbMessage").focus()};box.append(b)});const info=fbInfo(fbKind);$("fbLabel").textContent=info[1]+" "+info[2]+" : ton message";$("fbMessage").placeholder=info[3];$("fbNote").textContent=fbKind==="question"?"📧 La réponse arrivera par e-mail, à l’adresse de ton compte.":""}
 renderFbKinds();
@@ -874,7 +875,7 @@ async function renderFeedbackAdmin(){
  const {data,error}=await client.from("teacher_feedback").select("id,kind,message,created_at,read_at,reply,replied_at,reply_seen_at,teacher_id,teachers(email)").order("created_at",{ascending:false});
  if(error){msg("fbAdminMsg",errorText(error),true);return;}
  msg("fbAdminMsg",fbNotice);fbNotice="";
- const unread=data.filter(f=>!f.read_at).length;setFeedbackBadge(unread);$("fbAllRead").disabled=!unread;
+ const unread=data.filter(f=>!f.read_at).length;fbUnreadN=unread;setFeedbackBadge(unread+ctUnreadN);$("fbAllRead").disabled=!unread;
  const filter=$("fbFilter").value,list=data.filter(f=>!filter||f.kind===filter).sort((a,b)=>(!b.read_at)-(!a.read_at)),box=$("fbList");box.replaceChildren();
  if(!list.length){box.textContent=data.length?"Aucun message de ce type.":"Aucun feedback pour le moment.";return;}
  list.forEach(f=>{
@@ -895,6 +896,29 @@ async function renderFeedbackAdmin(){
   actions.append(toggle,del);
   if(email){const a=document.createElement("a");a.className="button-link";a.href="mailto:"+email+"?subject="+encodeURIComponent(f.kind==="question"?"Zoo de Lecture : ta question":"Zoo de Lecture : ton message");a.textContent="✉️ Par e-mail";actions.append(a);}
   row.append(left,actions);box.append(row);
+ });
+ renderContactAdmin().catch(e=>msg("ctMsg",errorText(e),true));
+}
+/* Messages du formulaire public « Contact » (table contact_messages, lisible par l’admin seulement) */
+
+async function renderContactAdmin(){
+ const {data,error}=await client.from("contact_messages").select("id,email,message,created_at,read_at").order("created_at",{ascending:false});
+ if(error){msg("ctMsg",errorText(error),true);return;}
+ msg("ctMsg","");const box=$("ctList");box.replaceChildren();
+ ctUnreadN=data.filter(m=>!m.read_at).length;setFeedbackBadge(fbUnreadN+ctUnreadN);
+ if(!data.length){box.textContent="Aucun message pour le moment.";return;}
+ data.slice().sort((a,b)=>(!b.read_at)-(!a.read_at)).forEach(m=>{
+  const row=document.createElement("div");row.className="row fb-item"+(m.read_at?"":" unread");
+  const left=document.createElement("div");left.style.flex="1";left.style.minWidth="0";
+  const head=document.createElement("strong");head.textContent=(m.read_at?"":"🆕 ")+m.email+" · "+frDate(m.created_at);
+  const p=document.createElement("p");p.className="fb-text";p.textContent=m.message;left.append(head,p);
+  const actions=document.createElement("div");actions.className="actions";actions.style.marginTop="0";
+  const a=document.createElement("a");a.className="button-link";a.href="mailto:"+m.email+"?subject="+encodeURIComponent("Zoo de Lecture : ton message");a.textContent="✉️ Répondre par e-mail";
+  const toggle=document.createElement("button");toggle.type="button";toggle.className="secondary";toggle.textContent=m.read_at?"Marquer non lu":"Marquer comme lu";
+  toggle.onclick=async()=>{toggle.disabled=true;const {error}=await client.from("contact_messages").update({read_at:m.read_at?null:new Date().toISOString()}).eq("id",m.id);toggle.disabled=false;if(error){msg("ctMsg",errorText(error),true);return;}await renderContactAdmin();};
+  const del=document.createElement("button");del.type="button";del.className="danger";del.textContent="🗑️ Supprimer";
+  del.onclick=async()=>{if(!confirm("Supprimer définitivement ce message de "+m.email+" ?"))return;del.disabled=true;const {data:gone,error}=await client.from("contact_messages").delete().eq("id",m.id).select("id");del.disabled=false;if(error){msg("ctMsg",errorText(error),true);return;}if(!gone||!gone.length){msg("ctMsg","Ce message n’a pas pu être supprimé.",true);return;}await renderContactAdmin();};
+  actions.append(a,toggle,del);row.append(left,actions);box.append(row);
  });
 }
 $("fbFilter").onchange=()=>renderFeedbackAdmin().catch(e=>msg("fbAdminMsg",errorText(e),true));
