@@ -1923,7 +1923,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   var cloudBusy = false, cloudDirty = false, cloudTimer = null, cloudStudentId = null, cloudVersion = 0, cloudConflict = false, cloudStatusNode = null;
   /* Records de la classe, calculés par le serveur (student_get_class_records) */
   var classRecords = {}, classSize = 1, classRecordsRefreshing = false, classRecordsChecked = 0;
-  function cloudStatus(label){if(cloudStatusNode){cloudStatusNode.firstChild.textContent=label+" · "+(cloudStatusNode.dataset.nickname||"");cloudStatusNode.classList.toggle("cs-ok",/^☁️/.test(label));}}
+  function cloudStatus(label){if(window.ZOO_DEMO)label=label.replace("Sauvegardé","Simulé dans la démo").replace("Sauvegarde en attente","Simulation en cours");if(cloudStatusNode){cloudStatusNode.firstChild.textContent=label+" · "+(cloudStatusNode.dataset.nickname||"");cloudStatusNode.classList.toggle("cs-ok",/^☁️/.test(label));}}
   var loaded = false;
   if (!cloudMode) try {
     var raw = localStorage.getItem(KEY);
