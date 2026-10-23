@@ -4429,6 +4429,22 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       return S.audio;
     } catch (e) { return null; }
   }
+  /* Tablettes (iPad, Android) : le son ne démarre qu’après un vrai toucher, et peut être coupé par le mode silencieux ou une interruption.
+     Au premier toucher on « déverrouille » le son (contexte audio relancé, mode lecture sur iPad) puis on relance la musique si on est dans la salle de jeux. */
+  var audioUnlocked = false;
+  function unlockAudio() {
+    try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {}
+    var ctx = audioCtx();
+    if (!ctx) return;
+    try {
+      var b = ctx.createBuffer(1, 1, 22050), src = ctx.createBufferSource();
+      src.buffer = b; src.connect(ctx.destination); src.start(0);
+    } catch (e) {}
+    if (!ctx.__zooState) { ctx.__zooState = true; ctx.onstatechange = function () { if (ctx.state === "running" && typeof Music !== "undefined") Music.sync(); }; }
+    if (ctx.state === "running") audioUnlocked = true;
+    if (typeof Music !== "undefined") Music.sync();
+  }
+  ["pointerdown", "touchend", "click", "keydown"].forEach(function (ev) { document.addEventListener(ev, function () { if (!audioUnlocked) unlockAudio(); }, { capture: true, passive: true }); });
   function tone(freq, start, dur, type, vol) {
     if (!data.sfx) return;
     var ctx = audioCtx();
@@ -4530,6 +4546,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     }
     function pump() {
       if (!running || !ctx) return;
+      if (ctx.state !== "running") { try { var rp = ctx.resume(); if (rp && rp.catch) rp.catch(function () {}); } catch (e) {} next = Math.max(next, ctx.currentTime + 0.05); return; }   /* interruption (écran verrouillé, notification) : on relance, la musique reprend */
       while (next < ctx.currentTime + LOOK) { play(step, next); next += STEP; step++; }
     }
     function muted() { try { return localStorage.getItem("zoo_music_off") === "1"; } catch (e) { return false; } }
@@ -4540,6 +4557,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       if (!noise) { noise = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate); var ch = noise.getChannelData(0); for (var i = 0; i < ch.length; i++) ch[i] = Math.random() * 2 - 1; }
       master = ctx.createGain(); master.gain.setValueAtTime(0.0001, ctx.currentTime); master.gain.exponentialRampToValueAtTime(0.8, ctx.currentTime + 0.6); master.connect(ctx.destination);
       running = true; step = 0; next = ctx.currentTime + 0.08;
+      if (ctx.state !== "running") { try { var r0 = ctx.resume(); if (r0 && r0.then) r0.then(function () { if (running) next = ctx.currentTime + 0.08; }, function () {}); } catch (e) {} }
       timer = setInterval(pump, 100); pump();
     }
     function stop() {
