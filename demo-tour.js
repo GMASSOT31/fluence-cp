@@ -62,10 +62,10 @@
   var SHORT = [
     WELCOME,
     { page: "zoo", stage: 1, enter: function () { go("home"); }, target: ".home-hero", title: "La prochaine activité",
-      text: "Chaque jour, l'élève voit une seule action à faire, avec 🔊 pour entendre la consigne.",
-      primary: "Lire", run: openReading },
+      text: "Chaque jour, l'élève voit une seule action, avec 🔊 pour entendre la consigne : ici, s'entraîner sur les mots du son « f ». Avec vous, il passe l'évaluation pour la faire certifier.",
+      primary: "Passer l'évaluation", run: openReading },
     { page: "zoo", stage: 2, target: "#session", title: "Une lecture d'une minute",
-      text: "L'élève lit à voix haute ; vous touchez les mots où il bute. Le score : les mots lus correctement par minute.",
+      text: "L'élève lit à voix haute les mots du son « f » ; vous touchez ceux où il bute. Le score : les mots lus correctement par minute.",
       primary: "Montre-moi",
       run: async function () {
         if (app()) app().fakeRead();
@@ -74,7 +74,7 @@
         click("#btn-save");
         await wait(function () { return $(".evo-acts:not([hidden])"); }, 6000);
       } },
-    { page: "zoo", stage: 3, target: ".evo-card", glass: true, title: "L'animal et la récompense",
+    { page: "zoo", stage: 3, target: ".evo-card", dock: "top", glass: true, title: "L'animal et la récompense",
       text: "Étape certifiée 🏅 : l'animal du son évolue, puis la roue offre des pièces ou des parties de jeu.",
       primary: "Lancer la roue",
       run: async function () {
@@ -118,7 +118,7 @@
       text: "Objectif atteint : l'étape est certifiée 🏅. Les objectifs (syllabes, mots, texte) se règlent dans votre espace.",
       primary: "Enregistrer",
       run: async function () { click("#btn-save"); await wait(function () { return $(".evo-acts:not([hidden])"); }, 6000); } },
-    { page: "zoo", target: ".evo-card", glass: true, title: "L'animal évolue",
+    { page: "zoo", target: ".evo-card", dock: "top", glass: true, title: "L'animal évolue",
       text: "Chaque son est un animal : l'œuf éclot, puis l'animal grandit à chaque étape certifiée. Les élèves ont envie de retrouver leur zoo.",
       primary: "Lancer la roue",
       run: async function () { click(".evo-acts button"); await wait(function () { return visible($("#btn-spin")); }); } },
@@ -213,7 +213,7 @@
       /* Téléphone : bulle en bas ; si elle recouvrirait l'élément éclairé, on la monte en haut (quand la place y est) */
       var pb = bubble.offsetHeight + 24;
       var hits = r.bottom + pad > window.innerHeight - pb, up = hits && r.top - pad > pb;
-      bubble.classList.toggle("tb-top", up);
+      bubble.classList.toggle("tb-top", up || s.dock === "top");   /* dock: "top" = en haut, pour ne pas cacher les boutons de la fenêtre expliquée */
       /* Élément trop grand pour tenir au-dessus ou en dessous : on le remonte en haut de l'écran, au-dessus de la bulle */
       if (hits && !up && r.height + pad * 2 <= window.innerHeight - pb - 8 && !t.__tourFit) { t.__tourFit = true; fitSpace(pb); window.scrollBy(0, r.top - pad - 8); }
       return;
