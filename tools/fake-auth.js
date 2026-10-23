@@ -25,7 +25,7 @@
     var b = {
       select: function () { return b; }, order: function () { return b; }, eq: function (k, v) { filt = [k, v]; return b; },
       single: function () { single = true; return b; }, maybeSingle: function () { single = true; return b; }, limit: function () { return b; }, is: function (k) { isNull = k; return b; }, in: function () { return b; }, upsert: function (p) { st.upserts = (st.upserts || []).concat([p]); if (st.failUpsert) { st.failUpsert = false; op = "fail"; } return b; },
-      insert: function (p) { op = "insert"; payload = p; return b; }, delete: function () { op = "delete"; return b; }, update: function (p) { op = "update"; payload = p; return b; },
+      insert: function (p) { op = "insert"; payload = p; return b; }, delete: function () { op = "delete"; return b; }, update: function (p) { op = "update"; payload = p; return b; }, upsert: function (p) { op = "upsert"; payload = p; return b; },
       then: function (res, rej) {
         var out;
         try {
@@ -40,6 +40,11 @@
             if (op === "update") { var tr = st.teachers.filter(function (x) { return x[filt[0]] === filt[1]; })[0]; Object.assign(tr, payload); st.teacherUpdates = (st.teacherUpdates || []).concat([payload]); out = { data: null, error: null }; }
             else if (single) out = { data: Object.assign({}, st.teachers.filter(function (x) { return x[filt[0]] === filt[1]; })[0]), error: null };
             else out = { data: st.teachers.map(function (x) { return Object.assign({}, x); }), error: null };
+          }
+          else if (table === "app_settings") {
+            st.appSettings = st.appSettings || { auto_seats: { enabled: true, max: 25 } };
+            if (op === "upsert" || op === "update") { var pl = Array.isArray(payload) ? payload[0] : payload; st.appSettings[pl.key || "auto_seats"] = pl.value; out = { data: null, error: null }; }
+            else out = { data: single ? { key: "auto_seats", value: st.appSettings.auto_seats } : [{ key: "auto_seats", value: st.appSettings.auto_seats }], error: null };
           }
           else if (table === "students" && op === "insert") { var srow = Object.assign({ id: "n" + (st.students.length + 1), pin_hash: null }, payload); st.students.push(srow); out = { data: single ? { id: srow.id } : [srow], error: null }; }
           else if (table === "students") out = { data: (st.teachers[0].role === "admin" ? st.students : st.students.filter(function (x) { return x.teacher_id === st.user.id; })).map(function (x) { return Object.assign({ ghosted_at: null }, x); }), error: null };
@@ -88,7 +93,9 @@
         return Promise.resolve({ data: a.p_action, error: null }); }
       if (name === "feedback_mark_replies_seen") { var nSeen = 0; st.feedback.forEach(function (x) { if (x.teacher_id === st.user.id && x.reply && !x.reply_seen_at) { x.reply_seen_at = "2026-10-21T12:00:00Z"; nSeen++; } }); return Promise.resolve({ data: nSeen, error: null }); }
       if (name === "teacher_request_seats") { var n = a.p_count; if (n && (n < 1 || n > 500)) return Promise.resolve({ data: null, error: { message: "Nombre de places invalide (1 à 500)" } });
-        var me = st.teachers.filter(function (x) { return x.id === st.user.id; })[0]; me.seat_request = n || null; me.seat_request_at = n ? "2026-10-21T08:00:00Z" : null;
+        var me = st.teachers.filter(function (x) { return x.id === st.user.id; })[0]; var cfg = (st.appSettings || { auto_seats: { enabled: true, max: 25 } }).auto_seats;
+        if (n && cfg.enabled && me.role !== "admin" && me.student_limit > 0 && me.student_limit + n <= cfg.max) { me.student_limit += n; me.seat_request = null; me.seat_request_at = null; return Promise.resolve({ data: { seat_request: null, seat_request_at: null, granted: true, student_limit: me.student_limit }, error: null }); }
+        me.seat_request = n || null; me.seat_request_at = n ? "2026-10-21T08:00:00Z" : null;
         return Promise.resolve({ data: { seat_request: me.seat_request, seat_request_at: me.seat_request_at }, error: null }); }
       return Promise.resolve({ data: {}, error: null });
     }
