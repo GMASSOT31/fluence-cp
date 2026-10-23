@@ -279,6 +279,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   .panel-nav[aria-current="page"] .pn-sub { color: inherit; opacity: 0.8; }
   .ghost-sm { padding: 6px 10px; font-size: 0.9rem; background: transparent; color: var(--muted); border: 1.5px solid var(--line); }
   .bottom-nav { display: none; }
+  .bottom-nav .bn-me, .me-menu { display: none; }
   body.no-reward .needs-reward { display: none !important; }
   .login-card { max-width: 440px; margin: 28px auto; }
   .bad-msg { color: var(--bad); font-weight: 600; min-height: 1.4em; margin: 0 0 10px; }
@@ -297,7 +298,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     body.mode-student .panel.left .pcard { flex: 1 1 160px; }
     body.mode-student .bottom-nav { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; gap: 6px; padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px)); background: var(--card); border-top: 1.5px solid var(--line); }
     body.mode-student .bottom-nav .panel-nav { flex: 1; flex-direction: column; gap: 2px; padding: 8px 4px; font-size: 0.85rem; text-align: center; justify-content: center; }
-    body.mode-student main { padding-bottom: 120px; }
+    body.mode-student main { padding-bottom: calc(var(--bn-h, 104px) + 24px); }
     body.mode-student .toast { bottom: calc(90px + env(safe-area-inset-bottom, 0px)); }
   }
   .badge-n { display: inline-block; min-width: 1.5em; margin-left: 6px; padding: 0 6px; border-radius: 999px; background: var(--bad); color: #fff; font-size: 0.8rem; font-weight: 800; line-height: 1.5; text-align: center; }
@@ -1039,9 +1040,11 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     body.mode-student #panel-left .pcard .row { margin: 0; justify-content: flex-end; }
     body.mode-student #panel-left .pcard:has(#btn-back-teacher[hidden]) { display: none; }
     body.mode-student #panel-left:has(#btn-back-teacher[hidden]):has(#btn-panel-wheel[hidden]) { display: none; }
-    body.mode-student .bottom-nav .bn-logout { display: flex; flex: 0.8; }
-    body.mode-student .bottom-nav .bn-pin { display: flex; flex: 0 0 38px; min-width: 0; padding-left: 0; padding-right: 0; }
-    body.mode-student .bottom-nav .bn-pin[hidden] { display: none; }
+    body.mode-student .bottom-nav .bn-me { display: flex; }
+    body.mode-student .bottom-nav .bn-logout, body.mode-student .bottom-nav .bn-pin { display: none; }
+    body.mode-student .me-menu:not([hidden]) { display: flex; flex-direction: column; gap: 8px; position: fixed; right: 8px; bottom: calc(var(--bn-h, 76px) + 8px); z-index: 40; padding: 10px; background: var(--card); border: 2px solid var(--line); border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,.35); }
+    body.mode-student .me-menu button { min-height: 48px; padding: 10px 16px; border-radius: 12px; border: 2px solid var(--line); background: #fff; color: var(--ink); font: 700 1rem inherit; text-align: left; cursor: pointer; }
+    body.mode-student .me-menu button[hidden] { display: none; }
     body.mode-student .bottom-nav [data-go="cartes"], body.mode-student .bottom-nav [data-go="progres"] { display: none; }
     body.mode-student .home-zoo-count { display: none; }
     /* Boutique */
@@ -1611,14 +1614,19 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     <button type="button" class="panel-nav needs-reward" data-go="boutique"><span class="pn-ico" aria-hidden="true">🛍️</span><span>Boutique</span></button>
     <button type="button" class="panel-nav" data-go="cartes"><span class="pn-ico" aria-hidden="true">🐾</span><span>Cartes</span></button>
     <button type="button" class="panel-nav" data-go="progres"><span class="pn-ico" aria-hidden="true">📈</span><span>Progrès</span></button>
+    <button type="button" class="panel-nav bn-me" id="bn-me" aria-haspopup="true" aria-expanded="false" aria-controls="me-menu"><span class="pn-ico" aria-hidden="true">🙂</span><span>Moi</span></button>
     <button type="button" class="panel-nav bn-logout" id="bn-logout"><span class="pn-ico" aria-hidden="true">🚪</span><span>Quitter</span></button>
     <button type="button" class="panel-nav bn-pin" id="bn-pin" title="Changer mon code secret" aria-label="Changer mon code secret" hidden><span class="pn-ico" aria-hidden="true">🔑</span></button>
   </nav>
+  <div class="me-menu" id="me-menu" role="menu" hidden>
+    <button type="button" role="menuitem" id="me-pin" hidden>🔑 Changer mon code secret</button>
+    <button type="button" role="menuitem" id="me-logout">🚪 Me déconnecter</button>
+  </div>
   <div class="confetti" id="confetti" aria-hidden="true"></div>
 </main>
 <div class="toast" id="toast" role="status"></div>
 
-<script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=17"><\/script>':'<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.min.js" integrity="sha384-UagCvVPT5XXA0Hx+nJYUAGBFseHT9zBgpJMSebsAxl9lciTwbT+39j5VfRjdP5Tp" crossorigin="anonymous"><\/script>');})();</script>
+<script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=18"><\/script>':'<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.min.js" integrity="sha384-UagCvVPT5XXA0Hx+nJYUAGBFseHT9zBgpJMSebsAxl9lciTwbT+39j5VfRjdP5Tp" crossorigin="anonymous"><\/script>');})();</script>
 <script>
 (function () {
   "use strict";
@@ -2402,6 +2410,20 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   $("btn-lreset").addEventListener("click", listenSettingsReset);
   $("btn-logout").addEventListener("click", logout);
   $("bn-logout").addEventListener("click", logout);
+  /* Menu « Moi » (téléphone) : code secret et déconnexion ; hauteur réelle de la barre du bas gardée dans --bn-h */
+  (function () {
+    var bn = $("bn-me"), menu = $("me-menu"), bar = $("bottom-nav");
+    function close() { menu.hidden = true; bn.setAttribute("aria-expanded", "false"); }
+    bn.addEventListener("click", function (e) { e.stopPropagation(); var open = menu.hidden; menu.hidden = !open; bn.setAttribute("aria-expanded", String(open)); });
+    document.addEventListener("click", function (e) { if (!menu.hidden && !menu.contains(e.target)) close(); });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") close(); });
+    $("me-logout").addEventListener("click", function () { close(); logout(); });
+    $("me-pin").addEventListener("click", function () { close(); openPinDialog(); });
+    function size() { var h = bar.offsetHeight; if (h) document.documentElement.style.setProperty("--bn-h", h + "px"); }
+    if (window.ResizeObserver) new ResizeObserver(size).observe(bar);
+    if (window.MutationObserver) new MutationObserver(size).observe(bar, { attributes: true });
+    window.addEventListener("resize", size); size();
+  })();
   $("btn-back-teacher").addEventListener("click", backToTeacher);
   $("btn-panel-wheel").addEventListener("click", function () { openWheel(ses.sid); });
 
@@ -6662,7 +6684,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       bar.append(document.createTextNode("☁️ Connecté(e) · "+st.nickname));cloudStatusNode=bar;bar.dataset.nickname=st.nickname;
       refreshClassRecords(true);claimGifts(true);
       var link=document.createElement("a");link.href="eleve.html";link.textContent=" · Déconnexion";link.style.color="#ffe37c";link.onclick=function(ev){ev.preventDefault();logout()};bar.append(link);
-      ["btn-pin-left","bn-pin"].forEach(function(id){var pb=document.getElementById(id);if(pb){pb.hidden=data.pinChange===false;pb.onclick=openPinDialog;}});
+      ["btn-pin-left","bn-pin","me-pin"].forEach(function(id){var pb=document.getElementById(id);if(pb){pb.hidden=data.pinChange===false;pb.onclick=openPinDialog;}});
       if(data.pinChange!==false){var key=document.createElement("button");key.type="button";key.id="btn-pin";key.textContent="🔑";key.title="Changer mon code secret";key.setAttribute("aria-label","Changer mon code secret");key.style.cssText="margin-left:8px;border:0;border-radius:8px;background:rgba(255,255,255,.18);color:#fff;font-size:15px;line-height:1;padding:3px 8px;cursor:pointer";key.onclick=openPinDialog;bar.append(key);}document.body.append(bar);
     } catch(e) {
       alert("Impossible de charger ton Zoo : "+(e.message||"session expirée")+". Reconnecte-toi.");

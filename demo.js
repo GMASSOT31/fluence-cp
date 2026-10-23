@@ -299,7 +299,8 @@
       "#demo-bar b{font-weight:800}#demo-bar a,#demo-bar button{font:inherit;font-weight:800;color:#3b2a00;background:rgba(255,255,255,.55);border:0;border-radius:999px;padding:4px 11px;text-decoration:none;cursor:pointer;box-shadow:none;min-height:0}" +
       "#demo-bar a:hover,#demo-bar button:hover{background:#fff}" +
       "body.playing #demo-bar,body.listen-focus #demo-bar,body.reading-focus #demo-bar{display:none}" +
-      "@media(max-width:600px){#demo-bar{font-size:12.5px;gap:5px 8px;padding:6px 8px}#demo-bar .db-long{display:none}}";
+      "#demo-bar .db-dots{display:none}" +
+      "@media(max-width:600px){#demo-bar{font-size:12.5px;gap:5px 8px;padding:6px 8px;flex-wrap:nowrap}#demo-bar .db-long{display:none}#demo-bar .db-more{display:none}#demo-bar .db-dots{display:inline-block}#demo-bar.open{flex-wrap:wrap}#demo-bar.open .db-more{display:inline-block}}";
     document.head.appendChild(css);
     var b = document.createElement("div");
     b.id = "demo-bar"; b.setAttribute("role", "region"); b.setAttribute("aria-label", "Mode démonstration");
@@ -308,12 +309,16 @@
     b.appendChild(t);
     function link(text, href) { var a = document.createElement("a"); a.href = href; a.textContent = text; b.appendChild(a); return a; }
     function btn(text, fn) { var x = document.createElement("button"); x.type = "button"; x.textContent = text; x.addEventListener("click", fn); b.appendChild(x); return x; }
-    if (onTeacher) link("🧒 Voir le Zoo de Léo", "zoo-connecte.html?demo=1");
-    else link("🧑‍🏫 Espace enseignant", "enseignants.html?demo=1");
-    btn("↺ Recommencer", zooDemo.restart);
-    if (MEMBER) btn("↩ Mon espace", function () { zooDemo.exit("enseignants.html"); });
-    else btn("✨ Créer mon compte", function () { zooDemo.exit("enseignants.html#inscription"); });
-    btn("✕ Quitter", function () { zooDemo.exit(); });
+    /* Sur téléphone : une seule ligne (Démo + Visite guidée + ⋯) ; le reste s'ouvre avec ⋯ */
+    function more(x) { x.className = "db-more"; return x; }
+    if (onTeacher) more(link("🧒 Voir le Zoo de Léo", "zoo-connecte.html?demo=1"));
+    else more(link("🧑‍🏫 Espace enseignant", "enseignants.html?demo=1"));
+    more(btn("↺ Recommencer", zooDemo.restart));
+    if (MEMBER) more(btn("↩ Mon espace", function () { zooDemo.exit("enseignants.html"); }));
+    else more(btn("✨ Créer mon compte", function () { zooDemo.exit("enseignants.html#inscription"); }));
+    more(btn("✕ Quitter", function () { zooDemo.exit(); }));
+    var dots = btn("⋯", function () { var o = b.classList.toggle("open"); dots.setAttribute("aria-expanded", String(o)); });
+    dots.className = "db-dots"; dots.setAttribute("aria-label", "Autres actions de la démo"); dots.setAttribute("aria-expanded", "false");
     document.body.insertBefore(b, document.body.firstChild);
     /* Liens de la page qui mèneraient hors de la démo */
     var toStudent = document.getElementById("toStudent");
