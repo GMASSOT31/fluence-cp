@@ -1,0 +1,17 @@
+# Réveil Supabase : un appel léger (lecture seule) tous les 2 jours pour que le projet gratuit
+# ne soit pas mis en pause pendant les vacances. La clé « publishable » est publique (déjà dans le site).
+name: Réveil Supabase
+on:
+  schedule:
+    - cron: "17 6 */2 * *"
+  workflow_dispatch:
+permissions: {}
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Appeler la fonction ping
+        run: |
+          curl -fsS -X POST "https://pcxpazpflnlwmhyuozdx.supabase.co/rest/v1/rpc/ping" \
+            -H "apikey: sb_publishable_j65mDpDNsuwwaL6uRjsMtA_U_OXQXlL" \
+            -H "Content-Type: application/json" -d '{}'
