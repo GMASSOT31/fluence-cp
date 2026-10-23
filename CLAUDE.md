@@ -77,7 +77,7 @@ Appli web de fluence de lecture pour des classes de CP, en ligne sur https://zoo
 - Bulle de visite guidée adaptée au téléphone ; scène d'évolution en attente ; outils de test (`tools/`).
 
 ## 8. À faire / pistes (selon la demande de l'utilisateur)
-- **Sécurité (fait)** : `student_sign_in` compte désormais les codes faux (5 par élève, 30 par classe, 15 min) et renvoie `{ok:false, reason:bad_pin|locked, retry_after}` (migration 20261109, PR 155).
+- **Sécurité (fait)** : `student_sign_in` compte désormais les codes faux (5 par élève, 60 par classe, 15 min) et renvoie `{ok:false, reason:bad_pin|locked, retry_after}` (migration 20261109, PR 155).
 - Les entraînements courts enregistrés avant la règle des 15 s comptent encore.
 - Réglage de difficulté de l'oiseau (derniers paliers très rapides) selon les retours.
 - Témoignages de collègues sur la landing ; vérifier avec l'utilisateur les engagements écrits (« sans publicité ni revente », « serveurs en France »).
