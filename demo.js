@@ -28,7 +28,7 @@
     ];
     var P = {
       "s-leo": { coins: 12, credits: 4, avatar: "👦🏽",
-        results: [res("s-leo", "voy", "s", 15, 42), res("s-leo", "voy", "s", 19, 36), res("s-leo", "voy", "s", 23, 30), res("s-leo", "voy", "s", 27, 9), res("s-leo", "l", "s", 31, 7), res("s-leo", "l", "m", 24, 5), res("s-leo", "l", "t", 19, 3), res("s-leo", "f", "s", 27, 1, "train")],
+        results: [res("s-leo", "voy", "s", 15, 42), res("s-leo", "voy", "s", 19, 36), res("s-leo", "voy", "s", 23, 30), res("s-leo", "voy", "s", 27, 9), res("s-leo", "l", "s", 31, 7), res("s-leo", "l", "m", 24, 5), res("s-leo", "l", "t", 19, 3), res("s-leo", "f", "s", 33, 2)],
         hi: { memory: hi(16, 4), simon: hi(6, 3), stack: hi(9, 2) },
         listen: { passes: { voy: 3 }, done: { voy: true }, tries: 4 } },
       "s-ines": { coins: 20, credits: 2, avatar: "👧🏻",
@@ -321,6 +321,6 @@
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bar); else bar();
   /* Visite guidée (bulles pas à pas) */
-  var tour = document.createElement("script"); tour.src = "demo-tour.js?v=10"; tour.defer = true;
+  var tour = document.createElement("script"); tour.src = "demo-tour.js?v=12"; tour.defer = true;
   (document.head || document.documentElement).appendChild(tour);
 })();
