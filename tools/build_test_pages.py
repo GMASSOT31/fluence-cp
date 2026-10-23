@@ -23,7 +23,7 @@ import shutil
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "tools", "test-site")
-CDN = '<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.min.js" integrity="sha384-UagCvVPT5XXA0Hx+nJYUAGBFseHT9zBgpJMSebsAxl9lciTwbT+39j5VfRjdP5Tp" crossorigin="anonymous"></script>'
+CDN = '<script src="vendor/supabase.js?v=2.118.0"></script>'
 LOADER = re.compile(r"<script>/\* Démo sans compte.*?</script>", re.S)
 FLAP_HOOK = ("window.__flap={bird:bird,pipes:pipes,state:function(){return{t:t,dead:dead,won:won,started:started,ended:ended,passed:passed,scroll:scroll,lives:lives,inv:inv}},"
              "setT:function(v){t=v;bi=FLAP_BANNERS.filter(function(x){return x<=v}).length}};")

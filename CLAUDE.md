@@ -10,7 +10,7 @@ Appli web de fluence de lecture pour des classes de CP, en ligne sur https://zoo
 
 ## 2. Stack
 - Site **statique** HTML/CSS/JS, sans framework, **un fichier par page**. Style : JS compact à l'ancienne (`var`, `function`, petits `el()`, `$()`, `nb()`, `q()`), commentaires en français, thème sombre pour les pages de connexion/landing, polices Fredoka + Figtree, variables CSS (`--ink`, `--muted`, `--line`, `--card`). Points de rupture téléphone : 600 et 880 px.
-- Bibliothèque **supabase-js fixée à la version 2.118.0** (jsDelivr, avec contrôle d'intégrité SRI) dans eleve.html, contact.html, enseignants.html, zoo-connecte.html et tools/build_test_pages.py. Pour changer de version : modifier les 5 endroits, recalculer le hash (`openssl dgst -sha384 -binary supabase.min.js | openssl base64 -A`), retester connexions élève/enseignant et contact.
+- Bibliothèque **supabase-js 2.118.0 copiée dans `vendor/supabase.js`** (fichier `dist/umd/supabase.js` de la version, chargé localement par eleve.html, contact.html, enseignants.html, zoo-connecte.html et tools/build_test_pages.py : plus de CDN). Pour changer de version : télécharger `https://cdn.jsdelivr.net/npm/@supabase/supabase-js@X.Y.Z/dist/umd/supabase.js` dans `vendor/`, augmenter `?v=` dans les 5 fichiers, retester connexions élève/enseignant et contact.
 - Hébergement **GitHub Pages**, dépôt public GMASSOT31/fluence-cp, branche `main`, domaine OVH (fichier `CNAME`). Mise en ligne **1 à 5 min** après une fusion.
 - Backend **Supabase** (projet `pcxpazpflnlwmhyuozdx`, région Paris). Fonctions RPC `SECURITY DEFINER` avec `search_path=''`, règles RLS. La clé « publishable » dans le code est normale ; **aucune autre clé dans le dépôt**.
 
