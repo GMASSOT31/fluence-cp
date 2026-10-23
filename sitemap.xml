@@ -2,6 +2,10 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://zoodelecture.fr/</loc></url>
   <url><loc>https://zoodelecture.fr/guides/ateliers-lecture-cp/</loc></url>
+  <url><loc>https://zoodelecture.fr/guides/syllabes-lecture-cp/</loc></url>
+  <url><loc>https://zoodelecture.fr/guides/tablettes-lecture-cp/</loc></url>
+  <url><loc>https://zoodelecture.fr/guides/fluence-lecture-cp/</loc></url>
+  <url><loc>https://zoodelecture.fr/guides/differenciation-lecture-cp/</loc></url>
   <url><loc>https://zoodelecture.fr/mentions-legales.html</loc></url>
   <url><loc>https://zoodelecture.fr/confidentialite.html</loc></url>
 </urlset>
