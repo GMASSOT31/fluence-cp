@@ -96,3 +96,10 @@ Cause de l'écart observé (« 4 animaux éclos, 3 visibles » ; « 8 niveaux r�
 * **Ordre des étapes** : migration **20261116** (`lab_teacher_settings_set` gardait un `select distinct` qui mélangeait l'ordre : cause des cartes « 80–89, 60–69, 11–16… »). Elle conserve maintenant l'ordre et remet une fois les réglages existants dans l'ordre des étapes. Côté enseignant : une colonne numérotée par domaine, ▲/▼, « ✓ Enregistré » 2 s (ou erreur).
 * **TBI** (≥ 1400 px) pendant un exercice : calcul 96 px, consignes ≥ 35 px, cases 64 px, panneaux masqués.
 Tests : `labo-calcul-test.html?who=ok&all=1` (+ `&egg=addition:a7`, `&order=1`).
+
+## Série d'améliorations n°3
+* **Aide des additions/soustractions simples** : 1er appui = on part du plus grand (ou du nombre de départ), les bonds sont surlignés un par un sauf le dernier (« On part de six. On avance de trois. À toi de compter ! »), rien d'encadré ; après la 2e erreur (l'aide s'ouvre seule si besoin) : bonds complets, arrivée en pointillés et « six plus trois, neuf » affiché et dit. Soustraction : même principe en reculant. « Pour arriver à 10 » : de a à 10, combien de pas ? Étape « Dizaines et unités » : file des dizaines seule.
+* **2e erreur** : message lu en entier ; « Regarde l'aide » seulement si l'aide montre quelque chose, sinon « Essaie encore ».
+* **Réglages péda** : bulle fixe en bas de l'écran « ✓ Enregistré » (2 s), rouge « Pas enregistré, réessayez » tant que l'enregistrement échoue.
+* **Éclosion** : « Continuer » plein jaune à gauche, « Voir mes animaux » contour seul. **Bilan** : phrase pour l'enfant (lue) au lieu de l'explication technique (restée dans l'espace enseignant).
+* **Grand écran (≥ 1400 px)** : plus de « Me déconnecter » dans le panneau ; bouton « 🙂 Moi » qui ouvre le menu (déconnexion comprise). **Barre du bas** : onglet actif blanc sur vert foncé (9:1), icône blanche. **En-tête** : seulement pièces et parties (niveau et nombres reconnus dans « Ma progression »).

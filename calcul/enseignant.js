@@ -43,6 +43,7 @@
       "@media (prefers-reduced-motion:no-preference){body.calc-mode header .zoo-owl{animation:zoo-float 4.2s ease-in-out -2s infinite}}" +
       ".calc-card .pg-chip.mastered{background:#e2f6f2;border-color:#7ddfc0;color:#075f5d}" +
       ".calc-fields{display:grid;gap:14px;margin-top:10px}.calc-fields label{font-weight:700;display:block;margin-bottom:4px}.calc-fields input[type=number]{max-width:140px}" +
+      ".calc-toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:60;padding:10px 20px;border-radius:999px;font-weight:800;box-shadow:0 4px 16px rgba(0,0,0,.3);color:#fff;background:#0b7f7d}.calc-toast.err{background:#b42318}.calc-toast.pending{background:#5a6476}.calc-toast.hidden{display:none}" +
       ".calc-order{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:6px}.calc-step{display:flex;align-items:center;gap:8px}.calc-step label{flex:1;display:flex;gap:8px;align-items:center;font-weight:600;margin:0;min-height:40px}.calc-step .n{min-width:2.2em;font-weight:800;color:#0b7f7d}.calc-step input{width:20px;height:20px}.calc-step .mv{min-width:44px;min-height:40px;padding:0 10px;font-weight:800}.calc-step .mv:disabled{opacity:.35}" +
       ".calc-levels{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:6px;margin-top:6px}.calc-levels label{display:flex;gap:8px;align-items:center;font-weight:600;margin:0;min-height:38px}" +
       ".calc-levels input{width:20px;height:20px}.calc-legend{margin-top:14px}.calc-legend dl{display:grid;grid-template-columns:max-content 1fr;gap:4px 12px;margin:8px 0 0}.calc-legend dt{font-weight:800}.calc-legend dd{margin:0}" +
@@ -242,7 +243,15 @@
         return { questions: +q.value, pass: +p.value, voice: v.checked, levels: levels };
       }
       var okTimer = null;
-      function setState(t, cls) { st.textContent = t; st.className = "save-state " + (cls || ""); }
+      /* bulle fixe en bas de l'écran (visible même quand on règle une étape plus bas) : « ✓ Enregistré » 2 s, erreur rouge qui reste */
+      var bubble = el("div", "calc-toast hidden"); bubble.setAttribute("role", "status"); bubble.setAttribute("aria-live", "polite"); box.appendChild(bubble);
+      function setState(t, cls) {
+        st.textContent = t; st.className = "save-state " + (cls || "");
+        if (cls === "ok") { bubble.textContent = "✓ Enregistré"; bubble.className = "calc-toast ok"; }
+        else if (cls === "err") { bubble.textContent = "Pas enregistré, réessayez"; bubble.className = "calc-toast err"; }
+        else if (cls === "pending") { bubble.textContent = "Enregistrement…"; bubble.className = "calc-toast pending"; }
+        else bubble.className = "calc-toast hidden";
+      }
       function flush() {
         var s2 = collect(); if (Object.keys(s2.levels).some(function (k) { return !s2.levels[k].length; })) { setState("⚠️ Gardez au moins une étape par activité.", "err"); return; }
         rpc("lab_teacher_settings_set", { p_settings: s2 }).then(function (r) { settings = r || {}; setState("✓ Enregistré", "ok"); clearTimeout(okTimer); okTimer = setTimeout(function () { if (st.className.indexOf("ok") >= 0) setState("", ""); }, 2000); }).catch(function () { setState("⚠️ Non enregistré : vérifiez la connexion. Nouvel essai dans quelques secondes.", "err"); saveTimer = setTimeout(flush, 5000); });

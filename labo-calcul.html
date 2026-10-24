@@ -122,7 +122,19 @@
   @media (max-width: 600px) { .choices.c6 { grid-template-columns: repeat(2,1fr); } .choices { gap: 10px; } .choice { min-height: 78px; font-size: 2.1rem; } }
   @media (prefers-reduced-motion: reduce) { .choice.bad { animation: none; } }
   #labo-switch{display:inline-flex;height:26px;margin-top:0;border:2px solid rgba(255,255,255,.75);border-radius:999px;overflow:hidden;background:rgba(0,0,0,.25)}#labo-switch a,#labo-switch span{display:inline-flex;align-items:center;flex-direction:row;white-space:nowrap;gap:4px;line-height:1;padding:0 11px;font:800 14px Figtree,system-ui,sans-serif;color:#fff;text-decoration:none}#labo-switch .on{background:#fff;color:#201049}body.mode-student #labo-switch{display:inline-flex!important}@media (max-width:650px){#labo-switch{height:24px}#labo-switch a:not(.on) b{display:none}#labo-switch a{min-width:38px;justify-content:center;padding:0 9px}#labo-switch span{padding:0 10px;font-size:13.5px}}
-  .evo .big-btn.secondary{background:#fff;color:#201049;border:3px solid #fff}
+  /* barre du bas : l'onglet actif est blanc sur vert foncé (contraste > 7:1), icône comprise */
+  body.mode-student .bottom-nav .panel-nav[aria-current="page"] { background: #05524f; border-color: #05524f; color: #fff; font-weight: 800; }
+  body.mode-student .bottom-nav .panel-nav[aria-current="page"] * { color: #fff; }
+  body.mode-student .bottom-nav .panel-nav[aria-current="page"] .pn-ico { filter: brightness(0) invert(1); }
+  /* grand écran : plus de « Me déconnecter » dans le panneau ; le menu « Moi » (déconnexion comprise) s'ouvre depuis ce bouton, comme sur tablette */
+  #btn-moi { display: none; }
+  @media (min-width: 1400px) {
+    body.mode-student #btn-logout { display: none; }
+    body.mode-student #btn-moi { display: inline-flex; }
+    body.mode-student .me-menu:not([hidden]) { display: flex; flex-direction: column; gap: 8px; position: fixed; left: 24px; top: 190px; z-index: 40; padding: 10px; background: var(--card); border: 2px solid var(--line); border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,.35); }
+    body.mode-student .me-menu button { min-height: 48px; padding: 10px 16px; border-radius: 12px; border: 2px solid var(--line); background: var(--card); color: var(--ink); font-weight: 700; font-size: 1rem; text-align: left; cursor: pointer; }
+  }
+  .evo .big-btn.primary { background: #ffe56c; color: #201049; border: 3px solid #fff; } .evo .big-btn.secondary { background: transparent; color: #fff; border: 3px solid rgba(255,255,255,.85); }
 </style>
 </head>
 <body class="mode-student calc">
@@ -138,11 +150,11 @@
       </div>
       <div class="zoo-hero-art" aria-hidden="true"><span class="zoo-star zoo-star-one">✦</span><span class="zoo-mascot zoo-bee" id="mascot-1">🐌</span><span class="zoo-mascot zoo-llama" id="mascot-2">🐕</span><span class="zoo-mascot zoo-owl" id="mascot-3">🐆</span><span class="zoo-star zoo-star-two">✧</span><span class="zoo-pad">➕ <span>● ●</span></span></div>
     </div>
-    <div class="zoo-top-stats needs-reward" id="zoo-top-stats" hidden aria-label="Mes pièces, mes parties et mon niveau">
+    <div class="zoo-top-stats needs-reward" id="zoo-top-stats" hidden aria-label="Mes pièces et mes parties">
       <div class="zoo-top-stat zoo-top-gold"><span class="gold-coin" aria-hidden="true"></span><strong id="top-coins">0</strong><small>Pièces</small></div>
       <div class="zoo-top-stat"><span aria-hidden="true">🎮</span><strong id="top-games">0</strong><small>Parties</small></div>
-      <div class="zoo-top-stat zoo-top-keep"><span id="top-animal" aria-hidden="true">🥚</span><strong id="top-level">N0</strong><small>Niveau</small></div>
-      <div class="zoo-top-stat zoo-top-keep" title="Nombres reconnus"><span aria-hidden="true">👂</span><strong id="top-nums">0</strong><small>Nombres</small></div>
+      <div class="zoo-top-stat zoo-top-keep" hidden><span id="top-animal" aria-hidden="true">🥚</span><strong id="top-level">N0</strong><small>Niveau</small></div>
+      <div class="zoo-top-stat zoo-top-keep" hidden><span aria-hidden="true">👂</span><strong id="top-nums">0</strong><small>Nombres</small></div>
     </div>
   </header>
 
@@ -152,6 +164,7 @@
         <div class="avatar-profile"><div class="avatar-trigger" id="pl-avatar-box" role="img" aria-label="Mon avatar"><span id="pl-avatar" aria-hidden="true">🧑</span></div><div class="avatar-profile-name"><div class="who-name" id="pl-name"></div><span class="avatar-hint">Pour changer d’avatar, va dans Lecture</span></div></div>
         <div class="row">
           <button type="button" class="ghost-sm" id="btn-logout">Me déconnecter</button>
+          <button type="button" class="ghost-sm" id="btn-moi" aria-haspopup="true" aria-expanded="false" aria-controls="me-menu">🙂 Moi</button>
         </div>
       </div>
       <button type="button" class="panel-nav" data-go="boutique"><span class="pn-ico" aria-hidden="true">🛍️</span><span>Boutique<span class="pn-sub" id="pl-shop"></span></span></button>
@@ -409,6 +422,14 @@
     var sp = split(q);
     for (k = 0; k <= cap; k++) {
       var c = "";
+      if (sp && (sp.kind === "add" || sp.kind === "sub")) {
+        /* 1er appui : on part du départ et on saute un par un, sauf le dernier bond (à l'enfant) ; 2e erreur : tous les bonds et l'arrivée en pointillés */
+        var back = sp.kind === "sub", d = back ? sp.from - k : k - sp.from;
+        if (k === sp.from) c = "st";
+        else if (d > 0 && d <= sp.steps && (full || d < sp.steps)) c = "s1 hop";
+        if (full && k === sp.to) c += " arr";
+        var cell = el("b", c.trim(), String(k)); if (c.indexOf("hop") >= 0) cell.style.animationDelay = (d * 0.45) + "s"; l.appendChild(cell); continue;
+      }
       if (sp) {
         if (k === sp.from) c = "st";
         else if (sp.kind === "ten") { if (k > sp.from && k <= sp.mid) c = "s1"; else if (full && k > sp.mid && k <= sp.to) c = "s2"; }
@@ -425,14 +446,28 @@
   function split(q) {
     if (q.type === "addition" && !q.hole && q.a % 10 && q.a % 10 + q.b > 10) { var t = q.a - q.a % 10 + 10; return { from: q.a, mid: t, to: q.a + q.b, kind: "ten" }; }
     if (q.level === "s5") return { from: q.b, mid: q.a, to: q.a, kind: "gap" };
+    if (q.type === "addition" && q.hole) return { from: q.a, mid: q.total, to: q.total, kind: "gap" };   /* « pour arriver à 10 » : de a jusqu'à 10, combien de pas ? */
+    if (q.level === "a8") return null;   /* dizaines et unités : la file des dizaines reste seule */
+    if (q.type === "addition") { var big = Math.max(q.a, q.b), sm = Math.min(q.a, q.b); return { from: big, steps: sm, to: q.a + q.b, kind: "add" }; }   /* on part du plus grand */
+    if (q.type === "soustraction") return { from: q.a, steps: q.b, to: q.a - q.b, kind: "sub" };
     return null;
   }
   function helpText(q, full) {
     var sp = split(q), h = el("p", "hint"), W = E.words; if (!sp) return { node: null, say: "" };
     if (sp.kind === "gap") {
-      var g = q.a - q.b;
-      h.textContent = "De " + q.b + " à " + q.a + ", combien de pas ?" + (full ? " Il y a " + nb(g, "pas", "pas") + "." : " À toi de compter !");
-      return { node: h, say: "De " + W(q.b) + " à " + W(q.a) + ", combien de pas ? " + (full ? "Il y a " + W(g) + (g > 1 ? " pas." : " pas.") : "À toi de compter !") };
+      var g = q.hole ? q.total - q.a : q.a - q.b;
+      var f0 = sp.from, t0 = sp.to;
+      h.textContent = "De " + f0 + " à " + t0 + ", combien de pas ?" + (full ? " Il y a " + nb(g, "pas", "pas") + "." : " À toi de compter !");
+      return { node: h, say: "De " + W(f0) + " à " + W(t0) + ", combien de pas ? " + (full ? "Il y a " + W(g) + " pas." : "À toi de compter !") };
+    }
+    if (sp.kind === "add" || sp.kind === "sub") {
+      var back2 = sp.kind === "sub", verb = back2 ? "recule" : "avance", st = sp.steps;
+      if (!full) {
+        h.textContent = "On part de " + sp.from + " · " + (st ? "on " + verb + " de " + st : "on ne bouge pas") + " · À toi de compter !";
+        return { node: h, say: "On part de " + W(sp.from) + ". " + (st ? "On " + verb + " de " + W(st) + "." : "On ne bouge pas.") + " À toi de compter !" };
+      }
+      h.appendChild(el("span", "h1", sp.from + (back2 ? " − " : " + ") + st + " = " + sp.to));
+      return { node: h, say: W(sp.from) + (back2 ? " moins " : " plus ") + W(st) + ", " + W(sp.to) + "." };
     }
     var c = sp.mid - q.a, r = q.b - c;
     h.appendChild(el("span", "h1", q.a + " + " + c + " = " + sp.mid)); h.appendChild(document.createTextNode(" · il reste ")); h.appendChild(el("span", "h2", String(r)));
@@ -506,7 +541,8 @@
           /* 1re erreur : encouragement ; 2e : l'aide complète (avec le résultat) ; 3e : la bonne réponse est colorée */
           if (mistakes === 2) {
             if (q.type === "nombres") { msg.textContent = "Écoute encore : « " + q.say + " »"; R.replays++; tell("Pas tout à fait. Écoute encore. " + q.say + ".", null); }
-            else { msg.textContent = "Regarde l’aide, elle te montre comment faire 🧩"; if (openHelp) openHelp(true, true, "Pas tout à fait. "); }
+            else if (openHelp && split(q)) { msg.textContent = "Regarde l’aide, elle te montre comment faire 🧩"; openHelp(true, true, "Pas tout à fait. Regarde l’aide, elle te montre comment faire. "); }
+            else { msg.textContent = "Pas tout à fait. Essaie encore 💪"; tell("Pas tout à fait. Essaie encore.", null); }
           } else if (mistakes >= 3) {
             msg.textContent = "Regarde bien, la bonne réponse est colorée.";
             btns.forEach(function (x) { if (x.textContent === String(q.answer)) x.style.borderColor = "#17794f"; });
@@ -551,7 +587,9 @@
       function bilan() {
         clear(box); var card = el("div", "card calc-card stage"), act2 = act;
         card.appendChild(el("h2", "", "Série terminée !")); card.appendChild(starsOf(after, "bstars"));
-        card.appendChild(el("p", "muted", "Étoiles de cette étape : 1 = réussie, 2 = maîtrisée (deux séries réussies)."));
+        var enc = after >= 2 ? "Tu es un champion de cette étape !" : after === 1 ? "Encore une série réussie et tu gagnes la 2e étoile !" : "Réussis une série pour gagner ta première étoile !";
+        card.appendChild(el("p", "msg good", enc));
+        if (S.settings.voice !== false) setTimeout(function () { if (document.querySelector(".bstars")) V.speak(enc); }, 400);
         card.appendChild(el("p", "", g + " bonnes réponses du premier coup sur " + n));
         var inf = el("p", "msg " + (res.success ? "good" : ""));
         if (!res.success) inf.textContent = "Continue, tu progresses ! Tu peux refaire cette série.";
@@ -704,6 +742,7 @@
     var b = ev.target.closest ? ev.target.closest("[data-go]") : null; if (b && token) { ev.preventDefault(); goTo(b.getAttribute("data-go")); return; }
     var me = $("me-menu"); if (!me.hidden && !(ev.target.closest && ev.target.closest("#bn-me"))) me.hidden = true;
   });
+  $("btn-moi").addEventListener("click", function (ev) { ev.stopPropagation(); var m = $("me-menu"); m.hidden = !m.hidden; this.setAttribute("aria-expanded", String(!m.hidden)); });
   $("bn-me").addEventListener("click", function (ev) { ev.stopPropagation(); var m = $("me-menu"); m.hidden = !m.hidden; this.setAttribute("aria-expanded", String(!m.hidden)); });
   function logout() { try { sessionStorage.removeItem("zoo_student_token"); sessionStorage.removeItem("zoo_student_name"); } catch (e) {} location.href = "eleve.html"; }
   $("btn-logout").addEventListener("click", logout); $("me-logout").addEventListener("click", logout);
