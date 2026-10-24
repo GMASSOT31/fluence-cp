@@ -16,6 +16,7 @@ insert into public.student_progress values ('51000000-0000-0000-0000-00000000000
 create temp table before_hash as select md5(string_agg(t::text, '|' order by student_id)) h from public.student_progress t;
 grant all on before_hash to public;
 \ir ../../supabase/migrations/20261112_labo_calcul.sql
+\ir ../../supabase/migrations/20261113_labo_collections.sql
 
 create function pg_temp.expect_fail(sql text, label text) returns void language plpgsql as $$
 begin
@@ -110,6 +111,19 @@ select (public.lab_student_use_play(repeat('1',64), current_setting('t.o2')::uui
 select pg_temp.expect(:'d4' = 'false', 'lancement rejoué : sans effet');
 select (public.lab_student_use_play(repeat('1',64), gen_random_uuid()))->>'reason' as d5 \gset
 select pg_temp.expect(:'d5' = 'no_play', 'plus de droit : partie refusée');
+reset role;
+
+-- 4b. Collections : nombres reconnus et calculs gagnés (bornés par les bonnes réponses, formats et signes contrôlés)
+set role anon; select set_config('request.jwt.claim.sub','',false) \gset
+select public.lab_student_submit_round(repeat('1',64), gen_random_uuid(), 'nombres', 'n7', 5, 5, '{"nums":[73,73,71,100,101,-4,"x",1000]}') as r \gset
+select pg_temp.expect((public.lab_student_state(repeat('1',64))->'progress'->'nums') = '{}', 'collections : 8 éléments annoncés pour 5 bonnes réponses → tout ignoré');
+select public.lab_student_submit_round(repeat('1',64), gen_random_uuid(), 'nombres', 'n7', 7, 7, '{"nums":[73,73,71,100,101,-4,"x"]}') as r \gset
+select pg_temp.expect((public.lab_student_state(repeat('1',64))->'progress'->'nums') = '{"71":1,"73":2,"100":1}', 'nombres : 73×2, 71, 100 gardés ; 101, -4, "x" écartés');
+select public.lab_student_submit_round(repeat('1',64), gen_random_uuid(), 'addition', 'a2', 6, 6, '{"calcs":["7+5","7+5","3-1","abc","999+1","1000+1"]}') as r \gset
+select pg_temp.expect((public.lab_student_state(repeat('1',64))->'progress'->'calcs') = '{"7+5":2,"999+1":1}', 'addition : 7+5×2 gardé, soustraction/format invalide écartés');
+select public.lab_student_submit_round(repeat('1',64), gen_random_uuid(), 'soustraction', 's1', 5, 5, '{"calcs":["9-2","3+4"]}') as r \gset
+select pg_temp.expect((public.lab_student_state(repeat('1',64))->'progress'->'calcs'->>'9-2') = '1' and (public.lab_student_state(repeat('1',64))->'progress'->'calcs'->>'3+4') is null, 'soustraction : 9-2 gardé, 3+4 (mauvais signe) écarté');
+select pg_temp.expect((public.lab_student_state(repeat('1',64))->'progress'->'levels'->'nombres:n7'->>'r')::int = 2, 'niveaux toujours enregistrés (2 séries n7)');
 reset role;
 
 -- 5. Résultats séparés + enseignants
