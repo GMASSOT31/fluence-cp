@@ -186,6 +186,7 @@
     addition: { icon: "➕", title: "Addition", sub: "Je calcule des additions", say: "Je calcule des additions." },
     soustraction: { icon: "➖", title: "Soustraction", sub: "Je calcule des soustractions", say: "Je calcule des soustractions." }
   };
+  var ADVANCE_MS = 1100;   /* durée d'affichage du « Bravo ! » avant la question suivante */
   var ANIMALS = ["🐥", "🦁", "🐸", "🐘", "🦒", "🐼", "🐢", "🦊"];
   var BRAVO = ["Bravo !", "Super !", "Oui, c’est ça !", "Bien joué !", "Génial !"];
   var QUOTES = ["Compter, c’est faire danser les nombres.", "Un petit pas chaque jour, et les nombres deviennent tes amis.", "Se tromper, c’est apprendre : on réessaie !"];
@@ -407,9 +408,9 @@
           if (firstTry) { R.good++; if (q.type === "nombres") R.nums.push(q.answer); else R.calcs.push(q.a + (q.type === "addition" ? "+" : "-") + q.b); }
           msg.className = "msg good";
           msg.textContent = (firstTry ? BRAVO[Math.floor(Math.random() * BRAVO.length)] : "Voilà, tu as trouvé !") + " " + (q.type === "nombres" ? q.say + " s’écrit " + q.answer : q.hole ? q.a + " + " + q.answer + " = " + q.total : q.text + " = " + q.answer);
-          var nx = el("button", "primary big-btn", R.i + 1 < R.qs.length ? "Suite →" : "Voir mon résultat"); nx.type = "button";
-          nx.addEventListener("click", function () { R.i++; if (R.i < R.qs.length) question(); else finish(); });
-          var r = el("div", "crow"); r.appendChild(nx); st.appendChild(r); nx.focus();
+          /* choisir = répondre : bonne réponse → on passe tout de suite à la suite (le temps de lire le message), mauvaise → on en choisit une autre */
+          var wait = firstTry ? ADVANCE_MS : ADVANCE_MS + 700;
+          setTimeout(function () { if (!R || R.q !== q) return; R.i++; if (R.i < R.qs.length) question(); else finish(); }, wait);
         } else {
           mistakes++; firstTry = false; b.classList.add("bad"); b.disabled = true;
           msg.className = "msg bad"; msg.textContent = mistakes >= 2 ? "Regarde bien, la bonne réponse est colorée." : "Pas tout à fait. Essaie encore 💪";
