@@ -72,7 +72,7 @@
   .choices { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; max-width: 520px; margin: 10px auto; }
   .choices.c6 { grid-template-columns: repeat(3,1fr); max-width: 680px; }
   .choice { min-height: 84px; font-family: Fredoka, Figtree, sans-serif; font-size: 2.4rem; font-weight: 700; border-radius: 20px; border: 4px solid var(--calc); background: var(--card); color: var(--ink); cursor: pointer; }
-  .choice:hover:not([disabled]) { background: var(--calc-l); }
+  @media (hover: hover) and (pointer: fine) { .choice:hover:not([disabled]) { background: var(--calc-l); } }   /* pas de survol collant sur tablette */
   .choice.good { background: #d9f1e5; border-color: #17794f; color: #17794f; }
   .choice.bad { background: #fbd9d5; border-color: #b3261e; color: #b3261e; animation: cshake .35s; }
   .choice[disabled] { cursor: default; }
@@ -82,12 +82,25 @@
   .nline { display: flex; flex-wrap: nowrap; justify-content: safe center; gap: 3px; margin: 6px auto 4px; max-width: 640px; overflow-x: auto; padding: 4px 2px 6px; -webkit-overflow-scrolling: touch; }
   .nline b { flex: 0 0 auto; } .nline b.arr { outline: 3px dashed var(--ink); outline-offset: -3px; }
   @media (min-width: 601px) and (max-width: 880px) { body.mode-student .bottom-nav .bn-me { display: flex; } body.mode-student .me-menu:not([hidden]) { display: flex; flex-direction: column; gap: 8px; position: fixed; right: 8px; bottom: calc(var(--bn-h, 76px) + 8px); z-index: 40; padding: 10px; background: var(--card); border: 2px solid var(--line); border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,.35); } body.mode-student .me-menu button { min-height: 48px; padding: 10px 16px; border-radius: 12px; border: 2px solid var(--line); background: var(--card); color: var(--ink); font: 700 1rem inherit; text-align: left; cursor: pointer; } body.mode-student .me-menu button[hidden] { display: none; } }   /* tablettes : le menu « Moi » donne accès à Boutique, mes nombres, progression, déconnexion */
+  /* TBI / grands écrans : pendant un exercice, tout est lisible de loin (panneaux latéraux déjà masqués par « listen-focus ») */
+  @media (min-width: 1400px) {
+    body.listen-focus #panel-left, body.listen-focus #panel-right, body.listen-focus header { display: none !important; }
+    body.listen-focus #view .card { max-width: 1200px; margin: 0 auto; }
+    body.listen-focus .eq { font-size: 6rem; }   /* 96 px */
+    body.listen-focus .stage .muted, body.listen-focus .hint, body.listen-focus .msg { font-size: 2.2rem; line-height: 1.25; }
+    body.listen-focus .say { min-height: 130px; font-size: 2.2rem; width: min(380px, 70%); }
+    body.listen-focus .crow .home-small, body.listen-focus .home-small { font-size: 1.6rem; min-height: 64px; padding: 10px 24px; }
+    body.listen-focus .choices { max-width: 1000px; gap: 22px; } body.listen-focus .choices.c6 { max-width: 1200px; }
+    body.listen-focus .choice { min-height: 150px; font-size: 4rem; }   /* 64 px */
+    body.listen-focus .nline b { min-width: 52px; font-size: 1.7rem; padding: 10px 0; }
+    body.listen-focus .pic { font-size: 3rem; }
+  }
   .nline b.st { outline: 3px solid var(--ink); outline-offset: -3px; } .nline b.s1 { background: #cfeeed; border-color: #0b7f7d; } .nline b.s2 { background: #ffe2b8; border-color: #c9740c; }
   .hint { margin: 4px auto 8px; max-width: 640px; font-weight: 700; text-align: center; } .hint .h1 { color: #0b7f7d; } .hint .h2 { color: #b45f06; }
   .pairs { display: grid; gap: 4px 2px; justify-items: center; width: 100%; max-width: 560px; overflow: hidden; margin: 6px auto; padding: 8px; border: 2px dashed var(--line); border-radius: 14px; } .pairs span { line-height: 1.1; } .pairs .ghost { width: 1em; height: 1em; border: 2px dashed var(--line); border-radius: 50%; opacity: .6; } .pairs .extra { background: #ffe2b8; border-radius: 50%; }
   .nline b { min-width: 34px; padding: 6px 0; border-radius: 8px; background: var(--card); border: 2px solid var(--line); font-size: 1rem; }
   .crow { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 10px; }
-  .stars { font-size: 3rem; letter-spacing: 6px; }
+  .stars { font-size: 3rem; letter-spacing: 6px; } .bstars { font-size: 3rem; letter-spacing: 6px; line-height: 1; } .bstars .on, .mini-stars .on { color: #f4af24; } .bstars .off, .mini-stars .off { color: #c9ced6; }
   /* collections */
   .ngrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 8px; }
   .zoo-card .cap b { color: var(--ink); }
@@ -196,9 +209,7 @@
     addition: { icon: "➕", title: "Addition", sub: "Je calcule des additions", say: "Je calcule des additions." },
     soustraction: { icon: "➖", title: "Soustraction", sub: "Je calcule des soustractions", say: "Je calcule des soustractions." }
   };
-  var ADVANCE_MS = 1100;   /* durée d'affichage du « Bravo ! » avant la question suivante */
   var ANIMALS = ["🐥", "🦁", "🐸", "🐘", "🦒", "🐼", "🐢", "🦊"];
-  var BRAVO = ["Bravo !", "Super !", "Oui, c’est ça !", "Bien joué !", "Génial !"];
   var QUOTES = ["Compter, c’est faire danser les nombres.", "Un petit pas chaque jour, et les nombres deviennent tes amis.", "Se tromper, c’est apprendre : on réessaie !"];
 
   function $(id) { return document.getElementById(id); }
@@ -391,38 +402,48 @@
     else { p.appendChild(group(q.a, ico)); p.appendChild(el("span", "sign", "−")); p.appendChild(group(q.b, ico)); }   /* soustraction : comme l'addition, seulement le signe « − » (rien n'est barré : l'élève doit comprendre l'opération) */
     return p;
   }
-  function numberLine(q) {
+  /* full = false : seulement la stratégie (le départ, le premier saut) ; full = true : tout, y compris l'arrivée et le résultat (après une 2e erreur) */
+  function numberLine(q, full) {
     var cap = q.level === "a8" ? 0 : Math.max(10, Math.min(20, q.a + q.b + 2)), l = el("div", "nline"), k;
     if (!cap) { for (k = 10; k <= 100; k += 10) l.appendChild(el("b", "", String(k))); return l; }
     var sp = split(q);
     for (k = 0; k <= cap; k++) {
       var c = "";
-      if (sp) { if (k === sp.from) c = "st"; else if (k > sp.from && k <= sp.mid) c = "s1"; else if (k > sp.mid && k <= sp.to) c = "s2"; }
-      if (sp && k === sp.to) c += " arr";
+      if (sp) {
+        if (k === sp.from) c = "st";
+        else if (sp.kind === "ten") { if (k > sp.from && k <= sp.mid) c = "s1"; else if (full && k > sp.mid && k <= sp.to) c = "s2"; }
+        else if (full && k > sp.from && k <= sp.to) c = "s1";
+        if ((full || sp.kind === "gap") && k === sp.to) c += " arr";   /* écart : l'arrivée fait partie de la question ; addition : l'arrivée est la réponse */
+      }
       l.appendChild(el("b", c.trim(), String(k)));
     }
     var st0 = l.querySelector(".st");
     if (st0) setTimeout(function () { try { l.scrollLeft = Math.max(0, st0.offsetLeft - 40); } catch (e) {} }, 0);   /* petit écran : la bande commence près du point de départ */
     return l;
   }
-  /* Aide qui montre la procédure : passer par 10 en addition, de b à a pour l'écart (jamais la validation de la réponse) */
+  /* Aide qui montre la procédure : passer par 10 en addition, de b à a pour l'écart */
   function split(q) {
     if (q.type === "addition" && !q.hole && q.a % 10 && q.a % 10 + q.b > 10) { var t = q.a - q.a % 10 + 10; return { from: q.a, mid: t, to: q.a + q.b, kind: "ten" }; }
     if (q.level === "s5") return { from: q.b, mid: q.a, to: q.a, kind: "gap" };
     return null;
   }
-  function helpText(q) {
-    var sp = split(q), h = el("p", "hint"); if (!sp) return { node: null, say: "" };
-    h.setAttribute("data-scroll", "");
-    if (sp.kind === "gap") { h.textContent = "De " + q.b + " à " + q.a + ", combien de pas ?"; return { node: h, say: "De " + E.words(q.b) + " à " + E.words(q.a) + ", combien de pas ?" }; }
-    var c = sp.mid - q.a, r = q.b - c, W = E.words;
-    h.appendChild(el("span", "h1", q.a + " + " + c + " = " + sp.mid)); h.appendChild(document.createTextNode(" · il reste ")); h.appendChild(el("span", "h2", String(r))); h.appendChild(document.createTextNode(" · ")); h.appendChild(el("span", "h2", sp.mid + " + " + r + " = " + sp.to));
-    return { node: h, say: W(q.a) + " plus " + W(c) + ", " + W(sp.mid) + ". Il reste " + W(r) + ". " + W(sp.mid) + " plus " + W(r) + ", " + W(sp.to) + "." };
+  function helpText(q, full) {
+    var sp = split(q), h = el("p", "hint"), W = E.words; if (!sp) return { node: null, say: "" };
+    if (sp.kind === "gap") {
+      var g = q.a - q.b;
+      h.textContent = "De " + q.b + " à " + q.a + ", combien de pas ?" + (full ? " Il y a " + nb(g, "pas", "pas") + "." : " À toi de compter !");
+      return { node: h, say: "De " + W(q.b) + " à " + W(q.a) + ", combien de pas ? " + (full ? "Il y a " + W(g) + (g > 1 ? " pas." : " pas.") : "À toi de compter !") };
+    }
+    var c = sp.mid - q.a, r = q.b - c;
+    h.appendChild(el("span", "h1", q.a + " + " + c + " = " + sp.mid)); h.appendChild(document.createTextNode(" · il reste ")); h.appendChild(el("span", "h2", String(r)));
+    if (full) { h.appendChild(document.createTextNode(" · ")); h.appendChild(el("span", "h2", sp.mid + " + " + r + " = " + sp.to)); }
+    else h.appendChild(document.createTextNode(" · À toi de compter !"));
+    return { node: h, say: W(q.a) + " plus " + W(c) + ", " + W(sp.mid) + ". Il reste " + W(r) + ". " + (full ? W(sp.mid) + " plus " + W(r) + ", " + W(sp.to) + "." : "À toi de compter !") };
   }
   function question() {
-    V.stop();
+    V.stop(); if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
     var box = $("view"); clear(box);
-    var q = R.qs[R.i], openHelp = null, mistakes = 0, firstTry = true, t0 = Date.now(), answered = false, helped = false, card = el("div", "card calc-card");
+    var q = R.qs[R.i], openHelp = null, helpFull = false, mistakes = 0, firstTry = true, t0 = Date.now(), answered = false, helped = false, card = el("div", "card calc-card");
     R.q = q;
     var quit = el("button", "secondary home-small", "← Arrêter"); quit.type = "button"; quit.addEventListener("click", function () { if (!R.res.length) { goTo(R.act); return; } stopConfirm(); }); card.appendChild(quit);
     card.appendChild(dots());
@@ -437,44 +458,64 @@
       st.appendChild(el("div", "eq", q.hole ? q.text.replace("?", "…") : q.text + " = …"));
       if (q.aid === "see") st.appendChild(picture(q));
       var hb = el("button", "secondary home-small", "🧩 Je m’aide"); hb.type = "button"; hb.setAttribute("aria-expanded", "false"); var lineBox = el("div");
-      openHelp = function (speak) {
+      /* 1er appui : la stratégie seulement ; le résultat n'apparaît (et n'est dit) qu'après une 2e erreur (full) */
+      openHelp = function (speak, full, lead) {
         if (!helped) { helped = true; R.helps++; }
-        if (lineBox.firstChild) return;
-        var w = el("div"), ht = helpText(q); w.appendChild(numberLine(q)); if (ht.node) w.appendChild(ht.node); lineBox.appendChild(w); hb.setAttribute("aria-expanded", "true");
-        if (speak && ht.say && S.settings.voice !== false) V.speak(ht.say);
+        if (lineBox.firstChild && (!full || helpFull)) return;
+        clear(lineBox); helpFull = !!full;
+        var w = el("div"), ht = helpText(q, helpFull); w.appendChild(numberLine(q, helpFull)); if (ht.node) w.appendChild(ht.node); lineBox.appendChild(w); hb.setAttribute("aria-expanded", "true");
+        if (speak && S.settings.voice !== false) { var tx = (lead || "") + ht.say; if (tx) V.speak(tx); }
       };
       hb.addEventListener("click", function () {
         if (lineBox.firstChild) { lineBox.removeChild(lineBox.firstChild); hb.setAttribute("aria-expanded", "false"); return; }
-        openHelp(true);
+        openHelp(true, helpFull);
       });
       var sq = el("button", "secondary home-small", "🔊"); sq.type = "button"; sq.setAttribute("aria-label", "Lire à voix haute"); sq.addEventListener("click", function () { V.speak(q.say); });
       var rw = el("div", "crow"); rw.appendChild(sq); rw.appendChild(hb); st.appendChild(rw); st.appendChild(lineBox);
     }
     var cs = el("div", "choices" + (q.choices.length >= 5 ? " c6" : "")), btns = [];
+    /* Le message affiché est aussi lu à voix haute ; la question suivante n'arrive qu'à la fin de la phrase (1,5 s au moins si la voix n'est pas disponible) */
+    function tell(text, then) {
+      var fired = false;
+      function fire(delay) { if (fired) return; fired = true; if (then) setTimeout(then, delay); }
+      if (S.settings.voice !== false && V.speak(text, function () { fire(250); })) setTimeout(function () { fire(0); }, 9000);   /* filet de sécurité si la fin de phrase n'arrive jamais */
+      else fire(1500);
+    }
+    function resultWords() {
+      var W = E.words;
+      if (q.type === "nombres") return W(q.answer) + ".";
+      if (q.hole) return W(q.a) + " plus " + W(q.answer) + ", " + W(q.total) + ".";
+      return q.say.replace(/\s*\?$/, "") + ", " + W(q.answer) + ".";
+    }
     q.choices.forEach(function (c) {
       var b = el("button", "choice", String(c)); b.type = "button"; btns.push(b);
       b.addEventListener("click", function () {
         if (answered) return;
+        if (document.activeElement && document.activeElement.blur) document.activeElement.blur();   /* tablette : aucune case ne reste « choisie » */
         if (c === q.answer) {
           answered = true; b.classList.add("good"); btns.forEach(function (x) { x.disabled = true; });
-          R.times.push(Date.now() - t0); R.res[R.i] = firstTry ? 1 : 0;
-          if (firstTry) { R.good++; if (q.type === "nombres") R.nums.push(q.answer); else R.calcs.push(q.a + (q.type === "addition" ? "+" : "-") + q.b); }
+          var clean = firstTry && !helped;   /* une question où l'aide a été ouverte n'est jamais « du premier coup » */
+          R.times.push(Date.now() - t0); R.res[R.i] = clean ? 1 : 0;
+          if (clean) { R.good++; if (q.type === "nombres") R.nums.push(q.answer); else R.calcs.push(q.a + (q.type === "addition" ? "+" : "-") + q.b); }
           msg.className = "msg good";
-          msg.textContent = (firstTry ? BRAVO[Math.floor(Math.random() * BRAVO.length)] : "Voilà, tu as trouvé !") + " " + (q.type === "nombres" ? q.say + " s’écrit " + q.answer : q.hole ? q.a + " + " + q.answer + " = " + q.total : q.text + " = " + q.answer);
-          /* choisir = répondre : bonne réponse → on passe tout de suite à la suite (le temps de lire le message), mauvaise → on en choisit une autre */
-          var wait = firstTry ? ADVANCE_MS : ADVANCE_MS + 700;
-          setTimeout(function () { if (!R || R.q !== q) return; R.i++; if (R.i < R.qs.length) question(); else finish(); }, wait);
+          msg.textContent = "Bravo ! " + (q.type === "nombres" ? q.answer : q.hole ? q.a + " + " + q.answer + " = " + q.total : q.text + " = " + q.answer);
+          /* choisir = répondre : bonne réponse → la suite arrive à la fin de la phrase lue, mauvaise → on en choisit une autre */
+          tell("Bravo ! " + resultWords(), function () { if (!R || R.q !== q) return; R.i++; if (R.i < R.qs.length) question(); else finish(); });
         } else {
-          mistakes++; firstTry = false; b.classList.add("bad"); b.disabled = true;
-          msg.className = "msg bad";
-          /* après deux erreurs : une aide qui montre comment faire (jamais la réponse validée à la place de l'élève) ; après trois, la bonne réponse est colorée */
+          mistakes++; firstTry = false; b.classList.add("bad"); b.disabled = true; msg.className = "msg bad";
+          /* 1re erreur : encouragement ; 2e : l'aide complète (avec le résultat) ; 3e : la bonne réponse est colorée */
           if (mistakes === 2) {
-            if (q.type === "nombres") { msg.textContent = "Écoute encore : « " + q.say + " »"; R.replays++; V.speak(q.say); }
-            else { msg.textContent = "Regarde l’aide, elle te montre comment faire 🧩"; if (openHelp) openHelp(true); }
+            if (q.type === "nombres") { msg.textContent = "Écoute encore : « " + q.say + " »"; R.replays++; tell("Pas tout à fait. Écoute encore. " + q.say + ".", null); }
+            else { msg.textContent = "Regarde l’aide, elle te montre comment faire 🧩"; if (openHelp) openHelp(true, true, "Pas tout à fait. "); }
           } else if (mistakes >= 3) {
             msg.textContent = "Regarde bien, la bonne réponse est colorée.";
             btns.forEach(function (x) { if (x.textContent === String(q.answer)) x.style.borderColor = "#17794f"; });
-          } else { msg.textContent = "Pas tout à fait. Essaie encore 💪"; if (q.type === "nombres") { R.replays++; V.speak(q.say); } }
+            tell("Pas tout à fait. Regarde bien, la bonne réponse est colorée.", null);
+          } else {
+            msg.textContent = "Pas tout à fait. Essaie encore 💪";
+            if (q.type === "nombres") R.replays++;
+            tell("Pas tout à fait. Essaie encore." + (q.type === "nombres" ? " " + q.say + "." : ""), null);
+          }
         }
       });
       cs.appendChild(b);
@@ -494,11 +535,9 @@
   }
   function finish() {
     V.stop(); var box = $("view"); clear(box);
-    var n = R.qs.length, g = R.good, card = el("div", "card calc-card stage"), stats = { replays: R.replays, helps: R.helps, ms: median(R.times), nums: R.nums, calcs: R.calcs };
-    card.appendChild(el("h2", "", "Série terminée !")); var stars = el("div", "stars", g === n ? "⭐⭐⭐" : g * 100 >= 80 * n ? "⭐⭐" : "⭐"); stars.setAttribute("aria-hidden", "true"); card.appendChild(stars);
-    card.appendChild(el("p", "", g + " bonnes réponses du premier coup sur " + n));
-    var info = el("p", "msg", "Je range ton résultat…"); card.appendChild(info);
-    var row = el("div", "crow"); card.appendChild(row); box.appendChild(card);
+    var n = R.qs.length, g = R.good, wait = el("div", "card calc-card stage"), stats = { replays: R.replays, helps: R.helps, ms: median(R.times), nums: R.nums, calcs: R.calcs };
+    var info = el("p", "msg", "Je range ton résultat…"); wait.appendChild(el("h2", "", "Bravo, tu as fini !")); wait.appendChild(info); var row = el("div", "crow"); wait.appendChild(row); box.appendChild(wait);
+    /* Ordre : d'abord l'éclosion (si un œuf doit éclore ou un animal grandir), le bilan seulement après « Continuer » ; aucun bouton du bilan n'existe avant */
     function done(res) {
       var act = R.act, lv = R.lv, key = act + ":" + lv, before = (S.levels[key] || {}).ok || 0, info2 = E.levelInfo(act, lv);
       if (res.inserted && res.level) {
@@ -507,16 +546,31 @@
         R.calcs.forEach(function (x) { S.calcs[x] = (S.calcs[x] || 0) + 1; });
       }
       var after = (S.levels[key] || {}).ok || 0;
-      info.className = "msg " + (res.success ? "good" : "");
-      if (!res.success) info.textContent = "Continue, tu progresses ! Tu peux refaire cette série.";
-      else if (!res.coins) info.textContent = "🎉 Réussi ! (tu as déjà gagné beaucoup de pièces aujourd’hui)";
-      else if (res.shared) { info.textContent = "🎉 Réussi ! +" + res.coins + " pièce" + (res.coins > 1 ? "s" : "") + " d’or"; claimCoins(); }
-      else info.textContent = "🎉 Réussi ! (pièces de test : +" + res.coins + ")";
-      /* l'œuf éclot, puis l'animal grandit : même scène d'évolution que dans le Zoo de Lecture */
-      if (res.success && after > before) showEvolution({ act: act, lv: info2, from: { got: Math.min(before, 2), total: 2 }, to: { got: Math.min(after, 2), total: 2 } });
-      function b(label, cls, fn) { var x = el("button", cls, label); x.type = "button"; x.addEventListener("click", fn); row.appendChild(x); }
-      b("Rejouer", "primary big-btn", function () { startRound(act, lv); }); b("Autre étape", "secondary big-btn", function () { goTo(act); }); b("Accueil", "secondary big-btn", function () { goTo("home"); });
+      if (res.success && res.shared && res.coins) claimCoins();
       renderPanels();
+      function bilan() {
+        clear(box); var card = el("div", "card calc-card stage"), act2 = act;
+        card.appendChild(el("h2", "", "Série terminée !")); card.appendChild(starsOf(after, "bstars"));
+        card.appendChild(el("p", "muted", "Étoiles de cette étape : 1 = réussie, 2 = maîtrisée (deux séries réussies)."));
+        card.appendChild(el("p", "", g + " bonnes réponses du premier coup sur " + n));
+        var inf = el("p", "msg " + (res.success ? "good" : ""));
+        if (!res.success) inf.textContent = "Continue, tu progresses ! Tu peux refaire cette série.";
+        else if (!res.coins) inf.textContent = "🎉 Réussi ! (tu as déjà gagné beaucoup de pièces aujourd’hui)";
+        else if (res.shared) inf.textContent = "🎉 Réussi ! +" + res.coins + " pièce" + (res.coins > 1 ? "s" : "") + " d’or";
+        else inf.textContent = "🎉 Réussi ! (pièces de test : +" + res.coins + ")";
+        card.appendChild(inf);
+        var r2 = el("div", "crow"); card.appendChild(r2); box.appendChild(card);
+        function b(label, cls, fn) { var x = el("button", cls, label); x.type = "button"; x.addEventListener("click", fn); r2.appendChild(x); return x; }
+        var next = E.suggestLevel(act2, enabledLevels(act2), S.levels);
+        function replay() { startRound(act2, lv); }
+        if (res.success && next && next !== lv) { b("Étape suivante ➜", "primary big-btn", function () { startRound(act2, next); }); b("Rejouer", "secondary big-btn", replay); }
+        else if (res.success) { b("Autre étape", "primary big-btn", function () { goTo(act2); }); b("Rejouer", "secondary big-btn", replay); }
+        else { b("Rejouer", "primary big-btn", replay); b("Autre étape", "secondary big-btn", function () { goTo(act2); }); }
+        b("Accueil", "secondary big-btn", function () { goTo("home"); });
+        renderPanels();
+      }
+      if (res.success && after > before) showEvolution({ act: act, lv: info2, from: { got: Math.min(before, 2), total: 2 }, to: { got: Math.min(after, 2), total: 2 }, onClose: bilan });
+      else bilan();
     }
     /* Pièces gagnées : le serveur les met de côté dans le portefeuille du Zoo ; on les reprend tout de suite (même mécanisme que les cadeaux), sinon le Zoo de Lecture le fera */
     function claimCoins(retry) {
@@ -559,7 +613,7 @@
       V.speak(t + " " + m.replace(/✨/g, ""));
       var go = el("button", "primary big-btn", "Continuer"), zoo = el("button", "secondary big-btn", "🐾 Voir mes animaux"); go.type = "button"; zoo.type = "button";
       function close() { if (ov.parentNode) ov.parentNode.removeChild(ov); var c = $("confetti"); if (c) c.innerHTML = ""; V.stop(); }
-      go.addEventListener("click", close); zoo.addEventListener("click", function () { close(); goTo(o.act === "nombres" ? "cartes" : "reconnues"); });
+      go.addEventListener("click", function () { close(); if (o.onClose) o.onClose(); }); zoo.addEventListener("click", function () { close(); goTo(o.act === "nombres" ? "cartes" : "reconnues"); });
       acts.appendChild(go); acts.appendChild(zoo); acts.hidden = false; go.focus({ preventScroll: true });
     }
     stage.addEventListener("click", finale);
@@ -580,6 +634,8 @@
     if (!locked && e.ok >= 2) { var sp = el("span", "pet-sparkle", "✨"); sp.setAttribute("aria-hidden", "true"); w.appendChild(sp); }
     return w;
   }
+  /* Étoiles = niveau de l'étape, sur 2 : 1 = réussie, 2 = maîtrisée (deux séries réussies) ; les manquantes sont grises. Même règle dans l'éclosion, le bilan et les cartes. */
+  function starsOf(ok, cls) { var n = Math.min(2, ok || 0), w = el("div", cls); w.setAttribute("aria-label", n + (n > 1 ? " étoiles" : " étoile") + " sur 2"); w.setAttribute("role", "img"); for (var i = 0; i < 2; i++) w.appendChild(el("span", i < n ? "on" : "off", "★")); return w; }
   function cap1(t) { return t.charAt(0).toUpperCase() + t.slice(1); }
   function speedText(lv) { return "court à environ " + String(lv.animal.kmh).replace(".", ",") + " km/h"; }
   function petCards(card, act) {
@@ -590,7 +646,7 @@
       b.appendChild(el("div", "son", lv.label));
       b.appendChild(el("div", "cap", locked ? "Pas encore" : e && e.ok ? cap1(lv.animal.nom) : "Un œuf à faire éclore"));
       if (!locked && e && e.ok) b.appendChild(el("div", "speed", speedText(lv)));
-      var stars = el("div", "mini-stars", e && e.ok >= 2 ? "⭐⭐" : e && e.ok ? "⭐" : "☆"); stars.setAttribute("aria-hidden", "true"); b.appendChild(stars);
+      b.appendChild(starsOf(e && e.ok, "mini-stars"));
       grid.appendChild(b);
     });
     card.appendChild(grid);

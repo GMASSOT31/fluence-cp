@@ -1,7 +1,7 @@
 /* Faux client Supabase du LABO DE CALCUL (aucun appel réseau). Reproduit les règles de supabase/migrations/20261112_labo_calcul.sql :
    autorisation, interrupteur, tours idempotents, pièces de test calculées côté « serveur », plafond de 10 séries récompensées par jour.
    Monnaie commune : activée par défaut (?shared=0 la coupe → pièces de test). Options d'URL : ?who=ok (élève autorisé, défaut) | refuse (élève non autorisé) | none (pas de jeton) ; ?off=1 (interrupteur serveur coupé) ;
-   ?role=admin (défaut) | teacher (autorisé) | refuse (enseignant non autorisé) | out (non connecté) ; ?seed=gap (trou dans l'ordre + réussite hors périmètre) ; ?all=1 (toutes les étapes ouvertes et réussies, pour tester les aides) ; ?req=1 (une demande d'enseignant en attente chez l'admin) ; ?asked=1 (l'enseignant a déjà demandé) ; ?fail=1 (le rangement d'une série échoue une fois).
+   ?role=admin (défaut) | teacher (autorisé) | refuse (enseignant non autorisé) | out (non connecté) ; ?egg=addition:a7 (retire la réussite de cette étape) ; ?order=1 (ordre n3, n1, n2, n4) ; ?seed=gap (trou dans l'ordre + réussite hors périmètre) ; ?all=1 (toutes les étapes ouvertes et réussies, pour tester les aides) ; ?req=1 (une demande d'enseignant en attente chez l'admin) ; ?asked=1 (l'enseignant a déjà demandé) ; ?fail=1 (le rangement d'une série échoue une fois).
    Expose window.__lab (journal des appels, état). */
 (function () {
   var q = location.search, opt = function (k, d) { var m = new RegExp("[?&]" + k + "=(\\w+)").exec(q); return m ? m[1] : d; };
@@ -20,6 +20,11 @@
     lab.me.levels = { "nombres:n1": { r: 2, ok: 2, q: 20, c: 19 }, "nombres:n2": { r: 1, ok: 1, q: 10, c: 9 }, "nombres:n4": { r: 1, ok: 1, q: 10, c: 9 }, "addition:a7": { r: 1, ok: 1, q: 10, c: 9 } };
     lab.settings = { levels: { nombres: ["n1", "n2", "n3", "n4"], addition: ["a1", "a2"], soustraction: ["s1"] } };
   }
+  if (/[?&]order=1/.test(q)) {   /* ordre voulu par l'enseignant : 17–20, 0–10, 11–16 */
+    lab.me.levels = { "nombres:n1": { r: 1, ok: 1, q: 10, c: 9 }, "nombres:n2": { r: 1, ok: 1, q: 10, c: 9 }, "nombres:n3": { r: 1, ok: 1, q: 10, c: 9 } };
+    lab.settings = { levels: { nombres: ["n3", "n1", "n2", "n4"], addition: ["a1", "a2"], soustraction: ["s1"] } };
+  }
+  if (/[?&]egg=([a-z]+:[a-z0-9]+)/.test(q)) delete lab.me.levels[RegExp.$1];   /* ?all=1&egg=addition:a7 : toutes réussies sauf celle-ci (œuf à faire éclore) */
   function err(m) { return { message: m, code: "42501" }; }
   function studentAllowed() { return lab.enabled && who === "ok"; }
   function teacherAllowed() { return lab.enabled && (role === "admin" || role === "teacher"); }
@@ -78,7 +83,7 @@
       if (typeof s.pass === "number") v.pass = Math.min(Math.max(s.pass, 50), 100);
       if (typeof s.questions === "number") v.questions = Math.min(Math.max(s.questions, 5), 20);
       if (typeof s.voice === "boolean") v.voice = s.voice;
-      if (s.levels) { v.levels = {}; ["nombres", "addition", "soustraction"].forEach(function (k) { if (Array.isArray(s.levels[k])) v.levels[k] = s.levels[k].filter(function (x) { return /^[a-z0-9_-]{1,20}$/.test(x); }); }); }
+      if (s.levels) { v.levels = {}; ["nombres", "addition", "soustraction"].forEach(function (k) { if (Array.isArray(s.levels[k])) v.levels[k] = s.levels[k].filter(function (x, i, arr) { return /^[a-z0-9_-]{1,20}$/.test(x) && arr.indexOf(x) === i; });   /* ordre conservé (migration 20261116) */ }); }
       lab.settings = v; return v;
     },
     lab_teacher_results: function () {

@@ -43,6 +43,7 @@
       "@media (prefers-reduced-motion:no-preference){body.calc-mode header .zoo-owl{animation:zoo-float 4.2s ease-in-out -2s infinite}}" +
       ".calc-card .pg-chip.mastered{background:#e2f6f2;border-color:#7ddfc0;color:#075f5d}" +
       ".calc-fields{display:grid;gap:14px;margin-top:10px}.calc-fields label{font-weight:700;display:block;margin-bottom:4px}.calc-fields input[type=number]{max-width:140px}" +
+      ".calc-order{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:6px}.calc-step{display:flex;align-items:center;gap:8px}.calc-step label{flex:1;display:flex;gap:8px;align-items:center;font-weight:600;margin:0;min-height:40px}.calc-step .n{min-width:2.2em;font-weight:800;color:#0b7f7d}.calc-step input{width:20px;height:20px}.calc-step .mv{min-width:44px;min-height:40px;padding:0 10px;font-weight:800}.calc-step .mv:disabled{opacity:.35}" +
       ".calc-levels{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:6px;margin-top:6px}.calc-levels label{display:flex;gap:8px;align-items:center;font-weight:600;margin:0;min-height:38px}" +
       ".calc-levels input{width:20px;height:20px}.calc-legend{margin-top:14px}.calc-legend dl{display:grid;grid-template-columns:max-content 1fr;gap:4px 12px;margin:8px 0 0}.calc-legend dt{font-weight:800}.calc-legend dd{margin:0}" +
       "@media (max-width:600px){.calc-legend dl{grid-template-columns:1fr}.calc-legend dd{margin-bottom:6px}}";
@@ -215,21 +216,36 @@
       var lq = el("label", "", "Nombre de questions par série (5 à 20)"); lq.setAttribute("for", "calcQ"); qd.appendChild(lq); qd.appendChild(q); f.appendChild(qd);
       var lp = el("label", "", "Une série est réussie à partir de … % de bonnes réponses du premier coup (50 à 100)"); lp.setAttribute("for", "calcP"); pd.appendChild(lp); pd.appendChild(p); f.appendChild(pd);
       var lv = el("label", "", ""); lv.style.display = "flex"; lv.style.gap = "8px"; lv.style.alignItems = "center"; v.style.width = v.style.height = "20px"; lv.appendChild(v); lv.appendChild(document.createTextNode("Lire automatiquement le nombre à voix haute (ÉCOUTER)")); vd.appendChild(lv); f.appendChild(vd);
-      var boxes = {};
+      var boxes = {}, orders = {}, lists = {};
+      /* Une colonne par domaine : étapes numérotées dans l'ordre où les élèves les verront, avec ▲ / ▼ ; ordre = étapes cochées d'abord (dans l'ordre enregistré), les autres ensuite */
       Object.keys(ACT).forEach(function (a) {
-        var fs = el("fieldset"), lg = el("legend", "", ACT[a].icon + " " + ACT[a].title + " — étapes proposées aux élèves"), cs = el("div", "calc-levels"), on = enabled(a); fs.style.border = "0"; fs.style.padding = "0"; fs.style.margin = "0"; lg.style.fontWeight = "800"; fs.appendChild(lg); boxes[a] = [];
-        E.LEVELS[a].forEach(function (lv2) { var l = el("label"), i = el("input"); i.type = "checkbox"; i.value = lv2.id; i.checked = on.indexOf(lv2.id) >= 0; boxes[a].push(i); l.appendChild(i); l.appendChild(document.createTextNode(lv2.animal.e + " " + lv2.label)); cs.appendChild(l); });
-        fs.appendChild(cs); f.appendChild(fs);
+        var fs = el("fieldset"), lg = el("legend", "", ACT[a].icon + " " + ACT[a].title + " — étapes proposées aux élèves, dans l’ordre"), list = el("ol", "calc-order"), on = enabled(a);
+        fs.style.border = "0"; fs.style.padding = "0"; fs.style.margin = "0"; lg.style.fontWeight = "800"; fs.appendChild(lg);
+        orders[a] = on.concat(E.LEVELS[a].map(function (l) { return l.id; }).filter(function (id) { return on.indexOf(id) < 0; })); boxes[a] = {}; lists[a] = list;
+        orders[a].forEach(function (id) { boxes[a][id] = on.indexOf(id) >= 0; });
+        fs.appendChild(list); f.appendChild(fs); paint(a);
       });
-      f.appendChild(el("p", "muted", "L’élève ne voit que les étapes déjà réussies et la suivante : l’ordre des étapes est celui de la liste."));
+      function paint(a) {
+        var list = lists[a], ord = orders[a]; clear(list);
+        ord.forEach(function (id, i) {
+          var lv2 = E.levelInfo(a, id), li = el("li", "calc-step"), cb = el("input"), lab = el("label"), up = el("button", "secondary mv", "▲"), dn = el("button", "secondary mv", "▼");
+          cb.type = "checkbox"; cb.value = id; cb.checked = !!boxes[a][id]; cb.addEventListener("change", function () { boxes[a][id] = cb.checked; });
+          lab.appendChild(el("span", "n", (i + 1) + ".")); lab.appendChild(cb); lab.appendChild(document.createTextNode(" " + lv2.animal.e + " " + lv2.label));
+          up.type = dn.type = "button"; up.setAttribute("aria-label", "Monter l’étape " + lv2.label); dn.setAttribute("aria-label", "Descendre l’étape " + lv2.label); up.disabled = i === 0; dn.disabled = i === ord.length - 1;
+          up.addEventListener("click", function () { ord.splice(i, 1); ord.splice(i - 1, 0, id); paint(a); queue(); }); dn.addEventListener("click", function () { ord.splice(i, 1); ord.splice(i + 1, 0, id); paint(a); queue(); });
+          li.appendChild(lab); li.appendChild(up); li.appendChild(dn); list.appendChild(li);
+        });
+      }
+      f.appendChild(el("p", "muted", "L’élève ne voit que les étapes déjà réussies et la suivante : l’ordre des étapes est celui de cette liste (cochez celles que vous proposez)."));
       function collect() {
-        var levels = {}; Object.keys(boxes).forEach(function (a) { levels[a] = boxes[a].filter(function (i) { return i.checked; }).map(function (i) { return i.value; }); });
+        var levels = {}; Object.keys(orders).forEach(function (a) { levels[a] = orders[a].filter(function (id) { return boxes[a][id]; }); });
         return { questions: +q.value, pass: +p.value, voice: v.checked, levels: levels };
       }
+      var okTimer = null;
       function setState(t, cls) { st.textContent = t; st.className = "save-state " + (cls || ""); }
       function flush() {
         var s2 = collect(); if (Object.keys(s2.levels).some(function (k) { return !s2.levels[k].length; })) { setState("⚠️ Gardez au moins une étape par activité.", "err"); return; }
-        rpc("lab_teacher_settings_set", { p_settings: s2 }).then(function (r) { settings = r || {}; setState("✓ Enregistré", "ok"); }).catch(function () { setState("⚠️ Non enregistré : vérifiez la connexion. Nouvel essai dans quelques secondes.", "err"); saveTimer = setTimeout(flush, 5000); });
+        rpc("lab_teacher_settings_set", { p_settings: s2 }).then(function (r) { settings = r || {}; setState("✓ Enregistré", "ok"); clearTimeout(okTimer); okTimer = setTimeout(function () { if (st.className.indexOf("ok") >= 0) setState("", ""); }, 2000); }).catch(function () { setState("⚠️ Non enregistré : vérifiez la connexion. Nouvel essai dans quelques secondes.", "err"); saveTimer = setTimeout(flush, 5000); });
       }
       function queue() { setState("Modifications en cours…", "pending"); clearTimeout(saveTimer); saveTimer = setTimeout(flush, 1000); }
       f.addEventListener("input", queue); f.addEventListener("change", queue);
