@@ -80,6 +80,9 @@
   .msg { min-height: 2.4em; font-weight: 800; font-size: 1.15rem; }
   .msg.good { color: #17794f; } .msg.bad { color: #b3261e; }
   .nline { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; margin: 6px auto 10px; max-width: 640px; }
+  .nline b.st { outline: 3px solid var(--ink); outline-offset: -3px; } .nline b.s1 { background: #cfeeed; border-color: #0b7f7d; } .nline b.s2 { background: #ffe2b8; border-color: #c9740c; }
+  .hint { margin: 4px auto 8px; max-width: 640px; font-weight: 700; text-align: center; } .hint .h1 { color: #0b7f7d; } .hint .h2 { color: #b45f06; }
+  .pairs { display: grid; gap: 4px 2px; justify-items: center; width: 100%; max-width: 560px; overflow: hidden; margin: 6px auto; padding: 8px; border: 2px dashed var(--line); border-radius: 14px; } .pairs span { line-height: 1.1; } .pairs .ghost { width: 1em; height: 1em; border: 2px dashed var(--line); border-radius: 50%; opacity: .6; } .pairs .extra { background: #ffe2b8; border-radius: 50%; }
   .nline b { min-width: 34px; padding: 6px 0; border-radius: 8px; background: var(--card); border: 2px solid var(--line); font-size: 1rem; }
   .crow { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 10px; }
   .stars { font-size: 3rem; letter-spacing: 6px; }
@@ -373,19 +376,43 @@
     var p = el("div", "pic"), ico = ANIMALS[(R.i + q.a) % ANIMALS.length]; p.setAttribute("aria-hidden", "true");
     if (q.type === "addition" && q.hole) { p.appendChild(group(q.a, ico)); p.appendChild(el("span", "sign", "+")); p.appendChild(el("span", "sign", "?")); }
     else if (q.type === "addition") { p.appendChild(group(q.a, ico)); p.appendChild(el("span", "sign", "+")); p.appendChild(group(q.b, ico)); }
+    else if (q.level === "s5") {   /* écart : deux rangées face à face, les animaux sans partenaire sont mis en couleur */
+      var pr = el("div", "pairs"), k; pr.style.gridTemplateColumns = "repeat(" + q.a + ", 1fr)"; pr.style.fontSize = "min(1.7rem, calc(62vw / " + q.a + "))";
+      for (k = 0; k < q.a; k++) pr.appendChild(el("span", k >= q.b ? "extra" : "", ico));
+      for (k = 0; k < q.a; k++) pr.appendChild(k < q.b ? el("span", "", ico) : el("span", "ghost", ""));
+      p.style.display = "block"; p.appendChild(pr);
+    }
     else { p.appendChild(group(q.a, ico)); p.appendChild(el("span", "sign", "−")); p.appendChild(group(q.b, ico)); }   /* soustraction : comme l'addition, seulement le signe « − » (rien n'est barré : l'élève doit comprendre l'opération) */
     return p;
   }
   function numberLine(q) {
     var cap = q.level === "a8" ? 0 : Math.max(10, Math.min(20, q.a + q.b + 2)), l = el("div", "nline"), k;
     if (!cap) { for (k = 10; k <= 100; k += 10) l.appendChild(el("b", "", String(k))); return l; }
-    for (k = 0; k <= cap; k++) l.appendChild(el("b", "", String(k)));
+    var sp = split(q);
+    for (k = 0; k <= cap; k++) {
+      var c = "";
+      if (sp) { if (k === sp.from) c = "st"; else if (k > sp.from && k <= sp.mid) c = "s1"; else if (k > sp.mid && k <= sp.to) c = "s2"; }
+      l.appendChild(el("b", c, String(k)));
+    }
     return l;
+  }
+  /* Aide qui montre la procédure : passer par 10 en addition, de b à a pour l'écart (jamais la validation de la réponse) */
+  function split(q) {
+    if (q.type === "addition" && !q.hole && q.a % 10 && q.a % 10 + q.b > 10) { var t = q.a - q.a % 10 + 10; return { from: q.a, mid: t, to: q.a + q.b, kind: "ten" }; }
+    if (q.level === "s5") return { from: q.b, mid: q.a, to: q.a, kind: "gap" };
+    return null;
+  }
+  function helpText(q) {
+    var sp = split(q), h = el("p", "hint"); if (!sp) return { node: null, say: "" };
+    if (sp.kind === "gap") { h.textContent = "De " + q.b + " à " + q.a + ", combien de pas ?"; return { node: h, say: "De " + E.words(q.b) + " à " + E.words(q.a) + ", combien de pas ?" }; }
+    var c = sp.mid - q.a, r = q.b - c, W = E.words;
+    h.appendChild(el("span", "h1", q.a + " + " + c + " = " + sp.mid)); h.appendChild(document.createTextNode(" · il reste ")); h.appendChild(el("span", "h2", String(r))); h.appendChild(document.createTextNode(" · ")); h.appendChild(el("span", "h2", sp.mid + " + " + r + " = " + sp.to));
+    return { node: h, say: W(q.a) + " plus " + W(c) + ", " + W(sp.mid) + ". Il reste " + W(r) + ". " + W(sp.mid) + " plus " + W(r) + ", " + W(sp.to) + "." };
   }
   function question() {
     V.stop();
     var box = $("view"); clear(box);
-    var q = R.qs[R.i], mistakes = 0, firstTry = true, t0 = Date.now(), answered = false, helped = false, card = el("div", "card calc-card");
+    var q = R.qs[R.i], openHelp = null, mistakes = 0, firstTry = true, t0 = Date.now(), answered = false, helped = false, card = el("div", "card calc-card");
     R.q = q;
     var quit = el("button", "secondary home-small", "← Arrêter"); quit.type = "button"; quit.addEventListener("click", function () { goTo(R.act); }); card.appendChild(quit);
     card.appendChild(dots());
@@ -400,10 +427,15 @@
       st.appendChild(el("div", "eq", q.hole ? q.text.replace("?", "…") : q.text + " = …"));
       if (q.aid === "see") st.appendChild(picture(q));
       var hb = el("button", "secondary home-small", "🧩 Je m’aide"); hb.type = "button"; hb.setAttribute("aria-expanded", "false"); var lineBox = el("div");
+      openHelp = function (speak) {
+        if (!helped) { helped = true; R.helps++; }
+        if (lineBox.firstChild) return;
+        var w = el("div"), ht = helpText(q); w.appendChild(numberLine(q)); if (ht.node) w.appendChild(ht.node); lineBox.appendChild(w); hb.setAttribute("aria-expanded", "true");
+        if (speak && ht.say && S.settings.voice !== false) V.speak(ht.say);
+      };
       hb.addEventListener("click", function () {
         if (lineBox.firstChild) { lineBox.removeChild(lineBox.firstChild); hb.setAttribute("aria-expanded", "false"); return; }
-        if (!helped) { helped = true; R.helps++; }
-        lineBox.appendChild(numberLine(q)); hb.setAttribute("aria-expanded", "true");
+        openHelp(true);
       });
       var sq = el("button", "secondary home-small", "🔊"); sq.type = "button"; sq.setAttribute("aria-label", "Lire à voix haute"); sq.addEventListener("click", function () { V.speak(q.say); });
       var rw = el("div", "crow"); rw.appendChild(sq); rw.appendChild(hb); st.appendChild(rw); st.appendChild(lineBox);
@@ -424,9 +456,15 @@
           setTimeout(function () { if (!R || R.q !== q) return; R.i++; if (R.i < R.qs.length) question(); else finish(); }, wait);
         } else {
           mistakes++; firstTry = false; b.classList.add("bad"); b.disabled = true;
-          msg.className = "msg bad"; msg.textContent = mistakes >= 2 ? "Regarde bien, la bonne réponse est colorée." : "Pas tout à fait. Essaie encore 💪";
-          if (mistakes >= 2) btns.forEach(function (x) { if (x.textContent === String(q.answer)) x.style.borderColor = "#17794f"; });
-          if (q.type === "nombres") { R.replays++; V.speak(q.say); }
+          msg.className = "msg bad";
+          /* après deux erreurs : une aide qui montre comment faire (jamais la réponse validée à la place de l'élève) ; après trois, la bonne réponse est colorée */
+          if (mistakes === 2) {
+            if (q.type === "nombres") { msg.textContent = "Écoute encore : « " + q.say + " »"; R.replays++; V.speak(q.say); }
+            else { msg.textContent = "Regarde l’aide, elle te montre comment faire 🧩"; if (openHelp) openHelp(true); }
+          } else if (mistakes >= 3) {
+            msg.textContent = "Regarde bien, la bonne réponse est colorée.";
+            btns.forEach(function (x) { if (x.textContent === String(q.answer)) x.style.borderColor = "#17794f"; });
+          } else { msg.textContent = "Pas tout à fait. Essaie encore 💪"; if (q.type === "nombres") { R.replays++; V.speak(q.say); } }
         }
       });
       cs.appendChild(b);
