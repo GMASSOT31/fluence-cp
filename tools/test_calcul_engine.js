@@ -57,5 +57,22 @@ ok(new Set(r.map(function (q) { return q.answer; })).size === 10, "série n4 san
 });
 ok(E.suggestLevel("addition", [], {}) === "a1" && E.suggestLevel("addition", ["a1", "a2"], { "addition:a1": { ok: 1 } }) === "a2", "niveau suggéré");
 ok(E.status(null) === "new" && E.status({ r: 1, ok: 0 }) === "todo" && E.status({ r: 2, ok: 1 }) === "done" && E.status({ r: 3, ok: 2 }) === "mastered", "statuts");
+/* animaux : un par étape, vitesses strictement croissantes dans chaque activité, emojis tous différents */
+var seenE = {};
+Object.keys(E.LEVELS).forEach(function (act) {
+  var prev = -1;
+  E.LEVELS[act].forEach(function (lv) {
+    ok(lv.animal && lv.animal.e && lv.animal.nom && lv.animal.kmh > prev, act + ":" + lv.id + " animal absent ou pas plus rapide que le précédent");
+    ok(!seenE[lv.animal.e], "animal en double : " + lv.animal.e); seenE[lv.animal.e] = 1; prev = lv.animal.kmh;
+  });
+});
+ok(E.animalOf("nombres", "n1").nom === "l’escargot" && E.animalOf("nombres", "n11").nom === "le guépard", "du plus lent (n1) au plus rapide (n11)");
+/* étapes visibles : réussies + la suivante seulement */
+ok(E.visibleLevels("nombres", [], {}).join() === "n1", "départ : seule la 1re étape");
+ok(E.visibleLevels("nombres", [], { "nombres:n1": { ok: 1 } }).join() === "n1,n2", "n1 réussie → n1, n2");
+ok(E.visibleLevels("nombres", [], { "nombres:n1": { ok: 1 }, "nombres:n2": { ok: 0, r: 2 } }).join() === "n1,n2", "n2 tentée sans réussite : la suite reste cachée");
+ok(E.visibleLevels("addition", ["a1", "a2", "a3", "a4"], { "addition:a1": { ok: 2 }, "addition:a2": { ok: 1 }, "addition:a3": { ok: 1 }, "addition:a4": { ok: 1 } }).join() === "a1,a2,a3,a4", "tout réussi : toutes les étapes ouvertes");
+ok(E.visibleLevels("addition", ["a3", "a4"], {}).join() === "a3", "ordre et choix de l’enseignant respectés");
+ok(E.topAnimal({ "nombres:n3": { ok: 1 }, "addition:a2": { ok: 1 } }).e === "🐿️" && E.topAnimal({}) === null, "animal le plus rapide éclos : 🐿️ (20 km/h) devant 🦔 (7 km/h)");
 console.log(fails ? fails + " ÉCHEC(S) sur " + checks + " contrôles" : "TOUS LES CONTRÔLES PASSENT (" + checks + ")");
 process.exit(fails ? 1 : 0);

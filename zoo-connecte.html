@@ -6678,7 +6678,9 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       if(["s","m","t"].includes(p.selKind))data.sel.kind=p.selKind;
       if(!data.sel.sound)applySuggestion();
       ses.role="student";ses.sid=st.student_id;ses.viaTeacher=false;ses.unlocked=false;ses.teacherAuth=false;
-      setMode();show("home");document.documentElement.classList.remove("booting");
+      /* ?vue=boutique|jeux : ouvre directement la boutique ou la salle d’arcade (liens du Zoo de Calcul vers ces espaces partagés) */
+      var wantView=(/[?&]vue=(boutique|jeux)(&|$)/.exec(location.search)||[])[1];
+      setMode();show(wantView||"home");document.documentElement.classList.remove("booting");
       var bar=document.createElement("div");
       bar.id="cloud-status";bar.className="cs-ok";bar.style.cssText="position:fixed;bottom:10px;left:10px;z-index:9999;background:#372465;color:white;border-radius:12px;padding:8px 12px;font:13px system-ui;box-shadow:0 3px 12px #0005";
       bar.append(document.createTextNode("☁️ Connecté(e) · "+st.nickname));cloudStatusNode=bar;bar.dataset.nickname=st.nickname;

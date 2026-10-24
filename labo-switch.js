@@ -33,7 +33,8 @@
       var st = document.createElement("style");   /* sur téléphone/tablette, au-dessus de la barre du bas (5 boutons) */
       st.textContent = "#labo-switch{position:fixed;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:40;min-height:48px;display:inline-flex;align-items:center;" +
         "padding:8px 16px;border-radius:999px;background:#0b7f7d;color:#fff;font:800 16px Figtree,system-ui,sans-serif;text-decoration:none;border:3px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,.3)}" +
-        "@media (max-width:880px){#labo-switch{bottom:calc(92px + env(safe-area-inset-bottom,0px))}}";
+        "@media (max-width:880px){#labo-switch{bottom:calc(92px + env(safe-area-inset-bottom,0px))}}" +
+        "body.playing #labo-switch,body.listen-focus #labo-switch,body.reading-focus #labo-switch{display:none}";
       document.head.appendChild(st);
       document.body.appendChild(a);
     }
