@@ -103,7 +103,8 @@
   .pill.done { border-color: #17794f; color: #17794f; } .pill.mastered { border-color: var(--calc); color: var(--calc); }
   @media (max-width: 600px) { .choices.c6 { grid-template-columns: repeat(2,1fr); } .choices { gap: 10px; } .choice { min-height: 78px; font-size: 2.1rem; } }
   @media (prefers-reduced-motion: reduce) { .choice.bad { animation: none; } }
-  #labo-switch{display:inline-flex;margin-top:14px;border:2px solid rgba(255,255,255,.75);border-radius:999px;overflow:hidden;background:rgba(0,0,0,.25)}#labo-switch a,#labo-switch span{min-height:44px;display:inline-flex;flex-direction:row;white-space:nowrap;gap:5px;line-height:1;align-items:center;padding:6px 16px;font:800 16px Figtree,system-ui,sans-serif;color:#fff;text-decoration:none}#labo-switch .on{background:#fff;color:#201049}body.mode-student #labo-switch{display:inline-flex!important}@media (max-width:650px){#labo-switch a,#labo-switch span{padding:6px 11px;font-size:15px}}
+  #labo-switch{display:inline-flex;height:28px;margin-top:0;border:2px solid rgba(255,255,255,.75);border-radius:999px;overflow:hidden;background:rgba(0,0,0,.25)}#labo-switch a,#labo-switch span{display:inline-flex;align-items:center;flex-direction:row;white-space:nowrap;gap:4px;line-height:1;padding:0 11px;font:800 14px Figtree,system-ui,sans-serif;color:#fff;text-decoration:none}#labo-switch .on{background:#fff;color:#201049}body.mode-student #labo-switch{display:inline-flex!important}@media (max-width:650px){#labo-switch a:not(.on) b{display:none}#labo-switch a{min-width:38px;justify-content:center;padding:0 9px}#labo-switch span{padding:0 10px;font-size:13.5px}}
+  .evo .big-btn.secondary{background:#fff;color:#201049;border:3px solid #fff}
 </style>
 </head>
 <body class="mode-student calc">
@@ -115,7 +116,7 @@
         <span class="zoo-kicker">✦ LE GRAND JEU DU CALCUL ✦</span>
         <div class="brand"><h1>Zoo de <span>Calcul</span></h1><span class="sub">Apprendre en s’amusant</span></div>
         <span class="zoo-hero-tag">➕ Compte · 🏆 Progresse · 🎮 Joue !</span>
-        <div id="labo-switch" role="group" aria-label="Matière"><a href="zoo-connecte.html">📖 Lecture</a><span class="on">➕ Calcul</span></div>
+        <div id="labo-switch" role="group" aria-label="Matière"><a href="zoo-connecte.html" aria-label="Zoo de Lecture" title="Zoo de Lecture">📖<b> Lecture</b></a><span class="on">➕ Calcul</span></div>
       </div>
       <div class="zoo-hero-art" aria-hidden="true"><span class="zoo-star zoo-star-one">✦</span><span class="zoo-mascot zoo-bee" id="mascot-1">🐌</span><span class="zoo-mascot zoo-llama" id="mascot-2">🐕</span><span class="zoo-mascot zoo-owl" id="mascot-3">🐆</span><span class="zoo-star zoo-star-two">✧</span><span class="zoo-pad">➕ <span>● ●</span></span></div>
     </div>
@@ -294,7 +295,7 @@
   function fitFrame() {
     var f = $("zoo-frame"); if (!f || document.body.classList.contains("zoo-playing")) return;
     var nav = $("bottom-nav"), bottom = nav && !nav.hidden && getComputedStyle(nav).display !== "none" ? nav.offsetHeight : 0, top = Math.max(0, f.getBoundingClientRect().top);
-    f.style.height = Math.max(420, window.innerHeight - top - bottom - 14) + "px";
+    f.style.height = Math.max(360, window.innerHeight - top - bottom - 14) + "px";
   }
   window.addEventListener("resize", fitFrame);
   window.addEventListener("message", function (ev) {
