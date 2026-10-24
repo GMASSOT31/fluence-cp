@@ -143,13 +143,14 @@
   function statusTxt(e) { var s = E.status(e); return s === "mastered" ? "⭐ maîtrisé" : s === "done" ? "✓ réussi" : s === "todo" ? "🕒 à travailler" : "pas encore commencé"; }
   function studentRow(s) {
     var p = s.progress || {}, lv = p.levels || {}, nums = Object.keys(p.nums || {}).length, calcs = Object.keys(p.calcs || {}).length;
-    var ok = Object.keys(lv).filter(function (k) { return lv[k].ok >= 1; }).length, mast = Object.keys(lv).filter(function (k) { return lv[k].ok >= 2; }).length, ts = lastTs(p), days = ts ? Math.floor((Date.now() - ts) / 864e5) : null;
+    function scoped(k) { var a = k.split(":"); return enabled(a[0]).indexOf(a[1]) >= 0; }   /* périmètre = étapes activées dans vos réglages ; les réussites des autres restent acquises */
+    var okAll = Object.keys(lv).filter(function (k) { return lv[k].ok >= 1; }), ok = okAll.filter(scoped).length, hid = okAll.length - ok, mast = Object.keys(lv).filter(function (k) { return lv[k].ok >= 2 && scoped(k); }).length, ts = lastTs(p), days = ts ? Math.floor((Date.now() - ts) / 864e5) : null;
     var wrap = el("div", "row progress-row"), info = el("div"), glance = el("div", "pg-row");
     function chip(cls, t, tip) { var c = el("span", "pg-chip " + cls, t); if (tip) c.title = tip; return c; }
     info.appendChild(el("strong", "", s.nickname));
     glance.appendChild(chip(days === null || days >= 7 ? "warn" : "ok", "🕒 Dernière activité : " + dayText(ts)));
     glance.appendChild(chip("next", "➡️ Prochaine étape : " + nextStep(lv)));
-    glance.appendChild(chip(ok ? "ok" : "", "✓ " + ok + " " + pl(ok, "étape réussie", "étapes réussies") + (mast ? " · ⭐ " + mast + " " + pl(mast, "maîtrisée", "maîtrisées") : "")));
+    glance.appendChild(chip(ok ? "ok" : "", "✓ " + ok + " " + pl(ok, "étape réussie", "étapes réussies") + (mast ? " · ⭐ " + mast + " " + pl(mast, "maîtrisée", "maîtrisées") : "") + (hid ? " (+ " + hid + " hors étapes proposées)" : ""), hid ? (okAll.length + " étapes réussies au total, dont " + hid + " désactivée" + (hid > 1 ? "s" : "") + " dans vos réglages : ces réussites sont conservées.") : null));
     info.appendChild(glance); wrap.appendChild(info);
     var btn = el("button", "secondary", "Détails"); btn.type = "button"; btn.setAttribute("aria-expanded", "false"); btn.title = "Voir les détails de " + s.nickname;
     var details = el("div", "muted hidden"); details.style.cssText = "width:100%";
@@ -159,7 +160,7 @@
     [["🔢 " + nums + " " + pl(nums, "nombre reconnu", "nombres reconnus") + " sur 101", "Nombres trouvés du premier coup dans ÉCOUTER"], ["🧮 " + calcs + " " + pl(calcs, "calcul gagné", "calculs gagnés"), "Additions et soustractions réussies du premier coup"]]
       .forEach(function (x) { var c = el("span", "pd-chip", x[0]); c.title = x[1]; chips.appendChild(c); });
     details.appendChild(chips);
-    details.appendChild(el("div", "pd-foot", "Une étape = un niveau d’un exercice. « Réussi » : au moins une série au seuil réglé ; « maîtrisé » : au moins deux séries réussies."));
+    details.appendChild(el("div", "pd-foot", "Une étape = un niveau d’un exercice. « Réussi » : au moins une série au seuil réglé (bonnes réponses du premier coup, sans compter les aides) ; « maîtrisé » : au moins deux séries réussies. Les compteurs ne comptent que les étapes activées dans vos réglages ; les réussites des étapes désactivées restent conservées."));
     btn.addEventListener("click", function () { details.classList.toggle("hidden"); var open = !details.classList.contains("hidden"); btn.textContent = open ? "Masquer" : "Détails"; btn.setAttribute("aria-expanded", String(open)); });
     var acts = el("div", "row-actions"); acts.appendChild(btn); wrap.appendChild(acts); wrap.appendChild(details); return wrap;
   }

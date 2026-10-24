@@ -146,7 +146,11 @@
   /* Étapes visibles pour l'élève : celles déjà réussies + la suivante (jamais les autres). enabled = ordre choisi par l'enseignant. */
   function visibleLevels(activity, enabled, levels) {
     var list = (enabled && enabled.length ? enabled : DEFAULT_LEVELS[activity]).filter(function (id) { return levelInfo(activity, id); }), out = [], i;
-    for (i = 0; i < list.length; i++) { out.push(list[i]); if (!((levels || {})[activity + ":" + list[i]] || {}).ok) break; }
+    var next = false;   /* toute étape réussie reste visible (même après un trou dans l'ordre), plus la première pas encore réussie */
+    for (i = 0; i < list.length; i++) {
+      if (((levels || {})[activity + ":" + list[i]] || {}).ok) out.push(list[i]);
+      else if (!next) { out.push(list[i]); next = true; }
+    }
     return out;
   }
   /* Animal le plus rapide déjà éclos (toutes activités confondues), ou null */

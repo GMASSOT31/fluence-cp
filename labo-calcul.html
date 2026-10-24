@@ -180,7 +180,7 @@
 
 <script src="labo-config.js"></script>
 <script src="vendor/supabase.js?v=2.118.0"></script>
-<script src="calcul/engine.js?v=3"></script>
+<script src="calcul/engine.js?v=4"></script>
 <script src="calcul/zoo-effects.js?v=1"></script>
 <script src="calcul/voice.js?v=1"></script>
 <script>
@@ -256,8 +256,12 @@
   }
 
   /* ===== Chiffres : niveau = niveaux réussis, nombres = nombres reconnus ===== */
-  function levelsDone() { return Object.keys(S.levels).filter(function (k) { return (S.levels[k].ok || 0) >= 1; }).length; }
-  function levelsMastered() { return Object.keys(S.levels).filter(function (k) { return (S.levels[k].ok || 0) >= 2; }).length; }
+  /* Périmètre = les étapes proposées par l'enseignant. Les réussites hors périmètre (étape désactivée depuis) restent acquises : on les signale à part, on ne les efface jamais. */
+  function inScope(k) { var a = k.split(":"); return enabledLevels(a[0]).indexOf(a[1]) >= 0; }
+  function levelKeys(min, scoped) { return Object.keys(S.levels).filter(function (k) { return (S.levels[k].ok || 0) >= min && (!scoped || inScope(k)); }); }
+  function levelsDone() { return levelKeys(1, true).length; }
+  function levelsMastered() { return levelKeys(2, true).length; }
+  function levelsHidden() { return levelKeys(1, false).length - levelsDone(); }
   function numsCount() { return Object.keys(S.nums).length; }
   function calcsCount() { return Object.keys(S.calcs).length; }
   function suggest(act) { return E.suggestLevel(act, enabledLevels(act), S.levels); }
@@ -564,7 +568,7 @@
   function petCards(card, act) {
     var visible = E.visibleLevels(act, enabledLevels(act), S.levels), grid = el("div", "zoo-grid");
     enabledLevels(act).forEach(function (id) {
-      var lv = E.levelInfo(act, id), e = S.levels[act + ":" + id], locked = visible.indexOf(id) < 0, b = el("div", "zoo-card" + (locked ? " locked" : ""));
+      var lv = E.levelInfo(act, id), e = S.levels[act + ":" + id], locked = visible.indexOf(id) < 0 && !(e && e.ok), b = el("div", "zoo-card" + (locked ? " locked" : ""));
       b.appendChild(pet(act, id, locked));
       b.appendChild(el("div", "son", lv.label));
       b.appendChild(el("div", "cap", locked ? "Pas encore" : e && e.ok ? cap1(lv.animal.nom) : "Un œuf à faire éclore"));
@@ -605,14 +609,18 @@
   function progressView(box) {
     var card = el("div", "card calc-card");
     card.appendChild(el("h2", "", "Ma progression"));
-    card.appendChild(el("p", "muted", "✓ " + nb(levelsDone(), "niveau réussi", "niveaux réussis") + " · ⭐ " + nb(levelsMastered(), "niveau maîtrisé", "niveaux maîtrisés") + " · 👂 " + numsCount() + " nombres sur 101 · 🧮 " + nb(calcsCount(), "calcul gagné", "calculs gagnés")));
+    var hid = levelsHidden();
+    card.appendChild(el("p", "muted", "✓ " + nb(levelsDone(), "niveau réussi", "niveaux réussis") + (hid ? " (" + (levelsDone() + hid) + " au total, dont " + nb(hid, "masqué", "masqués") + " par ton enseignant)" : "") + " · ⭐ " + nb(levelsMastered(), "niveau maîtrisé", "niveaux maîtrisés") + " · 👂 " + numsCount() + " nombres sur 101 · 🧮 " + nb(calcsCount(), "calcul gagné", "calculs gagnés")));
+    card.appendChild(el("p", "muted", "✓ Réussi : une série avec au moins " + Math.min(Math.max(parseInt(S.settings.pass, 10) || 80, 50), 100) + " % de bonnes réponses du premier coup. ⭐ Maîtrisé : deux séries réussies. Une aide ou une erreur ne compte pas comme « du premier coup »."));
     ["nombres", "addition", "soustraction"].forEach(function (act) {
       card.appendChild(el("h2", "", ACT[act].icon + " " + ACT[act].title));
       E.visibleLevels(act, enabledLevels(act), S.levels).forEach(function (id) {
         var lv = E.levelInfo(act, id), e = S.levels[act + ":" + id], row = el("div", "prog-row");
         row.appendChild(el("span", "nm", (e && e.ok ? lv.animal.e : "🥚") + " " + lv.label));
         if (e && e.q) row.appendChild(el("span", "sc", nb(e.r, "série", "séries") + " · " + Math.round(e.c * 100 / e.q) + " % du premier coup"));
-        var st = E.status(e); row.appendChild(el("span", "pill " + st, statusText(act, id))); card.appendChild(row);
+        var st = E.status(e); row.appendChild(el("span", "pill " + st, statusText(act, id)));
+        if (st === "done") row.appendChild(el("span", "sc", "encore une série réussie pour ⭐"));
+        card.appendChild(row);
       });
     });
     box.appendChild(card);
