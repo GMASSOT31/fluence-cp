@@ -77,8 +77,12 @@
     },
     lab_teacher_results: function () {
       needTeacher();
-      return [{ student_id: "s1", nickname: "lea", class_id: "c1", class_name: "CP-A", progress: { levels: lab.me.levels, hist: lab.me.hist } },
-              { student_id: "s2", nickname: "leo", class_id: "c1", class_name: "CP-A", progress: {} }];
+      var rich = { levels: { "nombres:n1": { r: 3, q: 30, c: 27, rp: 4, h: 0, ms: 1800, ok: 2, best: 100, last: "2026-11-12T10:00:00+01:00" }, "nombres:n2": { r: 1, q: 10, c: 5, rp: 2, h: 0, ms: 2500, ok: 0, best: 50, last: "2026-11-12T10:00:00+01:00" },
+                              "addition:a1": { r: 1, q: 10, c: 9, rp: 0, h: 1, ms: 2000, ok: 1, best: 90, last: "2026-11-12T10:00:00+01:00" } },
+                   hist: [{ t: new Date(Date.now() - 2 * 864e5).toISOString(), k: "nombres:n1", c: 9, n: 10, ok: true }], nums: { "3": 2, "7": 1, "10": 1 }, calcs: { "2+3": 1, "4+1": 2 } };
+      return [{ student_id: "s1", nickname: "lea", class_id: "c1", class_name: "CP-A", progress: lab.me.hist.length ? { levels: lab.me.levels, hist: lab.me.hist, nums: lab.me.nums, calcs: lab.me.calcs } : rich },
+              { student_id: "s2", nickname: "leo", class_id: "c1", class_name: "CP-A", progress: {} },
+              { student_id: "s3", nickname: "zoe", class_id: "c2", class_name: "CP-B", progress: {} }];
     },
     lab_admin_state: function () { needAdmin(); return { enabled: lab.enabled, access: lab.access, teachers: lab.teachers, students: lab.students }; },
     lab_admin_grant: function (a) {
@@ -90,8 +94,9 @@
     lab_admin_revoke: function (a) { needAdmin(); lab.access = lab.access.filter(function (r) { return r.id !== a.p_id; }); return null; },
     lab_admin_set_enabled: function (a) { needAdmin(); lab.enabled = !!a.p_enabled; return null; }
   };
+  window.__labApi = api;   /* l'API factice peut aussi servir à d'autres faux serveurs (page enseignant : tools/fake-labo-fetch.js) */
   var user = role === "out" ? null : { id: "t1", email: "enseignant@test.invalid" };
-  window.supabase = { createClient: function () { return {
+  if (!window.__labNoClient) window.supabase = { createClient: function () { return {
     rpc: function (name, args) {
       lab.calls.push(name);
       return new Promise(function (res) { setTimeout(function () {
@@ -101,5 +106,5 @@
     auth: { getUser: function () { return Promise.resolve({ data: { user: user }, error: null }); }, getSession: function () { return Promise.resolve({ data: { session: user ? { user: user } : null } }); },
             onAuthStateChange: function () { return { data: { subscription: { unsubscribe: function () {} } } }; } }
   }; } };
-  if (who !== "none") sessionStorage.setItem("zoo_student_token", "a".repeat(64)); else sessionStorage.removeItem("zoo_student_token");
+  if (!window.__labNoClient) { if (who !== "none") sessionStorage.setItem("zoo_student_token", "a".repeat(64)); else sessionStorage.removeItem("zoo_student_token"); }
 })();

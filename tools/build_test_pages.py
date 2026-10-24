@@ -11,7 +11,7 @@ Pages produites :
                           ?illimite=1  parties illimitées, ?prix4=1  roue à 4 pièces)
                          + window.__t : accès aux fonctions internes du Zoo pour les tests (uniquement ici)
   enseignants-test.html  Espace enseignant branché sur tools/fake-auth.js (admin par défaut, ?teacher=1 pour enseignant)
-  labo-calcul-test.html, labo-calcul-enseignant-test.html   Laboratoire de calcul (privé) branché sur tools/fake-labo.js
+  labo-calcul-test.html   Laboratoire de calcul (privé), côté élève, branché sur tools/fake-labo.js ; enseignants-test.html?role=admin|teacher|refuse montre aussi la bascule Calcul intégrée
                          (?who=ok|refuse|none, ?off=1, ?role=admin|teacher|refuse|out, ?fail=1 ; voir l'en-tête de fake-labo.js)
   eleve-test.html        Connexion élève branchée sur tools/fake-auth.js (PIN accepté : 4321)
   zoo-connecte.html, enseignants.html, eleve.html, demo.js, demo-tour.js : copies réelles ;
@@ -64,16 +64,19 @@ def main():
     zoo = zoo.replace("/*TEST_HOOK_FLAP*/", FLAP_HOOK, 1)   # accès à l'oiseau pour les tests (uniquement ici)
     zoo = zoo.replace("/*TEST_HOOK_TILES*/", TILES_HOOK, 1)
     write("zoo-test.html", zoo)
-    write("enseignants-test.html", swap_backend(read("enseignants.html"), "fake-auth.js"))
+    ens = swap_backend(read("enseignants.html"), "fake-auth.js")
+    # le calcul intégré à l'espace enseignant : les appels lab_* de la page sont servis par l'API factice (sans remplacer le faux client de la page)
+    ens = ens.replace('<script src="labo-config.js?v=1" defer></script>', '<script>window.__labNoClient=1</script><script src="fake-labo.js"></script><script src="fake-labo-fetch.js"></script>\n<script src="labo-config.js?v=1" defer></script>', 1)
+    write("enseignants-test.html", ens)
     write("eleve-test.html", swap_backend(read("eleve.html"), "fake-auth.js"))
     for name in ["zoo-connecte.html", "enseignants.html", "eleve.html", "index.html", "mentions-legales.html", "confidentialite.html", "demo.js", "demo-tour.js", "share.js", "zoo-embed.js"]:
         shutil.copy(os.path.join(ROOT, name), os.path.join(OUT, name))
     shutil.copytree(os.path.join(ROOT, "img"), os.path.join(OUT, "img"), dirs_exist_ok=True)
     shutil.copytree(os.path.join(ROOT, "guides"), os.path.join(OUT, "guides"), dirs_exist_ok=True)
-    for name in ["fake-supabase.js", "fake-auth.js", "fake-labo.js"]:
+    for name in ["fake-supabase.js", "fake-auth.js", "fake-labo.js", "fake-labo-fetch.js"]:
         shutil.copy(os.path.join(ROOT, "tools", name), os.path.join(OUT, name))
     # Laboratoire de calcul (privé) : pages branchées sur tools/fake-labo.js, plus les fichiers communs
-    for name in ["labo-calcul.html", "labo-calcul-enseignant.html"]:
+    for name in ["labo-calcul.html"]:
         page = swap_backend(read(name), "fake-labo.js")
         if name == "labo-calcul.html":
             page = page.replace("var ADVANCE_MS = 1100;", "var ADVANCE_MS = 40;")   # tests rapides : passage à la question suivante presque immédiat
