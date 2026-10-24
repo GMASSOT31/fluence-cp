@@ -17,6 +17,7 @@ create temp table before_hash as select md5(string_agg(t::text, '|' order by stu
 grant all on before_hash to public;
 \ir ../../supabase/migrations/20261112_labo_calcul.sql
 \ir ../../supabase/migrations/20261113_labo_collections.sql
+\ir ../../supabase/migrations/20261114_labo_monnaie_commune.sql
 
 create function pg_temp.expect_fail(sql text, label text) returns void language plpgsql as $$
 begin
@@ -170,3 +171,40 @@ set role authenticated; select pg_temp.expect_fail('select public.lab_teacher_re
 
 -- 7. Aucune modification des vraies données
 select pg_temp.expect((select md5(string_agg(t::text, '|' order by student_id)) from public.student_progress t) = (select h from before_hash), 'student_progress strictement inchangée (pièces et progression de lecture)');
+
+-- 8. Monnaie commune (interrupteur shared_wallet) : les pièces de calcul vont dans pending_coins du vrai portefeuille, une seule fois par série
+update public.app_settings set value = '{"enabled": true, "shared_wallet": true}' where key = 'lab_calcul';
+select md5(t::text) as s1_before from public.student_progress t where student_id = '51000000-0000-0000-0000-000000000001' \gset
+select pg_temp.expect((select count(*) from public.student_progress where student_id = '53000000-0000-0000-0000-000000000003') = 0, 'S3 n''a pas encore de ligne de progression de lecture');
+set role anon; select set_config('request.jwt.claim.sub','',false) \gset
+select set_config('t.r9', gen_random_uuid()::text, false) \gset
+select (public.lab_student_submit_round(repeat('3',64), current_setting('t.r9')::uuid, 'nombres', 'n1', 10, 10))->>'shared' as sh, (public.lab_student_state(repeat('3',64)))->>'test_coins' as tc \gset
+select pg_temp.expect(:'sh' = 'true' and :'tc' = '0', 'monnaie commune : série parfaite → portefeuille réel, aucune pièce de test');
+reset role;
+select pg_temp.expect((select pending_coins from public.student_progress where student_id = '53000000-0000-0000-0000-000000000003') = 2, 'S3 : pending_coins = 2 (ligne créée)');
+select pg_temp.expect((select sync_version from public.student_progress where student_id = '53000000-0000-0000-0000-000000000003') = 0 and (select progress from public.student_progress where student_id = '53000000-0000-0000-0000-000000000003') = '{}', 'S3 : progression de lecture intacte (version 0, vide)');
+set role anon; select set_config('request.jwt.claim.sub','',false) \gset
+select public.lab_student_submit_round(repeat('3',64), current_setting('t.r9')::uuid, 'nombres', 'n1', 10, 10) as r \gset
+reset role;
+select pg_temp.expect((select pending_coins from public.student_progress where student_id = '53000000-0000-0000-0000-000000000003') = 2, 'même série rejouée : aucun double crédit sur le vrai portefeuille');
+set role anon; select set_config('request.jwt.claim.sub','',false) \gset
+select public.lab_student_submit_round(repeat('3',64), gen_random_uuid(), 'addition', 'a1', 8, 10) as r \gset
+reset role;
+select pg_temp.expect((select pending_coins from public.student_progress where student_id = '53000000-0000-0000-0000-000000000003') = 3, 'série à 80 % : +1 pièce réelle (total 3)');
+-- l'élève S1 a déjà atteint le plafond du jour : rien n'est ajouté
+set role anon; select set_config('request.jwt.claim.sub','',false) \gset
+select public.lab_student_submit_round(repeat('1',64), gen_random_uuid(), 'nombres', 'n1', 10, 10) as r \gset
+reset role;
+select pg_temp.expect((select md5(t::text) from public.student_progress t where student_id = '51000000-0000-0000-0000-000000000001') = :'s1_before', 'S1 (plafond du jour atteint) : sa ligne de lecture n''a pas bougé');
+-- un élève non autorisé ne crédite rien
+set role anon; select set_config('request.jwt.claim.sub','',false) \gset
+select pg_temp.expect_fail('select public.lab_student_submit_round(repeat(''2'',64), gen_random_uuid(), ''nombres'', ''n1'', 10, 10)', 'S2 non autorisé : aucune série, aucun crédit');
+reset role;
+select pg_temp.expect((select pending_coins from public.student_progress where student_id = '52000000-0000-0000-0000-000000000002') = 0, 'S2 : pending_coins toujours 0');
+-- interrupteur « monnaie commune » coupé : retour aux pièces de test
+update public.app_settings set value = '{"enabled": true, "shared_wallet": false}' where key = 'lab_calcul';
+set role anon; select set_config('request.jwt.claim.sub','',false) \gset
+select (public.lab_student_submit_round(repeat('3',64), gen_random_uuid(), 'soustraction', 's1', 10, 10))->>'shared' as sh2 \gset
+select pg_temp.expect(:'sh2' = 'false' and (public.lab_student_state(repeat('3',64))->>'test_coins')::int = 2, 'monnaie commune coupée : pièces de TEST (2), vrai portefeuille inchangé');
+reset role;
+select pg_temp.expect((select pending_coins from public.student_progress where student_id = '53000000-0000-0000-0000-000000000003') = 3, 'S3 : pending_coins reste 3');

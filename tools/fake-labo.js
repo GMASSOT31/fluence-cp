@@ -1,6 +1,6 @@
 /* Faux client Supabase du LABO DE CALCUL (aucun appel réseau). Reproduit les règles de supabase/migrations/20261112_labo_calcul.sql :
    autorisation, interrupteur, tours idempotents, pièces de test calculées côté « serveur », plafond de 10 séries récompensées par jour.
-   Options d'URL : ?who=ok (élève autorisé, défaut) | refuse (élève non autorisé) | none (pas de jeton) ; ?off=1 (interrupteur serveur coupé) ;
+   Monnaie commune : activée par défaut (?shared=0 la coupe → pièces de test). Options d'URL : ?who=ok (élève autorisé, défaut) | refuse (élève non autorisé) | none (pas de jeton) ; ?off=1 (interrupteur serveur coupé) ;
    ?role=admin (défaut) | teacher (autorisé) | refuse (enseignant non autorisé) | out (non connecté) ; ?fail=1 (le rangement d'une série échoue une fois).
    Expose window.__lab (journal des appels, état). */
 (function () {
@@ -8,7 +8,7 @@
   var who = opt("who", "ok"), role = opt("role", "admin");
   var lab = window.__lab = {
     calls: [], enabled: !/[?&]off=1/.test(q), failOnce: /[?&]fail=1/.test(q),
-    realWallet: { coins: 13, credits: 20 },   /* « vrais » soldes de lecture : ne doivent JAMAIS bouger */
+    realWallet: { coins: 13, credits: 20 }, pending: 0, version: 5, shared: !/[?&]shared=0/.test(q),   /* « vrais » soldes de lecture : ne doivent JAMAIS bouger */
     me: { coins: 0, credits: 0, levels: {}, hist: [], nums: {}, calcs: {} }, rounds: {}, ops: {}, rewardedToday: 0,
     settings: {}, enabledSwitch: true,
     access: [{ id: "x1", kind: "teacher", subject_id: "t1", scope: "self_and_students", note: "moi", label: "Enseignant de test" }],
@@ -31,7 +31,12 @@
     },
     lab_student_state: function () { needStudent(); return mix({ progress: { levels: lab.me.levels, hist: lab.me.hist, nums: lab.me.nums, calcs: lab.me.calcs }, settings: lab.settings }); },
     student_session_profile: function () { needStudent(); return { student_id: "s1", nickname: /[?&]name=(\w+)/.test(q) ? RegExp.$1 : "Léa" }; },
-    student_get_progress_v2: function () { needStudent(); return { progress: { avatar: "🦊", coins: lab.realWallet.coins, credits: lab.realWallet.credits }, version: 1 }; },
+    student_get_progress_v2: function () { needStudent(); return { progress: { avatar: "🦊", coins: lab.realWallet.coins, credits: lab.realWallet.credits }, version: lab.version }; },
+    student_claim_coins: function (a) {
+      needStudent(); if (!lab.pending) return { claimed: 0, version: lab.version };
+      if (a.p_version !== lab.version) throw { message: "SYNC_CONFLICT" };
+      var n = lab.pending; lab.pending = 0; lab.realWallet.coins += n; lab.version++; return { claimed: n, coins: lab.realWallet.coins, version: lab.version };
+    },
     lab_student_submit_round: function (a) {
       needStudent();
       if (lab.failOnce) { lab.failOnce = false; throw { message: "Failed to fetch" }; }
@@ -39,7 +44,8 @@
       if (lab.rounds[a.p_round]) return mix({ inserted: false, coins: 0 });
       var pass = Math.min(Math.max(lab.settings.pass || 80, 50), 100), ok = a.p_correct * 100 >= pass * a.p_total, coins = 0;
       if (ok && a.p_total >= 5 && lab.rewardedToday < 10) { coins = a.p_correct === a.p_total ? 2 : 1; lab.rewardedToday++; }
-      lab.rounds[a.p_round] = coins; lab.me.coins += coins;
+      lab.rounds[a.p_round] = coins;
+      if (coins && lab.shared) lab.pending = Math.min(lab.pending + coins, 10000); else lab.me.coins += coins;
       var key = a.p_activity + ":" + a.p_level, c = lab.me.levels[key] || {}, s = a.p_stats || {};
       lab.me.levels[key] = { r: (c.r || 0) + 1, q: (c.q || 0) + a.p_total, c: (c.c || 0) + a.p_correct, rp: (c.rp || 0) + (s.replays || 0), h: (c.h || 0) + (s.helps || 0), ms: s.ms || 0,
         ok: (c.ok || 0) + (ok ? 1 : 0), best: Math.max(c.best || 0, Math.floor(a.p_correct * 100 / a.p_total)), last: "2026-11-12T10:00:00+01:00" };
@@ -47,7 +53,7 @@
       /* collections : comme le serveur — au plus p_correct éléments, nombres 0–100, calculs « a+b » / « a-b » cohérents avec l'activité */
       if (Array.isArray(s.nums) && s.nums.length <= a.p_correct && a.p_activity === "nombres") s.nums.forEach(function (n) { if (Number.isInteger(n) && n >= 0 && n <= 100) lab.me.nums[n] = Math.min((lab.me.nums[n] || 0) + 1, 99); });
       if (Array.isArray(s.calcs) && s.calcs.length <= a.p_correct && a.p_activity !== "nombres") s.calcs.forEach(function (k) { var m = /^(\d{1,3})([+-])(\d{1,3})$/.exec(k); if (m && (m[2] === "+") === (a.p_activity === "addition") && Object.keys(lab.me.calcs).length < 400) lab.me.calcs[k] = Math.min((lab.me.calcs[k] || 0) + 1, 99); });
-      return mix({ inserted: true, coins: coins, success: ok, level: lab.me.levels[key] });
+      return mix({ inserted: true, coins: coins, shared: !!(coins && lab.shared), success: ok, level: lab.me.levels[key] });
     },
     lab_student_buy_play: function (a) {
       needStudent(); if (lab.ops[a.p_op]) return mix({ done: false });
@@ -88,7 +94,7 @@
     rpc: function (name, args) {
       lab.calls.push(name);
       return new Promise(function (res) { setTimeout(function () {
-        try { if (!api[name]) throw { message: "fonction inconnue : " + name }; res({ data: api[name](args), error: null }); } catch (e) { res({ data: null, error: e }); }
+        try { if (!api[name]) throw { message: "fonction inconnue : " + name }; var out = api[name](args); res({ data: JSON.parse(JSON.stringify(out === undefined ? null : out)), error: null }); } catch (e) { res({ data: null, error: e }); }
       }, 15); });
     },
     auth: { getUser: function () { return Promise.resolve({ data: { user: user }, error: null }); }, getSession: function () { return Promise.resolve({ data: { session: user ? { user: user } : null } }); },

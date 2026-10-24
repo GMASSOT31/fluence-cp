@@ -78,11 +78,13 @@
   .nline b { min-width: 34px; padding: 6px 0; border-radius: 8px; background: var(--card); border: 2px solid var(--line); font-size: 1rem; }
   .crow { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 10px; }
   .stars { font-size: 3rem; letter-spacing: 6px; }
-  .mem { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; max-width: 520px; margin: 12px auto; }
-  .mc { min-height: 76px; border-radius: 16px; border: 3px solid var(--calc); background: var(--calc); color: #fff; font-family: Fredoka, Figtree, sans-serif; font-weight: 700; font-size: 1.1rem; padding: 4px; cursor: pointer; }
-  .mc.up { background: var(--card); color: var(--ink); } .mc.done { background: #d9f1e5; border-color: #17794f; color: #17794f; }
   /* collections */
   .ngrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 8px; }
+  .zoo-card .cap b { color: var(--ink); }
+  .zoo-card.locked { opacity: .55; }
+  .zoo-card .speed { font-size: .8rem; color: var(--muted); font-weight: 700; }
+  .reveal { margin: 10px auto; padding: 14px; max-width: 420px; border-radius: 18px; border: 3px solid #f4af24; background: #fff7d6; color: #5c3b00; }
+  .reveal .big-pet { font-size: 5rem; line-height: 1.1; }
   .ntile { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 64px; border-radius: 14px; border: 2px solid var(--line); background: var(--card); font: 700 1.3rem Fredoka, sans-serif; color: var(--ink); }
   .ntile small { font: 700 .7rem Figtree, sans-serif; color: var(--muted); }
   .ntile.off { opacity: .35; background: transparent; border-style: dashed; }
@@ -94,12 +96,12 @@
   .prog-row .nm { flex: 1 1 200px; font-weight: 700; } .prog-row .sc { color: var(--muted); font-size: .9rem; }
   .pill { display: inline-block; padding: 2px 9px; border-radius: 999px; border: 2px solid var(--line); font-weight: 800; font-size: .8rem; white-space: nowrap; }
   .pill.done { border-color: #17794f; color: #17794f; } .pill.mastered { border-color: var(--calc); color: var(--calc); }
-  @media (max-width: 600px) { .choices { gap: 10px; } .choice { min-height: 78px; font-size: 2.1rem; } .mem { grid-template-columns: repeat(3,1fr); } }
+  @media (max-width: 600px) { .choices { gap: 10px; } .choice { min-height: 78px; font-size: 2.1rem; } }
   @media (prefers-reduced-motion: reduce) { .choice.bad { animation: none; } }
 </style>
 </head>
 <body class="mode-student calc">
-<div class="test-band" role="note">🧪 Version de test <span class="tb-long">— les pièces gagnées ici sont des pièces de test</span></div>
+<div class="test-band" role="note">🧪 Version de test <span class="tb-long">— tes pièces d’or sont les mêmes que dans le Zoo de Lecture</span></div>
 <main>
   <header>
     <div class="zoo-hero">
@@ -110,10 +112,10 @@
       </div>
       <div class="zoo-hero-art" aria-hidden="true"><span class="zoo-star zoo-star-one">✦</span><span class="zoo-mascot zoo-bee">🐝</span><span class="zoo-mascot zoo-llama">🦙</span><span class="zoo-mascot zoo-owl">🦉</span><span class="zoo-star zoo-star-two">✧</span><span class="zoo-pad">➕ <span>● ●</span></span></div>
     </div>
-    <div class="zoo-top-stats needs-reward" id="zoo-top-stats" hidden aria-label="Mes pièces de test et mon niveau">
+    <div class="zoo-top-stats needs-reward" id="zoo-top-stats" hidden aria-label="Mes pièces, mes parties et mon niveau">
       <div class="zoo-top-stat zoo-top-gold"><span class="gold-coin" aria-hidden="true"></span><strong id="top-coins">0</strong><small>Pièces</small></div>
       <div class="zoo-top-stat"><span aria-hidden="true">🎮</span><strong id="top-games">0</strong><small>Parties</small></div>
-      <div class="zoo-top-stat zoo-top-keep"><span aria-hidden="true">🧮</span><strong id="top-level">N0</strong><small>Niveau</small></div>
+      <div class="zoo-top-stat zoo-top-keep"><span id="top-animal" aria-hidden="true">🥚</span><strong id="top-level">N0</strong><small>Niveau</small></div>
       <div class="zoo-top-stat zoo-top-keep" title="Nombres reconnus"><span aria-hidden="true">👂</span><strong id="top-nums">0</strong><small>Nombres</small></div>
     </div>
   </header>
@@ -218,6 +220,7 @@
                           rpc("student_get_progress_v2", { p_token: token }).catch(function () { return null; })]).then(function (r) {
         load(r[0]); S.name = (r[1] && r[1].nickname) || "toi";
         var p = r[2] && r[2].progress; if (p && typeof p.avatar === "string" && p.avatar) S.avatar = p.avatar;
+        if (p) { S.coins = Math.max(0, Math.floor(Number(p.coins) || 0)); S.credits = Math.max(0, Math.floor(Number(p.credits) || 0)); }
         start();
       });
     }).catch(function () { gate("Un petit souci de connexion. Réessaie dans un instant.", { href: "labo-calcul.html", label: "Réessayer" }); });
@@ -225,7 +228,7 @@
   function load(st) {
     var p = st.progress || {};
     S.levels = p.levels || {}; S.nums = p.nums || {}; S.calcs = p.calcs || {};
-    S.coins = st.test_coins || 0; S.credits = st.test_credits || 0; S.settings = st.settings || {};
+    S.settings = st.settings || {};
   }
   function enabledLevels(act) {
     var l = S.settings.levels && S.settings.levels[act];
@@ -238,13 +241,13 @@
   function numsCount() { return Object.keys(S.nums).length; }
   function calcsCount() { return Object.keys(S.calcs).length; }
   function suggest(act) { return E.suggestLevel(act, enabledLevels(act), S.levels); }
-  function levelLabel(act) { var id = suggest(act), l = id && E.levelInfo(act, id); return l ? l.label : ""; }
+  function levelLabel(act) { var id = suggest(act), l = id && E.levelInfo(act, id); return l ? (((S.levels[act + ":" + id] || {}).ok ? l.animal.e : "🥚") + " " + l.label) : ""; }
 
   function renderPanels() {
-    $("top-coins").textContent = S.coins; $("top-games").textContent = S.credits; $("top-level").textContent = "N" + levelsDone(); $("top-nums").textContent = numsCount();
+    var top = E.topAnimal(S.levels);
+    $("top-coins").textContent = S.coins; $("top-games").textContent = S.credits; $("top-level").textContent = "N" + levelsDone(); $("top-nums").textContent = numsCount(); $("top-animal").textContent = top ? top.e : "🥚";
     $("pl-name").textContent = S.name; $("pl-avatar").textContent = S.avatar;
     $("pr-prog").textContent = levelsDone() ? "✓ " + nb(levelsDone(), "niveau réussi", "niveaux réussis") + (levelsMastered() ? " · ⭐ " + levelsMastered() : "") : "";
-    $("pl-shop").textContent = S.coins >= 3 ? "Tu peux acheter !" : "";
     $("pr-games").textContent = nb(S.credits, "partie", "parties");
     ["nombres", "addition", "soustraction"].forEach(function (a) { $("pr-" + a).textContent = levelLabel(a); });
     Array.prototype.forEach.call(document.querySelectorAll("[data-go]"), function (b) { if (b.getAttribute("data-go") === view) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
@@ -255,11 +258,13 @@
     goTo("home");
   }
   function goTo(v) {
+    /* Boutique et salle d'arcade : espaces PARTAGÉS, ce sont exactement ceux du Zoo de Lecture (mêmes contenus, mêmes effets, mêmes pièces) */
+    if (v === "boutique" || v === "jeux") { location.href = "zoo-connecte.html?vue=" + v; return; }
     V.stop(); R = null; view = v; document.body.classList.remove("listen-focus");
     var me = $("me-menu"); me.hidden = true; $("bn-me").setAttribute("aria-expanded", "false");
     var box = $("view"); clear(box);
     ({ home: home, nombres: function (b) { levels(b, "nombres"); }, addition: function (b) { levels(b, "addition"); }, soustraction: function (b) { levels(b, "soustraction"); },
-       jeux: games, boutique: shop, cartes: numsView, reconnues: calcsView, progres: progressView })[v](box);
+       cartes: numsView, reconnues: calcsView, progres: progressView })[v](box);
     renderPanels(); window.scrollTo(0, 0);
   }
 
@@ -270,12 +275,13 @@
     var other = order.filter(function (a) { return a !== best.act; }).map(function (a) { return { act: a, id: suggest(a) }; })[0];
     return { main: best, other: other };
   }
+  function pet0(act, id) { return pet(act, id, false); }
   function home(box) {
     var n = pickNext(), card = el("div", "card home-hero");
     card.appendChild(el("h2", "", "Bonjour " + S.name + " !"));
     var speak = "Bonjour " + S.name + " ! Touche le gros bouton pour t’entraîner : " + ACT[n.main.act].say;
     var row = el("div", "home-step");
-    var pet = el("button", "home-pet"); pet.type = "button"; pet.setAttribute("aria-label", "Écouter la consigne"); pet.appendChild(el("span", "home-pet-emoji", ACT[n.main.act].icon));
+    var pet = el("button", "home-pet"); pet.type = "button"; pet.setAttribute("aria-label", "Écouter la consigne"); pet.appendChild(pet0(n.main.act, n.main.id));
     pet.addEventListener("click", function () { say(speak); }); row.appendChild(pet);
     var col = el("div", "home-col");
     function sayBtn(text, label) { var b = el("button", "secondary home-say", "🔊"); b.type = "button"; b.setAttribute("aria-label", label); b.title = label; b.addEventListener("click", function () { say(text); }); return b; }
@@ -301,13 +307,15 @@
   function levels(box, act) {
     var card = el("div", "card calc-card");
     card.appendChild(el("h2", "", ACT[act].icon + " " + ACT[act].title));
-    card.appendChild(el("p", "muted", "Prends ton temps : il n’y a pas de chrono. Choisis un niveau."));
-    var ids = enabledLevels(act), sug = suggest(act), grid = el("div", "lvls");
+    card.appendChild(el("p", "muted", "Prends ton temps : il n’y a pas de chrono. Rejoue une étape réussie, ou réussis la nouvelle pour faire éclore son animal !"));
+    var ids = E.visibleLevels(act, enabledLevels(act), S.levels), sug = suggest(act), grid = el("div", "zoo-grid");
     ids.forEach(function (id) {
-      var lv = E.levelInfo(act, id), x = el("button", "lv" + (id === sug ? " sug" : "")); x.type = "button";
-      x.appendChild(el("span", "ico", lv.emoji));
-      var d = el("span"); d.appendChild(document.createTextNode(lv.label)); d.appendChild(el("span", "st", (id === sug ? "👉 Pour toi · " : "") + statusText(act, id))); x.appendChild(d);
-      x.addEventListener("click", function () { startRound(act, id); }); grid.appendChild(x);
+      var lv = E.levelInfo(act, id), e = S.levels[act + ":" + id], b = el("button", "zoo-card" + (id === sug ? " heard" : "")); b.type = "button";
+      b.appendChild(pet(act, id, false));
+      b.appendChild(el("div", "son", lv.label));
+      b.appendChild(el("div", "cap", (id === sug ? "👉 Pour toi · " : "") + statusText(act, id)));
+      if (e && e.ok) b.appendChild(el("div", "speed", cap1(lv.animal.nom) + " " + speedText(lv)));
+      b.addEventListener("click", function () { startRound(act, id); }); grid.appendChild(b);
     });
     card.appendChild(grid); box.appendChild(card);
   }
@@ -397,18 +405,35 @@
     var info = el("p", "msg", "Je range ton résultat…"); card.appendChild(info);
     var row = el("div", "crow"); card.appendChild(row); box.appendChild(card);
     function done(res) {
+      var act = R.act, lv = R.lv, key = act + ":" + lv, before = (S.levels[key] || {}).ok || 0, info2 = E.levelInfo(act, lv);
       if (res.inserted && res.level) {
-        S.levels[R.act + ":" + R.lv] = res.level;
+        S.levels[key] = res.level;
         R.nums.forEach(function (x) { S.nums[x] = (S.nums[x] || 0) + 1; });
         R.calcs.forEach(function (x) { S.calcs[x] = (S.calcs[x] || 0) + 1; });
       }
-      S.coins = res.test_coins; S.credits = res.test_credits;
+      var after = (S.levels[key] || {}).ok || 0;
       info.className = "msg " + (res.success ? "good" : "");
-      info.textContent = res.success ? (res.coins ? "🎉 Réussi ! +" + res.coins + " pièce" + (res.coins > 1 ? "s" : "") + " de test" : "🎉 Réussi ! (tu as déjà gagné beaucoup de pièces de test aujourd’hui)") : "Continue, tu progresses ! Tu peux refaire cette série.";
-      var act = R.act, lv = R.lv;
+      if (!res.success) info.textContent = "Continue, tu progresses ! Tu peux refaire cette série.";
+      else if (!res.coins) info.textContent = "🎉 Réussi ! (tu as déjà gagné beaucoup de pièces aujourd’hui)";
+      else if (res.shared) { info.textContent = "🎉 Réussi ! +" + res.coins + " pièce" + (res.coins > 1 ? "s" : "") + " d’or"; claimCoins(); }
+      else info.textContent = "🎉 Réussi ! (pièces de test : +" + res.coins + ")";
+      /* l'œuf éclot, puis l'animal grandit : plus l'étape est haute, plus l'animal court vite */
+      if (res.success && after > before) {
+        var rv = el("div", "reveal"), fresh = before === 0;
+        rv.appendChild(el("div", "big-pet", fresh ? "🥚➜" + info2.animal.e : info2.animal.e + "✨"));
+        rv.appendChild(el("div", "", fresh ? "L’œuf éclot ! Voici " + info2.animal.nom + "." : cap1(info2.animal.nom) + " a bien grandi !"));
+        rv.appendChild(el("div", "speed", cap1(info2.animal.nom) + " " + speedText(info2)));
+        card.insertBefore(rv, row);
+      }
       function b(label, cls, fn) { var x = el("button", cls, label); x.type = "button"; x.addEventListener("click", fn); row.appendChild(x); }
-      b("Rejouer", "primary big-btn", function () { startRound(act, lv); }); b("Autre niveau", "secondary big-btn", function () { goTo(act); }); b("Accueil", "secondary big-btn", function () { goTo("home"); });
+      b("Rejouer", "primary big-btn", function () { startRound(act, lv); }); b("Autre étape", "secondary big-btn", function () { goTo(act); }); b("Accueil", "secondary big-btn", function () { goTo("home"); });
       renderPanels();
+    }
+    /* Pièces gagnées : le serveur les met de côté dans le portefeuille du Zoo ; on les reprend tout de suite (même mécanisme que les cadeaux), sinon le Zoo de Lecture le fera */
+    function claimCoins(retry) {
+      rpc("student_get_progress_v2", { p_token: token }).then(function (r) { return rpc("student_claim_coins", { p_token: token, p_version: r.version }); })
+        .then(function (c) { if (c && c.coins != null) { S.coins = Math.max(0, Math.floor(Number(c.coins) || 0)); renderPanels(); } })
+        .catch(function () { if (!retry) setTimeout(function () { claimCoins(true); }, 400); });
     }
     function send() {
       rpc("lab_student_submit_round", { p_token: token, p_round: R.id, p_activity: R.act, p_level: R.lv, p_correct: g, p_total: n, p_stats: stats }).then(done).catch(function () {
@@ -419,91 +444,59 @@
     send();
   }
 
-  /* ===== Boutique de TEST : mêmes éléments que celle du Zoo de Lecture, avec les pièces de test ===== */
-  function shop(box) {
-    var s = el("div", "shop"), aw = el("div", "awning"); aw.setAttribute("aria-hidden", "true"); for (var i = 0; i < 16; i++) aw.appendChild(el("i")); s.appendChild(aw);
-    var head = el("div", "shop-head"); head.appendChild(el("div", "shop-sign", "La boutique"));
-    var wallet = el("div", "wallet"); wallet.appendChild(document.createTextNode("Tu as ")); var c = el("span", "gold-coin"); c.setAttribute("aria-hidden", "true"); wallet.appendChild(c);
-    wallet.appendChild(el("b", "", String(S.coins))); wallet.appendChild(document.createTextNode(S.coins > 1 ? " pièces de test" : " pièce de test")); head.appendChild(wallet); s.appendChild(head);
-    var shelf = el("div", "shelf"), price = 3, afford = S.coins >= price;
-    var card = el("div", "prod tint0" + (afford ? " afford" : "")), tile = el("div", "prod-icon", "🎮"); tile.setAttribute("aria-hidden", "true"); tile.appendChild(el("span", "qty", "×1")); card.appendChild(tile);
-    card.appendChild(el("div", "prod-name", "1 partie de jeu en plus"));
-    if (afford) card.appendChild(el("div", "can", "Tu peux l’acheter !"));
-    else { var need = el("div", "need", "Il te manque " + nb(price - S.coins, "pièce", "pièces") + "."), bar = el("div", "need-bar"), fill = el("i"); bar.setAttribute("aria-hidden", "true"); fill.style.width = Math.max(4, Math.round(S.coins * 100 / price)) + "%"; bar.appendChild(fill); need.appendChild(bar); card.appendChild(need); }
-    var rowp = el("div", "prod-buy"), tag = el("div", "pricetag"), cc = el("span", "gold-coin"); cc.setAttribute("aria-hidden", "true"); tag.appendChild(cc); tag.appendChild(el("b", "", String(price))); tag.appendChild(document.createTextNode(" pièces de test"));
-    var buy = el("button", "buy", "Acheter"); buy.type = "button"; buy.disabled = !afford;
-    buy.addEventListener("click", function () {
-      buy.disabled = true;
-      rpc("lab_student_buy_play", { p_token: token, p_op: uuid() }).then(function (r) { S.coins = r.test_coins; S.credits = r.test_credits; toast(r.done ? "Achat réussi : 1 partie de jeu en plus !" : "Il manque des pièces de test."); goTo("boutique"); })
-        .catch(function () { buy.disabled = false; toast("Un souci de connexion, réessaie."); });
-    });
-    rowp.appendChild(tag); rowp.appendChild(buy); card.appendChild(rowp); shelf.appendChild(card); s.appendChild(shelf);
-    s.appendChild(el("p", "shop-hint", "Boutique de test : ces pièces ne sont pas tes vraies pièces d’or.")); box.appendChild(s);
+  /* ===== Collections et progression ===== */
+  /* Cartes-animaux : œuf tant que l'étape n'est pas réussie, l'animal quand elle l'est, plus grand (✨) quand elle est maîtrisée ; ❓ si l'étape n'est pas encore atteinte */
+  function pet(act, id, locked) {
+    var lv = E.levelInfo(act, id), e = S.levels[act + ":" + id] || {}, w = el("div", "pet" + (locked ? " locked" : "")), face = el("span", "pet-face"), label;
+    if (locked) { face.textContent = "❓"; label = "Animal verrouillé"; }
+    else if (!e.ok) { face.textContent = "🥚"; label = "Œuf"; }
+    else { face.textContent = lv.animal.e; face.style.fontSize = (e.ok >= 2 ? 4.6 : 3.2) + "rem"; label = lv.animal.nom; }
+    face.setAttribute("role", "img"); face.setAttribute("aria-label", label); w.appendChild(face);
+    if (!locked && e.ok >= 2) { var sp = el("span", "pet-sparkle", "✨"); sp.setAttribute("aria-hidden", "true"); w.appendChild(sp); }
+    return w;
   }
-
-  /* ===== Salle de jeux de TEST ===== */
-  function games(box) {
-    var card = el("div", "card calc-card stage");
-    card.appendChild(el("h2", "", "🎮 La salle d’arcade"));
-    card.appendChild(el("p", "muted", "Ici, tout est pour de faux : ce sont des parties de test. Tes vraies pièces et tes vrais jeux ne bougent pas."));
-    card.appendChild(el("p", "", nb(S.credits, "partie disponible", "parties disponibles") + " · " + S.coins + " 🧪"));
-    var msg = el("div", "msg"); msg.setAttribute("role", "status");
-    var play = el("button", "primary big-btn", "Jouer au Memory des nombres"); play.type = "button"; play.disabled = S.credits < 1;
-    var buy = el("button", "secondary big-btn", "🛍️ Aller à la boutique"); buy.type = "button"; buy.addEventListener("click", function () { goTo("boutique"); });
-    play.addEventListener("click", function () {
-      play.disabled = true;
-      rpc("lab_student_use_play", { p_token: token, p_op: uuid() }).then(function (r) { S.coins = r.test_coins; S.credits = r.test_credits; if (r.done) memory(); else { toast("Tu n’as plus de partie."); goTo("jeux"); } })
-        .catch(function () { play.disabled = false; msg.className = "msg bad"; msg.textContent = "Un souci de connexion, réessaie."; });
-    });
-    var r = el("div", "crow"); r.appendChild(play); r.appendChild(buy); card.appendChild(r); card.appendChild(msg); box.appendChild(card);
-  }
-  function memory() {
-    var box = $("view"); clear(box); renderPanels();
-    var card = el("div", "card calc-card stage");
-    card.appendChild(el("h2", "", "🧠 Memory des nombres")); card.appendChild(el("p", "muted", "Trouve un chiffre et son nombre écrit en lettres."));
-    var nums = E.shuffle(Array.apply(null, Array(21)).map(function (_, k) { return k; })).slice(0, 6), cards = [];
-    nums.forEach(function (n) { cards.push({ n: n, t: String(n), k: "d" }); cards.push({ n: n, t: E.words(n), k: "w" }); });
-    cards = E.shuffle(cards);
-    var grid = el("div", "mem"), open = [], found = 0, tries = 0, lock = false, info = el("p", "msg");
-    cards.forEach(function (c) {
-      var b = el("button", "mc", "?"); b.type = "button"; b.setAttribute("aria-label", "Carte cachée");
-      b.addEventListener("click", function () {
-        if (lock || b.classList.contains("up") || b.classList.contains("done")) return;
-        b.classList.add("up"); b.textContent = c.t; b.setAttribute("aria-label", c.t); open.push({ c: c, b: b });
-        if (c.k === "d") V.speak(E.words(c.n));
-        if (open.length < 2) return;
-        tries++; var x = open[0], y = open[1]; open = [];
-        if (x.c.n === y.c.n && x.c.k !== y.c.k) {
-          x.b.classList.add("done"); y.b.classList.add("done"); found++;
-          if (found === nums.length) { info.className = "msg good"; info.textContent = "Bravo ! Fini en " + tries + " essais. (Partie de test : pas de pièces.)"; var back = el("button", "primary big-btn", "Retour à la salle d’arcade"); back.type = "button"; back.addEventListener("click", function () { goTo("jeux"); }); var rw = el("div", "crow"); rw.appendChild(back); card.appendChild(rw); }
-        } else { lock = true; setTimeout(function () { [x, y].forEach(function (z) { z.b.classList.remove("up"); z.b.textContent = "?"; z.b.setAttribute("aria-label", "Carte cachée"); }); lock = false; }, 1100); }
-      });
+  function cap1(t) { return t.charAt(0).toUpperCase() + t.slice(1); }
+  function speedText(lv) { return "court à environ " + String(lv.animal.kmh).replace(".", ",") + " km/h"; }
+  function petCards(card, act) {
+    var visible = E.visibleLevels(act, enabledLevels(act), S.levels), grid = el("div", "zoo-grid");
+    enabledLevels(act).forEach(function (id) {
+      var lv = E.levelInfo(act, id), e = S.levels[act + ":" + id], locked = visible.indexOf(id) < 0, b = el("div", "zoo-card" + (locked ? " locked" : ""));
+      b.appendChild(pet(act, id, locked));
+      b.appendChild(el("div", "son", lv.label));
+      b.appendChild(el("div", "cap", locked ? "Pas encore" : e && e.ok ? cap1(lv.animal.nom) : "Un œuf à faire éclore"));
+      if (!locked && e && e.ok) b.appendChild(el("div", "speed", speedText(lv)));
+      var stars = el("div", "mini-stars", e && e.ok >= 2 ? "⭐⭐" : e && e.ok ? "⭐" : "☆"); stars.setAttribute("aria-hidden", "true"); b.appendChild(stars);
       grid.appendChild(b);
     });
-    card.appendChild(grid); card.appendChild(info); box.appendChild(card);
+    card.appendChild(grid);
   }
-
-  /* ===== Collections et progression ===== */
   function numsView(box) {
-    var card = el("div", "card calc-card"), found = numsCount();
+    var card = el("div", "card calc-card"), act = "nombres", ids = enabledLevels(act), hatched = ids.filter(function (id) { return (S.levels[act + ":" + id] || {}).ok; }).length;
     card.appendChild(el("h2", "", "Mes nombres lus"));
-    card.appendChild(el("p", "muted", found + (found > 1 ? " nombres reconnus" : " nombre reconnu") + " sur 101. Chaque nombre trouvé du premier coup s’allume !"));
+    card.appendChild(el("p", "muted", nb(hatched, "animal a éclos", "animaux ont éclos") + " sur " + ids.length + ". Chaque étape réussie fait éclore un animal : plus tu avances dans les nombres, plus l’animal court vite !"));
+    petCards(card, act); box.appendChild(card);
+    var c2 = el("div", "card calc-card"), found = numsCount();
+    c2.appendChild(el("h2", "", "Mes nombres trouvés"));
+    c2.appendChild(el("p", "muted", found + (found > 1 ? " nombres reconnus" : " nombre reconnu") + " sur 101. Chaque nombre trouvé du premier coup s’allume !"));
     var g = el("div", "ngrid"); for (var n = 0; n <= 100; n++) { var on = S.nums[n], t = el("div", "ntile" + (on ? " on" : " off"), String(n)); if (on > 1) t.appendChild(el("small", "", "×" + on)); g.appendChild(t); }
-    card.appendChild(g); box.appendChild(card);
+    c2.appendChild(g); box.appendChild(c2);
   }
   function calcsView(box) {
-    var card = el("div", "card calc-card"), keys = Object.keys(S.calcs);
+    var keys = Object.keys(S.calcs), card = el("div", "card calc-card"), hatched = 0, total = 0;
+    ["addition", "soustraction"].forEach(function (act) { enabledLevels(act).forEach(function (id) { total++; if ((S.levels[act + ":" + id] || {}).ok) hatched++; }); });
     card.appendChild(el("h2", "", "Mes calculs gagnés"));
-    card.appendChild(el("p", "muted", keys.length ? nb(keys.length, "calcul gagné", "calculs gagnés") + " du premier coup." : "Tu n’as pas encore gagné de calcul. Va dans ADDITION ou SOUSTRACTION !"));
-    ["+", "-"].forEach(function (op) {
-      var list = keys.filter(function (k) { return k.indexOf(op) > 0; }).sort(function (a, b) { return parseInt(a, 10) - parseInt(b, 10); });
-      if (!list.length) return;
-      card.appendChild(el("h2", "", op === "+" ? "➕ Additions" : "➖ Soustractions"));
-      var g = el("div", "egrid");
-      list.forEach(function (k) { var p = k.split(op), a = +p[0], b = +p[1], t = el("div", "etile", a + (op === "+" ? " + " : " − ") + b + " = " + (op === "+" ? a + b : a - b)); if (S.calcs[k] > 1) t.appendChild(el("small", "", "gagné " + S.calcs[k] + " fois")); g.appendChild(t); });
-      card.appendChild(g);
-    });
+    card.appendChild(el("p", "muted", nb(hatched, "animal a éclos", "animaux ont éclos") + " sur " + total + " · " + (keys.length ? nb(keys.length, "calcul gagné", "calculs gagnés") + " du premier coup." : "pas encore de calcul gagné : va dans ADDITION ou SOUSTRACTION !")));
     box.appendChild(card);
+    ["addition", "soustraction"].forEach(function (act) {
+      var c = el("div", "card calc-card"); c.appendChild(el("h2", "", ACT[act].icon + " " + ACT[act].title)); petCards(c, act);
+      var op = act === "addition" ? "+" : "-", list = keys.filter(function (k) { return k.indexOf(op) > 0; }).sort(function (a, b) { return parseInt(a, 10) - parseInt(b, 10); });
+      if (list.length) {
+        c.appendChild(el("p", "muted", "Mes calculs gagnés :")); var g = el("div", "egrid");
+        list.forEach(function (k) { var p = k.split(op), a = +p[0], b = +p[1], t = el("div", "etile", a + (op === "+" ? " + " : " − ") + b + " = " + (op === "+" ? a + b : a - b)); if (S.calcs[k] > 1) t.appendChild(el("small", "", "gagné " + S.calcs[k] + " fois")); g.appendChild(t); });
+        c.appendChild(g);
+      }
+      box.appendChild(c);
+    });
   }
   function progressView(box) {
     var card = el("div", "card calc-card");
@@ -511,9 +504,9 @@
     card.appendChild(el("p", "muted", "✓ " + nb(levelsDone(), "niveau réussi", "niveaux réussis") + " · ⭐ " + nb(levelsMastered(), "niveau maîtrisé", "niveaux maîtrisés") + " · 👂 " + numsCount() + " nombres sur 101 · 🧮 " + nb(calcsCount(), "calcul gagné", "calculs gagnés")));
     ["nombres", "addition", "soustraction"].forEach(function (act) {
       card.appendChild(el("h2", "", ACT[act].icon + " " + ACT[act].title));
-      enabledLevels(act).forEach(function (id) {
+      E.visibleLevels(act, enabledLevels(act), S.levels).forEach(function (id) {
         var lv = E.levelInfo(act, id), e = S.levels[act + ":" + id], row = el("div", "prog-row");
-        row.appendChild(el("span", "nm", lv.emoji + " " + lv.label));
+        row.appendChild(el("span", "nm", (e && e.ok ? lv.animal.e : "🥚") + " " + lv.label));
         if (e && e.q) row.appendChild(el("span", "sc", nb(e.r, "série", "séries") + " · " + Math.round(e.c * 100 / e.q) + " % du premier coup"));
         var st = E.status(e); row.appendChild(el("span", "pill " + st, statusText(act, id))); card.appendChild(row);
       });

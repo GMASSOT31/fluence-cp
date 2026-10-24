@@ -117,6 +117,37 @@
   ];
 
   var LEVELS = { nombres: NOMBRES, addition: ADDITION, soustraction: SOUSTRACTION };
+
+  /* ===== Un animal par étape, du plus lent au plus rapide : plus l'étape validée est haute, plus l'animal court vite =====
+     kmh = vitesse de course maximale approximative (arrondie), affichée « environ » sur la carte. */
+  var ANIMAUX = {
+    nombres: [
+      ["🐌", "l’escargot", 0.05], ["🐢", "la tortue", 0.5], ["🦔", "le hérisson", 7], ["🐓", "la poule", 14], ["🐖", "le cochon", 17], ["🐕", "le chien", 30],
+      ["🐘", "l’éléphant", 40], ["🐇", "le lapin", 56], ["🦒", "la girafe", 60], ["🐎", "le cheval", 88], ["🐆", "le guépard", 110]],
+    addition: [
+      ["🐜", "la fourmi", 1], ["🐿️", "l’écureuil", 20], ["🦛", "l’hippopotame", 30], ["🐈", "le chat", 48], ["🦊", "le renard", 50], ["🦓", "le zèbre", 65],
+      ["🦘", "le kangourou", 70], ["🦁", "le lion", 80]],
+    soustraction: [
+      ["🐊", "le crocodile", 17], ["🦏", "le rhinocéros", 50], ["🐺", "le loup", 60], ["🐪", "le chameau", 65], ["🦌", "le cerf", 70]]
+  };
+  Object.keys(LEVELS).forEach(function (act) {
+    LEVELS[act].forEach(function (lv, i) { var a = ANIMAUX[act][i]; lv.animal = { e: a[0], nom: a[1], kmh: a[2] }; });
+  });
+  function animalOf(activity, id) { var l = levelInfo(activity, id); return l ? l.animal : null; }
+  /* Étapes visibles pour l'élève : celles déjà réussies + la suivante (jamais les autres). enabled = ordre choisi par l'enseignant. */
+  function visibleLevels(activity, enabled, levels) {
+    var list = (enabled && enabled.length ? enabled : DEFAULT_LEVELS[activity]).filter(function (id) { return levelInfo(activity, id); }), out = [], i;
+    for (i = 0; i < list.length; i++) { out.push(list[i]); if (!((levels || {})[activity + ":" + list[i]] || {}).ok) break; }
+    return out;
+  }
+  /* Animal le plus rapide déjà éclos (toutes activités confondues), ou null */
+  function topAnimal(levels) {
+    var best = null;
+    Object.keys(LEVELS).forEach(function (act) {
+      LEVELS[act].forEach(function (lv) { if (((levels || {})[act + ":" + lv.id] || {}).ok >= 1 && (!best || lv.animal.kmh > best.kmh)) best = lv.animal; });
+    });
+    return best;
+  }
   /* Niveaux ouverts par défaut (l'enseignant les règle) : tout pour les nombres, le début de l'addition et de la soustraction */
   var DEFAULT_LEVELS = {
     nombres: NOMBRES.map(function (l) { return l.id; }),
@@ -192,7 +223,7 @@
 
   root.CalcEngine = {
     words: words, seeded: seeded, shuffle: shuffle, numberDistractors: numberDistractors, calcDistractors: calcDistractors,
-    LEVELS: LEVELS, DEFAULT_LEVELS: DEFAULT_LEVELS, levelInfo: levelInfo, makeRound: makeRound, suggestLevel: suggestLevel, status: status
+    LEVELS: LEVELS, DEFAULT_LEVELS: DEFAULT_LEVELS, levelInfo: levelInfo, animalOf: animalOf, visibleLevels: visibleLevels, topAnimal: topAnimal, makeRound: makeRound, suggestLevel: suggestLevel, status: status
   };
   if (typeof module !== "undefined" && module.exports) module.exports = root.CalcEngine;
 })(typeof window !== "undefined" ? window : this);
