@@ -79,3 +79,10 @@ Un enseignant sans accès (labo activé) voit un bouton « ➕ Essayer le Zoo de
 
 ## Compteurs et « réussi / maîtrisé » (UX-04 et 05)
 Cause de l'écart observé (« 4 animaux éclos, 3 visibles » ; « 8 niveaux réussis, 7 détaillés ») : les totaux comptaient **toutes** les réussites enregistrées, alors que les listes ne montrent que les étapes activées par l'enseignant, et qu'une étape réussie après un « trou » dans l'ordre restait cachée (❓). Corrigé : une étape réussie est toujours visible (`visibleLevels`) ; les compteurs (élève et enseignant) ne comptent que le périmètre activé et signalent le reste (« 4 au total, dont 1 masqué par ton enseignant »). **Aucune donnée modifiée ni effacée** (les réussites des étapes désactivées restent acquises). « Réussi » = au moins une série au seuil réglé (50–100 %, bonnes réponses du premier coup, aides non comptées) ; « maîtrisé » = au moins deux séries réussies (règle déjà en place, maintenant expliquée dans « Ma progression » et dans le suivi enseignant). Test : `?seed=gap`.
+
+## Interface (UX-06 à 09)
+* **Boutique** : grille adaptée à la largeur (`minmax(min(230px,100%),1fr)`), bouton « Acheter » et prix qui passent à la ligne au lieu de déborder (zoo-connecte.html, donc aussi la Lecture) ; test `t_shop` à 1366/1024/768/390 px avec 5 cartes. Le débordement signalé n'a pas pu être reproduit dans nos tests (2 cartes de test) : correction défensive.
+* **Tablettes 601–880 px** : le menu « Moi » du calcul est maintenant visible (avant, aucun accès à Boutique/progression/déconnexion).
+* **Textes** : en mode Calcul, l'espace enseignant masque le guide « Bienvenue dans Zoo de Lecture » et le partage de Zoo de Lecture (le labo est privé), change le pied de page et le titre de l'onglet ; retour en Lecture = textes d'origine. « Mes nombres lus » → « Mes nombres reconnus ».
+* **Bande numérique** : une seule ligne continue, défilante sur petit écran, départ (cadre plein) et arrivée (cadre pointillé) repérés.
+* **Arrêter une série** : avant toute réponse, retour direct ; après, fenêtre « Cette série ne sera pas gardée » (Continuer / Quitter). Une série arrêtée n'enregistre rien.
