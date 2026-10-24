@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Calcul · espace enseignant · version de test</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;800&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#eaf7f6; --card:#fff; --ink:#12302f; --muted:#506d6b; --line:#cfe5e3; --main:#0b7f7d; --on-main:#fff; --ok:#17794f; --ok-bg:#d9f1e5; --bad:#b3261e; --warn:#7a4b00; --warn-bg:#ffe9b8; --focus:#1f6fd1; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#0d1f1f; --card:#152b2b; --ink:#e9f6f5; --muted:#9bbab8; --line:#27494a; --main:#27b3ae; --on-main:#04201f; --ok:#7fe0ad; --ok-bg:#16402c; --bad:#ff9a92; --warn:#ffd77a; --warn-bg:#4a3500; } }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:Figtree,system-ui,sans-serif; font-size:16px; }
+  button, input, select { font:inherit; color:inherit; }
+  :focus-visible { outline:3px solid var(--focus); outline-offset:2px; }
+  .test-band { position:sticky; top:0; z-index:5; background:var(--warn-bg); color:var(--warn); text-align:center; font-weight:800; padding:6px 10px; border-bottom:2px dashed var(--warn); }
+  main { max-width:980px; margin:0 auto; padding:14px 16px 60px; }
+  h1 { font-family:Fredoka,Figtree,sans-serif; color:var(--main); margin:6px 0; font-size:clamp(1.6rem,5vw,2.2rem); }
+  h2 { font-family:Fredoka,Figtree,sans-serif; margin:0 0 8px; font-size:1.3rem; }
+  .muted { color:var(--muted); }
+  .seg { display:inline-flex; border:3px solid var(--main); border-radius:999px; overflow:hidden; margin:6px 0 12px; }
+  .seg a, .seg span { padding:10px 16px; font-weight:800; text-decoration:none; color:var(--main); background:var(--card); min-height:46px; display:inline-flex; align-items:center; }
+  .seg span { background:var(--main); color:var(--on-main); }
+  .tabs { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+  .tab { min-height:46px; padding:8px 16px; border-radius:12px; border:2px solid var(--line); background:var(--card); font-weight:800; cursor:pointer; }
+  .tab[aria-selected="true"] { border-color:var(--main); background:var(--main); color:var(--on-main); }
+  .card { background:var(--card); border:2px solid var(--line); border-radius:16px; padding:14px; margin-bottom:12px; }
+  .btn { min-height:46px; padding:8px 18px; border-radius:12px; border:2px solid var(--main); background:var(--main); color:var(--on-main); font-weight:800; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; }
+  .btn.alt { background:var(--card); color:var(--main); } .btn.danger { background:var(--card); color:var(--bad); border-color:var(--bad); }
+  .btn[disabled] { opacity:.5; cursor:not-allowed; }
+  label { display:block; font-weight:700; margin:8px 0 3px; } input[type=number], select { min-height:44px; padding:6px 10px; border:2px solid var(--line); border-radius:10px; background:var(--card); max-width:100%; }
+  .checks { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:6px; } .checks label { font-weight:600; margin:0; display:flex; gap:8px; align-items:center; min-height:40px; }
+  .checks input { width:22px; height:22px; }
+  .msg { min-height:1.4em; font-weight:700; } .msg.ok { color:var(--ok); } .msg.bad { color:var(--bad); }
+  table { width:100%; border-collapse:collapse; font-size:.95rem; } th, td { text-align:left; padding:7px 8px; border-bottom:1px solid var(--line); vertical-align:top; } th { font-size:.85rem; color:var(--muted); }
+  .scroll { overflow-x:auto; }
+  .pill { display:inline-block; padding:2px 9px; border-radius:999px; border:2px solid var(--line); font-weight:800; font-size:.8rem; white-space:nowrap; }
+  .pill.done { border-color:var(--ok); color:var(--ok); } .pill.mastered { border-color:var(--main); color:var(--main); }
+  details summary { cursor:pointer; font-weight:800; min-height:36px; display:flex; align-items:center; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:end; }
+  dl.legend { display:grid; grid-template-columns:max-content 1fr; gap:4px 12px; margin:6px 0 0; } dl.legend dt { font-weight:800; } dl.legend dd { margin:0; }
+  @media (max-width:600px) { dl.legend { grid-template-columns:1fr; } dl.legend dd { margin-bottom:6px; } }
+</style>
+</head>
+<body>
+<div class="test-band" role="note">🧪 Version de test — réservé aux comptes autorisés</div>
+<main id="app" aria-live="polite"><p class="muted">Chargement…</p></main>
+<script src="labo-config.js"></script>
+<script src="vendor/supabase.js?v=2.118.0"></script>
+<script src="calcul/engine.js?v=1"></script>
+<script>
+(function () {
+  "use strict";
+  var CFG = window.LABO_CALCUL || { enabled: false }, E = window.CalcEngine, app = document.getElementById("app"), client = null, role = "teacher";
+  var ACTS = { nombres: "👂 Reconnaître un nombre", addition: "➕ Additions", soustraction: "➖ Soustractions" };
+  var cache = { settings: {}, results: null, admin: null }, tab = "settings";
+
+  function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+  function clear(n) { while (n.firstChild) n.removeChild(n.firstChild); }
+  function rpc(name, args) { return client.rpc(name, args || {}).then(function (r) { if (r.error) throw r.error; return r.data; }); }
+  function gate(text, link) {
+    clear(app); var g = el("div", "card"); g.appendChild(el("h2", "", text));
+    if (link) { var a = el("a", "btn", link.label); a.href = link.href; g.appendChild(a); }
+    app.appendChild(g);
+  }
+  function boot() {
+    if (!CFG.enabled) { gate("Cette page n’est pas disponible."); return; }
+    client = window.supabase.createClient(CFG.url, CFG.key);
+    client.auth.getUser().then(function (r) {
+      if (!r.data || !r.data.user) { gate("Connectez-vous d’abord à votre espace enseignant.", { href: "enseignants.html", label: "Espace enseignant" }); return; }
+      return rpc("lab_my_access").then(function (a) {
+        if (!a || !a.allowed) { gate("Cette page n’est pas disponible."); return; }
+        role = a.role; return rpc("lab_teacher_settings_get").then(function (s) { cache.settings = s || {}; render(); });
+      });
+    }).catch(function () { gate("Un souci de connexion. Réessayez dans un instant.", { href: "labo-calcul-enseignant.html", label: "Réessayer" }); });
+  }
+
+  function render() {
+    clear(app);
+    app.appendChild(el("h1", "", "➕ Zoo de Calcul"));
+    var seg = el("div", "seg"), a = el("a", "", "📖 Lecture"); a.href = "enseignants.html"; var c = el("span", "", "➕ Calcul"); c.setAttribute("aria-current", "page");
+    seg.appendChild(a); seg.appendChild(c); app.appendChild(seg);
+    var tabs = el("div", "tabs"); tabs.setAttribute("role", "tablist");
+    var list = [["settings", "⚙️ Activités et niveaux"], ["results", "📊 Résultats de calcul"]];
+    if (role === "admin") list.push(["access", "🔐 Accès au laboratoire"]);
+    list.forEach(function (t) {
+      var b = el("button", "tab", t[1]); b.type = "button"; b.setAttribute("role", "tab"); b.setAttribute("aria-selected", String(tab === t[0]));
+      b.addEventListener("click", function () { tab = t[0]; render(); }); tabs.appendChild(b);
+    });
+    app.appendChild(tabs);
+    var box = el("div"); app.appendChild(box);
+    if (tab === "settings") settingsView(box); else if (tab === "results") resultsView(box); else accessView(box);
+  }
+
+  /* ===== Réglages pédagogiques de calcul (distincts de ceux de la lecture) ===== */
+  function settingsView(box) {
+    var s = cache.settings, f = el("div", "card");
+    f.appendChild(el("h2", "", "Réglages du calcul"));
+    f.appendChild(el("p", "muted", "Ces réglages ne concernent que le calcul : ils n’ont aucun effet sur la lecture."));
+    var l1 = el("label", "", "Nombre de questions par série (5 à 20)"); l1.setAttribute("for", "q");
+    var q = el("input"); q.type = "number"; q.id = "q"; q.min = 5; q.max = 20; q.value = s.questions || 10;
+    var l2 = el("label", "", "Réussite d’une série : au moins … % de bonnes réponses du premier coup (50 à 100)"); l2.setAttribute("for", "p");
+    var p = el("input"); p.type = "number"; p.id = "p"; p.min = 50; p.max = 100; p.value = s.pass || 80;
+    var vl = el("label", "", ""); var v = el("input"); v.type = "checkbox"; v.id = "v"; v.checked = s.voice !== false; v.style.width = "22px"; v.style.height = "22px";
+    vl.style.display = "flex"; vl.style.gap = "8px"; vl.style.alignItems = "center"; vl.appendChild(v); vl.appendChild(document.createTextNode("Lire automatiquement le nombre à voix haute"));
+    f.appendChild(l1); f.appendChild(q); f.appendChild(l2); f.appendChild(p); f.appendChild(vl);
+    var boxes = {};
+    Object.keys(ACTS).forEach(function (act) {
+      var d = el("fieldset"); d.style.border = "0"; d.style.padding = "0"; d.style.margin = "14px 0 0";
+      var lg = el("legend", "", ACTS[act] + " — niveaux proposés aux élèves"); lg.style.fontWeight = "800"; d.appendChild(lg);
+      var cs = el("div", "checks"), on = (s.levels && s.levels[act]) || E.DEFAULT_LEVELS[act]; boxes[act] = [];
+      E.LEVELS[act].forEach(function (lv) {
+        var l = el("label"), i = el("input"); i.type = "checkbox"; i.value = lv.id; i.checked = on.indexOf(lv.id) >= 0; boxes[act].push(i);
+        l.appendChild(i); l.appendChild(document.createTextNode(lv.emoji + " " + lv.label)); cs.appendChild(l);
+      });
+      d.appendChild(cs); f.appendChild(d);
+    });
+    var msg = el("div", "msg"); msg.setAttribute("role", "status");
+    var save = el("button", "btn", "Enregistrer"); save.type = "button"; save.style.marginTop = "14px";
+    save.addEventListener("click", function () {
+      var levels = {}; Object.keys(boxes).forEach(function (act) { levels[act] = boxes[act].filter(function (i) { return i.checked; }).map(function (i) { return i.value; }); });
+      if (Object.keys(levels).some(function (k) { return !levels[k].length; })) { msg.className = "msg bad"; msg.textContent = "Gardez au moins un niveau par activité."; return; }
+      save.disabled = true;
+      rpc("lab_teacher_settings_set", { p_settings: { questions: +q.value, pass: +p.value, voice: v.checked, levels: levels } }).then(function (r) {
+        cache.settings = r; msg.className = "msg ok"; msg.textContent = "Réglages enregistrés."; save.disabled = false;
+      }).catch(function () { msg.className = "msg bad"; msg.textContent = "L’enregistrement a échoué. Réessayez."; save.disabled = false; });
+    });
+    f.appendChild(save); f.appendChild(msg); box.appendChild(f);
+  }
+
+  /* ===== Résultats de calcul : jamais mélangés aux résultats de lecture ===== */
+  function pct(c, q) { return q ? Math.round(c * 100 / q) + " %" : "—"; }
+  function stLabel(e) { var s = E.status(e); return s === "mastered" ? "⭐ Maîtrisé" : s === "done" ? "✓ Réussi" : s === "todo" ? "🕒 À travailler" : "—"; }
+  function resultsView(box) {
+    var leg = el("div", "card"); leg.appendChild(el("h2", "", "Ce que mesurent ces résultats"));
+    var dl = el("dl", "legend");
+    [["Séries", "Nombre de séries terminées dans ce niveau."],
+     ["Premier essai", "Part des questions réussies du premier coup, sans erreur ni indice de correction. C’est l’indicateur principal."],
+     ["Réécoutes", "Nombre de fois où l’élève a réécouté le nombre (reconnaissance seulement) : un repère, pas une note."],
+     ["Aides", "Nombre de questions où l’élève a ouvert la bande des nombres (« Je m’aide »)."],
+     ["Statut", "À travailler : séries faites, aucune réussie. Réussi : au moins une série atteignant le seuil réglé. Maîtrisé : au moins deux séries réussies."],
+     ["Vitesse", "Aucune vitesse n’est notée en phase de découverte ; le temps de réponse n’est pas affiché."]]
+      .forEach(function (r) { dl.appendChild(el("dt", "", r[0])); dl.appendChild(el("dd", "", r[1])); });
+    leg.appendChild(dl); box.appendChild(leg);
+    var holder = el("div", "card"); holder.appendChild(el("p", "muted", "Chargement des résultats…")); box.appendChild(holder);
+    rpc("lab_teacher_results").then(function (rows) {
+      clear(holder); holder.appendChild(el("h2", "", "Résultats par élève"));
+      if (!rows.length) { holder.appendChild(el("p", "muted", "Aucun élève.")); return; }
+      rows.forEach(function (r) {
+        var lv = (r.progress && r.progress.levels) || {}, keys = Object.keys(lv).sort(), d = el("details");
+        var done = keys.filter(function (k) { return E.status(lv[k]) !== "todo"; }).length;
+        d.appendChild(el("summary", "", r.nickname + " · " + r.class_name + " — " + (keys.length ? keys.length + " niveau" + (keys.length > 1 ? "x" : "") + " travaillé" + (keys.length > 1 ? "s" : "") + ", " + done + " réussi" + (done > 1 ? "s" : "") : "pas encore de série")));
+        if (keys.length) {
+          var w = el("div", "scroll"), t = el("table"), h = el("tr");
+          ["Activité · niveau", "Séries", "Premier essai", "Réécoutes", "Aides", "Statut", "Dernière série"].forEach(function (x) { h.appendChild(el("th", "", x)); }); t.appendChild(h);
+          keys.forEach(function (k) {
+            var e = lv[k], a = k.split(":"), info = E.levelInfo(a[0], a[1]), tr = el("tr");
+            [(ACTS[a[0]] || a[0]).slice(0, 2) + " " + (info ? info.label : a[1]), e.r, pct(e.c, e.q), a[0] === "nombres" ? e.rp : "—", e.h, null, (e.last || "").slice(0, 10)].forEach(function (x, i) {
+              var td = el("td"); if (i === 5) td.appendChild(el("span", "pill " + E.status(e), stLabel(e))); else td.textContent = x; tr.appendChild(td);
+            });
+            t.appendChild(tr);
+          });
+          w.appendChild(t); d.appendChild(w);
+        }
+        holder.appendChild(d);
+      });
+    }).catch(function () { clear(holder); holder.appendChild(el("p", "msg bad", "Impossible de charger les résultats.")); });
+  }
+
+  /* ===== Accès au laboratoire (administrateur) ===== */
+  function accessView(box) {
+    var holder = el("div"); box.appendChild(holder); holder.appendChild(el("p", "muted", "Chargement…"));
+    function load() {
+      rpc("lab_admin_state").then(function (st) { cache.admin = st; paint(); }).catch(function () { clear(holder); holder.appendChild(el("p", "msg bad", "Impossible de charger les accès.")); });
+    }
+    function paint() {
+      var st = cache.admin; clear(holder);
+      var sw = el("div", "card"); sw.appendChild(el("h2", "", "Interrupteur général"));
+      sw.appendChild(el("p", st.enabled ? "msg ok" : "msg bad", st.enabled ? "Le laboratoire est ACTIVÉ pour les comptes de la liste." : "Le laboratoire est DÉSACTIVÉ : personne n’y a accès."));
+      var tg = el("button", "btn " + (st.enabled ? "danger" : ""), st.enabled ? "Désactiver tout le laboratoire" : "Activer le laboratoire"); tg.type = "button";
+      tg.addEventListener("click", function () { tg.disabled = true; rpc("lab_admin_set_enabled", { p_enabled: !st.enabled }).then(load).catch(function () { tg.disabled = false; }); });
+      sw.appendChild(tg); holder.appendChild(sw);
+
+      var ls = el("div", "card"); ls.appendChild(el("h2", "", "Comptes autorisés (" + st.access.length + ")"));
+      if (!st.access.length) ls.appendChild(el("p", "muted", "Aucun compte autorisé."));
+      st.access.forEach(function (r) {
+        var line = el("div", "row"); line.style.padding = "6px 0"; line.style.borderBottom = "1px solid var(--line)";
+        var t = el("div"); t.style.flex = "1"; t.style.minWidth = "200px";
+        t.appendChild(el("strong", "", (r.kind === "teacher" ? "👩‍🏫 " : "🧒 ") + (r.label || "(compte supprimé)")));
+        t.appendChild(el("div", "muted", (r.kind === "teacher" ? "Enseignant" : "Élève") + (r.scope === "self_and_students" ? " · et tous ses élèves" : "") + (r.note ? " · " + r.note : "")));
+        var rv = el("button", "btn danger", "Retirer"); rv.type = "button";
+        rv.addEventListener("click", function () { rv.disabled = true; rpc("lab_admin_revoke", { p_id: r.id }).then(load).catch(function () { rv.disabled = false; }); });
+        line.appendChild(t); line.appendChild(rv); ls.appendChild(line);
+      });
+      holder.appendChild(ls);
+
+      var ad = el("div", "card"); ad.appendChild(el("h2", "", "Autoriser un compte"));
+      var kind = el("select"); kind.id = "kind"; [["teacher", "Un enseignant"], ["student", "Un élève"]].forEach(function (o) { var x = el("option", "", o[1]); x.value = o[0]; kind.appendChild(x); });
+      var who = el("select"); who.id = "who"; who.style.maxWidth = "100%";
+      var scopeL = el("label"), scope = el("input"); scope.type = "checkbox"; scope.id = "scope"; scope.style.width = "22px"; scope.style.height = "22px";
+      scopeL.style.display = "flex"; scopeL.style.gap = "8px"; scopeL.style.alignItems = "center"; scopeL.appendChild(scope); scopeL.appendChild(document.createTextNode("Autoriser aussi tous les élèves de cet enseignant"));
+      var note = el("input"); note.type = "text"; note.id = "note"; note.maxLength = 200; note.placeholder = "Note (facultatif)"; note.style.minHeight = "44px"; note.style.width = "100%"; note.style.border = "2px solid var(--line)"; note.style.borderRadius = "10px"; note.style.padding = "6px 10px"; note.style.background = "var(--card)";
+      function fill() {
+        clear(who); var src = kind.value === "teacher" ? st.teachers : st.students;
+        src.forEach(function (x) { var o = el("option", "", x.label + (x.class_name ? " — " + x.class_name : "")); o.value = x.id; who.appendChild(o); });
+        scopeL.style.display = kind.value === "teacher" ? "flex" : "none";
+      }
+      kind.addEventListener("change", fill); fill();
+      var l1 = el("label", "", "Type de compte"); l1.setAttribute("for", "kind"); var l2 = el("label", "", "Compte"); l2.setAttribute("for", "who"); var l3 = el("label", "", "Note"); l3.setAttribute("for", "note");
+      var msg = el("div", "msg"); msg.setAttribute("role", "status");
+      var go = el("button", "btn", "Autoriser"); go.type = "button"; go.style.marginTop = "10px";
+      go.addEventListener("click", function () {
+        if (!who.value) return; go.disabled = true;
+        rpc("lab_admin_grant", { p_kind: kind.value, p_subject: who.value, p_scope: kind.value === "teacher" && scope.checked ? "self_and_students" : "self", p_note: note.value || null })
+          .then(load).catch(function (e) { go.disabled = false; msg.className = "msg bad"; msg.textContent = (e && e.message) || "Échec."; });
+      });
+      [l1, kind, l2, who, scopeL, l3, note, go, msg].forEach(function (n) { ad.appendChild(n); });
+      holder.appendChild(ad);
+    }
+    load();
+  }
+  boot();
+})();
+</script>
+</body>
+</html>

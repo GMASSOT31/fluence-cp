@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Zoo de Calcul · version de test</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;800&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* Couleur dominante du calcul : turquoise (la lecture est bleue/violette) ; le mot « CALCUL » et le signe ➕ portent aussi la distinction */
+  :root { --bg:#eaf7f6; --card:#fff; --ink:#12302f; --muted:#506d6b; --line:#cfe5e3; --main:#0b7f7d; --main-d:#075f5d; --on-main:#fff;
+          --ok:#17794f; --ok-bg:#d9f1e5; --bad:#b3261e; --bad-bg:#fbd9d5; --warn:#7a4b00; --warn-bg:#ffe9b8; --focus:#1f6fd1; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#0d1f1f; --card:#152b2b; --ink:#e9f6f5; --muted:#9bbab8; --line:#27494a; --main:#27b3ae; --main-d:#5fd3ce; --on-main:#04201f;
+          --ok:#7fe0ad; --ok-bg:#16402c; --bad:#ff9a92; --bad-bg:#4a1d1a; --warn:#ffd77a; --warn-bg:#4a3500; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:Figtree,system-ui,sans-serif; font-size:18px; padding-bottom:env(safe-area-inset-bottom,0); }
+  button { font:inherit; color:inherit; cursor:pointer; }
+  :focus-visible { outline:3px solid var(--focus); outline-offset:2px; }
+  .test-band { position:sticky; top:0; z-index:5; background:var(--warn-bg); color:var(--warn); text-align:center; font-weight:800; padding:6px 10px; font-size:.95rem; border-bottom:2px dashed var(--warn); }
+  main { max-width:880px; margin:0 auto; padding:14px 16px 60px; }
+  .top { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+  .seg { display:inline-flex; border:3px solid var(--main); border-radius:999px; overflow:hidden; }
+  .seg a, .seg span { padding:10px 16px; font-weight:800; text-decoration:none; color:var(--main); background:var(--card); min-height:48px; display:inline-flex; align-items:center; }
+  .seg span { background:var(--main); color:var(--on-main); }
+  .chip { margin-left:auto; padding:10px 14px; border-radius:999px; background:var(--card); border:2px solid var(--line); font-weight:800; min-height:48px; display:inline-flex; align-items:center; gap:6px; }
+  h1 { font-family:Fredoka,Figtree,sans-serif; font-size:clamp(1.7rem,6vw,2.4rem); margin:6px 0 4px; color:var(--main); line-height:1.1; }
+  h2 { font-family:Fredoka,Figtree,sans-serif; font-size:1.4rem; margin:0 0 10px; }
+  .muted { color:var(--muted); }
+  .grid { display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); }
+  .card { background:var(--card); border:2px solid var(--line); border-radius:20px; padding:16px; }
+  .big { display:flex; align-items:center; gap:12px; width:100%; min-height:76px; text-align:left; background:var(--card); border:3px solid var(--main); border-radius:20px; padding:12px 16px; font-weight:800; font-size:1.15rem; }
+  .big:hover { background:var(--main); color:var(--on-main); }
+  .big .ico { font-size:2rem; }
+  .big small { display:block; font-weight:600; color:inherit; opacity:.8; font-size:.85rem; }
+  .btn { min-height:56px; padding:12px 22px; border-radius:16px; border:3px solid var(--main); background:var(--main); color:var(--on-main); font-weight:800; font-size:1.1rem; }
+  .btn.alt { background:var(--card); color:var(--main); }
+  .btn[disabled] { opacity:.45; cursor:not-allowed; }
+  .levels { display:grid; gap:10px; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); margin:12px 0; }
+  .lv { display:flex; align-items:center; gap:10px; min-height:64px; padding:10px 14px; border-radius:16px; border:2px solid var(--line); background:var(--card); text-align:left; font-weight:700; }
+  .lv.sug { border-color:var(--main); border-width:3px; }
+  .lv .ico { font-size:1.6rem; }
+  .lv .st { display:block; font-size:.8rem; font-weight:800; color:var(--muted); }
+  .dots { display:flex; gap:6px; justify-content:center; margin:8px 0 14px; flex-wrap:wrap; }
+  .dot { width:14px; height:14px; border-radius:50%; background:var(--line); border:2px solid var(--main); }
+  .dot.cur { background:var(--main); } .dot.good { background:var(--ok); border-color:var(--ok); } .dot.miss { background:var(--card); border-color:var(--bad); border-style:dashed; }
+  .stage { text-align:center; padding:8px 0; }
+  .say { width:min(220px,70%); min-height:96px; font-size:1.6rem; border-radius:24px; border:4px solid var(--main); background:var(--main); color:var(--on-main); font-weight:800; margin:6px auto 14px; display:block; }
+  .eq { font-family:Fredoka,Figtree,sans-serif; font-size:clamp(2.4rem,11vw,4rem); font-weight:700; margin:6px 0; letter-spacing:.04em; }
+  .pic { display:flex; flex-wrap:wrap; gap:4px 14px; justify-content:center; align-items:center; margin:6px auto 10px; font-size:2rem; line-height:1.15; max-width:560px; }
+  .pic .grp { display:inline-flex; flex-wrap:wrap; gap:2px; max-width:260px; justify-content:center; padding:6px 10px; border:2px dashed var(--line); border-radius:14px; }
+  .pic .gone { opacity:.28; filter:grayscale(1); text-decoration:line-through; }
+  .pic .sign { font-size:2.2rem; font-weight:800; color:var(--main); }
+  .choices { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; max-width:520px; margin:10px auto; }
+  .choice { min-height:84px; font-family:Fredoka,Figtree,sans-serif; font-size:2.4rem; font-weight:700; border-radius:20px; border:4px solid var(--main); background:var(--card); }
+  .choice:hover:not([disabled]) { background:var(--bg); }
+  .choice.good { background:var(--ok-bg); border-color:var(--ok); color:var(--ok); }
+  .choice.bad { background:var(--bad-bg); border-color:var(--bad); color:var(--bad); animation:shake .35s; }
+  .choice[disabled] { cursor:default; }
+  @keyframes shake { 25% { transform:translateX(-7px); } 75% { transform:translateX(7px); } }
+  .msg { min-height:2.4em; font-weight:800; font-size:1.2rem; }
+  .msg.good { color:var(--ok); } .msg.bad { color:var(--bad); }
+  .line { display:flex; flex-wrap:wrap; justify-content:center; gap:3px; margin:6px auto 10px; max-width:640px; }
+  .line b { min-width:34px; padding:6px 0; border-radius:8px; background:var(--card); border:2px solid var(--line); font-size:1rem; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:10px; }
+  .stars { font-size:3rem; letter-spacing:6px; }
+  .mem { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; max-width:520px; margin:12px auto; }
+  .mc { min-height:76px; border-radius:16px; border:3px solid var(--main); background:var(--main); color:var(--on-main); font-family:Fredoka,Figtree,sans-serif; font-weight:700; font-size:1.1rem; padding:4px; }
+  .mc.up { background:var(--card); color:var(--ink); } .mc.done { background:var(--ok-bg); border-color:var(--ok); color:var(--ok); }
+  .gate { max-width:460px; margin:60px auto; text-align:center; }
+  @media (max-width: 600px) { body { font-size:17px; } main { padding:10px 12px 50px; } .choices { gap:10px; } .choice { min-height:78px; font-size:2.1rem; } .mem { grid-template-columns:repeat(3,1fr); } }
+  @media (prefers-reduced-motion: reduce) { .choice.bad { animation:none; } }
+</style>
+</head>
+<body>
+<div class="test-band" role="note">🧪 Version de test — les pièces gagnées ici sont des pièces de test</div>
+<main id="app" aria-live="polite"><p class="muted">Chargement…</p></main>
+
+<script src="labo-config.js"></script>
+<script src="vendor/supabase.js?v=2.118.0"></script>
+<script src="calcul/engine.js?v=1"></script>
+<script src="calcul/voice.js?v=1"></script>
+<script>
+(function () {
+  "use strict";
+  var CFG = window.LABO_CALCUL || { enabled: false }, E = window.CalcEngine, V = window.CalcVoice;
+  var app = document.getElementById("app"), token = null, client = null, R = null, busy = false;
+  var S = { levels: {}, coins: 0, credits: 0, settings: {} };
+  var ACT = { nombres: { icon: "👂", title: "J’écoute un nombre", sub: "Je trouve comment il s’écrit" },
+              addition: { icon: "➕", title: "J’additionne", sub: "Je calcule des additions" },
+              soustraction: { icon: "➖", title: "Je soustrais", sub: "Je calcule des soustractions" } };
+  var ANIMALS = ["🐥", "🦁", "🐸", "🐘", "🦒", "🐼", "🐢", "🦊"];
+  var BRAVO = ["Bravo !", "Super !", "Oui, c’est ça !", "Bien joué !", "Génial !"];
+
+  function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+  function clear() { while (app.firstChild) app.removeChild(app.firstChild); }
+  function uuid() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) { var r = Math.random() * 16 | 0; return (c === "x" ? r : (r & 3 | 8)).toString(16); });
+  }
+  function rpc(name, args) { return client.rpc(name, args).then(function (r) { if (r.error) throw r.error; return r.data; }); }
+  function median(a) { if (!a.length) return 0; var s = a.slice().sort(function (x, y) { return x - y; }); return s[Math.floor(s.length / 2)]; }
+
+  /* Message neutre : ne révèle jamais si le labo existe ou si le compte n'y a pas droit */
+  function gate(text, link) {
+    clear(); var g = el("div", "gate card"); g.appendChild(el("h2", "", text));
+    if (link) { var a = el("a", "btn", link.label); a.href = link.href; a.style.display = "inline-flex"; a.style.alignItems = "center"; a.style.textDecoration = "none"; g.appendChild(a); }
+    app.appendChild(g);
+  }
+
+  function boot() {
+    if (!CFG.enabled) { gate("Cette page n’est pas disponible."); return; }
+    try { token = sessionStorage.getItem("zoo_student_token"); } catch (e) {}
+    if (!token || token === "demo") { gate("Connecte-toi d’abord pour retrouver ton zoo.", { href: "eleve.html", label: "Me connecter" }); return; }
+    client = window.supabase.createClient(CFG.url, CFG.key);
+    rpc("lab_my_access", { p_token: token }).then(function (a) {
+      if (!a || !a.allowed) { gate("Cette page n’est pas disponible."); return; }
+      return rpc("lab_student_state", { p_token: token }).then(function (st) { load(st); home(); });
+    }).catch(function () { gate("Un petit souci de connexion. Réessaie dans un instant.", { href: "labo-calcul.html", label: "Réessayer" }); });
+  }
+  function load(st) {
+    S.levels = (st.progress && st.progress.levels) || {}; S.coins = st.test_coins || 0; S.credits = st.test_credits || 0; S.settings = st.settings || {};
+  }
+  function enabledLevels(act) {
+    var l = S.settings.levels && S.settings.levels[act];
+    return (l && l.length ? l : E.DEFAULT_LEVELS[act]).filter(function (id) { return E.levelInfo(act, id); });
+  }
+
+  /* ===== En-tête commun : repères identiques à la lecture (retour, pièces) ===== */
+  function top() {
+    var t = el("div", "top"), seg = el("div", "seg"), a = el("a", "", "📖 Lecture"); a.href = "zoo-connecte.html";
+    var cur = el("span", "", "➕ Calcul"); cur.setAttribute("aria-current", "page");
+    seg.appendChild(a); seg.appendChild(cur); t.appendChild(seg);
+    var chip = el("div", "chip", "🧪 " + S.coins + " · 🎮 " + S.credits); chip.title = "Pièces et droits de jeu de test";
+    t.appendChild(chip); app.appendChild(t);
+  }
+
+  function home() {
+    V.stop(); R = null; clear(); top();
+    app.appendChild(el("h1", "", "➕ Zoo de Calcul"));
+    app.appendChild(el("p", "muted", "Choisis une activité."));
+    var g = el("div", "grid");
+    ["nombres", "addition", "soustraction"].forEach(function (act) {
+      var b = el("button", "big"); b.type = "button";
+      b.appendChild(el("span", "ico", ACT[act].icon));
+      var d = el("span"); d.appendChild(document.createTextNode(ACT[act].title)); d.appendChild(el("small", "", ACT[act].sub)); b.appendChild(d);
+      b.addEventListener("click", function () { levelMenu(act); });
+      g.appendChild(b);
+    });
+    var gb = el("button", "big"); gb.type = "button"; gb.appendChild(el("span", "ico", "🎮"));
+    var gd = el("span"); gd.appendChild(document.createTextNode("Salle de jeux")); gd.appendChild(el("small", "", "Avec mes pièces de test")); gb.appendChild(gd);
+    gb.addEventListener("click", games); g.appendChild(gb);
+    app.appendChild(g);
+  }
+
+  function statusText(act, id) {
+    var s = E.status(S.levels[act + ":" + id]);
+    return s === "mastered" ? "⭐ Maîtrisé" : s === "done" ? "✓ Réussi" : s === "todo" ? "🕒 À travailler" : "✨ Nouveau";
+  }
+  function levelMenu(act) {
+    V.stop(); clear(); top();
+    var b = el("button", "btn alt", "← Retour"); b.type = "button"; b.addEventListener("click", home); app.appendChild(b);
+    app.appendChild(el("h1", "", ACT[act].icon + " " + ACT[act].title));
+    app.appendChild(el("p", "muted", "Prends ton temps : il n’y a pas de chrono."));
+    var ids = enabledLevels(act), sug = E.suggestLevel(act, ids, S.levels), box = el("div", "levels");
+    ids.forEach(function (id) {
+      var lv = E.levelInfo(act, id), x = el("button", "lv" + (id === sug ? " sug" : "")); x.type = "button";
+      x.appendChild(el("span", "ico", lv.emoji));
+      var d = el("span"); d.appendChild(document.createTextNode(lv.label));
+      d.appendChild(el("span", "st", (id === sug ? "👉 Pour toi · " : "") + statusText(act, id)));
+      x.appendChild(d); x.addEventListener("click", function () { startRound(act, id); });
+      box.appendChild(x);
+    });
+    app.appendChild(box);
+  }
+
+  /* ===== Une série ===== */
+  function startRound(act, id) {
+    var n = Math.max(5, Math.min(20, parseInt(S.settings.questions, 10) || 10));
+    R = { act: act, lv: id, qs: E.makeRound(act, id, n), i: 0, good: 0, replays: 0, helps: 0, times: [], id: uuid(), res: [], q: null };
+    question();
+  }
+  function dots() {
+    var d = el("div", "dots"); d.setAttribute("role", "img"); d.setAttribute("aria-label", "Question " + (R.i + 1) + " sur " + R.qs.length);
+    R.qs.forEach(function (q, k) { d.appendChild(el("span", "dot" + (k === R.i ? " cur" : R.res[k] === 1 ? " good" : R.res[k] === 0 ? " miss" : ""))); });
+    return d;
+  }
+  function group(n, ico, gone) { var g = el("span", "grp"); for (var k = 0; k < n; k++) g.appendChild(el("span", gone && k >= n - gone ? "gone" : "", ico)); return g; }
+  function picture(q) {
+    var p = el("div", "pic"), ico = ANIMALS[(R.i + q.a) % ANIMALS.length];
+    p.setAttribute("aria-hidden", "true");
+    if (q.type === "addition" && q.hole) { p.appendChild(group(q.a, ico)); p.appendChild(el("span", "sign", "+")); p.appendChild(el("span", "sign", "?")); }
+    else if (q.type === "addition") { p.appendChild(group(q.a, ico)); p.appendChild(el("span", "sign", "+")); p.appendChild(group(q.b, ico)); }
+    else if (q.level === "s5") { p.appendChild(group(q.a, ico)); p.appendChild(group(q.b, ico)); }
+    else { p.appendChild(group(q.a, ico, q.b)); }
+    return p;
+  }
+  function numberLine(q) {
+    var cap = q.level === "a8" ? 0 : Math.max(10, Math.min(20, q.a + q.b + 2)), l = el("div", "line"), k;
+    if (!cap) { for (k = 10; k <= 100; k += 10) l.appendChild(el("b", "", String(k))); return l; }
+    for (k = 0; k <= cap; k++) l.appendChild(el("b", "", String(k)));
+    return l;
+  }
+  function sayQuestion(q) { if (q.type === "nombres") { V.speak(q.say); } }
+
+  function question() {
+    V.stop(); clear(); top();
+    var q = R.qs[R.i], mistakes = 0, firstTry = true, t0 = Date.now(), answered = false, helped = false;
+    R.q = q;
+    var quit = el("button", "btn alt", "← Arrêter"); quit.type = "button"; quit.addEventListener("click", function () { levelMenu(R.act); }); app.appendChild(quit);
+    app.appendChild(dots());
+    var st = el("div", "stage"); app.appendChild(st);
+    var msg = el("div", "msg"); msg.setAttribute("role", "status");
+    if (q.type === "nombres") {
+      var sp = el("button", "say", "🔊 Écouter"); sp.type = "button"; sp.setAttribute("aria-label", "Écouter le nombre");
+      var first = true;
+      sp.addEventListener("click", function () { if (!first) R.replays++; first = false; if (!V.speak(q.say)) msg.textContent = "Ton appareil ne sait pas lire à voix haute."; });
+      st.appendChild(sp); st.appendChild(el("p", "muted", "Quel nombre as-tu entendu ?"));
+      setTimeout(function () { if (R && R.q === q && S.settings.voice !== false) { first = false; if (!V.speak(q.say)) msg.textContent = "Ton appareil ne sait pas lire à voix haute : demande à un adulte."; } }, 350);
+    } else {
+      st.appendChild(el("div", "eq", q.hole ? q.text.replace("?", "…") : q.text + " = …"));
+      if (q.aid === "see") st.appendChild(picture(q));
+      var hb = el("button", "btn alt", "🧩 Je m’aide"); hb.type = "button"; hb.setAttribute("aria-expanded", "false"); var lineBox = el("div");
+      hb.addEventListener("click", function () {
+        if (lineBox.firstChild) { lineBox.removeChild(lineBox.firstChild); hb.setAttribute("aria-expanded", "false"); return; }
+        if (!helped) { helped = true; R.helps++; }
+        lineBox.appendChild(numberLine(q)); hb.setAttribute("aria-expanded", "true");
+      });
+      var sq = el("button", "btn alt", "🔊"); sq.type = "button"; sq.setAttribute("aria-label", "Lire à voix haute"); sq.addEventListener("click", function () { V.speak(q.say); });
+      var rw = el("div", "row"); rw.appendChild(sq); rw.appendChild(hb); st.appendChild(rw); st.appendChild(lineBox);
+    }
+    var cs = el("div", "choices"), btns = [];
+    q.choices.forEach(function (c) {
+      var b = el("button", "choice", String(c)); b.type = "button"; btns.push(b);
+      b.addEventListener("click", function () {
+        if (answered) return;
+        if (c === q.answer) {
+          answered = true; b.classList.add("good"); btns.forEach(function (x) { x.disabled = true; });
+          R.times.push(Date.now() - t0); R.res[R.i] = firstTry ? 1 : 0; if (firstTry) R.good++;
+          msg.className = "msg good"; msg.textContent = (firstTry ? BRAVO[Math.floor(Math.random() * BRAVO.length)] : "Voilà, tu as trouvé !") + " " + (q.type === "nombres" ? q.say + " s’écrit " + q.answer : q.hole ? q.a + " + " + q.answer + " = " + q.total : q.text + " = " + q.answer);
+          var nx = el("button", "btn", R.i + 1 < R.qs.length ? "Suite →" : "Voir mon résultat"); nx.type = "button";
+          nx.addEventListener("click", function () { R.i++; if (R.i < R.qs.length) question(); else finish(); });
+          var r = el("div", "row"); r.appendChild(nx); st.appendChild(r); nx.focus();
+        } else {
+          mistakes++; firstTry = false; b.classList.add("bad"); b.disabled = true;
+          msg.className = "msg bad"; msg.textContent = mistakes >= 2 ? "Regarde bien, la bonne réponse est colorée." : "Pas tout à fait. Essaie encore 💪";
+          if (mistakes >= 2) btns.forEach(function (x) { if (x.textContent === String(q.answer)) x.style.borderColor = "var(--ok)"; });
+          if (q.type === "nombres") { R.replays++; V.speak(q.say); }
+        }
+      });
+      cs.appendChild(b);
+    });
+    app.appendChild(cs); app.appendChild(msg);
+  }
+
+  function finish() {
+    V.stop(); clear(); top();
+    var n = R.qs.length, g = R.good, box = el("div", "card stage"), stats = { replays: R.replays, helps: R.helps, ms: median(R.times) };
+    box.appendChild(el("h2", "", "Série terminée !")); var stars = el("div", "stars", g === n ? "⭐⭐⭐" : g * 100 >= 80 * n ? "⭐⭐" : "⭐"); stars.setAttribute("aria-hidden", "true"); box.appendChild(stars);
+    box.appendChild(el("p", "", g + " bonnes réponses du premier coup sur " + n));
+    var info = el("p", "msg", "Je range ton résultat…"); box.appendChild(info);
+    var row = el("div", "row"); box.appendChild(row); app.appendChild(box);
+    function done(res) {
+      if (res.inserted && res.level) S.levels[R.act + ":" + R.lv] = res.level;
+      S.coins = res.test_coins; S.credits = res.test_credits;
+      info.className = "msg " + (res.success ? "good" : "");
+      info.textContent = res.success ? (res.coins ? "🎉 Réussi ! +" + res.coins + " pièce" + (res.coins > 1 ? "s" : "") + " de test" : "🎉 Réussi ! (tu as déjà gagné beaucoup de pièces de test aujourd’hui)") : "Continue, tu progresses ! Tu peux refaire cette série.";
+      var again = el("button", "btn", "Rejouer"); again.type = "button"; again.addEventListener("click", function () { startRound(R.act, R.lv); });
+      var other = el("button", "btn alt", "Autre niveau"); other.type = "button"; other.addEventListener("click", function () { levelMenu(R.act); });
+      var hm = el("button", "btn alt", "Accueil"); hm.type = "button"; hm.addEventListener("click", home);
+      row.appendChild(again); row.appendChild(other); row.appendChild(hm);
+      var chip = document.querySelector(".chip"); if (chip) chip.textContent = "🧪 " + S.coins + " · 🎮 " + S.credits;
+    }
+    function send() {
+      rpc("lab_student_submit_round", { p_token: token, p_round: R.id, p_activity: R.act, p_level: R.lv, p_correct: g, p_total: n, p_stats: stats }).then(done).catch(function () {
+        info.className = "msg bad"; info.textContent = "Je n’ai pas pu ranger ton résultat.";
+        while (row.firstChild) row.removeChild(row.firstChild);
+        var rt = el("button", "btn", "Réessayer"); rt.type = "button"; rt.addEventListener("click", function () { info.className = "msg"; info.textContent = "Je range ton résultat…"; while (row.firstChild) row.removeChild(row.firstChild); send(); });
+        row.appendChild(rt);
+      });
+    }
+    send();
+  }
+
+  /* ===== Salle de jeux de TEST : pièces de test → droit de jeu de test → mini-jeu ===== */
+  function games(msgText) {
+    V.stop(); clear(); top();
+    var b = el("button", "btn alt", "← Retour"); b.type = "button"; b.addEventListener("click", home); app.appendChild(b);
+    app.appendChild(el("h1", "", "🎮 Salle de jeux"));
+    app.appendChild(el("p", "muted", "Ici, tout est pour de faux : ce sont des pièces de test. Tes vraies pièces ne bougent pas."));
+    var card = el("div", "card stage");
+    card.appendChild(el("h2", "", "🧪 " + S.coins + " pièces de test · 🎮 " + S.credits + " droit" + (S.credits > 1 ? "s" : "") + " de jeu"));
+    var msg = el("div", "msg", typeof msgText === "string" ? msgText : ""); msg.setAttribute("role", "status");
+    var buy = el("button", "btn alt", "Échanger 3 🧪 contre 1 🎮"); buy.type = "button"; buy.disabled = S.coins < 3;
+    var play = el("button", "btn", "Jouer au Memory des nombres"); play.type = "button"; play.disabled = S.credits < 1;
+    buy.addEventListener("click", function () {
+      buy.disabled = true;
+      rpc("lab_student_buy_play", { p_token: token, p_op: uuid() }).then(function (r) { S.coins = r.test_coins; S.credits = r.test_credits; games(r.done ? "Échange fait !" : "Il manque des pièces de test."); })
+        .catch(function () { buy.disabled = false; msg.className = "msg bad"; msg.textContent = "Un souci de connexion, réessaie."; });
+    });
+    play.addEventListener("click", function () {
+      play.disabled = true;
+      rpc("lab_student_use_play", { p_token: token, p_op: uuid() }).then(function (r) { S.coins = r.test_coins; S.credits = r.test_credits; if (r.done) memory(); else games("Tu n’as plus de droit de jeu."); })
+        .catch(function () { play.disabled = false; msg.className = "msg bad"; msg.textContent = "Un souci de connexion, réessaie."; });
+    });
+    var r = el("div", "row"); r.appendChild(buy); r.appendChild(play); card.appendChild(r); card.appendChild(msg); app.appendChild(card);
+  }
+  function memory() {
+    clear(); top();
+    app.appendChild(el("h1", "", "🧠 Memory des nombres"));
+    app.appendChild(el("p", "muted", "Trouve un chiffre et son nombre écrit en lettres."));
+    var nums = E.shuffle(Array.apply(null, Array(21)).map(function (_, k) { return k; })).slice(0, 6), cards = [];
+    nums.forEach(function (n) { cards.push({ n: n, t: String(n), k: "d" }); cards.push({ n: n, t: E.words(n), k: "w" }); });
+    cards = E.shuffle(cards);
+    var grid = el("div", "mem"), open = [], found = 0, tries = 0, lock = false, info = el("p", "msg");
+    cards.forEach(function (c) {
+      var b = el("button", "mc", "?"); b.type = "button"; b.setAttribute("aria-label", "Carte cachée");
+      b.addEventListener("click", function () {
+        if (lock || b.classList.contains("up") || b.classList.contains("done")) return;
+        b.classList.add("up"); b.textContent = c.t; b.setAttribute("aria-label", c.t); open.push({ c: c, b: b });
+        if (c.k === "d") V.speak(E.words(c.n));
+        if (open.length < 2) return;
+        tries++; var x = open[0], y = open[1]; open = [];
+        if (x.c.n === y.c.n && x.c.k !== y.c.k) {
+          x.b.classList.add("done"); y.b.classList.add("done"); found++;
+          if (found === nums.length) { info.className = "msg good"; info.textContent = "Bravo ! Fini en " + tries + " essais. (Partie de test : pas de pièces.)"; var back = el("button", "btn", "Retour à la salle de jeux"); back.type = "button"; back.addEventListener("click", function () { games(); }); var rw = el("div", "row"); rw.appendChild(back); app.appendChild(rw); }
+        } else {
+          lock = true; setTimeout(function () { [x, y].forEach(function (z) { z.b.classList.remove("up"); z.b.textContent = "?"; z.b.setAttribute("aria-label", "Carte cachée"); }); lock = false; }, 1100);
+        }
+      });
+      grid.appendChild(b);
+    });
+    app.appendChild(grid); app.appendChild(info);
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>

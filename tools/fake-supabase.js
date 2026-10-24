@@ -18,6 +18,7 @@
     return b;
   }
   var api = {
+    lab_my_access: function () { return { allowed: /[?&]labo=1/.test(location.search), role: "student" }; },
     student_get_progress_v2: function () { return { progress: JSON.parse(JSON.stringify(srv.me.progress)), version: srv.version }; },
     student_session_profile: function () { return { student_id: srv.me.id, nickname: srv.me.nickname }; },
     student_change_pin: function (a) {
