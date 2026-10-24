@@ -1,8 +1,8 @@
 # Laboratoire privé « Zoo de Calcul » (phase 1)
 
 Ce dossier ne contient que de la documentation. Les fichiers du labo : `labo-calcul.html` (élève), `labo-calcul-enseignant.html` (enseignant/admin),
-`labo-config.js` (interrupteur navigateur), `labo-switch.js` (bouton Lecture | Calcul), `calcul/engine.js` (questions), `calcul/voice.js` (voix),
-`supabase/migrations/20261112_labo_calcul.sql` (base, **non appliquée**).
+`labo-config.js` (interrupteur navigateur), `calcul/zoo-skin.css` (habillage du Zoo de Lecture, **généré** : `python3 tools/extract_zoo_skin.py`), `labo-switch.js` (bouton Lecture | Calcul), `calcul/engine.js` (questions), `calcul/voice.js` (voix),
+`supabase/migrations/20261112_labo_calcul.sql` (base, appliquée) et `20261113_labo_collections.sql` (nombres reconnus et calculs gagnés ; à appliquer avant que « Mes nombres lus » se remplisse).
 
 ## Qui a accès ?
 Seulement les comptes listés dans la table `lab_access` (identifiants internes), **et** seulement si l'interrupteur serveur est activé.
@@ -20,6 +20,9 @@ les fichiers du labo sont publics sur GitHub Pages, seules les **données et les
 | Retrait complet | supprimer `labo-*`, `calcul/`, les 2 balises `labo-config.js`/`labo-switch.js` de `zoo-connecte.html` et `enseignants.html`, puis (si voulu) supprimer à la main les tables `lab_*` et les fonctions `lab_*` dans Supabase | le site revient exactement à l'état d'avant |
 
 La migration crée l'interrupteur **désactivé** : après application, l'admin l'active depuis la page enseignant du labo.
+
+## Interface élève
+Mêmes repères que le Zoo de Lecture (bandeau, panneau gauche, panneau droit, barre du bas sur téléphone, boutique, salle d'arcade), couleur dominante verte. L'avatar et le prénom sont **lus** dans le Zoo de Lecture (lecture seule, rien n'y est écrit) ; pour changer d'avatar, on retourne dans Lecture. « Niveau » = niveaux réussis ; « Nombres » = nombres reconnus du premier coup ; « Mes calculs gagnés » = calculs réussis du premier coup.
 
 ## Données (toutes séparées de la lecture)
 `lab_access` (liste blanche) · `lab_calc_progress` (résultats de calcul + **pièces et droits de jeu de TEST**) · `lab_calc_rounds` (une ligne par série, clé `student_id + round_id` = pas de double crédit) · `lab_calc_ops` (échanges de test, idem) · `lab_calc_settings` (réglages enseignant).
@@ -42,7 +45,7 @@ Ouverts par défaut : tous les niveaux de reconnaissance, a1–a4, s1–s2 (les 
 **Références à confirmer sur Eduscol** (les textes officiels n'ont pas pu être ouverts depuis l'environnement de développement) : programme de mathématiques du cycle 2, BO n° 41 du 31 octobre 2024 (applicable à la rentrée 2025) ; livret d'accompagnement Mathématiques CP 2025 (Eduscol).
 
 ## Tests
-* `sh tools/sql/run_labo_tests.sh` : migration + 53 contrôles sur un PostgreSQL local jetable (schéma factice), jamais sur Supabase.
+* `sh tools/sql/run_labo_tests.sh` : migration + 58 contrôles sur un PostgreSQL local jetable (schéma factice), jamais sur Supabase.
 * `node tools/test_calcul_engine.js` : moteur (distracteurs sans doublon, dans le champ, confusions attendues, niveaux).
 * `python3 tools/build_test_pages.py` puis `labo-calcul-test.html` / `labo-calcul-enseignant-test.html` (faux serveur `tools/fake-labo.js`, options dans son en-tête).
 

@@ -9,7 +9,7 @@
   var lab = window.__lab = {
     calls: [], enabled: !/[?&]off=1/.test(q), failOnce: /[?&]fail=1/.test(q),
     realWallet: { coins: 13, credits: 20 },   /* « vrais » soldes de lecture : ne doivent JAMAIS bouger */
-    me: { coins: 0, credits: 0, levels: {}, hist: [] }, rounds: {}, ops: {}, rewardedToday: 0,
+    me: { coins: 0, credits: 0, levels: {}, hist: [], nums: {}, calcs: {} }, rounds: {}, ops: {}, rewardedToday: 0,
     settings: {}, enabledSwitch: true,
     access: [{ id: "x1", kind: "teacher", subject_id: "t1", scope: "self_and_students", note: "moi", label: "Enseignant de test" }],
     teachers: [{ id: "t1", label: "Enseignant de test" }, { id: "t2", label: "Autre enseignant" }],
@@ -29,7 +29,9 @@
       if (a && a.p_token) return { allowed: studentAllowed(), role: "student" };
       return { allowed: teacherAllowed(), role: role === "admin" ? "admin" : "teacher" };
     },
-    lab_student_state: function () { needStudent(); return mix({ progress: { levels: lab.me.levels, hist: lab.me.hist }, settings: lab.settings }); },
+    lab_student_state: function () { needStudent(); return mix({ progress: { levels: lab.me.levels, hist: lab.me.hist, nums: lab.me.nums, calcs: lab.me.calcs }, settings: lab.settings }); },
+    student_session_profile: function () { needStudent(); return { student_id: "s1", nickname: /[?&]name=(\w+)/.test(q) ? RegExp.$1 : "Léa" }; },
+    student_get_progress_v2: function () { needStudent(); return { progress: { avatar: "🦊", coins: lab.realWallet.coins, credits: lab.realWallet.credits }, version: 1 }; },
     lab_student_submit_round: function (a) {
       needStudent();
       if (lab.failOnce) { lab.failOnce = false; throw { message: "Failed to fetch" }; }
@@ -42,6 +44,9 @@
       lab.me.levels[key] = { r: (c.r || 0) + 1, q: (c.q || 0) + a.p_total, c: (c.c || 0) + a.p_correct, rp: (c.rp || 0) + (s.replays || 0), h: (c.h || 0) + (s.helps || 0), ms: s.ms || 0,
         ok: (c.ok || 0) + (ok ? 1 : 0), best: Math.max(c.best || 0, Math.floor(a.p_correct * 100 / a.p_total)), last: "2026-11-12T10:00:00+01:00" };
       lab.me.hist.push({ k: key, c: a.p_correct, n: a.p_total, ok: ok });
+      /* collections : comme le serveur — au plus p_correct éléments, nombres 0–100, calculs « a+b » / « a-b » cohérents avec l'activité */
+      if (Array.isArray(s.nums) && s.nums.length <= a.p_correct && a.p_activity === "nombres") s.nums.forEach(function (n) { if (Number.isInteger(n) && n >= 0 && n <= 100) lab.me.nums[n] = Math.min((lab.me.nums[n] || 0) + 1, 99); });
+      if (Array.isArray(s.calcs) && s.calcs.length <= a.p_correct && a.p_activity !== "nombres") s.calcs.forEach(function (k) { var m = /^(\d{1,3})([+-])(\d{1,3})$/.exec(k); if (m && (m[2] === "+") === (a.p_activity === "addition") && Object.keys(lab.me.calcs).length < 400) lab.me.calcs[k] = Math.min((lab.me.calcs[k] || 0) + 1, 99); });
       return mix({ inserted: true, coins: coins, success: ok, level: lab.me.levels[key] });
     },
     lab_student_buy_play: function (a) {

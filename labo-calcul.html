@@ -6,106 +6,204 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Zoo de Calcul · version de test</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;800&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Figtree:wght@400;600;800&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<!-- Même habillage que le Zoo de Lecture (copie générée par tools/extract_zoo_skin.py) ; les couleurs du calcul sont dans le bloc <style> ci-dessous -->
+<link rel="stylesheet" href="calcul/zoo-skin.css?v=1">
 <style>
-  /* Couleur dominante du calcul : turquoise (la lecture est bleue/violette) ; le mot « CALCUL » et le signe ➕ portent aussi la distinction */
-  :root { --bg:#eaf7f6; --card:#fff; --ink:#12302f; --muted:#506d6b; --line:#cfe5e3; --main:#0b7f7d; --main-d:#075f5d; --on-main:#fff;
-          --ok:#17794f; --ok-bg:#d9f1e5; --bad:#b3261e; --bad-bg:#fbd9d5; --warn:#7a4b00; --warn-bg:#ffe9b8; --focus:#1f6fd1; }
-  @media (prefers-color-scheme: dark) { :root { --bg:#0d1f1f; --card:#152b2b; --ink:#e9f6f5; --muted:#9bbab8; --line:#27494a; --main:#27b3ae; --main-d:#5fd3ce; --on-main:#04201f;
-          --ok:#7fe0ad; --ok-bg:#16402c; --bad:#ff9a92; --bad-bg:#4a1d1a; --warn:#ffd77a; --warn-bg:#4a3500; } }
-  * { box-sizing: border-box; }
-  body { margin:0; background:var(--bg); color:var(--ink); font-family:Figtree,system-ui,sans-serif; font-size:18px; padding-bottom:env(safe-area-inset-bottom,0); }
-  button { font:inherit; color:inherit; cursor:pointer; }
-  :focus-visible { outline:3px solid var(--focus); outline-offset:2px; }
-  .test-band { position:sticky; top:0; z-index:5; background:var(--warn-bg); color:var(--warn); text-align:center; font-weight:800; padding:6px 10px; font-size:.95rem; border-bottom:2px dashed var(--warn); }
-  main { max-width:880px; margin:0 auto; padding:14px 16px 60px; }
-  .top { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
-  .seg { display:inline-flex; border:3px solid var(--main); border-radius:999px; overflow:hidden; }
-  .seg a, .seg span { padding:10px 16px; font-weight:800; text-decoration:none; color:var(--main); background:var(--card); min-height:48px; display:inline-flex; align-items:center; }
-  .seg span { background:var(--main); color:var(--on-main); }
-  .chip { margin-left:auto; padding:10px 14px; border-radius:999px; background:var(--card); border:2px solid var(--line); font-weight:800; min-height:48px; display:inline-flex; align-items:center; gap:6px; }
-  h1 { font-family:Fredoka,Figtree,sans-serif; font-size:clamp(1.7rem,6vw,2.4rem); margin:6px 0 4px; color:var(--main); line-height:1.1; }
-  h2 { font-family:Fredoka,Figtree,sans-serif; font-size:1.4rem; margin:0 0 10px; }
-  .muted { color:var(--muted); }
-  .grid { display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); }
-  .card { background:var(--card); border:2px solid var(--line); border-radius:20px; padding:16px; }
-  .big { display:flex; align-items:center; gap:12px; width:100%; min-height:76px; text-align:left; background:var(--card); border:3px solid var(--main); border-radius:20px; padding:12px 16px; font-weight:800; font-size:1.15rem; }
-  .big:hover { background:var(--main); color:var(--on-main); }
-  .big .ico { font-size:2rem; }
-  .big small { display:block; font-weight:600; color:inherit; opacity:.8; font-size:.85rem; }
-  .btn { min-height:56px; padding:12px 22px; border-radius:16px; border:3px solid var(--main); background:var(--main); color:var(--on-main); font-weight:800; font-size:1.1rem; }
-  .btn.alt { background:var(--card); color:var(--main); }
-  .btn[disabled] { opacity:.45; cursor:not-allowed; }
-  .levels { display:grid; gap:10px; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); margin:12px 0; }
-  .lv { display:flex; align-items:center; gap:10px; min-height:64px; padding:10px 14px; border-radius:16px; border:2px solid var(--line); background:var(--card); text-align:left; font-weight:700; }
-  .lv.sug { border-color:var(--main); border-width:3px; }
-  .lv .ico { font-size:1.6rem; }
-  .lv .st { display:block; font-size:.8rem; font-weight:800; color:var(--muted); }
-  .dots { display:flex; gap:6px; justify-content:center; margin:8px 0 14px; flex-wrap:wrap; }
-  .dot { width:14px; height:14px; border-radius:50%; background:var(--line); border:2px solid var(--main); }
-  .dot.cur { background:var(--main); } .dot.good { background:var(--ok); border-color:var(--ok); } .dot.miss { background:var(--card); border-color:var(--bad); border-style:dashed; }
-  .stage { text-align:center; padding:8px 0; }
-  .say { width:min(220px,70%); min-height:96px; font-size:1.6rem; border-radius:24px; border:4px solid var(--main); background:var(--main); color:var(--on-main); font-weight:800; margin:6px auto 14px; display:block; }
-  .eq { font-family:Fredoka,Figtree,sans-serif; font-size:clamp(2.4rem,11vw,4rem); font-weight:700; margin:6px 0; letter-spacing:.04em; }
-  .pic { display:flex; flex-wrap:wrap; gap:4px 14px; justify-content:center; align-items:center; margin:6px auto 10px; font-size:2rem; line-height:1.15; max-width:560px; }
-  .pic .grp { display:inline-flex; flex-wrap:wrap; gap:2px; max-width:260px; justify-content:center; padding:6px 10px; border:2px dashed var(--line); border-radius:14px; }
-  .pic .gone { opacity:.28; filter:grayscale(1); text-decoration:line-through; }
-  .pic .sign { font-size:2.2rem; font-weight:800; color:var(--main); }
-  .choices { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; max-width:520px; margin:10px auto; }
-  .choice { min-height:84px; font-family:Fredoka,Figtree,sans-serif; font-size:2.4rem; font-weight:700; border-radius:20px; border:4px solid var(--main); background:var(--card); }
-  .choice:hover:not([disabled]) { background:var(--bg); }
-  .choice.good { background:var(--ok-bg); border-color:var(--ok); color:var(--ok); }
-  .choice.bad { background:var(--bad-bg); border-color:var(--bad); color:var(--bad); animation:shake .35s; }
-  .choice[disabled] { cursor:default; }
-  @keyframes shake { 25% { transform:translateX(-7px); } 75% { transform:translateX(7px); } }
-  .msg { min-height:2.4em; font-weight:800; font-size:1.2rem; }
-  .msg.good { color:var(--ok); } .msg.bad { color:var(--bad); }
-  .line { display:flex; flex-wrap:wrap; justify-content:center; gap:3px; margin:6px auto 10px; max-width:640px; }
-  .line b { min-width:34px; padding:6px 0; border-radius:8px; background:var(--card); border:2px solid var(--line); font-size:1rem; }
-  .row { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:10px; }
-  .stars { font-size:3rem; letter-spacing:6px; }
-  .mem { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; max-width:520px; margin:12px auto; }
-  .mc { min-height:76px; border-radius:16px; border:3px solid var(--main); background:var(--main); color:var(--on-main); font-family:Fredoka,Figtree,sans-serif; font-weight:700; font-size:1.1rem; padding:4px; }
-  .mc.up { background:var(--card); color:var(--ink); } .mc.done { background:var(--ok-bg); border-color:var(--ok); color:var(--ok); }
-  .gate { max-width:460px; margin:60px auto; text-align:center; }
-  @media (max-width: 600px) { body { font-size:17px; } main { padding:10px 12px 50px; } .choices { gap:10px; } .choice { min-height:78px; font-size:2.1rem; } .mem { grid-template-columns:repeat(3,1fr); } }
-  @media (prefers-reduced-motion: reduce) { .choice.bad { animation:none; } }
+  /* ===== Identité « calcul » : vert émeraude / turquoise (la lecture est bleu-violet). Le mot « Calcul » et le signe ➕ portent aussi la différence. ===== */
+  [hidden] { display: none !important; }
+  body.calc { --calc: #0b7f7d; --calc-d: #075f5d; --calc-l: #d6f3ee; }
+  .test-band { position: sticky; top: 0; z-index: 60; background: #ffe9b8; color: #7a4b00; text-align: center; font-weight: 800; padding: 5px 10px; font-size: .9rem; border-bottom: 2px dashed #7a4b00; }
+  body.calc header .zoo-hero { border-color: #7ff0c6; background: radial-gradient(circle at 83% 18%, rgba(255,196,69,.42), transparent 32%), radial-gradient(circle at 22% 120%, rgba(60,230,170,.42), transparent 45%), linear-gradient(125deg,#053b36 0%,#0a6a5c 57%,#06353a 100%); box-shadow: 0 7px 0 #04302b, 0 15px 30px rgba(5,60,50,.22); }
+  body.calc header .zoo-hero .brand .sub { color: #c6fff0; }
+  body.calc header .zoo-hero::before { opacity: .22; }
+  body.calc header .zoo-llama { background: linear-gradient(145deg,#c6fff0,#7fd9c3); }
+  body.calc header .zoo-owl { background: linear-gradient(145deg,#fff0a8,#ffb96a); }
+  body.calc header .zoo-pad { background: #04302b; border-color: #7ff0c6; color: #c6fff0; }
+  body.calc header .zoo-pad span { color: #ffd54a; }
+  body.mode-student.calc .zoo-top-stat { background: rgba(4,48,43,.9); border-color: #8ff0cf; }
+  body.mode-student.calc .zoo-top-stat small { color: #c6fff0; }
+  body.calc .avatar-trigger { border-color: #7ddfc0; background: linear-gradient(145deg,#fff0a8,#b9f2dd); box-shadow: 0 4px 0 #3c9a82; cursor: default; }
+  body.calc .avatar-trigger:hover { transform: none; }
+  body.calc .panel-nav[aria-current="page"] { background: var(--calc-d); border-color: var(--calc-d); color: #fff; }
+  body.calc .home-next:not(.listen-go) { background: linear-gradient(135deg, #0fa38d, #0b7f7d); border-color: #0b7f7d; box-shadow: 0 6px 18px rgba(11,127,125,.35); }
+  body.calc .home-alt.listen-alt { border-color: #d9822b; color: #a85a0f; background: rgba(217,130,43,.1); }
+  body.calc .primary { background: var(--calc-d); color: #fff; }
+  /* panneau de droite : trois activités + salle de jeux (identique à la lecture) */
+  .panel-nav.nombres-cta { background: linear-gradient(145deg,#d6f3ee,#aee8dc); border-color: #0b7f7d; color: #064b49; }
+  .panel-nav.nombres-cta .pn-sub { color: #064b49; }
+  .panel-nav.add-cta { background: linear-gradient(145deg,#fff1cf,#ffdc8f); border-color: #d9a21f; color: #6b4300; }
+  .panel-nav.add-cta .pn-sub { color: #6b4300; }
+  .panel-nav.sub-cta { background: linear-gradient(145deg,#ffe3ea,#ffc2d1); border-color: #d6486b; color: #7a1631; }
+  .panel-nav.sub-cta .pn-sub { color: #7a1631; }
+  .panel-nav.nombres-cta[aria-current="page"] { background: #064b49; border-color: #064b49; color: #fff; } .panel-nav.nombres-cta[aria-current="page"] .pn-sub { color: #fff; }
+  .panel-nav.add-cta[aria-current="page"] { background: #6b4300; border-color: #6b4300; color: #fff; } .panel-nav.add-cta[aria-current="page"] .pn-sub { color: #fff; }
+  .panel-nav.sub-cta[aria-current="page"] { background: #7a1631; border-color: #7a1631; color: #fff; } .panel-nav.sub-cta[aria-current="page"] .pn-sub { color: #fff; }
+  body.mode-student .bottom-nav [data-go="boutique"], body.mode-student .bottom-nav [data-go="cartes"], body.mode-student .bottom-nav [data-go="reconnues"], body.mode-student .bottom-nav [data-go="progres"] { display: none; }
+  #panel-right .panel-nav.big.nombres-cta, #panel-right .panel-nav.big.add-cta, #panel-right .panel-nav.big.sub-cta { font-size: 1.12rem; padding: 20px 14px; }
+  @media (max-width: 880px) { body.calc #panel-left { display: none; } }
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(30px); opacity: 0; pointer-events: none; z-index: 70; background: #1b2433; color: #fff; padding: 12px 18px; border-radius: 14px; font-weight: 700; transition: opacity .2s, transform .2s; max-width: 90vw; text-align: center; }
+  .toast.show { opacity: 1; transform: translateX(-50%); }
+  body.mode-student .toast { bottom: calc(90px + env(safe-area-inset-bottom, 0px)); }
+  @media (max-width: 600px) { .tb-long { display: none; } }
+  body.calc-gate main { max-width: 520px; padding-top: 60px; }
+
+  /* ===== Exercices ===== */
+  .calc-card h2 { font-family: Fredoka, Figtree, sans-serif; }
+  .lvls { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); margin: 12px 0; }
+  .lv { display: flex; align-items: center; gap: 10px; min-height: 64px; padding: 10px 14px; border-radius: 16px; border: 2px solid var(--line); background: var(--card); color: var(--ink); text-align: left; font-weight: 700; cursor: pointer; }
+  .lv.sug { border-color: var(--calc); border-width: 3px; }
+  .lv .ico { font-size: 1.6rem; }
+  .lv .st { display: block; font-size: .8rem; font-weight: 800; color: var(--muted); }
+  .dots { display: flex; gap: 6px; justify-content: center; margin: 8px 0 14px; flex-wrap: wrap; }
+  .dot { width: 14px; height: 14px; border-radius: 50%; background: var(--line); border: 2px solid var(--calc); }
+  .dot.cur { background: var(--calc); } .dot.good { background: #17794f; border-color: #17794f; } .dot.miss { background: var(--card); border-color: #b3261e; border-style: dashed; }
+  .stage { text-align: center; padding: 6px 0; }
+  .say { width: min(230px,70%); min-height: 90px; font-size: 1.6rem; border-radius: 24px; border: 4px solid var(--calc-d); background: var(--calc); color: #fff; font-weight: 800; margin: 6px auto 12px; display: block; cursor: pointer; font-family: Fredoka, Figtree, sans-serif; }
+  .eq { font-family: Fredoka, Figtree, sans-serif; font-size: clamp(2.4rem,9vw,3.8rem); font-weight: 700; margin: 6px 0; letter-spacing: .04em; }
+  .pic { display: flex; flex-wrap: wrap; gap: 4px 14px; justify-content: center; align-items: center; margin: 6px auto 10px; font-size: 2rem; line-height: 1.15; max-width: 560px; }
+  .pic .grp { display: inline-flex; flex-wrap: wrap; gap: 2px; max-width: 260px; justify-content: center; padding: 6px 10px; border: 2px dashed var(--line); border-radius: 14px; }
+  .pic .gone { opacity: .28; filter: grayscale(1); text-decoration: line-through; }
+  .pic .sign { font-size: 2.2rem; font-weight: 800; color: var(--calc); }
+  .choices { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; max-width: 520px; margin: 10px auto; }
+  .choice { min-height: 84px; font-family: Fredoka, Figtree, sans-serif; font-size: 2.4rem; font-weight: 700; border-radius: 20px; border: 4px solid var(--calc); background: var(--card); color: var(--ink); cursor: pointer; }
+  .choice:hover:not([disabled]) { background: var(--calc-l); }
+  .choice.good { background: #d9f1e5; border-color: #17794f; color: #17794f; }
+  .choice.bad { background: #fbd9d5; border-color: #b3261e; color: #b3261e; animation: cshake .35s; }
+  .choice[disabled] { cursor: default; }
+  @keyframes cshake { 25% { transform: translateX(-7px); } 75% { transform: translateX(7px); } }
+  .msg { min-height: 2.4em; font-weight: 800; font-size: 1.15rem; }
+  .msg.good { color: #17794f; } .msg.bad { color: #b3261e; }
+  .nline { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; margin: 6px auto 10px; max-width: 640px; }
+  .nline b { min-width: 34px; padding: 6px 0; border-radius: 8px; background: var(--card); border: 2px solid var(--line); font-size: 1rem; }
+  .crow { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 10px; }
+  .stars { font-size: 3rem; letter-spacing: 6px; }
+  .mem { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; max-width: 520px; margin: 12px auto; }
+  .mc { min-height: 76px; border-radius: 16px; border: 3px solid var(--calc); background: var(--calc); color: #fff; font-family: Fredoka, Figtree, sans-serif; font-weight: 700; font-size: 1.1rem; padding: 4px; cursor: pointer; }
+  .mc.up { background: var(--card); color: var(--ink); } .mc.done { background: #d9f1e5; border-color: #17794f; color: #17794f; }
+  /* collections */
+  .ngrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 8px; }
+  .ntile { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 64px; border-radius: 14px; border: 2px solid var(--line); background: var(--card); font: 700 1.3rem Fredoka, sans-serif; color: var(--ink); }
+  .ntile small { font: 700 .7rem Figtree, sans-serif; color: var(--muted); }
+  .ntile.off { opacity: .35; background: transparent; border-style: dashed; }
+  .ntile.on { border-color: #17794f; background: #e6f6ec; }
+  .egrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+  .etile { padding: 10px 8px; border-radius: 14px; border: 2px solid #17794f; background: #e6f6ec; text-align: center; font: 700 1.1rem Fredoka, sans-serif; color: #12302f; }
+  .etile small { display: block; font: 700 .75rem Figtree, sans-serif; color: #506d6b; }
+  .prog-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .prog-row .nm { flex: 1 1 200px; font-weight: 700; } .prog-row .sc { color: var(--muted); font-size: .9rem; }
+  .pill { display: inline-block; padding: 2px 9px; border-radius: 999px; border: 2px solid var(--line); font-weight: 800; font-size: .8rem; white-space: nowrap; }
+  .pill.done { border-color: #17794f; color: #17794f; } .pill.mastered { border-color: var(--calc); color: var(--calc); }
+  @media (max-width: 600px) { .choices { gap: 10px; } .choice { min-height: 78px; font-size: 2.1rem; } .mem { grid-template-columns: repeat(3,1fr); } }
+  @media (prefers-reduced-motion: reduce) { .choice.bad { animation: none; } }
 </style>
 </head>
-<body>
-<div class="test-band" role="note">🧪 Version de test — les pièces gagnées ici sont des pièces de test</div>
-<main id="app" aria-live="polite"><p class="muted">Chargement…</p></main>
+<body class="mode-student calc">
+<div class="test-band" role="note">🧪 Version de test <span class="tb-long">— les pièces gagnées ici sont des pièces de test</span></div>
+<main>
+  <header>
+    <div class="zoo-hero">
+      <div class="zoo-hero-copy">
+        <span class="zoo-kicker">✦ LE GRAND JEU DU CALCUL ✦</span>
+        <div class="brand"><h1>Zoo de <span>Calcul</span></h1><span class="sub">Apprendre en s’amusant</span></div>
+        <span class="zoo-hero-tag">➕ Compte · 🏆 Progresse · 🎮 Joue !</span>
+      </div>
+      <div class="zoo-hero-art" aria-hidden="true"><span class="zoo-star zoo-star-one">✦</span><span class="zoo-mascot zoo-bee">🐝</span><span class="zoo-mascot zoo-llama">🦙</span><span class="zoo-mascot zoo-owl">🦉</span><span class="zoo-star zoo-star-two">✧</span><span class="zoo-pad">➕ <span>● ●</span></span></div>
+    </div>
+    <div class="zoo-top-stats needs-reward" id="zoo-top-stats" hidden aria-label="Mes pièces de test et mon niveau">
+      <div class="zoo-top-stat zoo-top-gold"><span class="gold-coin" aria-hidden="true"></span><strong id="top-coins">0</strong><small>Pièces</small></div>
+      <div class="zoo-top-stat"><span aria-hidden="true">🎮</span><strong id="top-games">0</strong><small>Parties</small></div>
+      <div class="zoo-top-stat zoo-top-keep"><span aria-hidden="true">🧮</span><strong id="top-level">N0</strong><small>Niveau</small></div>
+      <div class="zoo-top-stat zoo-top-keep" title="Nombres reconnus"><span aria-hidden="true">👂</span><strong id="top-nums">0</strong><small>Nombres</small></div>
+    </div>
+  </header>
+
+  <div class="layout" id="layout">
+    <aside class="panel left" id="panel-left" aria-label="Mon espace" hidden>
+      <div class="pcard">
+        <div class="avatar-profile"><div class="avatar-trigger" id="pl-avatar-box" role="img" aria-label="Mon avatar"><span id="pl-avatar" aria-hidden="true">🧑</span></div><div class="avatar-profile-name"><div class="who-name" id="pl-name"></div><span class="avatar-hint">Pour changer d’avatar, va dans Lecture</span></div></div>
+        <div class="row">
+          <button type="button" class="ghost-sm" id="btn-logout">Me déconnecter</button>
+          <button type="button" class="ghost-sm" id="btn-lecture" title="Retourner au Zoo de Lecture">📖 Lecture</button>
+        </div>
+      </div>
+      <button type="button" class="panel-nav" data-go="boutique"><span class="pn-ico" aria-hidden="true">🛍️</span><span>Boutique<span class="pn-sub" id="pl-shop"></span></span></button>
+      <button type="button" class="panel-nav" data-go="cartes"><span class="pn-ico" aria-hidden="true">🔢</span><span>Mes nombres lus</span></button>
+      <button type="button" class="panel-nav" data-go="reconnues"><span class="pn-ico" aria-hidden="true">🧮</span><span>Mes calculs gagnés</span></button>
+      <button type="button" class="panel-nav" data-go="progres"><span class="pn-ico" aria-hidden="true">📈</span><span>Ma progression<span class="pn-sub" id="pr-prog"></span></span></button>
+    </aside>
+
+    <div class="center" id="center"><section id="view" aria-live="polite"><div class="card"><p class="muted">Chargement…</p></div></section></div>
+
+    <aside class="panel right" id="panel-right" aria-label="Compter et jouer" hidden>
+      <button type="button" class="panel-nav big nombres-cta" data-go="nombres"><span class="pn-ico" aria-hidden="true">👂</span><span>J’écoute un nombre<span class="pn-sub" id="pr-nombres"></span></span></button>
+      <button type="button" class="panel-nav big add-cta" data-go="addition"><span class="pn-ico" aria-hidden="true">➕</span><span>ADDITION<span class="pn-sub" id="pr-addition"></span></span></button>
+      <button type="button" class="panel-nav big sub-cta" data-go="soustraction"><span class="pn-ico" aria-hidden="true">➖</span><span>SOUSTRACTION<span class="pn-sub" id="pr-soustraction"></span></span></button>
+      <button type="button" class="panel-nav big play-cta" data-go="jeux"><span class="play-cta-spark" aria-hidden="true">✦ ✧ ✦</span><span class="pn-ico play-cta-icon" aria-hidden="true">🎮</span><span class="play-cta-copy"><span class="play-cta-kicker">LA SALLE D’ARCADE</span><span class="play-cta-title">JOUER <span aria-hidden="true">➜</span></span><span class="pn-sub play-cta-count" id="pr-games"></span><span class="play-cta-hook">🏆 Relève les défis !</span></span></button>
+    </aside>
+  </div>
+
+  <nav class="bottom-nav" id="bottom-nav" aria-label="Mon espace" hidden>
+    <button type="button" class="panel-nav" data-go="nombres"><span class="pn-ico" aria-hidden="true">👂</span><span>Nombres</span></button>
+    <button type="button" class="panel-nav" data-go="addition"><span class="pn-ico" aria-hidden="true">➕</span><span>Addition</span></button>
+    <button type="button" class="panel-nav" data-go="soustraction"><span class="pn-ico" aria-hidden="true">➖</span><span>Soustr.</span></button>
+    <button type="button" class="panel-nav" data-go="jeux"><span class="pn-ico" aria-hidden="true">🎮</span><span>Jouer</span></button>
+    <button type="button" class="panel-nav" data-go="boutique"><span class="pn-ico" aria-hidden="true">🛍️</span><span>Boutique</span></button>
+    <button type="button" class="panel-nav" data-go="cartes"><span class="pn-ico" aria-hidden="true">🔢</span><span>Nombres</span></button>
+    <button type="button" class="panel-nav" data-go="reconnues"><span class="pn-ico" aria-hidden="true">🧮</span><span>Calculs</span></button>
+    <button type="button" class="panel-nav" data-go="progres"><span class="pn-ico" aria-hidden="true">📈</span><span>Progrès</span></button>
+    <button type="button" class="panel-nav bn-me" id="bn-me" aria-haspopup="true" aria-expanded="false" aria-controls="me-menu"><span class="pn-ico" aria-hidden="true">🙂</span><span>Moi</span></button>
+  </nav>
+  <div class="me-menu" id="me-menu" role="menu" hidden>
+    <button type="button" role="menuitem" data-go="boutique">🛍️ Boutique</button>
+    <button type="button" role="menuitem" data-go="cartes">🔢 Mes nombres lus</button>
+    <button type="button" role="menuitem" data-go="reconnues">🧮 Mes calculs gagnés</button>
+    <button type="button" role="menuitem" data-go="progres">📈 Ma progression</button>
+    <button type="button" role="menuitem" id="me-lecture">📖 Retour à la lecture</button>
+    <button type="button" role="menuitem" id="me-logout">🚪 Me déconnecter</button>
+  </div>
+</main>
+<div class="toast" id="toast" role="status"></div>
 
 <script src="labo-config.js"></script>
 <script src="vendor/supabase.js?v=2.118.0"></script>
-<script src="calcul/engine.js?v=1"></script>
+<script src="calcul/engine.js?v=2"></script>
 <script src="calcul/voice.js?v=1"></script>
 <script>
 (function () {
   "use strict";
   var CFG = window.LABO_CALCUL || { enabled: false }, E = window.CalcEngine, V = window.CalcVoice;
-  var app = document.getElementById("app"), token = null, client = null, R = null, busy = false;
-  var S = { levels: {}, coins: 0, credits: 0, settings: {} };
-  var ACT = { nombres: { icon: "👂", title: "J’écoute un nombre", sub: "Je trouve comment il s’écrit" },
-              addition: { icon: "➕", title: "J’additionne", sub: "Je calcule des additions" },
-              soustraction: { icon: "➖", title: "Je soustrais", sub: "Je calcule des soustractions" } };
+  var token = null, client = null, R = null, view = "home", toastTimer = null;
+  var S = { name: "", avatar: "🧑", levels: {}, nums: {}, calcs: {}, coins: 0, credits: 0, settings: {} };
+  var ACT = {
+    nombres: { icon: "👂", title: "J’écoute un nombre", sub: "Je trouve comment il s’écrit", say: "J’écoute un nombre et je trouve comment il s’écrit." },
+    addition: { icon: "➕", title: "Addition", sub: "Je calcule des additions", say: "Je calcule des additions." },
+    soustraction: { icon: "➖", title: "Soustraction", sub: "Je calcule des soustractions", say: "Je calcule des soustractions." }
+  };
   var ANIMALS = ["🐥", "🦁", "🐸", "🐘", "🦒", "🐼", "🐢", "🦊"];
   var BRAVO = ["Bravo !", "Super !", "Oui, c’est ça !", "Bien joué !", "Génial !"];
+  var QUOTES = ["Compter, c’est faire danser les nombres.", "Un petit pas chaque jour, et les nombres deviennent tes amis.", "Se tromper, c’est apprendre : on réessaie !"];
 
+  function $(id) { return document.getElementById(id); }
   function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
-  function clear() { while (app.firstChild) app.removeChild(app.firstChild); }
+  function clear(n) { while (n.firstChild) n.removeChild(n.firstChild); }
+  function nb(n, one, many) { return n + " " + (n > 1 ? many : one); }
   function uuid() {
     if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
     return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) { var r = Math.random() * 16 | 0; return (c === "x" ? r : (r & 3 | 8)).toString(16); });
   }
   function rpc(name, args) { return client.rpc(name, args).then(function (r) { if (r.error) throw r.error; return r.data; }); }
   function median(a) { if (!a.length) return 0; var s = a.slice().sort(function (x, y) { return x - y; }); return s[Math.floor(s.length / 2)]; }
+  function toast(msg) { var t = $("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.classList.remove("show"); }, 2800); }
+  function say(text) { V.speak(text); }
 
   /* Message neutre : ne révèle jamais si le labo existe ou si le compte n'y a pas droit */
   function gate(text, link) {
-    clear(); var g = el("div", "gate card"); g.appendChild(el("h2", "", text));
-    if (link) { var a = el("a", "btn", link.label); a.href = link.href; a.style.display = "inline-flex"; a.style.alignItems = "center"; a.style.textDecoration = "none"; g.appendChild(a); }
-    app.appendChild(g);
+    document.body.classList.add("calc-gate");
+    ["panel-left", "panel-right", "bottom-nav", "zoo-top-stats"].forEach(function (id) { $(id).hidden = true; });
+    var v = $("view"); clear(v); var g = el("div", "card"); g.appendChild(el("h2", "", text));
+    if (link) { var a = el("a", "primary big-btn", link.label); a.href = link.href; a.style.display = "inline-block"; a.style.textDecoration = "none"; a.style.textAlign = "center"; g.appendChild(a); }
+    v.appendChild(g);
   }
 
   function boot() {
@@ -115,70 +213,110 @@
     client = window.supabase.createClient(CFG.url, CFG.key);
     rpc("lab_my_access", { p_token: token }).then(function (a) {
       if (!a || !a.allowed) { gate("Cette page n’est pas disponible."); return; }
-      return rpc("lab_student_state", { p_token: token }).then(function (st) { load(st); home(); });
+      /* lecture seule du profil et de l'avatar du Zoo de Lecture (rien n'est écrit côté lecture) */
+      return Promise.all([rpc("lab_student_state", { p_token: token }), rpc("student_session_profile", { p_token: token }).catch(function () { return null; }),
+                          rpc("student_get_progress_v2", { p_token: token }).catch(function () { return null; })]).then(function (r) {
+        load(r[0]); S.name = (r[1] && r[1].nickname) || "toi";
+        var p = r[2] && r[2].progress; if (p && typeof p.avatar === "string" && p.avatar) S.avatar = p.avatar;
+        start();
+      });
     }).catch(function () { gate("Un petit souci de connexion. Réessaie dans un instant.", { href: "labo-calcul.html", label: "Réessayer" }); });
   }
   function load(st) {
-    S.levels = (st.progress && st.progress.levels) || {}; S.coins = st.test_coins || 0; S.credits = st.test_credits || 0; S.settings = st.settings || {};
+    var p = st.progress || {};
+    S.levels = p.levels || {}; S.nums = p.nums || {}; S.calcs = p.calcs || {};
+    S.coins = st.test_coins || 0; S.credits = st.test_credits || 0; S.settings = st.settings || {};
   }
   function enabledLevels(act) {
     var l = S.settings.levels && S.settings.levels[act];
     return (l && l.length ? l : E.DEFAULT_LEVELS[act]).filter(function (id) { return E.levelInfo(act, id); });
   }
 
-  /* ===== En-tête commun : repères identiques à la lecture (retour, pièces) ===== */
-  function top() {
-    var t = el("div", "top"), seg = el("div", "seg"), a = el("a", "", "📖 Lecture"); a.href = "zoo-connecte.html";
-    var cur = el("span", "", "➕ Calcul"); cur.setAttribute("aria-current", "page");
-    seg.appendChild(a); seg.appendChild(cur); t.appendChild(seg);
-    var chip = el("div", "chip", "🧪 " + S.coins + " · 🎮 " + S.credits); chip.title = "Pièces et droits de jeu de test";
-    t.appendChild(chip); app.appendChild(t);
+  /* ===== Chiffres : niveau = niveaux réussis, nombres = nombres reconnus ===== */
+  function levelsDone() { return Object.keys(S.levels).filter(function (k) { return (S.levels[k].ok || 0) >= 1; }).length; }
+  function levelsMastered() { return Object.keys(S.levels).filter(function (k) { return (S.levels[k].ok || 0) >= 2; }).length; }
+  function numsCount() { return Object.keys(S.nums).length; }
+  function calcsCount() { return Object.keys(S.calcs).length; }
+  function suggest(act) { return E.suggestLevel(act, enabledLevels(act), S.levels); }
+  function levelLabel(act) { var id = suggest(act), l = id && E.levelInfo(act, id); return l ? l.label : ""; }
+
+  function renderPanels() {
+    $("top-coins").textContent = S.coins; $("top-games").textContent = S.credits; $("top-level").textContent = "N" + levelsDone(); $("top-nums").textContent = numsCount();
+    $("pl-name").textContent = S.name; $("pl-avatar").textContent = S.avatar;
+    $("pr-prog").textContent = levelsDone() ? "✓ " + nb(levelsDone(), "niveau réussi", "niveaux réussis") + (levelsMastered() ? " · ⭐ " + levelsMastered() : "") : "";
+    $("pl-shop").textContent = S.coins >= 3 ? "Tu peux acheter !" : "";
+    $("pr-games").textContent = nb(S.credits, "partie", "parties");
+    ["nombres", "addition", "soustraction"].forEach(function (a) { $("pr-" + a).textContent = levelLabel(a); });
+    Array.prototype.forEach.call(document.querySelectorAll("[data-go]"), function (b) { if (b.getAttribute("data-go") === view) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
+  }
+  function start() {
+    document.body.classList.remove("calc-gate");
+    ["panel-left", "panel-right", "bottom-nav", "zoo-top-stats"].forEach(function (id) { $(id).hidden = false; });
+    goTo("home");
+  }
+  function goTo(v) {
+    V.stop(); R = null; view = v; document.body.classList.remove("listen-focus");
+    var me = $("me-menu"); me.hidden = true; $("bn-me").setAttribute("aria-expanded", "false");
+    var box = $("view"); clear(box);
+    ({ home: home, nombres: function (b) { levels(b, "nombres"); }, addition: function (b) { levels(b, "addition"); }, soustraction: function (b) { levels(b, "soustraction"); },
+       jeux: games, boutique: shop, cartes: numsView, reconnues: calcsView, progres: progressView })[v](box);
+    renderPanels(); window.scrollTo(0, 0);
   }
 
-  function home() {
-    V.stop(); R = null; clear(); top();
-    app.appendChild(el("h1", "", "➕ Zoo de Calcul"));
-    app.appendChild(el("p", "muted", "Choisis une activité."));
-    var g = el("div", "grid");
-    ["nombres", "addition", "soustraction"].forEach(function (act) {
-      var b = el("button", "big"); b.type = "button";
-      b.appendChild(el("span", "ico", ACT[act].icon));
-      var d = el("span"); d.appendChild(document.createTextNode(ACT[act].title)); d.appendChild(el("small", "", ACT[act].sub)); b.appendChild(d);
-      b.addEventListener("click", function () { levelMenu(act); });
-      g.appendChild(b);
-    });
-    var gb = el("button", "big"); gb.type = "button"; gb.appendChild(el("span", "ico", "🎮"));
-    var gd = el("span"); gd.appendChild(document.createTextNode("Salle de jeux")); gd.appendChild(el("small", "", "Avec mes pièces de test")); gb.appendChild(gd);
-    gb.addEventListener("click", games); g.appendChild(gb);
-    app.appendChild(g);
+  /* ===== Accueil : une seule prochaine action bien visible, consigne lue à voix haute ===== */
+  function pickNext() {
+    var order = ["nombres", "addition", "soustraction"], best = null;
+    order.forEach(function (a) { var id = suggest(a), e = S.levels[a + ":" + id], r = e && e.r || 0, ok = e && e.ok || 0, score = ok * 100 + r; if (best === null || score < best.score) best = { act: a, id: id, score: score }; });
+    var other = order.filter(function (a) { return a !== best.act; }).map(function (a) { return { act: a, id: suggest(a) }; })[0];
+    return { main: best, other: other };
+  }
+  function home(box) {
+    var n = pickNext(), card = el("div", "card home-hero");
+    card.appendChild(el("h2", "", "Bonjour " + S.name + " !"));
+    var speak = "Bonjour " + S.name + " ! Touche le gros bouton pour t’entraîner : " + ACT[n.main.act].say;
+    var row = el("div", "home-step");
+    var pet = el("button", "home-pet"); pet.type = "button"; pet.setAttribute("aria-label", "Écouter la consigne"); pet.appendChild(el("span", "home-pet-emoji", ACT[n.main.act].icon));
+    pet.addEventListener("click", function () { say(speak); }); row.appendChild(pet);
+    var col = el("div", "home-col");
+    function sayBtn(text, label) { var b = el("button", "secondary home-say", "🔊"); b.type = "button"; b.setAttribute("aria-label", label); b.title = label; b.addEventListener("click", function () { say(text); }); return b; }
+    var mr = el("div", "home-act-row"), go = el("button", "primary big-btn home-next", "🏋️ Je m’entraîne"); go.type = "button";
+    go.appendChild(el("small", "home-sub", ACT[n.main.act].icon + " " + ACT[n.main.act].title + " : " + (E.levelInfo(n.main.act, n.main.id) || {}).label));
+    go.addEventListener("click", function () { startRound(n.main.act, n.main.id); });
+    mr.appendChild(go); mr.appendChild(sayBtn(speak, "Écouter la consigne")); col.appendChild(mr);
+    col.appendChild(el("p", "home-or", "Ou bien :"));
+    var ar = el("div", "home-act-row"), ob = el("button", "secondary big-btn home-alt listen-alt", ACT[n.other.act].icon + " " + ACT[n.other.act].title + " : " + (E.levelInfo(n.other.act, n.other.id) || {}).label); ob.type = "button";
+    ob.addEventListener("click", function () { startRound(n.other.act, n.other.id); });
+    ar.appendChild(ob); ar.appendChild(sayBtn("Ou bien : " + ACT[n.other.act].say, "Écouter la consigne")); col.appendChild(ar);
+    var more = el("div", "home-more"), ch = el("button", "secondary home-small", "↔️ Choisir une autre activité"); ch.type = "button"; ch.addEventListener("click", function () { goTo("nombres"); });
+    more.appendChild(ch); col.appendChild(more);
+    row.appendChild(col); card.appendChild(row); box.appendChild(card);
+    var qc = el("div", "card quote-card"); qc.appendChild(el("blockquote", "", "« " + QUOTES[new Date().getDate() % QUOTES.length] + " »")); box.appendChild(qc);
   }
 
+  /* ===== Choix du niveau ===== */
   function statusText(act, id) {
     var s = E.status(S.levels[act + ":" + id]);
     return s === "mastered" ? "⭐ Maîtrisé" : s === "done" ? "✓ Réussi" : s === "todo" ? "🕒 À travailler" : "✨ Nouveau";
   }
-  function levelMenu(act) {
-    V.stop(); clear(); top();
-    var b = el("button", "btn alt", "← Retour"); b.type = "button"; b.addEventListener("click", home); app.appendChild(b);
-    app.appendChild(el("h1", "", ACT[act].icon + " " + ACT[act].title));
-    app.appendChild(el("p", "muted", "Prends ton temps : il n’y a pas de chrono."));
-    var ids = enabledLevels(act), sug = E.suggestLevel(act, ids, S.levels), box = el("div", "levels");
+  function levels(box, act) {
+    var card = el("div", "card calc-card");
+    card.appendChild(el("h2", "", ACT[act].icon + " " + ACT[act].title));
+    card.appendChild(el("p", "muted", "Prends ton temps : il n’y a pas de chrono. Choisis un niveau."));
+    var ids = enabledLevels(act), sug = suggest(act), grid = el("div", "lvls");
     ids.forEach(function (id) {
       var lv = E.levelInfo(act, id), x = el("button", "lv" + (id === sug ? " sug" : "")); x.type = "button";
       x.appendChild(el("span", "ico", lv.emoji));
-      var d = el("span"); d.appendChild(document.createTextNode(lv.label));
-      d.appendChild(el("span", "st", (id === sug ? "👉 Pour toi · " : "") + statusText(act, id)));
-      x.appendChild(d); x.addEventListener("click", function () { startRound(act, id); });
-      box.appendChild(x);
+      var d = el("span"); d.appendChild(document.createTextNode(lv.label)); d.appendChild(el("span", "st", (id === sug ? "👉 Pour toi · " : "") + statusText(act, id))); x.appendChild(d);
+      x.addEventListener("click", function () { startRound(act, id); }); grid.appendChild(x);
     });
-    app.appendChild(box);
+    card.appendChild(grid); box.appendChild(card);
   }
 
-  /* ===== Une série ===== */
+  /* ===== Une série (l'écran entier est consacré à l'exercice, comme l'écoute de la lecture) ===== */
   function startRound(act, id) {
     var n = Math.max(5, Math.min(20, parseInt(S.settings.questions, 10) || 10));
-    R = { act: act, lv: id, qs: E.makeRound(act, id, n), i: 0, good: 0, replays: 0, helps: 0, times: [], id: uuid(), res: [], q: null };
-    question();
+    R = { act: act, lv: id, qs: E.makeRound(act, id, n), i: 0, good: 0, replays: 0, helps: 0, times: [], id: uuid(), res: [], q: null, nums: [], calcs: [] };
+    document.body.classList.add("listen-focus"); question();
   }
   function dots() {
     var d = el("div", "dots"); d.setAttribute("role", "img"); d.setAttribute("aria-label", "Question " + (R.i + 1) + " sur " + R.qs.length);
@@ -187,8 +325,7 @@
   }
   function group(n, ico, gone) { var g = el("span", "grp"); for (var k = 0; k < n; k++) g.appendChild(el("span", gone && k >= n - gone ? "gone" : "", ico)); return g; }
   function picture(q) {
-    var p = el("div", "pic"), ico = ANIMALS[(R.i + q.a) % ANIMALS.length];
-    p.setAttribute("aria-hidden", "true");
+    var p = el("div", "pic"), ico = ANIMALS[(R.i + q.a) % ANIMALS.length]; p.setAttribute("aria-hidden", "true");
     if (q.type === "addition" && q.hole) { p.appendChild(group(q.a, ico)); p.appendChild(el("span", "sign", "+")); p.appendChild(el("span", "sign", "?")); }
     else if (q.type === "addition") { p.appendChild(group(q.a, ico)); p.appendChild(el("span", "sign", "+")); p.appendChild(group(q.b, ico)); }
     else if (q.level === "s5") { p.appendChild(group(q.a, ico)); p.appendChild(group(q.b, ico)); }
@@ -196,38 +333,36 @@
     return p;
   }
   function numberLine(q) {
-    var cap = q.level === "a8" ? 0 : Math.max(10, Math.min(20, q.a + q.b + 2)), l = el("div", "line"), k;
+    var cap = q.level === "a8" ? 0 : Math.max(10, Math.min(20, q.a + q.b + 2)), l = el("div", "nline"), k;
     if (!cap) { for (k = 10; k <= 100; k += 10) l.appendChild(el("b", "", String(k))); return l; }
     for (k = 0; k <= cap; k++) l.appendChild(el("b", "", String(k)));
     return l;
   }
-  function sayQuestion(q) { if (q.type === "nombres") { V.speak(q.say); } }
-
   function question() {
-    V.stop(); clear(); top();
-    var q = R.qs[R.i], mistakes = 0, firstTry = true, t0 = Date.now(), answered = false, helped = false;
+    V.stop();
+    var box = $("view"); clear(box);
+    var q = R.qs[R.i], mistakes = 0, firstTry = true, t0 = Date.now(), answered = false, helped = false, card = el("div", "card calc-card");
     R.q = q;
-    var quit = el("button", "btn alt", "← Arrêter"); quit.type = "button"; quit.addEventListener("click", function () { levelMenu(R.act); }); app.appendChild(quit);
-    app.appendChild(dots());
-    var st = el("div", "stage"); app.appendChild(st);
+    var quit = el("button", "secondary home-small", "← Arrêter"); quit.type = "button"; quit.addEventListener("click", function () { goTo(R.act); }); card.appendChild(quit);
+    card.appendChild(dots());
+    var st = el("div", "stage"); card.appendChild(st);
     var msg = el("div", "msg"); msg.setAttribute("role", "status");
     if (q.type === "nombres") {
-      var sp = el("button", "say", "🔊 Écouter"); sp.type = "button"; sp.setAttribute("aria-label", "Écouter le nombre");
-      var first = true;
+      var sp = el("button", "say", "🔊 Écouter"); sp.type = "button"; sp.setAttribute("aria-label", "Écouter le nombre"); var first = true;
       sp.addEventListener("click", function () { if (!first) R.replays++; first = false; if (!V.speak(q.say)) msg.textContent = "Ton appareil ne sait pas lire à voix haute."; });
       st.appendChild(sp); st.appendChild(el("p", "muted", "Quel nombre as-tu entendu ?"));
       setTimeout(function () { if (R && R.q === q && S.settings.voice !== false) { first = false; if (!V.speak(q.say)) msg.textContent = "Ton appareil ne sait pas lire à voix haute : demande à un adulte."; } }, 350);
     } else {
       st.appendChild(el("div", "eq", q.hole ? q.text.replace("?", "…") : q.text + " = …"));
       if (q.aid === "see") st.appendChild(picture(q));
-      var hb = el("button", "btn alt", "🧩 Je m’aide"); hb.type = "button"; hb.setAttribute("aria-expanded", "false"); var lineBox = el("div");
+      var hb = el("button", "secondary home-small", "🧩 Je m’aide"); hb.type = "button"; hb.setAttribute("aria-expanded", "false"); var lineBox = el("div");
       hb.addEventListener("click", function () {
         if (lineBox.firstChild) { lineBox.removeChild(lineBox.firstChild); hb.setAttribute("aria-expanded", "false"); return; }
         if (!helped) { helped = true; R.helps++; }
         lineBox.appendChild(numberLine(q)); hb.setAttribute("aria-expanded", "true");
       });
-      var sq = el("button", "btn alt", "🔊"); sq.type = "button"; sq.setAttribute("aria-label", "Lire à voix haute"); sq.addEventListener("click", function () { V.speak(q.say); });
-      var rw = el("div", "row"); rw.appendChild(sq); rw.appendChild(hb); st.appendChild(rw); st.appendChild(lineBox);
+      var sq = el("button", "secondary home-small", "🔊"); sq.type = "button"; sq.setAttribute("aria-label", "Lire à voix haute"); sq.addEventListener("click", function () { V.speak(q.say); });
+      var rw = el("div", "crow"); rw.appendChild(sq); rw.appendChild(hb); st.appendChild(rw); st.appendChild(lineBox);
     }
     var cs = el("div", "choices"), btns = [];
     q.choices.forEach(function (c) {
@@ -236,79 +371,96 @@
         if (answered) return;
         if (c === q.answer) {
           answered = true; b.classList.add("good"); btns.forEach(function (x) { x.disabled = true; });
-          R.times.push(Date.now() - t0); R.res[R.i] = firstTry ? 1 : 0; if (firstTry) R.good++;
-          msg.className = "msg good"; msg.textContent = (firstTry ? BRAVO[Math.floor(Math.random() * BRAVO.length)] : "Voilà, tu as trouvé !") + " " + (q.type === "nombres" ? q.say + " s’écrit " + q.answer : q.hole ? q.a + " + " + q.answer + " = " + q.total : q.text + " = " + q.answer);
-          var nx = el("button", "btn", R.i + 1 < R.qs.length ? "Suite →" : "Voir mon résultat"); nx.type = "button";
+          R.times.push(Date.now() - t0); R.res[R.i] = firstTry ? 1 : 0;
+          if (firstTry) { R.good++; if (q.type === "nombres") R.nums.push(q.answer); else R.calcs.push(q.a + (q.type === "addition" ? "+" : "-") + q.b); }
+          msg.className = "msg good";
+          msg.textContent = (firstTry ? BRAVO[Math.floor(Math.random() * BRAVO.length)] : "Voilà, tu as trouvé !") + " " + (q.type === "nombres" ? q.say + " s’écrit " + q.answer : q.hole ? q.a + " + " + q.answer + " = " + q.total : q.text + " = " + q.answer);
+          var nx = el("button", "primary big-btn", R.i + 1 < R.qs.length ? "Suite →" : "Voir mon résultat"); nx.type = "button";
           nx.addEventListener("click", function () { R.i++; if (R.i < R.qs.length) question(); else finish(); });
-          var r = el("div", "row"); r.appendChild(nx); st.appendChild(r); nx.focus();
+          var r = el("div", "crow"); r.appendChild(nx); st.appendChild(r); nx.focus();
         } else {
           mistakes++; firstTry = false; b.classList.add("bad"); b.disabled = true;
           msg.className = "msg bad"; msg.textContent = mistakes >= 2 ? "Regarde bien, la bonne réponse est colorée." : "Pas tout à fait. Essaie encore 💪";
-          if (mistakes >= 2) btns.forEach(function (x) { if (x.textContent === String(q.answer)) x.style.borderColor = "var(--ok)"; });
+          if (mistakes >= 2) btns.forEach(function (x) { if (x.textContent === String(q.answer)) x.style.borderColor = "#17794f"; });
           if (q.type === "nombres") { R.replays++; V.speak(q.say); }
         }
       });
       cs.appendChild(b);
     });
-    app.appendChild(cs); app.appendChild(msg);
+    card.appendChild(cs); card.appendChild(msg); box.appendChild(card);
   }
-
   function finish() {
-    V.stop(); clear(); top();
-    var n = R.qs.length, g = R.good, box = el("div", "card stage"), stats = { replays: R.replays, helps: R.helps, ms: median(R.times) };
-    box.appendChild(el("h2", "", "Série terminée !")); var stars = el("div", "stars", g === n ? "⭐⭐⭐" : g * 100 >= 80 * n ? "⭐⭐" : "⭐"); stars.setAttribute("aria-hidden", "true"); box.appendChild(stars);
-    box.appendChild(el("p", "", g + " bonnes réponses du premier coup sur " + n));
-    var info = el("p", "msg", "Je range ton résultat…"); box.appendChild(info);
-    var row = el("div", "row"); box.appendChild(row); app.appendChild(box);
+    V.stop(); var box = $("view"); clear(box);
+    var n = R.qs.length, g = R.good, card = el("div", "card calc-card stage"), stats = { replays: R.replays, helps: R.helps, ms: median(R.times), nums: R.nums, calcs: R.calcs };
+    card.appendChild(el("h2", "", "Série terminée !")); var stars = el("div", "stars", g === n ? "⭐⭐⭐" : g * 100 >= 80 * n ? "⭐⭐" : "⭐"); stars.setAttribute("aria-hidden", "true"); card.appendChild(stars);
+    card.appendChild(el("p", "", g + " bonnes réponses du premier coup sur " + n));
+    var info = el("p", "msg", "Je range ton résultat…"); card.appendChild(info);
+    var row = el("div", "crow"); card.appendChild(row); box.appendChild(card);
     function done(res) {
-      if (res.inserted && res.level) S.levels[R.act + ":" + R.lv] = res.level;
+      if (res.inserted && res.level) {
+        S.levels[R.act + ":" + R.lv] = res.level;
+        R.nums.forEach(function (x) { S.nums[x] = (S.nums[x] || 0) + 1; });
+        R.calcs.forEach(function (x) { S.calcs[x] = (S.calcs[x] || 0) + 1; });
+      }
       S.coins = res.test_coins; S.credits = res.test_credits;
       info.className = "msg " + (res.success ? "good" : "");
       info.textContent = res.success ? (res.coins ? "🎉 Réussi ! +" + res.coins + " pièce" + (res.coins > 1 ? "s" : "") + " de test" : "🎉 Réussi ! (tu as déjà gagné beaucoup de pièces de test aujourd’hui)") : "Continue, tu progresses ! Tu peux refaire cette série.";
-      var again = el("button", "btn", "Rejouer"); again.type = "button"; again.addEventListener("click", function () { startRound(R.act, R.lv); });
-      var other = el("button", "btn alt", "Autre niveau"); other.type = "button"; other.addEventListener("click", function () { levelMenu(R.act); });
-      var hm = el("button", "btn alt", "Accueil"); hm.type = "button"; hm.addEventListener("click", home);
-      row.appendChild(again); row.appendChild(other); row.appendChild(hm);
-      var chip = document.querySelector(".chip"); if (chip) chip.textContent = "🧪 " + S.coins + " · 🎮 " + S.credits;
+      var act = R.act, lv = R.lv;
+      function b(label, cls, fn) { var x = el("button", cls, label); x.type = "button"; x.addEventListener("click", fn); row.appendChild(x); }
+      b("Rejouer", "primary big-btn", function () { startRound(act, lv); }); b("Autre niveau", "secondary big-btn", function () { goTo(act); }); b("Accueil", "secondary big-btn", function () { goTo("home"); });
+      renderPanels();
     }
     function send() {
       rpc("lab_student_submit_round", { p_token: token, p_round: R.id, p_activity: R.act, p_level: R.lv, p_correct: g, p_total: n, p_stats: stats }).then(done).catch(function () {
-        info.className = "msg bad"; info.textContent = "Je n’ai pas pu ranger ton résultat.";
-        while (row.firstChild) row.removeChild(row.firstChild);
-        var rt = el("button", "btn", "Réessayer"); rt.type = "button"; rt.addEventListener("click", function () { info.className = "msg"; info.textContent = "Je range ton résultat…"; while (row.firstChild) row.removeChild(row.firstChild); send(); });
-        row.appendChild(rt);
+        info.className = "msg bad"; info.textContent = "Je n’ai pas pu ranger ton résultat."; clear(row);
+        var rt = el("button", "primary big-btn", "Réessayer"); rt.type = "button"; rt.addEventListener("click", function () { info.className = "msg"; info.textContent = "Je range ton résultat…"; clear(row); send(); }); row.appendChild(rt);
       });
     }
     send();
   }
 
-  /* ===== Salle de jeux de TEST : pièces de test → droit de jeu de test → mini-jeu ===== */
-  function games(msgText) {
-    V.stop(); clear(); top();
-    var b = el("button", "btn alt", "← Retour"); b.type = "button"; b.addEventListener("click", home); app.appendChild(b);
-    app.appendChild(el("h1", "", "🎮 Salle de jeux"));
-    app.appendChild(el("p", "muted", "Ici, tout est pour de faux : ce sont des pièces de test. Tes vraies pièces ne bougent pas."));
-    var card = el("div", "card stage");
-    card.appendChild(el("h2", "", "🧪 " + S.coins + " pièces de test · 🎮 " + S.credits + " droit" + (S.credits > 1 ? "s" : "") + " de jeu"));
-    var msg = el("div", "msg", typeof msgText === "string" ? msgText : ""); msg.setAttribute("role", "status");
-    var buy = el("button", "btn alt", "Échanger 3 🧪 contre 1 🎮"); buy.type = "button"; buy.disabled = S.coins < 3;
-    var play = el("button", "btn", "Jouer au Memory des nombres"); play.type = "button"; play.disabled = S.credits < 1;
+  /* ===== Boutique de TEST : mêmes éléments que celle du Zoo de Lecture, avec les pièces de test ===== */
+  function shop(box) {
+    var s = el("div", "shop"), aw = el("div", "awning"); aw.setAttribute("aria-hidden", "true"); for (var i = 0; i < 16; i++) aw.appendChild(el("i")); s.appendChild(aw);
+    var head = el("div", "shop-head"); head.appendChild(el("div", "shop-sign", "La boutique"));
+    var wallet = el("div", "wallet"); wallet.appendChild(document.createTextNode("Tu as ")); var c = el("span", "gold-coin"); c.setAttribute("aria-hidden", "true"); wallet.appendChild(c);
+    wallet.appendChild(el("b", "", String(S.coins))); wallet.appendChild(document.createTextNode(S.coins > 1 ? " pièces de test" : " pièce de test")); head.appendChild(wallet); s.appendChild(head);
+    var shelf = el("div", "shelf"), price = 3, afford = S.coins >= price;
+    var card = el("div", "prod tint0" + (afford ? " afford" : "")), tile = el("div", "prod-icon", "🎮"); tile.setAttribute("aria-hidden", "true"); tile.appendChild(el("span", "qty", "×1")); card.appendChild(tile);
+    card.appendChild(el("div", "prod-name", "1 partie de jeu en plus"));
+    if (afford) card.appendChild(el("div", "can", "Tu peux l’acheter !"));
+    else { var need = el("div", "need", "Il te manque " + nb(price - S.coins, "pièce", "pièces") + "."), bar = el("div", "need-bar"), fill = el("i"); bar.setAttribute("aria-hidden", "true"); fill.style.width = Math.max(4, Math.round(S.coins * 100 / price)) + "%"; bar.appendChild(fill); need.appendChild(bar); card.appendChild(need); }
+    var rowp = el("div", "prod-buy"), tag = el("div", "pricetag"), cc = el("span", "gold-coin"); cc.setAttribute("aria-hidden", "true"); tag.appendChild(cc); tag.appendChild(el("b", "", String(price))); tag.appendChild(document.createTextNode(" pièces de test"));
+    var buy = el("button", "buy", "Acheter"); buy.type = "button"; buy.disabled = !afford;
     buy.addEventListener("click", function () {
       buy.disabled = true;
-      rpc("lab_student_buy_play", { p_token: token, p_op: uuid() }).then(function (r) { S.coins = r.test_coins; S.credits = r.test_credits; games(r.done ? "Échange fait !" : "Il manque des pièces de test."); })
-        .catch(function () { buy.disabled = false; msg.className = "msg bad"; msg.textContent = "Un souci de connexion, réessaie."; });
+      rpc("lab_student_buy_play", { p_token: token, p_op: uuid() }).then(function (r) { S.coins = r.test_coins; S.credits = r.test_credits; toast(r.done ? "Achat réussi : 1 partie de jeu en plus !" : "Il manque des pièces de test."); goTo("boutique"); })
+        .catch(function () { buy.disabled = false; toast("Un souci de connexion, réessaie."); });
     });
+    rowp.appendChild(tag); rowp.appendChild(buy); card.appendChild(rowp); shelf.appendChild(card); s.appendChild(shelf);
+    s.appendChild(el("p", "shop-hint", "Boutique de test : ces pièces ne sont pas tes vraies pièces d’or.")); box.appendChild(s);
+  }
+
+  /* ===== Salle de jeux de TEST ===== */
+  function games(box) {
+    var card = el("div", "card calc-card stage");
+    card.appendChild(el("h2", "", "🎮 La salle d’arcade"));
+    card.appendChild(el("p", "muted", "Ici, tout est pour de faux : ce sont des parties de test. Tes vraies pièces et tes vrais jeux ne bougent pas."));
+    card.appendChild(el("p", "", nb(S.credits, "partie disponible", "parties disponibles") + " · " + S.coins + " 🧪"));
+    var msg = el("div", "msg"); msg.setAttribute("role", "status");
+    var play = el("button", "primary big-btn", "Jouer au Memory des nombres"); play.type = "button"; play.disabled = S.credits < 1;
+    var buy = el("button", "secondary big-btn", "🛍️ Aller à la boutique"); buy.type = "button"; buy.addEventListener("click", function () { goTo("boutique"); });
     play.addEventListener("click", function () {
       play.disabled = true;
-      rpc("lab_student_use_play", { p_token: token, p_op: uuid() }).then(function (r) { S.coins = r.test_coins; S.credits = r.test_credits; if (r.done) memory(); else games("Tu n’as plus de droit de jeu."); })
+      rpc("lab_student_use_play", { p_token: token, p_op: uuid() }).then(function (r) { S.coins = r.test_coins; S.credits = r.test_credits; if (r.done) memory(); else { toast("Tu n’as plus de partie."); goTo("jeux"); } })
         .catch(function () { play.disabled = false; msg.className = "msg bad"; msg.textContent = "Un souci de connexion, réessaie."; });
     });
-    var r = el("div", "row"); r.appendChild(buy); r.appendChild(play); card.appendChild(r); card.appendChild(msg); app.appendChild(card);
+    var r = el("div", "crow"); r.appendChild(play); r.appendChild(buy); card.appendChild(r); card.appendChild(msg); box.appendChild(card);
   }
   function memory() {
-    clear(); top();
-    app.appendChild(el("h1", "", "🧠 Memory des nombres"));
-    app.appendChild(el("p", "muted", "Trouve un chiffre et son nombre écrit en lettres."));
+    var box = $("view"); clear(box); renderPanels();
+    var card = el("div", "card calc-card stage");
+    card.appendChild(el("h2", "", "🧠 Memory des nombres")); card.appendChild(el("p", "muted", "Trouve un chiffre et son nombre écrit en lettres."));
     var nums = E.shuffle(Array.apply(null, Array(21)).map(function (_, k) { return k; })).slice(0, 6), cards = [];
     nums.forEach(function (n) { cards.push({ n: n, t: String(n), k: "d" }); cards.push({ n: n, t: E.words(n), k: "w" }); });
     cards = E.shuffle(cards);
@@ -323,15 +475,62 @@
         tries++; var x = open[0], y = open[1]; open = [];
         if (x.c.n === y.c.n && x.c.k !== y.c.k) {
           x.b.classList.add("done"); y.b.classList.add("done"); found++;
-          if (found === nums.length) { info.className = "msg good"; info.textContent = "Bravo ! Fini en " + tries + " essais. (Partie de test : pas de pièces.)"; var back = el("button", "btn", "Retour à la salle de jeux"); back.type = "button"; back.addEventListener("click", function () { games(); }); var rw = el("div", "row"); rw.appendChild(back); app.appendChild(rw); }
-        } else {
-          lock = true; setTimeout(function () { [x, y].forEach(function (z) { z.b.classList.remove("up"); z.b.textContent = "?"; z.b.setAttribute("aria-label", "Carte cachée"); }); lock = false; }, 1100);
-        }
+          if (found === nums.length) { info.className = "msg good"; info.textContent = "Bravo ! Fini en " + tries + " essais. (Partie de test : pas de pièces.)"; var back = el("button", "primary big-btn", "Retour à la salle d’arcade"); back.type = "button"; back.addEventListener("click", function () { goTo("jeux"); }); var rw = el("div", "crow"); rw.appendChild(back); card.appendChild(rw); }
+        } else { lock = true; setTimeout(function () { [x, y].forEach(function (z) { z.b.classList.remove("up"); z.b.textContent = "?"; z.b.setAttribute("aria-label", "Carte cachée"); }); lock = false; }, 1100); }
       });
       grid.appendChild(b);
     });
-    app.appendChild(grid); app.appendChild(info);
+    card.appendChild(grid); card.appendChild(info); box.appendChild(card);
   }
+
+  /* ===== Collections et progression ===== */
+  function numsView(box) {
+    var card = el("div", "card calc-card"), found = numsCount();
+    card.appendChild(el("h2", "", "Mes nombres lus"));
+    card.appendChild(el("p", "muted", found + (found > 1 ? " nombres reconnus" : " nombre reconnu") + " sur 101. Chaque nombre trouvé du premier coup s’allume !"));
+    var g = el("div", "ngrid"); for (var n = 0; n <= 100; n++) { var on = S.nums[n], t = el("div", "ntile" + (on ? " on" : " off"), String(n)); if (on > 1) t.appendChild(el("small", "", "×" + on)); g.appendChild(t); }
+    card.appendChild(g); box.appendChild(card);
+  }
+  function calcsView(box) {
+    var card = el("div", "card calc-card"), keys = Object.keys(S.calcs);
+    card.appendChild(el("h2", "", "Mes calculs gagnés"));
+    card.appendChild(el("p", "muted", keys.length ? nb(keys.length, "calcul gagné", "calculs gagnés") + " du premier coup." : "Tu n’as pas encore gagné de calcul. Va dans ADDITION ou SOUSTRACTION !"));
+    ["+", "-"].forEach(function (op) {
+      var list = keys.filter(function (k) { return k.indexOf(op) > 0; }).sort(function (a, b) { return parseInt(a, 10) - parseInt(b, 10); });
+      if (!list.length) return;
+      card.appendChild(el("h2", "", op === "+" ? "➕ Additions" : "➖ Soustractions"));
+      var g = el("div", "egrid");
+      list.forEach(function (k) { var p = k.split(op), a = +p[0], b = +p[1], t = el("div", "etile", a + (op === "+" ? " + " : " − ") + b + " = " + (op === "+" ? a + b : a - b)); if (S.calcs[k] > 1) t.appendChild(el("small", "", "gagné " + S.calcs[k] + " fois")); g.appendChild(t); });
+      card.appendChild(g);
+    });
+    box.appendChild(card);
+  }
+  function progressView(box) {
+    var card = el("div", "card calc-card");
+    card.appendChild(el("h2", "", "Ma progression"));
+    card.appendChild(el("p", "muted", "✓ " + nb(levelsDone(), "niveau réussi", "niveaux réussis") + " · ⭐ " + nb(levelsMastered(), "niveau maîtrisé", "niveaux maîtrisés") + " · 👂 " + numsCount() + " nombres sur 101 · 🧮 " + nb(calcsCount(), "calcul gagné", "calculs gagnés")));
+    ["nombres", "addition", "soustraction"].forEach(function (act) {
+      card.appendChild(el("h2", "", ACT[act].icon + " " + ACT[act].title));
+      enabledLevels(act).forEach(function (id) {
+        var lv = E.levelInfo(act, id), e = S.levels[act + ":" + id], row = el("div", "prog-row");
+        row.appendChild(el("span", "nm", lv.emoji + " " + lv.label));
+        if (e && e.q) row.appendChild(el("span", "sc", nb(e.r, "série", "séries") + " · " + Math.round(e.c * 100 / e.q) + " % du premier coup"));
+        var st = E.status(e); row.appendChild(el("span", "pill " + st, statusText(act, id))); card.appendChild(row);
+      });
+    });
+    box.appendChild(card);
+  }
+
+  /* ===== Navigation ===== */
+  document.addEventListener("click", function (ev) {
+    var b = ev.target.closest ? ev.target.closest("[data-go]") : null; if (b && token) { ev.preventDefault(); goTo(b.getAttribute("data-go")); return; }
+    var me = $("me-menu"); if (!me.hidden && !(ev.target.closest && ev.target.closest("#bn-me"))) me.hidden = true;
+  });
+  $("bn-me").addEventListener("click", function (ev) { ev.stopPropagation(); var m = $("me-menu"); m.hidden = !m.hidden; this.setAttribute("aria-expanded", String(!m.hidden)); });
+  function logout() { try { sessionStorage.removeItem("zoo_student_token"); sessionStorage.removeItem("zoo_student_name"); } catch (e) {} location.href = "eleve.html"; }
+  $("btn-logout").addEventListener("click", logout); $("me-logout").addEventListener("click", logout);
+  function lecture() { location.href = "zoo-connecte.html"; }
+  $("me-lecture").addEventListener("click", lecture); $("btn-lecture").addEventListener("click", lecture);
 
   boot();
 })();

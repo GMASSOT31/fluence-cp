@@ -10,6 +10,7 @@ Rien ici ne touche à la vraie base Supabase : tout tourne dans le navigateur av
 | `fake-labo.js` | Faux serveur du **laboratoire de calcul** (autorisation, interrupteur, séries idempotentes, pièces de test). Options d'URL en en-tête du fichier. Expose `window.__lab`. |
 | `sql/run_labo_tests.sh` | Essaie `supabase/migrations/20261112_labo_calcul.sql` sur un PostgreSQL **local jetable** (schéma factice `sql/stub_schema.sql`, contrôles `sql/test_labo.sql`). |
 | `test_calcul_engine.js` | Tests Node du moteur de questions (`node tools/test_calcul_engine.js`). |
+| `extract_zoo_skin.py` | Fabrique `calcul/zoo-skin.css` (habillage du Zoo de Lecture réutilisé par le labo de calcul) à partir de `zoo-connecte.html`. |
 | `check_syntax.py` | Vérifie la syntaxe JavaScript des pages et scripts (Node si installé, sinon le moteur JavaScript de macOS). |
 | `check-syntax-macos.js` | Petit script utilisé par `check_syntax.py` sur macOS (`osascript -l JavaScript`). |
 
