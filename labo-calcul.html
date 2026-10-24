@@ -83,6 +83,8 @@
   .msg.good { color: #17794f; } .msg.bad { color: #b3261e; }
   .nline { display: flex; flex-wrap: nowrap; justify-content: safe center; gap: 3px; margin: 6px auto 4px; max-width: 640px; overflow-x: auto; padding: 4px 2px 6px; -webkit-overflow-scrolling: touch; }
   .nline b { flex: 0 0 auto; } .nline b.arr { outline: 3px dashed var(--ink); outline-offset: -3px; }
+  /* téléphone : le menu « Moi » ne garde que Boutique et Déconnexion (le reste n'est pas indispensable ; la bascule du bandeau ramène à la lecture) */
+  @media (max-width: 600px) { #me-menu [data-go="cartes"], #me-menu [data-go="reconnues"], #me-menu [data-go="progres"], #me-menu #me-lecture { display: none !important; } }
   @media (min-width: 601px) and (max-width: 880px) { body.mode-student .bottom-nav .bn-me { display: flex; } body.mode-student .me-menu:not([hidden]) { display: flex; flex-direction: column; gap: 8px; position: fixed; right: 8px; bottom: calc(var(--bn-h, 76px) + 8px); z-index: 40; padding: 10px; background: var(--card); border: 2px solid var(--line); border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,.35); } body.mode-student .me-menu button { min-height: 48px; padding: 10px 16px; border-radius: 12px; border: 2px solid var(--line); background: var(--card); color: var(--ink); font: 700 1rem inherit; text-align: left; cursor: pointer; } body.mode-student .me-menu button[hidden] { display: none; } }   /* tablettes : le menu « Moi » donne accès à Boutique, mes nombres, progression, déconnexion */
   /* TBI / grands écrans : pendant un exercice, tout est lisible de loin (panneaux latéraux déjà masqués par « listen-focus ») */
   @media (min-width: 1400px) {
