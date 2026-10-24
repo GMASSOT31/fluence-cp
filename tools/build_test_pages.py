@@ -76,6 +76,7 @@ def main():
     for name in ["labo-calcul.html", "labo-calcul-enseignant.html"]:
         page = swap_backend(read(name), "fake-labo.js")
         if name == "labo-calcul.html":
+            page = page.replace("var ADVANCE_MS = 1100;", "var ADVANCE_MS = 40;")   # tests rapides : passage à la question suivante presque immédiat
             page = page.replace("zoo-connecte.html", "zoo-test.html")   # le cadre « boutique / arcade » montre le Zoo branché sur le faux serveur
         write(name.replace(".html", "-test.html"), page)
     for name in ["labo-config.js", "labo-switch.js"]:
