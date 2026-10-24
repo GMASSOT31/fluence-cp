@@ -13,6 +13,10 @@
   /* ===== Identité « calcul » : vert émeraude / turquoise (la lecture est bleu-violet). Le mot « Calcul » et le signe ➕ portent aussi la différence. ===== */
   [hidden] { display: none !important; }
   body.calc { --calc: #0b7f7d; --calc-d: #075f5d; --calc-l: #d6f3ee; }
+  #zoo-frame { display: block; width: 100%; height: 560px; border: 0; border-radius: 16px; background: transparent; }
+  body.zoo-view.mode-student main, body.zoo-view main { padding-bottom: 8px !important; }
+  body.zoo-playing { overflow: hidden; }
+  body.zoo-playing #zoo-frame { position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh !important; z-index: 90; background: var(--bg); }
   .test-band { position: sticky; top: 0; z-index: 60; background: #ffe9b8; color: #7a4b00; text-align: center; font-weight: 800; padding: 5px 10px; font-size: .9rem; border-bottom: 2px dashed #7a4b00; }
   body.calc header .zoo-hero { border-color: #7ff0c6; background: radial-gradient(circle at 83% 18%, rgba(255,196,69,.42), transparent 32%), radial-gradient(circle at 22% 120%, rgba(60,230,170,.42), transparent 45%), linear-gradient(125deg,#053b36 0%,#0a6a5c 57%,#06353a 100%); box-shadow: 0 7px 0 #04302b, 0 15px 30px rgba(5,60,50,.22); }
   body.calc header .zoo-hero .brand .sub { color: #c6fff0; }
@@ -258,15 +262,35 @@
     goTo("home");
   }
   function goTo(v) {
-    /* Boutique et salle d'arcade : espaces PARTAGÉS, ce sont exactement ceux du Zoo de Lecture (mêmes contenus, mêmes effets, mêmes pièces) */
-    if (v === "boutique" || v === "jeux") { location.href = "zoo-connecte.html?vue=" + v; return; }
-    V.stop(); R = null; view = v; document.body.classList.remove("listen-focus");
+    V.stop(); R = null; view = v; document.body.classList.remove("listen-focus", "zoo-playing", "zoo-view");
     var me = $("me-menu"); me.hidden = true; $("bn-me").setAttribute("aria-expanded", "false");
     var box = $("view"); clear(box);
     ({ home: home, nombres: function (b) { levels(b, "nombres"); }, addition: function (b) { levels(b, "addition"); }, soustraction: function (b) { levels(b, "soustraction"); },
-       cartes: numsView, reconnues: calcsView, progres: progressView })[v](box);
+       boutique: function (b) { zooFrame(b, "boutique"); }, jeux: function (b) { zooFrame(b, "jeux"); }, cartes: numsView, reconnues: calcsView, progres: progressView })[v](box);
     renderPanels(); window.scrollTo(0, 0);
   }
+
+  /* ===== Boutique et salle d'arcade : espaces PARTAGÉS =====
+     Le panneau central est le vrai écran du Zoo de Lecture (mêmes contenus, mêmes effets, mêmes pièces), affiché dans un cadre ;
+     le bandeau, les panneaux et la barre du bas restent ceux du Zoo de Calcul. Pendant une partie, le cadre passe en plein écran. */
+  function zooFrame(box, v) {
+    var f = el("iframe"); f.id = "zoo-frame"; f.title = v === "boutique" ? "Boutique" : "Salle d’arcade";
+    f.setAttribute("allow", "fullscreen"); f.setAttribute("allowfullscreen", ""); f.src = "zoo-connecte.html?vue=" + v + "&integre=1";
+    document.body.classList.add("zoo-view"); box.appendChild(f); fitFrame();
+  }
+  /* Le cadre occupe la hauteur visible (sous le bandeau, au-dessus de la barre du bas) : les fenêtres du Zoo (achat, résultats, cadeau) restent ainsi à l'écran */
+  function fitFrame() {
+    var f = $("zoo-frame"); if (!f || document.body.classList.contains("zoo-playing")) return;
+    var nav = $("bottom-nav"), bottom = nav && !nav.hidden && getComputedStyle(nav).display !== "none" ? nav.offsetHeight : 0, top = Math.max(0, f.getBoundingClientRect().top);
+    f.style.height = Math.max(420, window.innerHeight - top - bottom - 14) + "px";
+  }
+  window.addEventListener("resize", fitFrame);
+  window.addEventListener("message", function (ev) {
+    var f = $("zoo-frame"), d = ev.data;
+    if (ev.origin !== location.origin || !f || ev.source !== f.contentWindow || !d || d.zooEmbed !== 1) return;
+    if (typeof d.coins === "number" && typeof d.credits === "number") { S.coins = d.coins; S.credits = d.credits; renderPanels(); }
+    if (typeof d.playing === "boolean") { document.body.classList.toggle("zoo-playing", d.playing); if (!d.playing) fitFrame(); }
+  });
 
   /* ===== Accueil : une seule prochaine action bien visible, consigne lue à voix haute ===== */
   function pickNext() {

@@ -6,6 +6,7 @@
 (function () {
   "use strict";
   try {
+    if (window.parent !== window) return;   /* dans un cadre du Zoo de Calcul (mode intégré) : pas de bouton */
     var C = window.LABO_CALCUL;
     if (!C || !C.enabled || window.ZOO_DEMO || /[?&]demo(=|&|$)/.test(location.search)) return;
     var teacher = /enseignants/.test(location.pathname), token = null, bearer = null, i;
