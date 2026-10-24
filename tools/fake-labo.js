@@ -32,6 +32,7 @@
     lab_student_state: function () { needStudent(); return mix({ progress: { levels: lab.me.levels, hist: lab.me.hist, nums: lab.me.nums, calcs: lab.me.calcs }, settings: lab.settings }); },
     student_session_profile: function () { needStudent(); return { student_id: "s1", nickname: /[?&]name=(\w+)/.test(q) ? RegExp.$1 : "Léa" }; },
     student_get_progress_v2: function () { needStudent(); return { progress: { avatar: "🦊", coins: lab.realWallet.coins, credits: lab.realWallet.credits }, version: lab.version }; },
+    student_get_teacher_settings: function () { needStudent(); return { sfx: true }; },
     student_claim_coins: function (a) {
       needStudent(); if (!lab.pending) return { claimed: 0, version: lab.version };
       if (a.p_version !== lab.version) throw { message: "SYNC_CONFLICT" };

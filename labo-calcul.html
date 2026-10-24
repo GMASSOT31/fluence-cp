@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Figtree:wght@400;600;800&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
 <!-- Même habillage que le Zoo de Lecture (copie générée par tools/extract_zoo_skin.py) ; les couleurs du calcul sont dans le bloc <style> ci-dessous -->
-<link rel="stylesheet" href="calcul/zoo-skin.css?v=1">
+<link rel="stylesheet" href="calcul/zoo-skin.css?v=2">
 <style>
   /* ===== Identité « calcul » : vert émeraude / turquoise (la lecture est bleu-violet). Le mot « Calcul » et le signe ➕ portent aussi la différence. ===== */
   [hidden] { display: none !important; }
@@ -21,6 +21,7 @@
   body.calc header .zoo-hero { border-color: #7ff0c6; background: radial-gradient(circle at 83% 18%, rgba(255,196,69,.42), transparent 32%), radial-gradient(circle at 22% 120%, rgba(60,230,170,.42), transparent 45%), linear-gradient(125deg,#053b36 0%,#0a6a5c 57%,#06353a 100%); box-shadow: 0 7px 0 #04302b, 0 15px 30px rgba(5,60,50,.22); }
   body.calc header .zoo-hero .brand .sub { color: #c6fff0; }
   body.calc header .zoo-hero::before { opacity: .22; }
+  @media (prefers-reduced-motion: no-preference) { body.calc header .zoo-owl { animation: zoo-float 4.2s ease-in-out -2s infinite; } }   /* le 3e animal flotte aussi */
   body.calc header .zoo-llama { background: linear-gradient(145deg,#c6fff0,#7fd9c3); }
   body.calc header .zoo-owl { background: linear-gradient(145deg,#fff0a8,#ffb96a); }
   body.calc header .zoo-pad { background: #04302b; border-color: #7ff0c6; color: #c6fff0; }
@@ -114,7 +115,7 @@
         <div class="brand"><h1>Zoo de <span>Calcul</span></h1><span class="sub">Apprendre en s’amusant</span></div>
         <span class="zoo-hero-tag">➕ Compte · 🏆 Progresse · 🎮 Joue !</span>
       </div>
-      <div class="zoo-hero-art" aria-hidden="true"><span class="zoo-star zoo-star-one">✦</span><span class="zoo-mascot zoo-bee">🐝</span><span class="zoo-mascot zoo-llama">🦙</span><span class="zoo-mascot zoo-owl">🦉</span><span class="zoo-star zoo-star-two">✧</span><span class="zoo-pad">➕ <span>● ●</span></span></div>
+      <div class="zoo-hero-art" aria-hidden="true"><span class="zoo-star zoo-star-one">✦</span><span class="zoo-mascot zoo-bee" id="mascot-1">🐌</span><span class="zoo-mascot zoo-llama" id="mascot-2">🐕</span><span class="zoo-mascot zoo-owl" id="mascot-3">🐆</span><span class="zoo-star zoo-star-two">✧</span><span class="zoo-pad">➕ <span>● ●</span></span></div>
     </div>
     <div class="zoo-top-stats needs-reward" id="zoo-top-stats" hidden aria-label="Mes pièces, mes parties et mon niveau">
       <div class="zoo-top-stat zoo-top-gold"><span class="gold-coin" aria-hidden="true"></span><strong id="top-coins">0</strong><small>Pièces</small></div>
@@ -170,10 +171,12 @@
   </div>
 </main>
 <div class="toast" id="toast" role="status"></div>
+<div class="confetti" id="confetti" aria-hidden="true"></div>
 
 <script src="labo-config.js"></script>
 <script src="vendor/supabase.js?v=2.118.0"></script>
 <script src="calcul/engine.js?v=2"></script>
+<script src="calcul/zoo-effects.js?v=1"></script>
 <script src="calcul/voice.js?v=1"></script>
 <script>
 (function () {
@@ -213,6 +216,11 @@
     v.appendChild(g);
   }
 
+  /* Bandeau : l'animal de la première étape, celui de l'étape du milieu et celui de la dernière (ils flottent doucement, comme dans le Zoo de Lecture) */
+  (function mascots() {
+    var l = E.LEVELS.nombres, pick = [l[0], l[Math.floor((l.length - 1) / 2)], l[l.length - 1]];
+    pick.forEach(function (lv, i) { var m = $("mascot-" + (i + 1)); if (m) m.textContent = lv.animal.e; });
+  })();
   function boot() {
     if (!CFG.enabled) { gate("Cette page n’est pas disponible."); return; }
     try { token = sessionStorage.getItem("zoo_student_token"); } catch (e) {}
@@ -222,7 +230,9 @@
       if (!a || !a.allowed) { gate("Cette page n’est pas disponible."); return; }
       /* lecture seule du profil et de l'avatar du Zoo de Lecture (rien n'est écrit côté lecture) */
       return Promise.all([rpc("lab_student_state", { p_token: token }), rpc("student_session_profile", { p_token: token }).catch(function () { return null; }),
-                          rpc("student_get_progress_v2", { p_token: token }).catch(function () { return null; })]).then(function (r) {
+                          rpc("student_get_progress_v2", { p_token: token }).catch(function () { return null; }),
+                          rpc("student_get_teacher_settings", { p_token: token }).catch(function () { return null; })]).then(function (r) {
+        if (window.ZooFx) ZooFx.setSfx(!(r[3] && r[3].sfx === false));
         load(r[0]); S.name = (r[1] && r[1].nickname) || "toi";
         var p = r[2] && r[2].progress; if (p && typeof p.avatar === "string" && p.avatar) S.avatar = p.avatar;
         if (p) { S.coins = Math.max(0, Math.floor(Number(p.coins) || 0)); S.credits = Math.max(0, Math.floor(Number(p.credits) || 0)); }
@@ -442,14 +452,8 @@
       else if (!res.coins) info.textContent = "🎉 Réussi ! (tu as déjà gagné beaucoup de pièces aujourd’hui)";
       else if (res.shared) { info.textContent = "🎉 Réussi ! +" + res.coins + " pièce" + (res.coins > 1 ? "s" : "") + " d’or"; claimCoins(); }
       else info.textContent = "🎉 Réussi ! (pièces de test : +" + res.coins + ")";
-      /* l'œuf éclot, puis l'animal grandit : plus l'étape est haute, plus l'animal court vite */
-      if (res.success && after > before) {
-        var rv = el("div", "reveal"), fresh = before === 0;
-        rv.appendChild(el("div", "big-pet", fresh ? "🥚➜" + info2.animal.e : info2.animal.e + "✨"));
-        rv.appendChild(el("div", "", fresh ? "L’œuf éclot ! Voici " + info2.animal.nom + "." : cap1(info2.animal.nom) + " a bien grandi !"));
-        rv.appendChild(el("div", "speed", cap1(info2.animal.nom) + " " + speedText(info2)));
-        card.insertBefore(rv, row);
-      }
+      /* l'œuf éclot, puis l'animal grandit : même scène d'évolution que dans le Zoo de Lecture */
+      if (res.success && after > before) showEvolution({ act: act, lv: info2, from: { got: Math.min(before, 2), total: 2 }, to: { got: Math.min(after, 2), total: 2 } });
       function b(label, cls, fn) { var x = el("button", cls, label); x.type = "button"; x.addEventListener("click", fn); row.appendChild(x); }
       b("Rejouer", "primary big-btn", function () { startRound(act, lv); }); b("Autre étape", "secondary big-btn", function () { goTo(act); }); b("Accueil", "secondary big-btn", function () { goTo("home"); });
       renderPanels();
@@ -467,6 +471,42 @@
       });
     }
     send();
+  }
+
+  /* ===== Scène d'évolution : mêmes étapes, mêmes effets (rayons, éclair, feu d'artifice, sons) que dans le Zoo de Lecture ===== */
+  function showEvolution(o) {
+    var old = document.querySelector(".evo"); if (old) old.parentNode.removeChild(old);
+    var reduce = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches), an = o.lv.animal, hatch = o.from.got === 0, full = o.to.got >= o.to.total;
+    var ov = el("div", "evo"); ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true"); ov.setAttribute("aria-label", "Ton animal évolue");
+    var card = el("div", "evo-card"), stage = el("button", "evo-stage"); stage.type = "button"; stage.setAttribute("aria-label", "Voir l’évolution");
+    var rays = el("span", "evo-rays"), flash = el("span", "evo-flash"), face = el("span", "evo-face"); rays.setAttribute("aria-hidden", "true"); flash.setAttribute("aria-hidden", "true");
+    stage.appendChild(rays); stage.appendChild(flash); stage.appendChild(face);
+    var title = el("h2", "evo-title", "Regarde bien…"), stars = el("div", "evo-stars"), msg = el("p", "evo-msg", hatch ? "Ton œuf bouge !" : cap1(an.nom) + " se prépare…"), acts = el("div", "gr-actions evo-acts");
+    stars.setAttribute("aria-hidden", "true"); acts.hidden = true;
+    [stage, title, stars, msg, acts].forEach(function (n) { card.appendChild(n); }); ov.appendChild(card); document.body.appendChild(ov);
+    function setFace(st) { face.textContent = st.got === 0 ? "🥚" : an.e; face.style.fontSize = (st.got === 0 ? 5.5 : 4.5 + 4 * st.got / st.total) + "rem"; }
+    function setStars(st, fresh) { clear(stars); for (var i = 0; i < st.total; i++) stars.appendChild(el("span", "evo-star" + (i < st.got ? " on" : "") + (fresh && i === st.got - 1 ? " new" : ""), "★")); }
+    setFace(o.from); setStars(o.from, false);
+    var done = false, timers = [], fx = window.ZooFx;
+    function finale() {
+      if (done) return; done = true; timers.forEach(clearTimeout); face.classList.remove("wobble", "charge"); setFace(o.to); setStars(o.to, true);
+      if (!reduce) { flash.classList.add("on"); face.classList.add("pop"); rays.classList.add("on"); if (fx) fx.confetti(110, false); } else rays.classList.add("on");
+      var t, m;
+      if (full) { t = cap1(an.nom) + " a fini de grandir ! ✨"; m = "Étape maîtrisée ! " + cap1(an.nom) + " " + speedText(o.lv) + "."; }
+      else { t = "L’œuf éclot !"; m = "Voici " + an.nom + " ! " + cap1(an.nom) + " " + speedText(o.lv) + "."; }
+      title.textContent = t; msg.textContent = m;
+      if (fx) [392, 523, 659, 784, 1047].forEach(function (f, k) { fx.tone(f, k * 0.09, 0.3, "triangle", 0.16); });
+      V.speak(t + " " + m.replace(/✨/g, ""));
+      var go = el("button", "primary big-btn", "Continuer"), zoo = el("button", "secondary big-btn", "🐾 Voir mes animaux"); go.type = "button"; zoo.type = "button";
+      function close() { if (ov.parentNode) ov.parentNode.removeChild(ov); var c = $("confetti"); if (c) c.innerHTML = ""; V.stop(); }
+      go.addEventListener("click", close); zoo.addEventListener("click", function () { close(); goTo(o.act === "nombres" ? "cartes" : "reconnues"); });
+      acts.appendChild(go); acts.appendChild(zoo); acts.hidden = false; go.focus({ preventScroll: true });
+    }
+    stage.addEventListener("click", finale);
+    if (reduce) { finale(); return; }
+    face.classList.add(hatch ? "wobble" : "charge");
+    if (fx) [262, 294, 330].forEach(function (f, k) { fx.tone(f, k * 0.35, 0.18, "sine", 0.1); });
+    timers.push(setTimeout(finale, 1700));
   }
 
   /* ===== Collections et progression ===== */

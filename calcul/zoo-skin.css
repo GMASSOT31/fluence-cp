@@ -322,6 +322,11 @@
   .zoo-card .cert-stamp { position: absolute; top: 6px; right: 6px; padding: 2px 7px; border: 2px solid #b8860b; border-radius: 8px; background: #fff7d6; color: #8a6200; font-size: .72rem; font-weight: 800; transform: rotate(8deg); box-shadow: 0 1px 0 rgba(0,0,0,.15); }
   .zoo-card.certified { border-color: #e2b23a; }
   .zoo-card.heard { border-color: #3a9d8c; box-shadow: 0 0 0 3px #3a9d8c33; }
+  .listen-stars .lstar { font-size: 3rem; line-height: 1; color: #d5d9e2; text-shadow: 0 2px 0 #b9bfcc; }
+  .listen-stars .lstar.on { color: #f5c542; text-shadow: 0 2px 0 #c58e00, 0 0 14px rgba(245, 197, 66, .55); }
+@media (prefers-reduced-motion: no-preference) {
+  .listen-stars .lstar.new { animation: lstar-pop .7s cubic-bezier(.2, 1.6, .4, 1) both; }
+}
 @media (max-width: 880px) {
   body.mode-student .bottom-nav { gap: 3px; padding-left: 4px; padding-right: 4px; }
   body.mode-student .bottom-nav .panel-nav { font-size: 0.74rem; padding: 8px 2px; }
@@ -535,6 +540,26 @@
   .home-listen-line { margin: 4px 0 0; color: var(--muted); }
   .buy-confirm .bc-icon { font-size: 3.2rem; text-align: center; }
   .buy-confirm .bc-price { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 1.3rem; font-weight: 800; margin: 6px 0 14px; }
+  .evo { position: fixed; inset: 0; z-index: 45; display: grid; place-items: center; padding: 16px; background: radial-gradient(circle at 50% 38%, #3a2a7a 0%, #17122f 62%, #0b0916 100%); color: #fff; }
+  .evo-card { width: min(520px, 100%); text-align: center; }
+  .evo-stage { position: relative; display: grid; place-items: center; width: 100%; height: 15rem; background: none; border: 0; box-shadow: none; padding: 0; cursor: pointer; }
+  .evo-face { position: relative; z-index: 2; line-height: 1; transition: font-size .7s cubic-bezier(.2, 1.6, .4, 1); filter: drop-shadow(0 10px 20px rgba(0, 0, 0, .5)); }
+  .evo-rays { position: absolute; z-index: 0; width: 16rem; height: 16rem; border-radius: 50%; opacity: 0; transition: opacity .5s;
+    background: repeating-conic-gradient(rgba(255, 214, 90, .5) 0deg 12deg, rgba(255, 214, 90, 0) 12deg 30deg);
+    -webkit-mask: radial-gradient(circle, #000 30%, transparent 70%); mask: radial-gradient(circle, #000 30%, transparent 70%); }
+  .evo-rays.on { opacity: 1; animation: evo-spin 9s linear infinite; }
+  .evo-flash { position: absolute; z-index: 1; width: 12rem; height: 12rem; border-radius: 50%; background: radial-gradient(circle, #fff 0%, rgba(255, 255, 255, 0) 70%); opacity: 0; }
+  .evo-flash.on { animation: evo-flash .8s ease-out; }
+  .evo-face.wobble { animation: evo-wobble .32s ease-in-out infinite; }
+  .evo-face.charge { animation: evo-charge 1.7s ease-in forwards; }
+  .evo-face.pop { animation: evo-pop .8s cubic-bezier(.2, 1.6, .4, 1); }
+  .evo-title { font-size: clamp(1.6rem, 5vw, 2.2rem); margin: .2rem 0 .4rem; color: #ffe37c; }
+  .evo-msg { font-size: 1.15rem; margin: .4rem 0 1rem; color: #f1ecff; }
+  .evo-stars { display: flex; justify-content: center; gap: 10px; min-height: 2.6rem; }
+  .evo-star { font-size: 2.4rem; line-height: 1; color: #5d5684; filter: grayscale(.6); }
+  .evo-star.on { color: #f5c542; filter: none; text-shadow: 0 0 14px rgba(245, 197, 66, .6); }
+  .evo-star.new { animation: lstar-pop .8s cubic-bezier(.2, 1.6, .4, 1) .25s both; }
+  .evo-acts { justify-content: center; }
   .home-hero .home-step { flex-wrap: nowrap; }
   .home-pet { background: none; border: 0; padding: 0; cursor: pointer; flex: 0 0 auto; box-shadow: none; }
   .home-pet-emoji { font-size: 4rem; }
@@ -637,3 +662,14 @@
   #v-roue .row { margin-top: 0; }
 }
   .arc-legend .gold-coin { width: .95em; height: .95em; vertical-align: -2px; }
+@keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.07); } }
+@keyframes coin-pop { 0% { transform: scale(0.2) rotate(0deg); opacity: 0; } 60% { transform: scale(1.3) rotate(360deg); opacity: 1; } 100% { transform: scale(1) rotate(360deg); } }
+@keyframes hop { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
+@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+@keyframes zoo-float { 0%,100% { translate: 0 0; } 50% { translate: 0 -8px; } }
+@keyframes lstar-pop { 0% { transform: scale(.2) rotate(-40deg); opacity: 0; } 70% { transform: scale(1.35) rotate(8deg); opacity: 1; } 100% { transform: scale(1) rotate(0); } }
+@keyframes evo-spin { to { transform: rotate(360deg); } }
+@keyframes evo-wobble { 0%, 100% { transform: rotate(-9deg); } 50% { transform: rotate(9deg) translateY(-4px); } }
+@keyframes evo-charge { 0% { transform: scale(1); filter: brightness(1); } 70% { transform: scale(.88); filter: brightness(1.6); } 100% { transform: scale(.92); filter: brightness(2.2); } }
+@keyframes evo-pop { 0% { transform: scale(.25) rotate(-12deg); } 100% { transform: scale(1) rotate(0); } }
+@keyframes evo-flash { 0% { opacity: 0; transform: scale(.4); } 30% { opacity: 1; } 100% { opacity: 0; transform: scale(2.4); } }
