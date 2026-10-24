@@ -99,6 +99,7 @@
     body.listen-focus .nline b { min-width: 52px; font-size: 1.7rem; padding: 10px 0; }
     body.listen-focus .pic { font-size: 3rem; }
   }
+  @media (max-width: 430px) { header .zoo-hero .brand .sub { display: none; } }   /* petit téléphone : la place revient aux 5 pastilles */
   .nline b.st { outline: 3px solid var(--ink); outline-offset: -3px; } .nline b.s1 { background: #cfeeed; border-color: #0b7f7d; } .nline b.s2 { background: #ffe2b8; border-color: #c9740c; }
   .hint { margin: 4px auto 8px; max-width: 640px; font-weight: 700; text-align: center; } .hint .h1 { color: #0b7f7d; } .hint .h2 { color: #b45f06; }
   .pairs { display: grid; gap: 4px 2px; justify-items: center; width: 100%; max-width: 560px; overflow: hidden; margin: 6px auto; padding: 8px; border: 2px dashed var(--line); border-radius: 14px; } .pairs span { line-height: 1.1; } .pairs .ghost { width: 1em; height: 1em; border: 2px dashed var(--line); border-radius: 50%; opacity: .6; } .pairs .extra { background: #ffe2b8; border-radius: 50%; }
@@ -153,11 +154,12 @@
       </div>
       <div class="zoo-hero-art" aria-hidden="true"><span class="zoo-star zoo-star-one">✦</span><span class="zoo-mascot zoo-bee" id="mascot-1">🐌</span><span class="zoo-mascot zoo-llama" id="mascot-2">🐕</span><span class="zoo-mascot zoo-owl" id="mascot-3">🐆</span><span class="zoo-star zoo-star-two">✧</span><span class="zoo-pad">➕ <span>● ●</span></span></div>
     </div>
-    <div class="zoo-top-stats needs-reward" id="zoo-top-stats" hidden aria-label="Mes pièces et mes parties">
+    <div class="zoo-top-stats needs-reward" id="zoo-top-stats" hidden aria-label="Mes pièces, mes parties et mes niveaux">
       <div class="zoo-top-stat zoo-top-gold"><span class="gold-coin" aria-hidden="true"></span><strong id="top-coins">0</strong><small>Pièces</small></div>
       <div class="zoo-top-stat"><span aria-hidden="true">🎮</span><strong id="top-games">0</strong><small>Parties</small></div>
-      <div class="zoo-top-stat zoo-top-keep" hidden><span id="top-animal" aria-hidden="true">🥚</span><strong id="top-level">N0</strong><small>Niveau</small></div>
-      <div class="zoo-top-stat zoo-top-keep" hidden><span aria-hidden="true">👂</span><strong id="top-nums">0</strong><small>Nombres</small></div>
+      <div class="zoo-top-stat zoo-top-keep zoo-top-lv" id="top-lv-nombres" role="img"><span aria-hidden="true">👂</span><strong>E0</strong></div>
+      <div class="zoo-top-stat zoo-top-keep zoo-top-lv" id="top-lv-addition" role="img"><span aria-hidden="true">➕</span><strong>A0</strong></div>
+      <div class="zoo-top-stat zoo-top-keep zoo-top-lv" id="top-lv-soustraction" role="img"><span aria-hidden="true">➖</span><strong>S0</strong></div>
     </div>
   </header>
 
@@ -296,9 +298,13 @@
   function suggest(act) { return E.suggestLevel(act, enabledLevels(act), S.levels); }
   function levelLabel(act) { var id = suggest(act), l = id && E.levelInfo(act, id); return l ? (((S.levels[act + ":" + id] || {}).ok ? l.animal.e : "🥚") + " " + l.label) : ""; }
 
+  var LV_CHIPS = [["nombres", "E", "Écouter"], ["addition", "A", "Plus"], ["soustraction", "S", "Moins"]];   /* pastilles d'en-tête : étapes réussies par activité */
   function renderPanels() {
     var top = E.topAnimal(S.levels);
-    $("top-coins").textContent = S.coins; $("top-games").textContent = S.credits; $("top-level").textContent = "N" + levelsDone(); $("top-nums").textContent = numsCount(); $("top-animal").textContent = top ? top.e : "🥚";
+    $("top-coins").textContent = S.coins; $("top-games").textContent = S.credits; LV_CHIPS.forEach(function (c) {
+      var n = enabledLevels(c[0]).filter(function (id) { return ((S.levels[c[0] + ":" + id] || {}).ok || 0) >= 1; }).length, box = $("top-lv-" + c[0]);
+      box.querySelector("strong").textContent = c[1] + n; box.setAttribute("aria-label", c[2] + " : " + nb(n, "étape réussie", "étapes réussies")); box.title = c[2] + " : " + nb(n, "étape réussie", "étapes réussies");
+    });
     $("pl-name").textContent = S.name; $("pl-avatar").textContent = S.avatar;
     $("pr-prog").textContent = levelsDone() ? "✓ " + nb(levelsDone(), "niveau réussi", "niveaux réussis") + (levelsMastered() ? " · ⭐ " + levelsMastered() : "") : "";
     $("pr-games").textContent = nb(S.credits, "partie", "parties");
