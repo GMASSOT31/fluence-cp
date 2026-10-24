@@ -424,66 +424,74 @@
     else { p.appendChild(group(q.a, ico, q.b)); p.appendChild(el("span", "out", "➜ − " + q.b)); }   /* soustraction « retirer » : un seul groupe, les b derniers estompés, une flèche qui part (le groupe de b n'est plus dessiné à côté : on ne confond plus avec une addition) */
     return p;
   }
-  /* full = false : seulement la stratégie (le départ, le premier saut) ; full = true : tout, y compris l'arrivée et le résultat (après une 2e erreur) */
+  /* ===== Aides : une vraie méthode à chaque étape, sans donner le résultat avant la 2e erreur =====
+     full = false (1er appui) : le départ, la direction et la méthode (passer par 10, compter les bonds, séparer dizaines et unités…) ;
+     full = true (après la 2e erreur) : tout, y compris l'arrivée en pointillés et le calcul complet. */
+  function split(q) {
+    var u;
+    if (q.level === "s5") return { from: q.b, to: q.a, kind: "gap" };
+    if (q.type === "addition" && q.hole) return { from: q.a, to: q.total, kind: "gap" };   /* « pour arriver à 10 » */
+    if (q.level === "a8") return { kind: "tu" };   /* dizaines et unités : on sépare */
+    if (q.type === "addition" && q.a % 10 && q.a % 10 + q.b > 10) return { from: q.a, mid: q.a - q.a % 10 + 10, to: q.a + q.b, kind: "ten" };   /* passer par 10 en montant */
+    if (q.type === "soustraction" && (u = q.a % 10) && q.a > 10 && u < q.b) return { from: q.a, mid: q.a - u, to: q.a - q.b, kind: "tendown" };   /* passer par 10 en descendant */
+    if (q.type === "addition") return { from: Math.max(q.a, q.b), steps: Math.min(q.a, q.b), to: q.a + q.b, kind: "add" };   /* on part du plus grand */
+    if (q.type === "soustraction") return { from: q.a, steps: q.b, to: q.a - q.b, kind: "sub" };
+    return null;
+  }
   function numberLine(q, full) {
-    var cap = q.level === "a8" ? 0 : Math.max(10, Math.min(20, q.a + q.b + 2)), l = el("div", "nline"), k;
+    var sp = split(q), cap = (sp && sp.kind === "tu") ? 0 : Math.max(10, Math.min(20, q.a + q.b + 2)), l = el("div", "nline"), k;
     if (!cap) { for (k = 10; k <= 100; k += 10) l.appendChild(el("b", "", String(k))); return l; }
-    var sp = split(q);
     for (k = 0; k <= cap; k++) {
-      var c = "";
+      var c = "", d, cell;
       if (sp && (sp.kind === "add" || sp.kind === "sub")) {
-        /* 1er appui : on part du départ et on saute un par un, sauf le dernier bond (à l'enfant) ; 2e erreur : tous les bonds et l'arrivée en pointillés */
-        var back = sp.kind === "sub", d = back ? sp.from - k : k - sp.from;
-        if (k === sp.from) c = "st";
-        else if (d > 0 && d <= sp.steps && (full || d < sp.steps)) c = "s1 hop";
+        /* on part du départ et on saute un par un, sauf le dernier bond (à l'enfant) ; 2e erreur : tous les bonds et l'arrivée en pointillés */
+        d = sp.kind === "sub" ? sp.from - k : k - sp.from;
+        if (k === sp.from) c = "st"; else if (d > 0 && d <= sp.steps && (full || d < sp.steps)) c = "s1 hop";
         if (full && k === sp.to) c += " arr";
-        var cell = el("b", c.trim(), String(k)); if (c.indexOf("hop") >= 0) cell.style.animationDelay = (d * 0.45) + "s"; l.appendChild(cell); continue;
+        cell = el("b", c.trim(), String(k)); if (c.indexOf("hop") >= 0) cell.style.animationDelay = (d * 0.45) + "s"; l.appendChild(cell); continue;
       }
-      if (sp) {
-        if (k === sp.from) c = "st";
-        else if (sp.kind === "ten") { if (k > sp.from && k <= sp.mid) c = "s1"; else if (full && k > sp.mid && k <= sp.to) c = "s2"; }
-        else if (full && k > sp.from && k <= sp.to) c = "s1";
-        if ((full || sp.kind === "gap") && k === sp.to) c += " arr";   /* écart : l'arrivée fait partie de la question ; addition : l'arrivée est la réponse */
-      }
+      if (sp && sp.kind === "ten") { if (k === sp.from) c = "st"; else if (k > sp.from && k <= sp.mid) c = "s1"; else if (full && k > sp.mid && k <= sp.to) c = "s2"; if (full && k === sp.to) c += " arr"; }
+      else if (sp && sp.kind === "tendown") { if (k === sp.from) c = "st"; else if (k < sp.from && k >= sp.mid) c = "s1"; else if (full && k < sp.mid && k >= sp.to) c = "s2"; if (full && k === sp.to) c += " arr"; }
+      else if (sp && sp.kind === "gap") { if (k === sp.from) c = "st"; else if (full && k > sp.from && k <= sp.to) c = "s1"; if (k === sp.to) c += " arr"; }   /* l'arrivée fait partie de la question : toujours repérée */
       l.appendChild(el("b", c.trim(), String(k)));
     }
     var st0 = l.querySelector(".st");
     if (st0) setTimeout(function () { try { l.scrollLeft = Math.max(0, st0.offsetLeft - 40); } catch (e) {} }, 0);   /* petit écran : la bande commence près du point de départ */
     return l;
   }
-  /* Aide qui montre la procédure : passer par 10 en addition, de b à a pour l'écart */
-  function split(q) {
-    if (q.type === "addition" && !q.hole && q.a % 10 && q.a % 10 + q.b > 10) { var t = q.a - q.a % 10 + 10; return { from: q.a, mid: t, to: q.a + q.b, kind: "ten" }; }
-    if (q.level === "s5") return { from: q.b, mid: q.a, to: q.a, kind: "gap" };
-    if (q.type === "addition" && q.hole) return { from: q.a, mid: q.total, to: q.total, kind: "gap" };   /* « pour arriver à 10 » : de a jusqu'à 10, combien de pas ? */
-    if (q.level === "a8") return null;   /* dizaines et unités : la file des dizaines reste seule */
-    if (q.type === "addition") { var big = Math.max(q.a, q.b), sm = Math.min(q.a, q.b); return { from: big, steps: sm, to: q.a + q.b, kind: "add" }; }   /* on part du plus grand */
-    if (q.type === "soustraction") return { from: q.a, steps: q.b, to: q.a - q.b, kind: "sub" };
-    return null;
-  }
   function helpText(q, full) {
-    var sp = split(q), h = el("p", "hint"), W = E.words; if (!sp) return { node: null, say: "" };
+    var sp = split(q), h = el("p", "hint"), W = E.words, say; if (!sp) return { node: null, say: "" };
+    function out(t, v) { h.textContent = t; return { node: h, say: v || t }; }
+    function eqSpan(t) { h.appendChild(el("span", "h1", t)); }
     if (sp.kind === "gap") {
       var g = q.hole ? q.total - q.a : q.a - q.b;
-      var f0 = sp.from, t0 = sp.to;
-      h.textContent = "De " + f0 + " à " + t0 + ", combien de pas ?" + (full ? " Il y a " + nb(g, "pas", "pas") + "." : " À toi de compter !");
-      return { node: h, say: "De " + W(f0) + " à " + W(t0) + ", combien de pas ? " + (full ? "Il y a " + W(g) + " pas." : "À toi de compter !") };
+      return full ? out("De " + sp.from + " à " + sp.to + " : " + nb(g, "pas", "pas") + ".", "De " + W(sp.from) + " à " + W(sp.to) + " : " + W(g) + " pas.")
+                  : out("De " + sp.from + " à " + sp.to + ", combien de pas ? Compte les cases entre les deux cadres, avec tes doigts !");
     }
-    if (sp.kind === "add" || sp.kind === "sub") {
-      var back2 = sp.kind === "sub", verb = back2 ? "recule" : "avance", st = sp.steps;
-      if (!full) {
-        if (!st) { h.textContent = "On part de " + sp.from + ". " + (back2 ? "Moins" : "Plus") + " zéro, on ne bouge pas !"; return { node: h, say: "On part de " + W(sp.from) + ". " + (back2 ? "Moins" : "Plus") + " zéro, on ne bouge pas !" }; }
-        h.textContent = "On part de " + sp.from + " · on " + verb + " de " + st + " · À toi de compter !";
-        return { node: h, say: "On part de " + W(sp.from) + ". On " + verb + " de " + W(st) + ". À toi de compter !" };
-      }
-      h.appendChild(el("span", "h1", sp.from + (back2 ? " − " : " + ") + st + " = " + sp.to));
-      return { node: h, say: W(sp.from) + (back2 ? " moins " : " plus ") + W(st) + ", " + W(sp.to) + "." };
+    if (sp.kind === "tu") {   /* 20 + 30 ou 34 + 5 : on sépare les dizaines et les unités */
+      var a1 = Math.floor(q.a / 10), a0 = q.a % 10, b1 = Math.floor(q.b / 10), b0 = q.b % 10;
+      function dz(n) { return n + (n > 1 ? " dizaines" : " dizaine"); }
+      function dzW(n) { return n === 1 ? "une dizaine" : W(n) + " dizaines"; }
+      if (!a0 && !b0) return full ? out(dz(a1) + " + " + dz(b1) + " = " + dz(a1 + b1) + " : " + q.answer, dzW(a1) + " plus " + dzW(b1) + ", " + dzW(a1 + b1) + " : " + W(q.answer) + ".")
+                                  : out(q.a + " c’est " + dz(a1) + ", " + q.b + " c’est " + dz(b1) + ". Combien de dizaines en tout ? À toi de compter !", W(q.a) + " c’est " + dzW(a1) + ", " + W(q.b) + " c’est " + dzW(b1) + ". Combien de dizaines en tout ? À toi de compter !");
+      var base = a1 * 10;
+      return full ? out(a0 + " + " + b0 + " = " + (a0 + b0) + " · " + base + " + " + (a0 + b0) + " = " + q.answer, W(a0) + " plus " + W(b0) + ", " + W(a0 + b0) + ". " + W(base) + " plus " + W(a0 + b0) + ", " + W(q.answer) + ".")
+                  : out(q.a + " c’est " + base + " et " + a0 + ". Calcule d’abord les unités : " + a0 + " + " + b0 + ". À toi de compter !", W(q.a) + " c’est " + W(base) + " et " + W(a0) + ". Calcule d’abord les unités : " + W(a0) + " plus " + W(b0) + ". À toi de compter !");
     }
-    var c = sp.mid - q.a, r = q.b - c;
-    h.appendChild(el("span", "h1", q.a + " + " + c + " = " + sp.mid)); h.appendChild(document.createTextNode(" · il reste ")); h.appendChild(el("span", "h2", String(r)));
-    if (full) { h.appendChild(document.createTextNode(" · ")); h.appendChild(el("span", "h2", sp.mid + " + " + r + " = " + sp.to)); }
-    else h.appendChild(document.createTextNode(" · À toi de compter !"));
-    return { node: h, say: W(q.a) + " plus " + W(c) + ", " + W(sp.mid) + ". Il reste " + W(r) + ". " + (full ? W(sp.mid) + " plus " + W(r) + ", " + W(sp.to) + "." : "À toi de compter !") };
+    if (sp.kind === "ten" || sp.kind === "tendown") {
+      var up = sp.kind === "ten", c = up ? sp.mid - q.a : q.a - sp.mid, r = q.b - c, vb = up ? " plus " : " moins ", sg = up ? " + " : " − ";
+      h.appendChild(el("span", "h1", q.a + sg + c + " = " + sp.mid)); h.appendChild(document.createTextNode(" · il reste ")); h.appendChild(el("span", "h2", String(r)));
+      if (full) { h.appendChild(document.createTextNode(" · ")); h.appendChild(el("span", "h2", sp.mid + sg + r + " = " + sp.to)); } else h.appendChild(document.createTextNode(" · À toi de compter !"));
+      return { node: h, say: W(q.a) + vb + W(c) + ", " + W(sp.mid) + ". Il reste " + W(r) + ". " + (full ? W(sp.mid) + vb + W(r) + ", " + W(sp.to) + "." : "À toi de compter !") };
+    }
+    var back = sp.kind === "sub", st = sp.steps, mark = back ? " ⬅" : " ➜";
+    if (!st) return full ? out(sp.from + (back ? " − 0 = " : " + 0 = ") + sp.to, W(sp.from) + (back ? " moins zéro, " : " plus zéro, ") + W(sp.to) + ".")
+                         : out("On part de " + sp.from + ". " + (back ? "Moins" : "Plus") + " zéro, on ne bouge pas !", "On part de " + W(sp.from) + ". " + (back ? "Moins" : "Plus") + " zéro, on ne bouge pas !");
+    if (full) { eqSpan(sp.from + (back ? " − " : " + ") + st + " = " + sp.to); return { node: h, say: W(sp.from) + (back ? " moins " : " plus ") + W(st) + ", " + W(sp.to) + "." }; }
+    if (st === 1) return out("On part de " + sp.from + mark + " " + (back ? "Moins un, c’est le nombre juste avant !" : "Plus un, c’est le nombre juste après !") + " Regarde la file.",
+                             "On part de " + W(sp.from) + ". " + (back ? "Moins un, c’est le nombre juste avant !" : "Plus un, c’est le nombre juste après !"));
+    return out("On part de " + sp.from + mark + " " + (back ? "On recule" : "On avance") + " de " + st + " : un bond, deux bonds… Compte avec tes doigts ! À toi de compter !",
+               "On part de " + W(sp.from) + ". " + (back ? "On recule" : "On avance") + " de " + W(st) + ". Compte tes bonds avec tes doigts. À toi de compter !");
   }
   function question() {
     V.stop(); if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
@@ -526,12 +534,6 @@
       if (S.settings.voice !== false && V.speak(text, function () { fire(250); })) setTimeout(function () { fire(0); }, 9000);   /* filet de sécurité si la fin de phrase n'arrive jamais */
       else fire(1500);
     }
-    function resultWords() {
-      var W = E.words;
-      if (q.type === "nombres") return W(q.answer) + ".";
-      if (q.hole) return W(q.a) + " plus " + W(q.answer) + ", " + W(q.total) + ".";
-      return q.say.replace(/\s*\?$/, "") + ", " + W(q.answer) + ".";
-    }
     q.choices.forEach(function (c) {
       var b = el("button", "choice", String(c)); b.type = "button"; btns.push(b);
       b.addEventListener("click", function () {
@@ -544,13 +546,14 @@
           if (clean) { R.good++; if (q.type === "nombres") R.nums.push(q.answer); else R.calcs.push(q.a + (q.type === "addition" ? "+" : "-") + q.b); }
           msg.className = "msg good";
           msg.textContent = "Bravo ! " + (q.type === "nombres" ? q.answer : q.hole ? q.a + " + " + q.answer + " = " + q.total : q.text + " = " + q.answer);
-          /* choisir = répondre : bonne réponse → la suite arrive à la fin de la phrase lue, mauvaise → on en choisit une autre */
-          tell("Bravo ! " + resultWords(), function () { if (!R || R.q !== q) return; R.i++; if (R.i < R.qs.length) question(); else finish(); });
+          /* bonne réponse : un petit son victorieux discret et rapide (pas de phrase lue), puis on passe tout de suite à la suite */
+          if (window.ZooFx) { ZooFx.tone(784, 0, 0.09, "triangle", 0.07); ZooFx.tone(1175, 0.08, 0.14, "triangle", 0.07); }
+          setTimeout(function () { if (!R || R.q !== q) return; R.i++; if (R.i < R.qs.length) question(); else finish(); }, clean ? 450 : 700);
         } else {
           mistakes++; firstTry = false; b.classList.add("bad"); b.disabled = true; msg.className = "msg bad";
           /* 1re erreur : encouragement ; 2e : l'aide complète (avec le résultat) ; 3e : la bonne réponse est colorée */
           if (mistakes === 2) {
-            if (q.type === "nombres") { msg.textContent = "Écoute encore : « " + q.say + " »"; R.replays++; tell("Pas tout à fait. Écoute encore. " + q.say + ".", null); }
+            if (q.type === "nombres") { var n10 = q.answer >= 10 && q.answer < 100 ? " → " + (q.answer - q.answer % 10) + (q.answer % 10 ? " + " + q.answer % 10 : "") : ""; msg.textContent = "Écoute encore : « " + q.say + " »" + n10; R.replays++; tell("Pas tout à fait. Écoute encore. " + q.say + ".", null); }
             else if (openHelp && split(q)) { msg.textContent = "Regarde l’aide, elle te montre comment faire 🧩"; openHelp(true, true, "Pas tout à fait. Regarde l’aide, elle te montre comment faire. "); }
             else { msg.textContent = "Pas tout à fait. Essaie encore 💪"; tell("Pas tout à fait. Essaie encore.", null); }
           } else if (mistakes >= 3) {
