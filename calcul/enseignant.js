@@ -30,7 +30,8 @@
   /* ===== Style : accent vert du calcul (la lecture reste violette) ===== */
   function css() {
     var s = el("style"); s.id = "calc-teacher-css";
-    s.textContent = ".calc-switch{display:flex;margin:2px 0 12px;border:2px solid #0b7f7d;border-radius:999px;overflow:hidden}" +
+    s.textContent = "#teachersAdminTab{position:relative}#calcReqBadge{position:absolute;top:-7px;right:-3px;margin:0;box-shadow:0 0 0 2px #fff}#calcAccess h3{margin:16px 0 8px}" +
+      ".calc-switch{display:flex;margin:2px 0 12px;border:2px solid #0b7f7d;border-radius:999px;overflow:hidden}" +
       ".calc-switch button{flex:1;border:0;border-radius:0;background:#fff;color:#0b7f7d;font-weight:800;padding:9px 6px;font-size:.92rem;cursor:pointer;min-height:40px;box-shadow:none}" +
       ".calc-switch button.on{background:#0b7f7d;color:#fff}" +
       "body.calc-mode .teacher-nav button.active{background:#075f5d}" +
@@ -226,6 +227,14 @@
     }).catch(function () { st.textContent = "⚠️ Impossible de charger les réglages."; st.className = "save-state err"; });
   }
 
+  /* Pastille « demandes du laboratoire » sur l'onglet Enseignants (admin) */
+  function setReqBadge(n) {
+    var tab = $('[data-tab="enseignants"]'); if (!tab) return;
+    var b = $("#calcReqBadge"); if (!b) { b = el("span", "nav-badge", ""); b.id = "calcReqBadge"; tab.appendChild(b); }
+    b.textContent = "🧪 " + n; b.classList.toggle("hidden", !n); b.setAttribute("aria-label", n + (n > 1 ? " demandes d’accès au Zoo de Calcul" : " demande d’accès au Zoo de Calcul"));
+  }
+  function checkRequests() { rpc("lab_admin_state").then(function (st) { setReqBadge((st.requests || []).length); }).catch(function () {}); }
+
   /* ===== Accès au laboratoire (administrateur) ===== */
   function renderAccess() {
     var box = $("#calcAccess"); clear(box);
@@ -238,6 +247,18 @@
       var tg = el("button", st.enabled ? "danger" : "", st.enabled ? "Désactiver tout le laboratoire" : "Activer le laboratoire"); tg.type = "button";
       tg.addEventListener("click", function () { tg.disabled = true; rpc("lab_admin_set_enabled", { p_enabled: !st.enabled }).then(load).catch(function () { tg.disabled = false; }); });
       sw.appendChild(tg); holder.appendChild(sw);
+      setReqBadge((st.requests || []).length);
+      if ((st.requests || []).length) {
+        holder.appendChild(el("h3", "", "🧪 Demandes d’accès (" + st.requests.length + ")"));
+        st.requests.forEach(function (q) {
+          var line = el("div", "row seat-alert"), t = el("div"); t.style.flex = "1"; t.style.minWidth = "200px";
+          t.appendChild(el("strong", "", "👩‍🏫 " + q.label)); t.appendChild(el("div", "muted", "Demande du " + new Date(q.requested_at).toLocaleDateString("fr-FR") + " · accès pour lui et ses élèves"));
+          var ok = el("button", "", "Accepter"), no = el("button", "danger", "Refuser"); ok.type = no.type = "button";
+          ok.addEventListener("click", function () { ok.disabled = no.disabled = true; rpc("lab_admin_grant", { p_kind: "teacher", p_subject: q.teacher_id, p_scope: "self_and_students", p_note: "Sur demande" }).then(load).catch(function () { ok.disabled = no.disabled = false; }); });
+          no.addEventListener("click", function () { ok.disabled = no.disabled = true; rpc("lab_admin_decline", { p_teacher: q.teacher_id }).then(load).catch(function () { ok.disabled = no.disabled = false; }); });
+          line.appendChild(t); line.appendChild(ok); line.appendChild(no); holder.appendChild(line);
+        });
+      }
       holder.appendChild(el("h3", "", "Comptes autorisés (" + st.access.length + ")"));
       if (!st.access.length) holder.appendChild(el("p", "muted", "Aucun compte autorisé."));
       st.access.forEach(function (r) {
@@ -272,6 +293,7 @@
       if (!build()) return;
       var want = "lecture"; try { want = localStorage.getItem("zoo_matiere") === "calcul" ? "calcul" : "lecture"; } catch (e) {}
       mode = "lecture"; window.CalcTeacher.sw.l.classList.add("on"); if (want === "calcul") setMode("calcul");
+      if (role === "admin") checkRequests();
     }
   };
 })();
