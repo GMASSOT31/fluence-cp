@@ -11,7 +11,7 @@
   var C = window.LABO_CALCUL || {}, E = window.CalcEngine, role = "teacher", mode = "lecture", settings = {}, saved = null, saveTimer = null;
   var ACT = { nombres: { icon: "👂", title: "ÉCOUTER" }, addition: { icon: "➕", title: "ADDITION" }, soustraction: { icon: "➖", title: "SOUSTRACTION" } };
   var COLORS = ["#7960d4", "#3f7fd0", "#2e9b91", "#d48b2d", "#d0508f", "#5b8a2e"];
-  var orig = {};   /* textes et attributs d'origine, pour revenir exactement à la lecture */
+  var origTitle = null, orig = {};   /* textes et attributs d'origine, pour revenir exactement à la lecture */
 
   function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
   function clear(n) { while (n.firstChild) n.removeChild(n.firstChild); }
@@ -30,7 +30,7 @@
   /* ===== Style : accent vert du calcul (la lecture reste violette) ===== */
   function css() {
     var s = el("style"); s.id = "calc-teacher-css";
-    s.textContent = "#teachersAdminTab{position:relative}#calcReqBadge{position:absolute;top:-7px;right:-3px;margin:0;box-shadow:0 0 0 2px #fff}#calcAccess h3{margin:16px 0 8px}" +
+    s.textContent = "body.calc-mode #guide,body.calc-mode .share-teacher{display:none!important}#teachersAdminTab{position:relative}#calcReqBadge{position:absolute;top:-7px;right:-3px;margin:0;box-shadow:0 0 0 2px #fff}#calcAccess h3{margin:16px 0 8px}" +
       ".calc-switch{display:flex;margin:2px 0 12px;border:2px solid #0b7f7d;border-radius:999px;overflow:hidden}" +
       ".calc-switch button{flex:1;border:0;border-radius:0;background:#fff;color:#0b7f7d;font-weight:800;padding:9px 6px;font-size:.92rem;cursor:pointer;min-height:40px;box-shadow:none}" +
       ".calc-switch button.on{background:#0b7f7d;color:#fff}" +
@@ -81,6 +81,7 @@
     mode = m; try { localStorage.setItem("zoo_matiere", m); } catch (e) {}
     window.CalcTeacher.sw.l.classList.toggle("on", m === "lecture"); window.CalcTeacher.sw.c.classList.toggle("on", m === "calcul");
     document.body.classList.toggle("calc-mode", m === "calcul");
+    swapTexts(m === "calcul");
     if (m === "calcul") {
       bProg.dataset.tab = "calc-progression"; bReg.dataset.tab = "calc-reglages"; if (bEcou) bEcou.classList.add("hidden");
       skin(true, banner);
@@ -90,6 +91,13 @@
       skin(false, banner);
       if (cur === "calc-progression") bProg.click(); else if (cur === "calc-reglages") bReg.click();
     }
+  }
+  /* Textes propres à la matière : le guide de démarrage et le partage parlent de Zoo de Lecture (le calcul est un labo privé : on ne le partage pas) ; le pied de page ne parle pas de lectures au micro */
+  function swapTexts(on) {
+    var fn = $(".teacher-footnote");
+    if (fn) { if (fn.getAttribute("data-lec") === null) fn.setAttribute("data-lec", fn.textContent); fn.textContent = on ? "☁️ Les progrès de vos élèves en calcul sont sauvegardés en ligne automatiquement : vous les retrouvez dans l’onglet « Progression »." : fn.getAttribute("data-lec"); }
+    if (origTitle === null) origTitle = document.title;
+    document.title = on ? "Espace enseignant · Zoo de Calcul (test)" : origTitle;
   }
   /* Bandeau du haut : « Zoo de Calcul » avec les animaux de la 1re, de la 2e moitié et de la dernière étape */
   function skin(on, banner) {

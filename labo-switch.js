@@ -35,7 +35,7 @@
     /* Espace enseignant : le calcul s'intègre au menu de la page (bascule Lecture | Calcul), module chargé seulement pour un compte autorisé */
     function loadTeacher(a) {
       function add(src, cb) { var s = document.createElement("script"); s.src = src; s.onload = cb; document.head.appendChild(s); }
-      add("calcul/engine.js?v=4", function () { add("calcul/enseignant.js?v=3", function () { try { window.CalcTeacher.init(a); } catch (e) {} }); });
+      add("calcul/engine.js?v=4", function () { add("calcul/enseignant.js?v=4", function () { try { window.CalcTeacher.init(a); } catch (e) {} }); });
     }
     /* Enseignant sans accès : un bouton pour le demander à l'administrateur (au-dessus du menu) */
     function showRequest(a) {

@@ -79,7 +79,9 @@
   @keyframes cshake { 25% { transform: translateX(-7px); } 75% { transform: translateX(7px); } }
   .msg { min-height: 2.4em; font-weight: 800; font-size: 1.15rem; }
   .msg.good { color: #17794f; } .msg.bad { color: #b3261e; }
-  .nline { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; margin: 6px auto 10px; max-width: 640px; }
+  .nline { display: flex; flex-wrap: nowrap; justify-content: safe center; gap: 3px; margin: 6px auto 4px; max-width: 640px; overflow-x: auto; padding: 4px 2px 6px; -webkit-overflow-scrolling: touch; }
+  .nline b { flex: 0 0 auto; } .nline b.arr { outline: 3px dashed var(--ink); outline-offset: -3px; }
+  @media (min-width: 601px) and (max-width: 880px) { body.mode-student .bottom-nav .bn-me { display: flex; } body.mode-student .me-menu:not([hidden]) { display: flex; flex-direction: column; gap: 8px; position: fixed; right: 8px; bottom: calc(var(--bn-h, 76px) + 8px); z-index: 40; padding: 10px; background: var(--card); border: 2px solid var(--line); border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,.35); } body.mode-student .me-menu button { min-height: 48px; padding: 10px 16px; border-radius: 12px; border: 2px solid var(--line); background: var(--card); color: var(--ink); font: 700 1rem inherit; text-align: left; cursor: pointer; } body.mode-student .me-menu button[hidden] { display: none; } }   /* tablettes : le menu « Moi » donne accès à Boutique, mes nombres, progression, déconnexion */
   .nline b.st { outline: 3px solid var(--ink); outline-offset: -3px; } .nline b.s1 { background: #cfeeed; border-color: #0b7f7d; } .nline b.s2 { background: #ffe2b8; border-color: #c9740c; }
   .hint { margin: 4px auto 8px; max-width: 640px; font-weight: 700; text-align: center; } .hint .h1 { color: #0b7f7d; } .hint .h2 { color: #b45f06; }
   .pairs { display: grid; gap: 4px 2px; justify-items: center; width: 100%; max-width: 560px; overflow: hidden; margin: 6px auto; padding: 8px; border: 2px dashed var(--line); border-radius: 14px; } .pairs span { line-height: 1.1; } .pairs .ghost { width: 1em; height: 1em; border: 2px dashed var(--line); border-radius: 50%; opacity: .6; } .pairs .extra { background: #ffe2b8; border-radius: 50%; }
@@ -140,7 +142,7 @@
         </div>
       </div>
       <button type="button" class="panel-nav" data-go="boutique"><span class="pn-ico" aria-hidden="true">🛍️</span><span>Boutique<span class="pn-sub" id="pl-shop"></span></span></button>
-      <button type="button" class="panel-nav" data-go="cartes"><span class="pn-ico" aria-hidden="true">🔢</span><span>Mes nombres lus</span></button>
+      <button type="button" class="panel-nav" data-go="cartes"><span class="pn-ico" aria-hidden="true">🔢</span><span>Mes nombres reconnus</span></button>
       <button type="button" class="panel-nav" data-go="reconnues"><span class="pn-ico" aria-hidden="true">🧮</span><span>Mes calculs gagnés</span></button>
       <button type="button" class="panel-nav" data-go="progres"><span class="pn-ico" aria-hidden="true">📈</span><span>Ma progression<span class="pn-sub" id="pr-prog"></span></span></button>
     </aside>
@@ -168,7 +170,7 @@
   </nav>
   <div class="me-menu" id="me-menu" role="menu" hidden>
     <button type="button" role="menuitem" data-go="boutique">🛍️ Boutique</button>
-    <button type="button" role="menuitem" data-go="cartes">🔢 Mes nombres lus</button>
+    <button type="button" role="menuitem" data-go="cartes">🔢 Mes nombres reconnus</button>
     <button type="button" role="menuitem" data-go="reconnues">🧮 Mes calculs gagnés</button>
     <button type="button" role="menuitem" data-go="progres">📈 Ma progression</button>
     <button type="button" role="menuitem" id="me-lecture">📖 Retour à la lecture</button>
@@ -396,8 +398,11 @@
     for (k = 0; k <= cap; k++) {
       var c = "";
       if (sp) { if (k === sp.from) c = "st"; else if (k > sp.from && k <= sp.mid) c = "s1"; else if (k > sp.mid && k <= sp.to) c = "s2"; }
-      l.appendChild(el("b", c, String(k)));
+      if (sp && k === sp.to) c += " arr";
+      l.appendChild(el("b", c.trim(), String(k)));
     }
+    var st0 = l.querySelector(".st");
+    if (st0) setTimeout(function () { try { l.scrollLeft = Math.max(0, st0.offsetLeft - 40); } catch (e) {} }, 0);   /* petit écran : la bande commence près du point de départ */
     return l;
   }
   /* Aide qui montre la procédure : passer par 10 en addition, de b à a pour l'écart (jamais la validation de la réponse) */
@@ -408,6 +413,7 @@
   }
   function helpText(q) {
     var sp = split(q), h = el("p", "hint"); if (!sp) return { node: null, say: "" };
+    h.setAttribute("data-scroll", "");
     if (sp.kind === "gap") { h.textContent = "De " + q.b + " à " + q.a + ", combien de pas ?"; return { node: h, say: "De " + E.words(q.b) + " à " + E.words(q.a) + ", combien de pas ?" }; }
     var c = sp.mid - q.a, r = q.b - c, W = E.words;
     h.appendChild(el("span", "h1", q.a + " + " + c + " = " + sp.mid)); h.appendChild(document.createTextNode(" · il reste ")); h.appendChild(el("span", "h2", String(r))); h.appendChild(document.createTextNode(" · ")); h.appendChild(el("span", "h2", sp.mid + " + " + r + " = " + sp.to));
@@ -418,7 +424,7 @@
     var box = $("view"); clear(box);
     var q = R.qs[R.i], openHelp = null, mistakes = 0, firstTry = true, t0 = Date.now(), answered = false, helped = false, card = el("div", "card calc-card");
     R.q = q;
-    var quit = el("button", "secondary home-small", "← Arrêter"); quit.type = "button"; quit.addEventListener("click", function () { goTo(R.act); }); card.appendChild(quit);
+    var quit = el("button", "secondary home-small", "← Arrêter"); quit.type = "button"; quit.addEventListener("click", function () { if (!R.res.length) { goTo(R.act); return; } stopConfirm(); }); card.appendChild(quit);
     card.appendChild(dots());
     var st = el("div", "stage"); card.appendChild(st);
     var msg = el("div", "msg"); msg.setAttribute("role", "status");
@@ -474,6 +480,17 @@
       cs.appendChild(b);
     });
     card.appendChild(cs); card.appendChild(msg); box.appendChild(card);
+  }
+  /* Arrêter une série entamée : elle n'est pas gardée (rien n'est enregistré, aucune pièce) ; on le dit avant de quitter */
+  function stopConfirm() {
+    var old = document.querySelector(".buy-confirm"); if (old) old.parentNode.removeChild(old);
+    var ov = el("div", "game-result buy-confirm"); ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true");
+    var c = el("div", "game-result-card"), row = el("div", "gr-actions");
+    c.appendChild(el("h2", "", "Arrêter la série ?")); c.appendChild(el("p", "", "Si tu pars maintenant, cette série ne sera pas gardée : tu devras la recommencer pour gagner."));
+    var go = el("button", "primary big-btn", "Continuer la série"), out = el("button", "secondary big-btn", "Quitter la série"); go.type = out.type = "button";
+    function close() { if (ov.parentNode) ov.parentNode.removeChild(ov); }
+    go.addEventListener("click", close); out.addEventListener("click", function () { close(); var a = R && R.act; V.stop(); goTo(a || "home"); });
+    row.appendChild(go); row.appendChild(out); c.appendChild(row); ov.appendChild(c); document.body.appendChild(ov); go.focus();
   }
   function finish() {
     V.stop(); var box = $("view"); clear(box);
@@ -580,7 +597,7 @@
   }
   function numsView(box) {
     var card = el("div", "card calc-card"), act = "nombres", ids = enabledLevels(act), hatched = ids.filter(function (id) { return (S.levels[act + ":" + id] || {}).ok; }).length;
-    card.appendChild(el("h2", "", "Mes nombres lus"));
+    card.appendChild(el("h2", "", "Mes nombres reconnus"));
     card.appendChild(el("p", "muted", nb(hatched, "animal a éclos", "animaux ont éclos") + " sur " + ids.length + ". Chaque étape réussie fait éclore un animal : plus tu avances dans les nombres, plus l’animal court vite !"));
     petCards(card, act); box.appendChild(card);
     var c2 = el("div", "card calc-card"), found = numsCount();

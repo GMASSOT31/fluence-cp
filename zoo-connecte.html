@@ -316,8 +316,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   .wallet { display: inline-flex; align-items: center; gap: 8px; background: #fff; border: 3px solid #f5c542; border-radius: 999px; padding: 6px 18px; font-size: 1.1rem; font-weight: 600; }
   .wallet b { font-size: 1.9rem; font-variant-numeric: tabular-nums; line-height: 1; }
   .wallet .gold-coin { font-size: 2rem; }
-  .shelf { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 30px 18px; padding: 18px 20px 12px; }
-  .prod { position: relative; display: flex; flex-direction: column; gap: 8px; background: #fff; border: 2.5px solid #1b2433; border-radius: 18px; padding: 14px; }
+  .shelf { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(230px, 100%), 1fr)); gap: 30px 18px; padding: 18px 20px 12px; }
+  .prod { position: relative; min-width: 0; display: flex; flex-direction: column; gap: 8px; background: #fff; border: 2.5px solid #1b2433; border-radius: 18px; padding: 14px; }
   .prod::after { content: ""; position: absolute; left: -10px; right: -10px; bottom: -17px; height: 14px; border-radius: 5px; background: linear-gradient(#d29a5b, #8b5a2b); box-shadow: 0 3px 0 rgba(0, 0, 0, 0.25); z-index: -1; }
   .prod.afford { border-color: #16a34a; box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.28); }
   .prod-icon { position: relative; align-self: center; width: 104px; height: 104px; border-radius: 22px; display: flex; align-items: center; justify-content: center; font-size: 3.6rem; line-height: 1; }
@@ -329,7 +329,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   .need { font-size: 0.92rem; color: #374151; font-weight: 600; }
   .need-bar { height: 10px; border-radius: 6px; background: #e5e7eb; overflow: hidden; margin-top: 5px; }
   .need-bar i { display: block; height: 100%; border-radius: 6px; background: linear-gradient(90deg, #f5b301, #ffd54a); }
-  .prod-buy { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 2px; }
+  .prod-buy { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 10px; margin-top: 2px; } .prod-buy .buy { flex: 1 1 110px; min-width: 0; } .prod-buy .pricetag { flex: 0 1 auto; min-width: 0; }
   .pricetag { display: inline-flex; align-items: center; gap: 6px; background: #fff3c4; border: 2.5px solid #f5c542; border-radius: 14px; padding: 5px 10px; font-size: 0.8rem; font-weight: 600; line-height: 1.05; }
   .pricetag b { font-size: 1.7rem; font-variant-numeric: tabular-nums; }
   .pricetag .gold-coin { font-size: 1.6rem; }
@@ -6712,6 +6712,6 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
 })();
 </script>
 <script src="labo-config.js?v=1" defer></script>
-<script src="labo-switch.js?v=3" defer></script>
+<script src="labo-switch.js?v=4" defer></script>
 </body>
 </html>
