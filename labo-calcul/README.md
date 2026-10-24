@@ -103,3 +103,10 @@ Tests : `labo-calcul-test.html?who=ok&all=1` (+ `&egg=addition:a7`, `&order=1`).
 * **Réglages péda** : bulle fixe en bas de l'écran « ✓ Enregistré » (2 s), rouge « Pas enregistré, réessayez » tant que l'enregistrement échoue.
 * **Éclosion** : « Continuer » plein jaune à gauche, « Voir mes animaux » contour seul. **Bilan** : phrase pour l'enfant (lue) au lieu de l'explication technique (restée dans l'espace enseignant).
 * **Grand écran (≥ 1400 px)** : plus de « Me déconnecter » dans le panneau ; bouton « 🙂 Moi » qui ouvre le menu (déconnexion comprise). **Barre du bas** : onglet actif blanc sur vert foncé (9:1), icône blanche. **En-tête** : seulement pièces et parties (niveau et nombres reconnus dans « Ma progression »).
+
+## Série d'améliorations n°4
+* **Dessins** : « retirer » = un seul groupe, les derniers estompés + flèche « ➜ − b » (le dessin en deux rangées ne sert plus que pour « Combien d'écart ? ») ; les images sont rangées par paquets de 5 (rangées jamais coupées, petit espace tous les 10).
+* **Zéro** : « On part de 4. Plus zéro, on ne bouge pas ! » (idem « moins zéro »), sans « À toi de compter ».
+* **Bilan** : « Tu as trouvé 8 calculs du premier coup sur 10. » affiché et lu (puis l'encouragement) ; plafond de pièces : « Ta pièce du jour est déjà gagnée, bravo ! » affiché et lu.
+* **Textes** : plus de bandeau « Version de test » chez l'élève ; barre du bas « Plus » / « Moins » ; vitesse des animaux en comparaison (table `SPEED` dans labo-calcul.html : « aussi vite qu'un vélo »…), les km/h restent côté enseignant.
+* **Cache** : zoo-skin.css v3, engine.js v5, zoo-effects.js v2, voice.js v2, labo-config.js v2, enseignant.js v7, labo-switch.js v7 (ces quatre derniers fichiers JS/CSS n'ont pas changé de contenu : numéros montés par précaution).
