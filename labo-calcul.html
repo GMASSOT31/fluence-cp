@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Figtree:wght@400;600;800&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
 <!-- Même habillage que le Zoo de Lecture (copie générée par tools/extract_zoo_skin.py) ; les couleurs du calcul sont dans le bloc <style> ci-dessous -->
-<link rel="stylesheet" href="calcul/zoo-skin.css?v=2">
+<link rel="stylesheet" href="calcul/zoo-skin.css?v=3">
 <style>
   /* ===== Identité « calcul » : vert émeraude / turquoise (la lecture est bleu-violet). Le mot « Calcul » et le signe ➕ portent aussi la différence. ===== */
   [hidden] { display: none !important; }
@@ -67,7 +67,9 @@
   .say { width: min(230px,70%); min-height: 90px; font-size: 1.6rem; border-radius: 24px; border: 4px solid var(--calc-d); background: var(--calc); color: #fff; font-weight: 800; margin: 6px auto 12px; display: block; cursor: pointer; font-family: Fredoka, Figtree, sans-serif; }
   .eq { font-family: Fredoka, Figtree, sans-serif; font-size: clamp(2.4rem,9vw,3.8rem); font-weight: 700; margin: 6px 0; letter-spacing: .04em; }
   .pic { display: flex; flex-wrap: wrap; gap: 4px 14px; justify-content: center; align-items: center; margin: 6px auto 10px; font-size: 2rem; line-height: 1.15; max-width: 560px; }
-  .pic .grp { display: inline-flex; flex-wrap: wrap; gap: 2px; max-width: 260px; justify-content: center; padding: 6px 10px; border: 2px dashed var(--line); border-radius: 14px; }
+  .pic .grp { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 6px 10px; border: 2px dashed var(--line); border-radius: 14px; }
+  .pic .row5 { display: flex; flex-wrap: nowrap; gap: 2px; } .pic .row5.box { margin-top: 8px; }   /* paquets de 5 : une rangée ne coupe jamais un paquet ; un petit espace tous les 10 */
+  .pic .fd { opacity: .28; filter: grayscale(.4); } .pic .out { align-self: center; font-size: 1.2rem; font-weight: 800; color: var(--calc); white-space: nowrap; }
   .pic .sign { font-size: 2.2rem; font-weight: 800; color: var(--calc); }
   .choices { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; max-width: 520px; margin: 10px auto; }
   .choices.c6 { grid-template-columns: repeat(3,1fr); max-width: 680px; }
@@ -138,7 +140,6 @@
 </style>
 </head>
 <body class="mode-student calc">
-<div class="test-band" role="note">🧪 Version de test <span class="tb-long">— tes pièces d’or sont les mêmes que dans le Zoo de Lecture</span></div>
 <main>
   <header>
     <div class="zoo-hero">
@@ -185,8 +186,8 @@
 
   <nav class="bottom-nav" id="bottom-nav" aria-label="Mon espace" hidden>
     <button type="button" class="panel-nav" data-go="nombres"><span class="pn-ico" aria-hidden="true">👂</span><span>Écouter</span></button>
-    <button type="button" class="panel-nav" data-go="addition"><span class="pn-ico" aria-hidden="true">➕</span><span>Addition</span></button>
-    <button type="button" class="panel-nav" data-go="soustraction"><span class="pn-ico" aria-hidden="true">➖</span><span>Soustr.</span></button>
+    <button type="button" class="panel-nav" data-go="addition"><span class="pn-ico" aria-hidden="true">➕</span><span>Plus</span></button>
+    <button type="button" class="panel-nav" data-go="soustraction"><span class="pn-ico" aria-hidden="true">➖</span><span>Moins</span></button>
     <button type="button" class="panel-nav" data-go="jeux"><span class="pn-ico" aria-hidden="true">🎮</span><span>Jouer</span></button>
     <button type="button" class="panel-nav" data-go="boutique"><span class="pn-ico" aria-hidden="true">🛍️</span><span>Boutique</span></button>
     <button type="button" class="panel-nav" data-go="cartes"><span class="pn-ico" aria-hidden="true">🔢</span><span>Nombres</span></button>
@@ -206,11 +207,11 @@
 <div class="toast" id="toast" role="status"></div>
 <div class="confetti" id="confetti" aria-hidden="true"></div>
 
-<script src="labo-config.js"></script>
+<script src="labo-config.js?v=2"></script>
 <script src="vendor/supabase.js?v=2.118.0"></script>
-<script src="calcul/engine.js?v=4"></script>
-<script src="calcul/zoo-effects.js?v=1"></script>
-<script src="calcul/voice.js?v=1"></script>
+<script src="calcul/engine.js?v=5"></script>
+<script src="calcul/zoo-effects.js?v=2"></script>
+<script src="calcul/voice.js?v=2"></script>
 <script>
 (function () {
   "use strict";
@@ -401,7 +402,15 @@
     R.qs.forEach(function (q, k) { d.appendChild(el("span", "dot" + (k === R.i ? " cur" : R.res[k] === 1 ? " good" : R.res[k] === 0 ? " miss" : ""))); });
     return d;
   }
-  function group(n, ico) { var g = el("span", "grp"); for (var k = 0; k < n; k++) g.appendChild(el("span", "", ico)); return g; }
+  /* n images rangées par paquets de 5 (boîte de 10 = 2 rangées de 5) ; les `fade` dernières sont estompées (ce qu'on enlève) */
+  function group(n, ico, fade) {
+    var g = el("span", "grp"), row, k;
+    for (k = 0; k < n; k++) {
+      if (k % 5 === 0) { row = el("span", "row5" + (k > 0 && k % 10 === 0 ? " box" : "")); g.appendChild(row); }
+      row.appendChild(el("span", fade && k >= n - fade ? "fd" : "", ico));
+    }
+    return g;
+  }
   function picture(q) {
     var p = el("div", "pic"), ico = ANIMALS[(R.i + q.a) % ANIMALS.length]; p.setAttribute("aria-hidden", "true");
     if (q.type === "addition" && q.hole) { p.appendChild(group(q.a, ico)); p.appendChild(el("span", "sign", "+")); p.appendChild(el("span", "sign", "?")); }
@@ -412,7 +421,7 @@
       for (k = 0; k < q.a; k++) pr.appendChild(k < q.b ? el("span", "", ico) : el("span", "ghost", ""));
       p.style.display = "block"; p.appendChild(pr);
     }
-    else { p.appendChild(group(q.a, ico)); p.appendChild(el("span", "sign", "−")); p.appendChild(group(q.b, ico)); }   /* soustraction : comme l'addition, seulement le signe « − » (rien n'est barré : l'élève doit comprendre l'opération) */
+    else { p.appendChild(group(q.a, ico, q.b)); p.appendChild(el("span", "out", "➜ − " + q.b)); }   /* soustraction « retirer » : un seul groupe, les b derniers estompés, une flèche qui part (le groupe de b n'est plus dessiné à côté : on ne confond plus avec une addition) */
     return p;
   }
   /* full = false : seulement la stratégie (le départ, le premier saut) ; full = true : tout, y compris l'arrivée et le résultat (après une 2e erreur) */
@@ -463,8 +472,9 @@
     if (sp.kind === "add" || sp.kind === "sub") {
       var back2 = sp.kind === "sub", verb = back2 ? "recule" : "avance", st = sp.steps;
       if (!full) {
-        h.textContent = "On part de " + sp.from + " · " + (st ? "on " + verb + " de " + st : "on ne bouge pas") + " · À toi de compter !";
-        return { node: h, say: "On part de " + W(sp.from) + ". " + (st ? "On " + verb + " de " + W(st) + "." : "On ne bouge pas.") + " À toi de compter !" };
+        if (!st) { h.textContent = "On part de " + sp.from + ". " + (back2 ? "Moins" : "Plus") + " zéro, on ne bouge pas !"; return { node: h, say: "On part de " + W(sp.from) + ". " + (back2 ? "Moins" : "Plus") + " zéro, on ne bouge pas !" }; }
+        h.textContent = "On part de " + sp.from + " · on " + verb + " de " + st + " · À toi de compter !";
+        return { node: h, say: "On part de " + W(sp.from) + ". On " + verb + " de " + W(st) + ". À toi de compter !" };
       }
       h.appendChild(el("span", "h1", sp.from + (back2 ? " − " : " + ") + st + " = " + sp.to));
       return { node: h, say: W(sp.from) + (back2 ? " moins " : " plus ") + W(st) + ", " + W(sp.to) + "." };
@@ -587,13 +597,15 @@
       function bilan() {
         clear(box); var card = el("div", "card calc-card stage"), act2 = act;
         card.appendChild(el("h2", "", "Série terminée !")); card.appendChild(starsOf(after, "bstars"));
+        var score = "Tu as trouvé " + g + (act2 === "nombres" ? (g > 1 ? " nombres" : " nombre") : (g > 1 ? " calculs" : " calcul")) + " du premier coup sur " + n + ".";
         var enc = after >= 2 ? "Tu es un champion de cette étape !" : after === 1 ? "Encore une série réussie et tu gagnes la 2e étoile !" : "Réussis une série pour gagner ta première étoile !";
         card.appendChild(el("p", "msg good", enc));
-        if (S.settings.voice !== false) setTimeout(function () { if (document.querySelector(".bstars")) V.speak(enc); }, 400);
-        card.appendChild(el("p", "", g + " bonnes réponses du premier coup sur " + n));
+        var say6 = score + " " + (res.success && !res.coins ? "Ta pièce du jour est déjà gagnée, bravo ! " : "") + enc;
+        if (S.settings.voice !== false) setTimeout(function () { if (document.querySelector(".bstars")) V.speak(say6); }, 400);
+        card.appendChild(el("p", "", score));
         var inf = el("p", "msg " + (res.success ? "good" : ""));
         if (!res.success) inf.textContent = "Continue, tu progresses ! Tu peux refaire cette série.";
-        else if (!res.coins) inf.textContent = "🎉 Réussi ! (tu as déjà gagné beaucoup de pièces aujourd’hui)";
+        else if (!res.coins) inf.textContent = "🎉 Réussi ! Ta pièce du jour est déjà gagnée, bravo !";
         else if (res.shared) inf.textContent = "🎉 Réussi ! +" + res.coins + " pièce" + (res.coins > 1 ? "s" : "") + " d’or";
         else inf.textContent = "🎉 Réussi ! (pièces de test : +" + res.coins + ")";
         card.appendChild(inf);
@@ -675,7 +687,13 @@
   /* Étoiles = niveau de l'étape, sur 2 : 1 = réussie, 2 = maîtrisée (deux séries réussies) ; les manquantes sont grises. Même règle dans l'éclosion, le bilan et les cartes. */
   function starsOf(ok, cls) { var n = Math.min(2, ok || 0), w = el("div", cls); w.setAttribute("aria-label", n + (n > 1 ? " étoiles" : " étoile") + " sur 2"); w.setAttribute("role", "img"); for (var i = 0; i < 2; i++) w.appendChild(el("span", i < n ? "on" : "off", "★")); return w; }
   function cap1(t) { return t.charAt(0).toUpperCase() + t.slice(1); }
-  function speedText(lv) { return "court à environ " + String(lv.animal.kmh).replace(".", ",") + " km/h"; }
+  /* Pour un enfant de CP : une comparaison, pas des km/h (les km/h restent dans l'espace enseignant) */
+  var VELO = "aussi vite qu’un vélo", VILLE = "aussi vite qu’une voiture en ville", ROUTE = "presque aussi vite qu’une voiture sur la route";
+  var SPEED = { "🐌": "tout doucement, comme un escargot", "🐢": "plus vite qu’un escargot, mais moins vite que toi qui marches", "🦔": "à peu près comme toi quand tu cours doucement", "🐓": "presque " + VELO, "🐖": VELO, "🐕": "plus vite qu’un vélo",
+    "🐘": "presque " + VILLE, "🐇": VILLE, "🦒": "plus vite qu’une voiture en ville", "🐎": ROUTE, "🐆": "aussi vite qu’une voiture sur l’autoroute",
+    "🐜": "plus vite qu’un escargot", "🐿️": VELO, "🦛": "plus vite qu’un vélo", "🐈": "presque " + VILLE, "🦊": VILLE, "🦓": "plus vite qu’une voiture en ville", "🦘": "bien plus vite qu’une voiture en ville", "🦁": ROUTE,
+    "🐊": VELO, "🦏": VILLE, "🐺": "plus vite qu’une voiture en ville", "🐪": "plus vite qu’une voiture en ville", "🦌": "bien plus vite qu’une voiture en ville" };
+  function speedText(lv) { return "court " + (SPEED[lv.animal.e] || "très vite"); }
   function petCards(card, act) {
     var visible = E.visibleLevels(act, enabledLevels(act), S.levels), grid = el("div", "zoo-grid");
     enabledLevels(act).forEach(function (id) {
