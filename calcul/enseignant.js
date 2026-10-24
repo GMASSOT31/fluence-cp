@@ -62,9 +62,11 @@
     /* panneaux (affichés par la fonction d'affichage de la page grâce à data-section) */
     var prog = el("section", "panel feature-card calc-card hidden"); prog.setAttribute("data-section", "calc-progression"); prog.id = "calcProgress";
     var reg = el("section", "panel feature-card calc-card hidden"); reg.setAttribute("data-section", "calc-reglages"); reg.id = "calcSettings";
-    var acc = el("section", "panel feature-card calc-card hidden"); acc.setAttribute("data-section", "calc-reglages"); acc.setAttribute("data-role", "admin"); acc.id = "calcAccess";
+    var acc = el("section", "panel feature-card calc-card hidden"); acc.setAttribute("data-section", "enseignants"); acc.setAttribute("data-role", "admin"); acc.id = "calcAccess";
     content.appendChild(prog); content.appendChild(reg); content.appendChild(acc);
     [bProg, bReg].forEach(function (b) { b.addEventListener("click", function () { if (mode === "calcul") render(b.dataset.tab); }); });
+    var bEns = $('[data-tab="enseignants"]', nav);
+    if (role === "admin" && bEns) bEns.addEventListener("click", renderAccess);
     return true;
   }
   function head(icon, title, sub) {
@@ -99,7 +101,7 @@
   }
 
   function render(tab) {
-    if (tab === "calc-progression") renderProgress(); else if (tab === "calc-reglages") { renderSettings(); if (role === "admin") renderAccess(); }
+    if (tab === "calc-progression") renderProgress(); else if (tab === "calc-reglages") renderSettings();
   }
 
   /* ===== Progression (même structure que la lecture : classes, élèves, pastilles, Détails) ===== */
