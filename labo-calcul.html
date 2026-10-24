@@ -69,7 +69,8 @@
   .pic { display: flex; flex-wrap: wrap; gap: 4px 14px; justify-content: center; align-items: center; margin: 6px auto 10px; font-size: 2rem; line-height: 1.15; max-width: 560px; }
   .pic .grp { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 6px 10px; border: 2px dashed var(--line); border-radius: 14px; }
   .pic .row5 { display: flex; flex-wrap: nowrap; gap: 2px; } .pic .row5.box { margin-top: 8px; }   /* paquets de 5 : une rangée ne coupe jamais un paquet ; un petit espace tous les 10 */
-  .pic .fd { opacity: .28; filter: grayscale(.4); } .pic .out { align-self: center; font-size: 1.2rem; font-weight: 800; color: var(--calc); white-space: nowrap; }
+  .pic .fd { position: relative; opacity: .7; filter: grayscale(.5); outline: 2px dashed #b3261e; outline-offset: 1px; border-radius: 8px; }   /* animaux retirés : contour en pointillés + petite croix, bien visibles sur fond clair comme sombre */
+  .pic .fd::after { content: "✕"; position: absolute; right: -4px; top: -6px; width: .95rem; height: .95rem; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: #b3261e; color: #fff; font-size: .6rem; font-weight: 900; line-height: 1; filter: none; } .pic .out { align-self: center; font-size: 1.2rem; font-weight: 800; color: var(--calc); white-space: nowrap; }
   .pic .sign { font-size: 2.2rem; font-weight: 800; color: var(--calc); }
   .choices { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; max-width: 520px; margin: 10px auto; }
   .choices.c6 { grid-template-columns: repeat(3,1fr); max-width: 680px; }
