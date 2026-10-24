@@ -66,7 +66,7 @@ def main():
     write("zoo-test.html", zoo)
     write("enseignants-test.html", swap_backend(read("enseignants.html"), "fake-auth.js"))
     write("eleve-test.html", swap_backend(read("eleve.html"), "fake-auth.js"))
-    for name in ["zoo-connecte.html", "enseignants.html", "eleve.html", "index.html", "mentions-legales.html", "confidentialite.html", "demo.js", "demo-tour.js", "share.js"]:
+    for name in ["zoo-connecte.html", "enseignants.html", "eleve.html", "index.html", "mentions-legales.html", "confidentialite.html", "demo.js", "demo-tour.js", "share.js", "zoo-embed.js"]:
         shutil.copy(os.path.join(ROOT, name), os.path.join(OUT, name))
     shutil.copytree(os.path.join(ROOT, "img"), os.path.join(OUT, "img"), dirs_exist_ok=True)
     shutil.copytree(os.path.join(ROOT, "guides"), os.path.join(OUT, "guides"), dirs_exist_ok=True)
@@ -74,7 +74,10 @@ def main():
         shutil.copy(os.path.join(ROOT, "tools", name), os.path.join(OUT, name))
     # Laboratoire de calcul (privé) : pages branchées sur tools/fake-labo.js, plus les fichiers communs
     for name in ["labo-calcul.html", "labo-calcul-enseignant.html"]:
-        write(name.replace(".html", "-test.html"), swap_backend(read(name), "fake-labo.js"))
+        page = swap_backend(read(name), "fake-labo.js")
+        if name == "labo-calcul.html":
+            page = page.replace("zoo-connecte.html", "zoo-test.html")   # le cadre « boutique / arcade » montre le Zoo branché sur le faux serveur
+        write(name.replace(".html", "-test.html"), page)
     for name in ["labo-config.js", "labo-switch.js"]:
         if os.path.exists(os.path.join(ROOT, name)):
             shutil.copy(os.path.join(ROOT, name), os.path.join(OUT, name))
