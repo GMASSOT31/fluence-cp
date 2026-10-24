@@ -1,7 +1,7 @@
 /* Faux client Supabase du LABO DE CALCUL (aucun appel réseau). Reproduit les règles de supabase/migrations/20261112_labo_calcul.sql :
    autorisation, interrupteur, tours idempotents, pièces de test calculées côté « serveur », plafond de 10 séries récompensées par jour.
    Monnaie commune : activée par défaut (?shared=0 la coupe → pièces de test). Options d'URL : ?who=ok (élève autorisé, défaut) | refuse (élève non autorisé) | none (pas de jeton) ; ?off=1 (interrupteur serveur coupé) ;
-   ?role=admin (défaut) | teacher (autorisé) | refuse (enseignant non autorisé) | out (non connecté) ; ?fail=1 (le rangement d'une série échoue une fois).
+   ?role=admin (défaut) | teacher (autorisé) | refuse (enseignant non autorisé) | out (non connecté) ; ?req=1 (une demande d'enseignant en attente chez l'admin) ; ?asked=1 (l'enseignant a déjà demandé) ; ?fail=1 (le rangement d'une série échoue une fois).
    Expose window.__lab (journal des appels, état). */
 (function () {
   var q = location.search, opt = function (k, d) { var m = new RegExp("[?&]" + k + "=(\\w+)").exec(q); return m ? m[1] : d; };
@@ -13,7 +13,8 @@
     settings: {}, enabledSwitch: true,
     access: [{ id: "x1", kind: "teacher", subject_id: "t1", scope: "self_and_students", note: "moi", label: "Enseignant de test" }],
     teachers: [{ id: "t1", label: "Enseignant de test" }, { id: "t2", label: "Autre enseignant" }],
-    students: [{ id: "s1", label: "lea", class_name: "CP-A" }, { id: "s2", label: "leo", class_name: "CP-A" }]
+    students: [{ id: "s1", label: "lea", class_name: "CP-A" }, { id: "s2", label: "leo", class_name: "CP-A" }],
+    requests: /[?&]req=1/.test(q) ? [{ teacher_id: "t2", label: "Autre enseignant", requested_at: "2026-10-23T09:00:00Z" }] : [], myRequested: /[?&]asked=1/.test(q)
   };
   function err(m) { return { message: m, code: "42501" }; }
   function studentAllowed() { return lab.enabled && who === "ok"; }
@@ -27,7 +28,8 @@
   var api = {
     lab_my_access: function (a) {
       if (a && a.p_token) return { allowed: studentAllowed(), role: "student" };
-      return { allowed: teacherAllowed(), role: role === "admin" ? "admin" : "teacher" };
+      var al = teacherAllowed(); if (role === "refuse" && lab.enabled) return { allowed: false, role: "teacher", requestable: true, requested: lab.myRequested };
+      return { allowed: al, role: role === "admin" ? "admin" : "teacher", requestable: false, requested: false };
     },
     lab_student_state: function () { needStudent(); return mix({ progress: { levels: lab.me.levels, hist: lab.me.hist, nums: lab.me.nums, calcs: lab.me.calcs }, settings: lab.settings }); },
     student_session_profile: function () { needStudent(); return { student_id: "s1", nickname: /[?&]name=(\w+)/.test(q) ? RegExp.$1 : "Léa" }; },
@@ -84,10 +86,13 @@
               { student_id: "s2", nickname: "leo", class_id: "c1", class_name: "CP-A", progress: {} },
               { student_id: "s3", nickname: "zoe", class_id: "c2", class_name: "CP-B", progress: {} }];
     },
-    lab_admin_state: function () { needAdmin(); return { enabled: lab.enabled, access: lab.access, teachers: lab.teachers, students: lab.students }; },
+    lab_request_access: function () { if (role === "out") throw err("Accès refusé"); if (!lab.enabled) throw { message: "Laboratoire fermé" }; lab.myRequested = true; return { requested: true, allowed: false }; },
+    lab_admin_decline: function (a) { needAdmin(); lab.requests = lab.requests.filter(function (r) { return r.teacher_id !== a.p_teacher; }); return null; },
+    lab_admin_state: function () { needAdmin(); return { enabled: lab.enabled, access: lab.access, requests: lab.requests, teachers: lab.teachers, students: lab.students }; },
     lab_admin_grant: function (a) {
       needAdmin(); var list = a.p_kind === "teacher" ? lab.teachers : lab.students, x = list.filter(function (t) { return t.id === a.p_subject; })[0];
       if (!x) throw { message: "Compte introuvable" };
+      if (a.p_kind === "teacher") lab.requests = lab.requests.filter(function (r) { return r.teacher_id !== a.p_subject; });
       lab.access = lab.access.filter(function (r) { return !(r.kind === a.p_kind && r.subject_id === a.p_subject); });
       lab.access.push({ id: "g" + lab.access.length + Date.now(), kind: a.p_kind, subject_id: a.p_subject, scope: a.p_scope || "self", note: a.p_note || null, label: x.label }); return "id";
     },

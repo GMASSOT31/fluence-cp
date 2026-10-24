@@ -29,13 +29,30 @@
       var headers = { "Content-Type": "application/json", apikey: C.key, Authorization: "Bearer " + (bearer || C.key) };
       fetch(C.url + "/rest/v1/rpc/lab_my_access", { method: "POST", headers: headers, body: JSON.stringify(token ? { p_token: token } : {}) })
         .then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (a) { if (a && a.allowed === true) { if (teacher) loadTeacher(a); else show(); } })
+        .then(function (a) { if (a && a.allowed === true) { if (teacher) loadTeacher(a); else show(); } else if (a && teacher && (a.requestable === true || a.requested === true)) showRequest(a); })
         .catch(function () {});
     }
     /* Espace enseignant : le calcul s'intègre au menu de la page (bascule Lecture | Calcul), module chargé seulement pour un compte autorisé */
     function loadTeacher(a) {
       function add(src, cb) { var s = document.createElement("script"); s.src = src; s.onload = cb; document.head.appendChild(s); }
-      add("calcul/engine.js?v=3", function () { add("calcul/enseignant.js?v=1", function () { try { window.CalcTeacher.init(a); } catch (e) {} }); });
+      add("calcul/engine.js?v=3", function () { add("calcul/enseignant.js?v=2", function () { try { window.CalcTeacher.init(a); } catch (e) {} }); });
+    }
+    /* Enseignant sans accès : un bouton pour le demander à l'administrateur (au-dessus du menu) */
+    function showRequest(a) {
+      var nav = document.querySelector("nav.teacher-nav"); if (!nav || document.getElementById("labo-request")) return;
+      var b = document.createElement("button"); b.id = "labo-request"; b.type = "button";
+      var st = document.createElement("style");
+      st.textContent = "#labo-request{display:block;width:100%;margin:2px 0 12px;padding:10px 12px;min-height:44px;border-radius:14px;border:2px dashed #0b7f7d;background:#fff;color:#0b7f7d;font:800 .92rem Figtree,system-ui,sans-serif;cursor:pointer;box-shadow:none}#labo-request:disabled{border-style:solid;cursor:default;opacity:1}";
+      document.head.appendChild(st);
+      function done() { b.textContent = "✓ Demande envoyée"; b.disabled = true; b.title = "L’administrateur a été prévenu."; }
+      if (a.requested) done(); else b.textContent = "➕ Essayer le Zoo de Calcul";
+      b.addEventListener("click", function () {
+        b.disabled = true;
+        fetch(C.url + "/rest/v1/rpc/lab_request_access", { method: "POST", headers: { "Content-Type": "application/json", apikey: C.key, Authorization: "Bearer " + (bearer || C.key) }, body: "{}" })
+          .then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (j) { if (j && j.requested) done(); else throw 0; })
+          .catch(function () { b.disabled = false; b.textContent = "Échec, réessayer"; });
+      });
+      nav.parentNode.insertBefore(b, nav);
     }
     function show() {
       if (document.getElementById("labo-switch")) return;

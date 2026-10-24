@@ -18,6 +18,7 @@ grant all on before_hash to public;
 \ir ../../supabase/migrations/20261112_labo_calcul.sql
 \ir ../../supabase/migrations/20261113_labo_collections.sql
 \ir ../../supabase/migrations/20261114_labo_monnaie_commune.sql
+\ir ../../supabase/migrations/20261115_labo_demandes.sql
 
 create function pg_temp.expect_fail(sql text, label text) returns void language plpgsql as $$
 begin
@@ -208,3 +209,44 @@ select (public.lab_student_submit_round(repeat('3',64), gen_random_uuid(), 'sous
 select pg_temp.expect(:'sh2' = 'false' and (public.lab_student_state(repeat('3',64))->>'test_coins')::int = 2, 'monnaie commune coupée : pièces de TEST (2), vrai portefeuille inchangé');
 reset role;
 select pg_temp.expect((select pending_coins from public.student_progress where student_id = '53000000-0000-0000-0000-000000000003') = 3, 'S3 : pending_coins reste 3');
+
+-- ===== Demandes d'accès des enseignants (migration 20261115) =====
+update public.app_settings set value = '{"enabled": true, "shared_wallet": false}' where key = 'lab_calcul';
+select set_config('request.jwt.claim.sub', :B, false) \gset
+set role authenticated;
+select pg_temp.expect((public.lab_my_access()->>'requestable')::boolean and not (public.lab_my_access()->>'requested')::boolean, 'B : peut demander, rien en attente');
+select pg_temp.expect((public.lab_request_access()->>'requested')::boolean, 'B envoie sa demande');
+select pg_temp.expect((public.lab_request_access()->>'requested')::boolean, 'B renvoie : toujours une seule demande');
+select pg_temp.expect((public.lab_my_access()->>'requested')::boolean, 'B : demande en attente visible');
+select pg_temp.expect_fail('select * from public.lab_requests', 'enseignant lit lab_requests (RLS)');
+select pg_temp.expect_fail('select public.lab_admin_decline(''bbbbbbbb-0000-0000-0000-000000000002'')', 'B refuse sa propre demande');
+reset role;
+select set_config('request.jwt.claim.sub', :C, false) \gset
+set role authenticated;
+select pg_temp.expect(not (public.lab_my_access()->>'requestable')::boolean and (public.lab_request_access()->>'allowed')::boolean, 'C déjà autorisé : rien à demander');
+reset role;
+select set_config('request.jwt.claim.sub', :A, false) \gset
+set role authenticated;
+select pg_temp.expect(jsonb_array_length(public.lab_admin_state()->'requests') = 1, 'admin voit 1 demande en attente');
+select public.lab_admin_grant('teacher', 'bbbbbbbb-0000-0000-0000-000000000002', 'self_and_students');
+select pg_temp.expect(jsonb_array_length(public.lab_admin_state()->'requests') = 0, 'accordée : plus en attente');
+reset role;
+select set_config('request.jwt.claim.sub', :B, false) \gset
+set role authenticated;
+select pg_temp.expect((public.lab_my_access()->>'allowed')::boolean and not (public.lab_my_access()->>'requested')::boolean, 'B autorisé après acceptation');
+reset role;
+update public.lab_access set revoked_at = now() where subject_id = 'bbbbbbbb-0000-0000-0000-000000000002';
+select set_config('request.jwt.claim.sub', :B, false) \gset
+set role authenticated;
+select pg_temp.expect((public.lab_request_access()->>'requested')::boolean = false, 'redemande le jour même après traitement : refusée en silence (1 par jour)');
+reset role;
+update public.lab_requests set handled_at = now() - interval '2 days';
+set role authenticated;
+select pg_temp.expect((public.lab_request_access()->>'requested')::boolean, 'redemande après 1 jour : acceptée');
+reset role;
+select set_config('request.jwt.claim.sub', :A, false) \gset
+set role authenticated;
+select public.lab_admin_decline('bbbbbbbb-0000-0000-0000-000000000002');
+select pg_temp.expect(jsonb_array_length(public.lab_admin_state()->'requests') = 0, 'refusée : plus en attente');
+reset role;
+\o
