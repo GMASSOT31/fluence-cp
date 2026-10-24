@@ -103,6 +103,7 @@
   .pill.done { border-color: #17794f; color: #17794f; } .pill.mastered { border-color: var(--calc); color: var(--calc); }
   @media (max-width: 600px) { .choices.c6 { grid-template-columns: repeat(2,1fr); } .choices { gap: 10px; } .choice { min-height: 78px; font-size: 2.1rem; } }
   @media (prefers-reduced-motion: reduce) { .choice.bad { animation: none; } }
+  #labo-switch{display:inline-flex;margin-top:14px;border:2px solid rgba(255,255,255,.75);border-radius:999px;overflow:hidden;background:rgba(0,0,0,.25)}#labo-switch a,#labo-switch span{min-height:44px;display:inline-flex;flex-direction:row;white-space:nowrap;gap:5px;line-height:1;align-items:center;padding:6px 16px;font:800 16px Figtree,system-ui,sans-serif;color:#fff;text-decoration:none}#labo-switch .on{background:#fff;color:#201049}body.mode-student #labo-switch{display:inline-flex!important}@media (max-width:650px){#labo-switch a,#labo-switch span{padding:6px 11px;font-size:15px}}
 </style>
 </head>
 <body class="mode-student calc">
@@ -114,6 +115,7 @@
         <span class="zoo-kicker">✦ LE GRAND JEU DU CALCUL ✦</span>
         <div class="brand"><h1>Zoo de <span>Calcul</span></h1><span class="sub">Apprendre en s’amusant</span></div>
         <span class="zoo-hero-tag">➕ Compte · 🏆 Progresse · 🎮 Joue !</span>
+        <div id="labo-switch" role="group" aria-label="Matière"><a href="zoo-connecte.html">📖 Lecture</a><span class="on">➕ Calcul</span></div>
       </div>
       <div class="zoo-hero-art" aria-hidden="true"><span class="zoo-star zoo-star-one">✦</span><span class="zoo-mascot zoo-bee" id="mascot-1">🐌</span><span class="zoo-mascot zoo-llama" id="mascot-2">🐕</span><span class="zoo-mascot zoo-owl" id="mascot-3">🐆</span><span class="zoo-star zoo-star-two">✧</span><span class="zoo-pad">➕ <span>● ●</span></span></div>
     </div>
@@ -131,7 +133,6 @@
         <div class="avatar-profile"><div class="avatar-trigger" id="pl-avatar-box" role="img" aria-label="Mon avatar"><span id="pl-avatar" aria-hidden="true">🧑</span></div><div class="avatar-profile-name"><div class="who-name" id="pl-name"></div><span class="avatar-hint">Pour changer d’avatar, va dans Lecture</span></div></div>
         <div class="row">
           <button type="button" class="ghost-sm" id="btn-logout">Me déconnecter</button>
-          <button type="button" class="ghost-sm" id="btn-lecture" title="Retourner au Zoo de Lecture">📖 Lecture</button>
         </div>
       </div>
       <button type="button" class="panel-nav" data-go="boutique"><span class="pn-ico" aria-hidden="true">🛍️</span><span>Boutique<span class="pn-sub" id="pl-shop"></span></span></button>
@@ -587,7 +588,7 @@
   function logout() { try { sessionStorage.removeItem("zoo_student_token"); sessionStorage.removeItem("zoo_student_name"); } catch (e) {} location.href = "eleve.html"; }
   $("btn-logout").addEventListener("click", logout); $("me-logout").addEventListener("click", logout);
   function lecture() { location.href = "zoo-connecte.html"; }
-  $("me-lecture").addEventListener("click", lecture); $("btn-lecture").addEventListener("click", lecture);
+  $("me-lecture").addEventListener("click", lecture);
 
   boot();
 })();
