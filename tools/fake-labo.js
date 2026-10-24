@@ -1,7 +1,7 @@
 /* Faux client Supabase du LABO DE CALCUL (aucun appel réseau). Reproduit les règles de supabase/migrations/20261112_labo_calcul.sql :
    autorisation, interrupteur, tours idempotents, pièces de test calculées côté « serveur », plafond de 10 séries récompensées par jour.
    Monnaie commune : activée par défaut (?shared=0 la coupe → pièces de test). Options d'URL : ?who=ok (élève autorisé, défaut) | refuse (élève non autorisé) | none (pas de jeton) ; ?off=1 (interrupteur serveur coupé) ;
-   ?role=admin (défaut) | teacher (autorisé) | refuse (enseignant non autorisé) | out (non connecté) ; ?all=1 (toutes les étapes ouvertes et réussies, pour tester les aides) ; ?req=1 (une demande d'enseignant en attente chez l'admin) ; ?asked=1 (l'enseignant a déjà demandé) ; ?fail=1 (le rangement d'une série échoue une fois).
+   ?role=admin (défaut) | teacher (autorisé) | refuse (enseignant non autorisé) | out (non connecté) ; ?seed=gap (trou dans l'ordre + réussite hors périmètre) ; ?all=1 (toutes les étapes ouvertes et réussies, pour tester les aides) ; ?req=1 (une demande d'enseignant en attente chez l'admin) ; ?asked=1 (l'enseignant a déjà demandé) ; ?fail=1 (le rangement d'une série échoue une fois).
    Expose window.__lab (journal des appels, état). */
 (function () {
   var q = location.search, opt = function (k, d) { var m = new RegExp("[?&]" + k + "=(\\w+)").exec(q); return m ? m[1] : d; };
@@ -16,6 +16,10 @@
     students: [{ id: "s1", label: "lea", class_name: "CP-A" }, { id: "s2", label: "leo", class_name: "CP-A" }],
     requests: /[?&]req=1/.test(q) ? [{ teacher_id: "t2", label: "Autre enseignant", requested_at: "2026-10-23T09:00:00Z" }] : [], myRequested: /[?&]asked=1/.test(q)
   };
+  if (/[?&]seed=gap/.test(q)) {   /* trou dans l'ordre + réussite hors périmètre (étape désactivée) */
+    lab.me.levels = { "nombres:n1": { r: 2, ok: 2, q: 20, c: 19 }, "nombres:n2": { r: 1, ok: 1, q: 10, c: 9 }, "nombres:n4": { r: 1, ok: 1, q: 10, c: 9 }, "addition:a7": { r: 1, ok: 1, q: 10, c: 9 } };
+    lab.settings = { levels: { nombres: ["n1", "n2", "n3", "n4"], addition: ["a1", "a2"], soustraction: ["s1"] } };
+  }
   function err(m) { return { message: m, code: "42501" }; }
   function studentAllowed() { return lab.enabled && who === "ok"; }
   function teacherAllowed() { return lab.enabled && (role === "admin" || role === "teacher"); }

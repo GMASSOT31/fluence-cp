@@ -74,6 +74,7 @@ ok(E.visibleLevels("nombres", [], {}).join() === "n1", "départ : seule la 1re �
 ok(E.visibleLevels("nombres", [], { "nombres:n1": { ok: 1 } }).join() === "n1,n2", "n1 réussie → n1, n2");
 ok(E.visibleLevels("nombres", [], { "nombres:n1": { ok: 1 }, "nombres:n2": { ok: 0, r: 2 } }).join() === "n1,n2", "n2 tentée sans réussite : la suite reste cachée");
 ok(E.visibleLevels("addition", ["a1", "a2", "a3", "a4"], { "addition:a1": { ok: 2 }, "addition:a2": { ok: 1 }, "addition:a3": { ok: 1 }, "addition:a4": { ok: 1 } }).join() === "a1,a2,a3,a4", "tout réussi : toutes les étapes ouvertes");
+ok(E.visibleLevels("nombres", [], { "nombres:n1": { ok: 1 }, "nombres:n4": { ok: 1 } }).join() === "n1,n2,n4", "une étape réussie après un trou reste visible (n1, n2 à faire, n4 réussie)");
 ok(E.visibleLevels("addition", ["a3", "a4"], {}).join() === "a3", "ordre et choix de l’enseignant respectés");
 ok(E.topAnimal({ "nombres:n3": { ok: 1 }, "addition:a2": { ok: 1 } }).e === "🐿️" && E.topAnimal({}) === null, "animal le plus rapide éclos : 🐿️ (20 km/h) devant 🦔 (7 km/h)");
 console.log(fails ? fails + " ÉCHEC(S) sur " + checks + " contrôles" : "TOUS LES CONTRÔLES PASSENT (" + checks + ")");
