@@ -1,6 +1,6 @@
 # Laboratoire privé « Zoo de Calcul » (phase 1)
 
-Ce dossier ne contient que de la documentation. Les fichiers du labo : `labo-calcul.html` (élève), `labo-calcul-enseignant.html` (enseignant/admin),
+Ce dossier ne contient que de la documentation. Les fichiers du labo : `labo-calcul.html` (élève), `calcul/enseignant.js` (espace enseignant/admin, **intégré à `enseignants.html`** ; `labo-calcul-enseignant.html` n'est plus qu'une redirection),
 `labo-config.js` (interrupteur navigateur), `calcul/zoo-skin.css` (habillage du Zoo de Lecture, **généré** : `python3 tools/extract_zoo_skin.py`), `labo-switch.js` (bouton Lecture | Calcul), `calcul/engine.js` (questions), `calcul/voice.js` (voix),
 `supabase/migrations/20261112_labo_calcul.sql` (base, appliquée) et `20261113_labo_collections.sql` (nombres reconnus et calculs gagnés) et `20261114_labo_monnaie_commune.sql` (monnaie commune, interrupteur `shared_wallet`).
 
@@ -19,7 +19,7 @@ les fichiers du labo sont publics sur GitHub Pages, seules les **données et les
 | Navigateur | `enabled:false` dans `labo-config.js` | pages du labo « indisponibles », `labo-switch.js` ne fait aucune requête |
 | Retrait complet | supprimer `labo-*`, `calcul/`, les 2 balises `labo-config.js`/`labo-switch.js` de `zoo-connecte.html` et `enseignants.html`, puis (si voulu) supprimer à la main les tables `lab_*` et les fonctions `lab_*` dans Supabase | le site revient exactement à l'état d'avant |
 
-La migration crée l'interrupteur **désactivé** : après application, l'admin l'active depuis la page enseignant du labo.
+La migration crée l'interrupteur **désactivé** : après application, l'admin l'active depuis l'espace enseignant (mode Calcul › Réglages péda › Accès au laboratoire).
 
 ## Animaux et progression (comme le Zoo de Lecture)
 Chaque étape a son animal, du plus lent au plus rapide : plus l'étape validée est haute, plus l'animal court vite (nombres : 🐌 escargot → 🐆 guépard ; addition : 🐜 fourmi → 🦁 lion ; soustraction : 🐊 crocodile → 🦌 cerf ; vitesses « environ » dans `calcul/engine.js`). Un œuf 🥚 éclot quand l'étape est réussie, l'animal grandit (✨) quand elle est maîtrisée. Les menus « ÉCOUTER », « ADDITION » et « SOUSTRACTION » ne montrent que les étapes **réussies + la suivante** (l'ordre et le choix des étapes restent réglables par l'enseignant). « Mes nombres lus » et « Mes calculs gagnés » montrent les animaux (❓ tant que l'étape n'est pas atteinte).
@@ -61,9 +61,12 @@ Ouverts par défaut : tous les niveaux de reconnaissance, a1–a4, s1–s2 (les 
 ## Tests
 * `sh tools/sql/run_labo_tests.sh` : migration + 69 contrôles sur un PostgreSQL local jetable (schéma factice), jamais sur Supabase.
 * `node tools/test_calcul_engine.js` : moteur (distracteurs sans doublon, dans le champ, confusions attendues, niveaux).
-* `python3 tools/build_test_pages.py` puis `labo-calcul-test.html` / `labo-calcul-enseignant-test.html` (faux serveur `tools/fake-labo.js`, options dans son en-tête).
+* `python3 tools/build_test_pages.py` puis `labo-calcul-test.html` (élève) et `enseignants-test.html?role=admin|teacher|refuse` (enseignant ; faux serveur `tools/fake-labo.js` + `fake-labo-fetch.js`, options dans l'en-tête).
 
 ## Pour passer à la suite (décisions de Gabriel)
 1. Essai de la migration dans une transaction annulée sur la vraie base, puis accord, application, vérification en lecture seule.
 2. Choisir les comptes testeurs dans l'onglet « Accès au laboratoire » (par identifiant).
 3. Portefeuille commun (phase ultérieure) : table de mouvements `wallet_ledger(student_id, source, ref_id, amount, unique(source, ref_id))` ; les pièces de test ne sont **jamais** converties automatiquement.
+
+## Espace enseignant intégré
+`labo-switch.js` (déjà chargé par `enseignants.html`) demande `lab_my_access` ; seulement si le compte est autorisé il charge `calcul/enseignant.js` (aucun appel ni style de plus pour les autres). Le module ajoute une bascule « Lecture | Calcul » dans le menu : en mode Calcul (mémorisé dans le navigateur) le bandeau devient « Zoo de Calcul » (accent vert), « À écouter » disparaît, et « Progression » / « Réglages péda » affichent les versions calcul (mêmes composants que la lecture) ; l'admin y trouve aussi l'interrupteur et la liste des accès. `enseignants.html` n'est pas modifié ; retour en Lecture = page d'origine. Aucune migration.
