@@ -86,3 +86,13 @@ Cause de l'écart observé (« 4 animaux éclos, 3 visibles » ; « 8 niveaux r�
 * **Textes** : en mode Calcul, l'espace enseignant masque le guide « Bienvenue dans Zoo de Lecture » et le partage de Zoo de Lecture (le labo est privé), change le pied de page et le titre de l'onglet ; retour en Lecture = textes d'origine. « Mes nombres lus » → « Mes nombres reconnus ».
 * **Bande numérique** : une seule ligne continue, défilante sur petit écran, départ (cadre plein) et arrivée (cadre pointillé) repérés.
 * **Arrêter une série** : avant toute réponse, retour direct ; après, fenêtre « Cette série ne sera pas gardée » (Continuer / Quitter). Une série arrêtée n'enregistre rien.
+
+## Série d'améliorations n°2 (tablette, voix, bilan, ordre des étapes)
+* **Tablette** : le survol des cases de réponse n'existe que pour une souris (`@media (hover: hover) and (pointer: fine)`) et le focus est retiré après chaque réponse.
+* **Voix** : après chaque réponse le message est lu (« Bravo ! neuf plus sept, seize. » ; erreur : « Pas tout à fait. Essaie encore. » + nombre répété en ÉCOUTER). La question suivante arrive à la fin de la phrase (`onend`, filet de 9 s) ; sans synthèse vocale (ou voix coupée par l'enseignant) : 1,5 s. 
+* **Étoiles** : une seule règle, sur 2 = niveau de l'étape (1 réussie, 2 maîtrisée), étoiles grises pour les manquantes, dans l'éclosion, le bilan et les cartes.
+* **Ordre** : à la fin d'une série, écran d'attente (« Je range ton résultat… », aucun bouton) → éclosion si un œuf éclot ou si l'animal grandit → bilan après « Continuer ». Bilan réussi : « Étape suivante ➜ » (étape « Pour toi ») principal, « Rejouer » secondaire ; série ratée : « Rejouer » principal.
+* **Aide** : 1er appui = stratégie seulement (« 8 + 2 = 10 · il reste 4 · À toi de compter ! », pas de case d'arrivée) ; le résultat n'apparaît (et n'est dit) qu'après la 2e erreur. **Une question où l'aide a été ouverte n'est plus comptée « du premier coup »** (avant, seule une erreur l'empêchait : corrigé).
+* **Ordre des étapes** : migration **20261116** (`lab_teacher_settings_set` gardait un `select distinct` qui mélangeait l'ordre : cause des cartes « 80–89, 60–69, 11–16… »). Elle conserve maintenant l'ordre et remet une fois les réglages existants dans l'ordre des étapes. Côté enseignant : une colonne numérotée par domaine, ▲/▼, « ✓ Enregistré » 2 s (ou erreur).
+* **TBI** (≥ 1400 px) pendant un exercice : calcul 96 px, consignes ≥ 35 px, cases 64 px, panneaux masqués.
+Tests : `labo-calcul-test.html?who=ok&all=1` (+ `&egg=addition:a7`, `&order=1`).

@@ -19,6 +19,7 @@ grant all on before_hash to public;
 \ir ../../supabase/migrations/20261113_labo_collections.sql
 \ir ../../supabase/migrations/20261114_labo_monnaie_commune.sql
 \ir ../../supabase/migrations/20261115_labo_demandes.sql
+\ir ../../supabase/migrations/20261116_labo_ordre_etapes.sql
 
 create function pg_temp.expect_fail(sql text, label text) returns void language plpgsql as $$
 begin
@@ -249,4 +250,18 @@ set role authenticated;
 select public.lab_admin_decline('bbbbbbbb-0000-0000-0000-000000000002');
 select pg_temp.expect(jsonb_array_length(public.lab_admin_state()->'requests') = 0, 'refusée : plus en attente');
 reset role;
+
+-- ===== Ordre des étapes conservé (migration 20261116) =====
+select set_config('request.jwt.claim.sub', :C, false) \gset
+set role authenticated;
+select public.lab_teacher_settings_set('{"levels":{"nombres":["n3","n1","n10","n1","n2","BAD!"],"addition":["a2","a1"]}}'::jsonb) as r \gset
+select pg_temp.expect((:'r'::jsonb)->'levels'->'nombres' = '["n3","n1","n10","n2"]'::jsonb, 'ordre conservé, doublon et identifiant invalide retirés');
+select pg_temp.expect((:'r'::jsonb)->'levels'->'addition' = '["a2","a1"]'::jsonb, 'addition : ordre a2, a1 conservé');
+select pg_temp.expect((public.lab_teacher_settings_get())->'levels'->'nombres' = '["n3","n1","n10","n2"]'::jsonb, 'relu tel qu''enregistré');
+reset role;
+
+-- réglages anciens dans le désordre : remis dans l'ordre des étapes par la migration (rejouée)
+update public.lab_calc_settings set settings = '{"pass":70,"levels":{"nombres":["n9","n2","n10","n1"],"addition":["a8","a1"]}}'::jsonb where teacher_id = 'cccccccc-0000-0000-0000-000000000003';
+\ir ../../supabase/migrations/20261116_labo_ordre_etapes.sql
+select pg_temp.expect((select settings from public.lab_calc_settings where teacher_id = 'cccccccc-0000-0000-0000-000000000003') = '{"pass":70,"levels":{"nombres":["n1","n2","n9","n10"],"addition":["a1","a8"]}}'::jsonb, 'anciens réglages remis dans l''ordre des étapes, le reste intact');
 \o
