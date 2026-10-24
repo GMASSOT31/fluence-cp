@@ -76,6 +76,8 @@ Appli web de fluence de lecture pour des classes de CP, en ligne sur https://zoo
 - Démo : visite « L'essentiel » étape 4/5 ouvre « Détails » de Léo ; ouverte depuis le guide (`compte=1`) elle ne propose plus « Créer mon compte ».
 - Bulle de visite guidée adaptée au téléphone ; scène d'évolution en attente ; outils de test (`tools/`).
 
+- **Labo Zoo de Calcul (branche `claude/labo-calcul`, PAS fusionné, migration 20261112 NON appliquée)** : univers calcul privé (`labo-calcul.html`, `labo-calcul-enseignant.html`, `calcul/`, `labo-config.js`, `labo-switch.js`), liste blanche `lab_access` + interrupteur `app_settings.lab_calcul`, pièces de test isolées. Tout est dans `labo-calcul/README.md` (accès, interrupteurs, retrait, tests). Les 2 balises `labo-switch.js` ajoutées à zoo-connecte.html et enseignants.html n'ont d'effet que pour les comptes autorisés.
+
 ## 8. À faire / pistes (selon la demande de l'utilisateur)
 - **Sécurité (fait)** : `student_sign_in` compte désormais les codes faux (5 par élève, 60 par classe, 15 min) et renvoie `{ok:false, reason:bad_pin|locked, retry_after}` (migration 20261109, PR 155).
 - Les entraînements courts enregistrés avant la règle des 15 s comptent encore.

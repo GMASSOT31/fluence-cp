@@ -11,6 +11,8 @@ Pages produites :
                           ?illimite=1  parties illimitées, ?prix4=1  roue à 4 pièces)
                          + window.__t : accès aux fonctions internes du Zoo pour les tests (uniquement ici)
   enseignants-test.html  Espace enseignant branché sur tools/fake-auth.js (admin par défaut, ?teacher=1 pour enseignant)
+  labo-calcul-test.html, labo-calcul-enseignant-test.html   Laboratoire de calcul (privé) branché sur tools/fake-labo.js
+                         (?who=ok|refuse|none, ?off=1, ?role=admin|teacher|refuse|out, ?fail=1 ; voir l'en-tête de fake-labo.js)
   eleve-test.html        Connexion élève branchée sur tools/fake-auth.js (PIN accepté : 4321)
   zoo-connecte.html, enseignants.html, eleve.html, demo.js, demo-tour.js : copies réelles ;
                          la démo sans compte se teste avec zoo-connecte.html?demo=1&new=1
@@ -68,8 +70,15 @@ def main():
         shutil.copy(os.path.join(ROOT, name), os.path.join(OUT, name))
     shutil.copytree(os.path.join(ROOT, "img"), os.path.join(OUT, "img"), dirs_exist_ok=True)
     shutil.copytree(os.path.join(ROOT, "guides"), os.path.join(OUT, "guides"), dirs_exist_ok=True)
-    for name in ["fake-supabase.js", "fake-auth.js"]:
+    for name in ["fake-supabase.js", "fake-auth.js", "fake-labo.js"]:
         shutil.copy(os.path.join(ROOT, "tools", name), os.path.join(OUT, name))
+    # Laboratoire de calcul (privé) : pages branchées sur tools/fake-labo.js, plus les fichiers communs
+    for name in ["labo-calcul.html", "labo-calcul-enseignant.html"]:
+        write(name.replace(".html", "-test.html"), swap_backend(read(name), "fake-labo.js"))
+    for name in ["labo-config.js", "labo-switch.js"]:
+        if os.path.exists(os.path.join(ROOT, name)):
+            shutil.copy(os.path.join(ROOT, name), os.path.join(OUT, name))
+    shutil.copytree(os.path.join(ROOT, "calcul"), os.path.join(OUT, "calcul"), dirs_exist_ok=True)
     print("Site de test prêt dans tools/test-site/. Lancer :")
     print("  python3 -m http.server 8765 --bind 127.0.0.1 --directory tools/test-site")
     print("puis ouvrir http://localhost:8765/zoo-test.html , /enseignants-test.html , /zoo-connecte.html?demo=1&new=1")

@@ -7,6 +7,9 @@ Rien ici ne touche à la vraie base Supabase : tout tourne dans le navigateur av
 | `fake-supabase.js` | Faux serveur du **Zoo élève** : progression, réglages enseignant, scores et records (même règle de pièces que le serveur : 1 objectif, 3 record perso battu, 10 record pris à un camarade, la plus haute seulement), cadeaux, bons. Options d'URL : `?lirecartes=1`, `?sanscode=1`, `?illimite=1`, `?prix4=1`. Expose `window.__srv`. |
 | `fake-auth.js` | Faux serveur de l'**espace enseignant** et de la **connexion élève** : classes, élèves, progression, feedback, quotas, ghost/suppression, PIN. Admin par défaut (`?teacher=1` pour un compte enseignant). Expose `window.__auth`. Connexion élève acceptée avec le PIN `4321`. |
 | `build_test_pages.py` | Fabrique `tools/test-site/` (ignoré par git) : pages de test branchées sur les faux serveurs, plus des copies réelles du site pour tester la démo (`?demo=1&new=1`). |
+| `fake-labo.js` | Faux serveur du **laboratoire de calcul** (autorisation, interrupteur, séries idempotentes, pièces de test). Options d'URL en en-tête du fichier. Expose `window.__lab`. |
+| `sql/run_labo_tests.sh` | Essaie `supabase/migrations/20261112_labo_calcul.sql` sur un PostgreSQL **local jetable** (schéma factice `sql/stub_schema.sql`, contrôles `sql/test_labo.sql`). |
+| `test_calcul_engine.js` | Tests Node du moteur de questions (`node tools/test_calcul_engine.js`). |
 | `check_syntax.py` | Vérifie la syntaxe JavaScript des pages et scripts (Node si installé, sinon le moteur JavaScript de macOS). |
 | `check-syntax-macos.js` | Petit script utilisé par `check_syntax.py` sur macOS (`osascript -l JavaScript`). |
 
