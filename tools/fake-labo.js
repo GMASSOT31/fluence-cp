@@ -1,7 +1,7 @@
 /* Faux client Supabase du LABO DE CALCUL (aucun appel réseau). Reproduit les règles de supabase/migrations/20261112_labo_calcul.sql :
    autorisation, interrupteur, tours idempotents, pièces de test calculées côté « serveur », plafond de 10 séries récompensées par jour.
    Monnaie commune : activée par défaut (?shared=0 la coupe → pièces de test). Options d'URL : ?who=ok (élève autorisé, défaut) | refuse (élève non autorisé) | none (pas de jeton) ; ?off=1 (interrupteur serveur coupé) ;
-   ?role=admin (défaut) | teacher (autorisé) | refuse (enseignant non autorisé) | out (non connecté) ; ?req=1 (une demande d'enseignant en attente chez l'admin) ; ?asked=1 (l'enseignant a déjà demandé) ; ?fail=1 (le rangement d'une série échoue une fois).
+   ?role=admin (défaut) | teacher (autorisé) | refuse (enseignant non autorisé) | out (non connecté) ; ?all=1 (toutes les étapes ouvertes et réussies, pour tester les aides) ; ?req=1 (une demande d'enseignant en attente chez l'admin) ; ?asked=1 (l'enseignant a déjà demandé) ; ?fail=1 (le rangement d'une série échoue une fois).
    Expose window.__lab (journal des appels, état). */
 (function () {
   var q = location.search, opt = function (k, d) { var m = new RegExp("[?&]" + k + "=(\\w+)").exec(q); return m ? m[1] : d; };
@@ -9,8 +9,8 @@
   var lab = window.__lab = {
     calls: [], enabled: !/[?&]off=1/.test(q), failOnce: /[?&]fail=1/.test(q),
     realWallet: { coins: 13, credits: 20 }, pending: 0, version: 5, shared: !/[?&]shared=0/.test(q),   /* « vrais » soldes de lecture : ne doivent JAMAIS bouger */
-    me: { coins: 0, credits: 0, levels: {}, hist: [], nums: {}, calcs: {} }, rounds: {}, ops: {}, rewardedToday: 0,
-    settings: {}, enabledSwitch: true,
+    me: { coins: 0, credits: 0, levels: /[?&]all=1/.test(q) ? (function () { var o = {}; ["nombres:n1","nombres:n2","nombres:n3","nombres:n4","nombres:n5","nombres:n6","nombres:n7","nombres:n8","nombres:n9","nombres:n10","nombres:n11","addition:a1","addition:a2","addition:a3","addition:a4","addition:a5","addition:a6","addition:a7","addition:a8","soustraction:s1","soustraction:s2","soustraction:s3","soustraction:s4","soustraction:s5"].forEach(function (k) { o[k] = { r: 3, ok: 2 }; }); return o; })() : {}, hist: [], nums: {}, calcs: {} }, rounds: {}, ops: {}, rewardedToday: 0,
+    settings: /[?&]all=1/.test(q) ? { levels: { nombres: ["n1","n2","n3","n4","n5","n6","n7","n8","n9","n10","n11"], addition: ["a1","a2","a3","a4","a5","a6","a7","a8"], soustraction: ["s1","s2","s3","s4","s5"] } } : {}, enabledSwitch: true,
     access: [{ id: "x1", kind: "teacher", subject_id: "t1", scope: "self_and_students", note: "moi", label: "Enseignant de test" }],
     teachers: [{ id: "t1", label: "Enseignant de test" }, { id: "t2", label: "Autre enseignant" }],
     students: [{ id: "s1", label: "lea", class_name: "CP-A" }, { id: "s2", label: "leo", class_name: "CP-A" }],
