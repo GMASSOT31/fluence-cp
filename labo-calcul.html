@@ -70,6 +70,7 @@
   .pic .grp { display: inline-flex; flex-wrap: wrap; gap: 2px; max-width: 260px; justify-content: center; padding: 6px 10px; border: 2px dashed var(--line); border-radius: 14px; }
   .pic .sign { font-size: 2.2rem; font-weight: 800; color: var(--calc); }
   .choices { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; max-width: 520px; margin: 10px auto; }
+  .choices.c6 { grid-template-columns: repeat(3,1fr); max-width: 680px; }
   .choice { min-height: 84px; font-family: Fredoka, Figtree, sans-serif; font-size: 2.4rem; font-weight: 700; border-radius: 20px; border: 4px solid var(--calc); background: var(--card); color: var(--ink); cursor: pointer; }
   .choice:hover:not([disabled]) { background: var(--calc-l); }
   .choice.good { background: #d9f1e5; border-color: #17794f; color: #17794f; }
@@ -100,7 +101,7 @@
   .prog-row .nm { flex: 1 1 200px; font-weight: 700; } .prog-row .sc { color: var(--muted); font-size: .9rem; }
   .pill { display: inline-block; padding: 2px 9px; border-radius: 999px; border: 2px solid var(--line); font-weight: 800; font-size: .8rem; white-space: nowrap; }
   .pill.done { border-color: #17794f; color: #17794f; } .pill.mastered { border-color: var(--calc); color: var(--calc); }
-  @media (max-width: 600px) { .choices { gap: 10px; } .choice { min-height: 78px; font-size: 2.1rem; } }
+  @media (max-width: 600px) { .choices.c6 { grid-template-columns: repeat(2,1fr); } .choices { gap: 10px; } .choice { min-height: 78px; font-size: 2.1rem; } }
   @media (prefers-reduced-motion: reduce) { .choice.bad { animation: none; } }
 </style>
 </head>
@@ -142,7 +143,7 @@
     <div class="center" id="center"><section id="view" aria-live="polite"><div class="card"><p class="muted">Chargement…</p></div></section></div>
 
     <aside class="panel right" id="panel-right" aria-label="Compter et jouer" hidden>
-      <button type="button" class="panel-nav big nombres-cta" data-go="nombres"><span class="pn-ico" aria-hidden="true">👂</span><span>J’écoute un nombre<span class="pn-sub" id="pr-nombres"></span></span></button>
+      <button type="button" class="panel-nav big nombres-cta" data-go="nombres"><span class="pn-ico" aria-hidden="true">👂</span><span>ÉCOUTER<span class="pn-sub" id="pr-nombres"></span></span></button>
       <button type="button" class="panel-nav big add-cta" data-go="addition"><span class="pn-ico" aria-hidden="true">➕</span><span>ADDITION<span class="pn-sub" id="pr-addition"></span></span></button>
       <button type="button" class="panel-nav big sub-cta" data-go="soustraction"><span class="pn-ico" aria-hidden="true">➖</span><span>SOUSTRACTION<span class="pn-sub" id="pr-soustraction"></span></span></button>
       <button type="button" class="panel-nav big play-cta" data-go="jeux"><span class="play-cta-spark" aria-hidden="true">✦ ✧ ✦</span><span class="pn-ico play-cta-icon" aria-hidden="true">🎮</span><span class="play-cta-copy"><span class="play-cta-kicker">LA SALLE D’ARCADE</span><span class="play-cta-title">JOUER <span aria-hidden="true">➜</span></span><span class="pn-sub play-cta-count" id="pr-games"></span><span class="play-cta-hook">🏆 Relève les défis !</span></span></button>
@@ -150,7 +151,7 @@
   </div>
 
   <nav class="bottom-nav" id="bottom-nav" aria-label="Mon espace" hidden>
-    <button type="button" class="panel-nav" data-go="nombres"><span class="pn-ico" aria-hidden="true">👂</span><span>Nombres</span></button>
+    <button type="button" class="panel-nav" data-go="nombres"><span class="pn-ico" aria-hidden="true">👂</span><span>Écouter</span></button>
     <button type="button" class="panel-nav" data-go="addition"><span class="pn-ico" aria-hidden="true">➕</span><span>Addition</span></button>
     <button type="button" class="panel-nav" data-go="soustraction"><span class="pn-ico" aria-hidden="true">➖</span><span>Soustr.</span></button>
     <button type="button" class="panel-nav" data-go="jeux"><span class="pn-ico" aria-hidden="true">🎮</span><span>Jouer</span></button>
@@ -184,7 +185,7 @@
   var token = null, client = null, R = null, view = "home", toastTimer = null;
   var S = { name: "", avatar: "🧑", levels: {}, nums: {}, calcs: {}, coins: 0, credits: 0, settings: {} };
   var ACT = {
-    nombres: { icon: "👂", title: "J’écoute un nombre", sub: "Je trouve comment il s’écrit", say: "J’écoute un nombre et je trouve comment il s’écrit." },
+    nombres: { icon: "👂", title: "ÉCOUTER", sub: "J’écoute un nombre et je trouve comment il s’écrit", say: "J’écoute le nombre et je trouve comment il s’écrit." },
     addition: { icon: "➕", title: "Addition", sub: "Je calcule des additions", say: "Je calcule des additions." },
     soustraction: { icon: "➖", title: "Soustraction", sub: "Je calcule des soustractions", say: "Je calcule des soustractions." }
   };
@@ -405,7 +406,7 @@
       var sq = el("button", "secondary home-small", "🔊"); sq.type = "button"; sq.setAttribute("aria-label", "Lire à voix haute"); sq.addEventListener("click", function () { V.speak(q.say); });
       var rw = el("div", "crow"); rw.appendChild(sq); rw.appendChild(hb); st.appendChild(rw); st.appendChild(lineBox);
     }
-    var cs = el("div", "choices"), btns = [];
+    var cs = el("div", "choices" + (q.choices.length >= 5 ? " c6" : "")), btns = [];
     q.choices.forEach(function (c) {
       var b = el("button", "choice", String(c)); b.type = "button"; btns.push(b);
       b.addEventListener("click", function () {

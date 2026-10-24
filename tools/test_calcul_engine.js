@@ -9,17 +9,17 @@ var W = { 0: "zéro", 11: "onze", 16: "seize", 17: "dix-sept", 21: "vingt et un"
 Object.keys(W).forEach(function (n) { ok(E.words(+n) === W[n], "words(" + n + ") = " + E.words(+n) + " ≠ " + W[n]); });
 ok(E.words(0) && Array.apply(null, Array(101)).every(function (_, n) { return /^[a-zéè -]+$/.test(E.words(n)); }), "100 nombres en lettres bien formés");
 
-/* distracteurs : chaque nombre de chaque niveau, 200 tirages */
+/* distracteurs : chaque nombre de chaque niveau, 200 tirages ; 6 propositions quand c'est possible, toutes prises parmi les nombres du niveau */
 E.LEVELS.nombres.forEach(function (lv) {
   var seen = {};
   lv.pool.forEach(function (n) {
     for (var s = 0; s < 200; s++) {
       var q = E.makeRound("nombres", lv.id, 1, E.seeded(s * 131 + n))[0];
       var d = q.choices.filter(function (c) { return c !== q.answer; });
-      ok(q.choices.length === lv.choices, lv.id + ": nombre de propositions");
+      ok(q.choices.length === Math.min(6, lv.allowed.length), lv.id + ": nombre de propositions (6 si possible) : " + q.choices.length);
       ok(new Set(q.choices).size === q.choices.length, lv.id + " n=" + q.answer + ": doublon " + q.choices);
       ok(q.choices.indexOf(q.answer) >= 0, lv.id + ": la bonne réponse manque");
-      ok(q.choices.every(function (c) { return c >= 0 && c <= lv.cap && c === Math.floor(c); }), lv.id + " n=" + q.answer + ": hors du champ " + q.choices);
+      ok(q.choices.every(function (c) { return lv.allowed.indexOf(c) >= 0; }), lv.id + " n=" + q.answer + ": proposition hors des nombres du niveau " + q.choices);
       d.forEach(function (c) { seen[q.answer + ">" + c] = 1; });
     }
   });
@@ -28,6 +28,8 @@ E.LEVELS.nombres.forEach(function (lv) {
 function sawConfusion(n, c) { return E.LEVELS.nombres.some(function (lv) { return lv._seen[n + ">" + c]; }); }
 [[13, 30], [14, 40], [15, 50], [16, 60], [30, 13], [34, 43], [71, 61], [77, 67], [77, 17], [71, 81], [84, 44], [84, 24], [84, 48], [97, 87], [97, 79], [91, 81], [80, 20], [80, 60], [99, 100], [100, 10], [100, 90], [12, 21], [13, 3]]
   .forEach(function (p) { ok(sawConfusion(p[0], p[1]), "confusion attendue jamais proposée : " + p[0] + " → " + p[1]); });
+/* tailles attendues : 6 propositions partout sauf « 17 à 20 » (4 nombres)
+ok(E.LEVELS.nombres.map(function (l) { return l.choices; }).join() === "6,6,4,6,6,6,6,6,6,6,6", "propositions par niveau : " + E.LEVELS.nombres.map(function (l) { return l.choices; }));
 /* les 101 nombres sont atteignables dans au moins un niveau */
 var covered = {}; E.LEVELS.nombres.forEach(function (lv) { lv.pool.forEach(function (n) { covered[n] = 1; }); });
 ok(Object.keys(covered).length === 101, "les 101 nombres sont travaillés (" + Object.keys(covered).length + ")");

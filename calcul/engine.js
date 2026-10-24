@@ -40,8 +40,10 @@
   function add(list, v, cap, not) { if (v >= 0 && v <= cap && v !== not && list.indexOf(v) < 0) list.push(v); }
 
   /* ===== Distracteurs : jamais au hasard, toujours une vraie confusion d'élève de CP =====
-     g1 = ressemblances à l'oral ; g2 = structure du nombre (unités/dizaines) ; g3 = nombres voisins ; g4 = même chiffre des unités ; g5 = complément */
-  function numberDistractors(n, cap, k, rng) {
+     g1 = ressemblances à l'oral ; g2 = structure du nombre (unités/dizaines) ; g3 = nombres voisins ; g4 = même chiffre des unités ; g5 = complément.
+     Seuls les nombres de `allowed` (ceux que le niveau fait entendre) peuvent être proposés. */
+  function numberDistractors(n, allowed, k, rng) {
+    var cap = 100;
     var g1 = [], g2 = [], g3 = [], g4 = [], g5 = [], t = Math.floor(n / 10), u = n % 10, i;
     /* oral : -ze / -te (treize/trente…), soixante-dix-sept (17 dedans), quatre-vingt-quatre (quatre, vingt), quatre-vingt-dix-sept */
     if (n >= 13 && n <= 16) add(g1, (n - 10) * 10, cap, n);
@@ -62,9 +64,11 @@
     add(g3, n - 1, cap, n); add(g3, n + 1, cap, n); add(g3, n - 2, cap, n); add(g3, n + 2, cap, n);
     /* même chiffre des unités, autre dizaine */
     if (n >= 10) for (i = 0; i * 10 + u <= cap; i++) add(g4, i * 10 + u, cap, n);
-    /* secours : tout le champ du niveau */
-    for (i = 0; i <= cap; i++) add(g5, i, cap, n);
-    var groups = [shuffle(g1, rng), shuffle(g2, rng), shuffle(g3, rng), shuffle(g4, rng), shuffle(g5, rng)];
+    /* secours : tous les nombres du niveau */
+    allowed.forEach(function (v) { add(g5, v, cap, n); });
+    /* les propositions sont toujours prises parmi les nombres du niveau (l'intervalle testé), jamais en dehors */
+    function inLevel(v) { return allowed.indexOf(v) >= 0; }
+    var groups = [shuffle(g1.filter(inLevel), rng), shuffle(g2.filter(inLevel), rng), shuffle(g3.filter(inLevel), rng), shuffle(g4.filter(inLevel), rng), shuffle(g5, rng)];
     var order = [0, 1, 0, 2, 1, 3, 4], out = [], guard = 0;
     while (out.length < k && guard++ < 500) {
       var g = groups[order[guard % order.length]];
@@ -75,20 +79,25 @@
   }
 
   /* ===== Niveaux : reconnaître un nombre entendu ===== */
-  /* cap = plus grand nombre autorisé dans les propositions (on ne montre pas à un élève de 0–10 un « 73 ») */
   var NOMBRES = [
-    { id: "n1", label: "0 à 10", emoji: "🔟", pool: range(0, 10), cap: 10, choices: 3 },
-    { id: "n2", label: "11 à 16", emoji: "🧒", pool: range(11, 16), cap: 20, choices: 4 },
-    { id: "n3", label: "17 à 20", emoji: "🖐️", pool: range(17, 20), cap: 20, choices: 4 },
-    { id: "n4", label: "20 à 59", emoji: "🔢", pool: range(20, 59), cap: 59, choices: 4 },
-    { id: "n5", label: "13 ou 30 ? 14 ou 40 ?", emoji: "👂", pool: [13, 14, 15, 16, 30, 40, 50, 60], cap: 69, choices: 4 },
-    { id: "n6", label: "60 à 69", emoji: "6️⃣", pool: range(60, 69), cap: 79, choices: 4 },
-    { id: "n7", label: "70 à 79", emoji: "7️⃣", pool: range(70, 79), cap: 99, choices: 4 },
-    { id: "n8", label: "80 à 89", emoji: "8️⃣", pool: range(80, 89), cap: 99, choices: 4 },
-    { id: "n9", label: "90 à 99", emoji: "9️⃣", pool: range(90, 99), cap: 99, choices: 4 },
-    { id: "n10", label: "Tous les nombres jusqu’à 99", emoji: "🌟", pool: range(0, 99), cap: 99, choices: 4 },
-    { id: "n11", label: "Jusqu’à 100", emoji: "💯", pool: [89, 90, 91, 98, 99, 100, 99, 100, 100, 10, 90], cap: 100, choices: 4 }
+    { id: "n1", label: "0 à 10", emoji: "🔟", pool: range(0, 10) },
+    { id: "n2", label: "11 à 16", emoji: "🧒", pool: range(11, 16) },
+    { id: "n3", label: "17 à 20", emoji: "🖐️", pool: range(17, 20) },
+    { id: "n4", label: "20 à 59", emoji: "🔢", pool: range(20, 59) },
+    { id: "n5", label: "13 ou 30 ? 14 ou 40 ?", emoji: "👂", pool: [13, 14, 15, 16, 30, 40, 50, 60] },
+    { id: "n6", label: "60 à 69", emoji: "6️⃣", pool: range(60, 69) },
+    { id: "n7", label: "70 à 79", emoji: "7️⃣", pool: range(70, 79) },
+    { id: "n8", label: "80 à 89", emoji: "8️⃣", pool: range(80, 89) },
+    { id: "n9", label: "90 à 99", emoji: "9️⃣", pool: range(90, 99) },
+    { id: "n10", label: "Tous les nombres jusqu’à 99", emoji: "🌟", pool: range(0, 99) },
+    { id: "n11", label: "Jusqu’à 100", emoji: "💯", pool: [89, 90, 91, 98, 99, 100, 99, 100, 100, 10, 90] }
   ];
+
+  /* 6 propositions quand le niveau contient au moins 6 nombres différents (sinon tous les nombres du niveau), toutes prises dans le niveau */
+  NOMBRES.forEach(function (lv) {
+    lv.allowed = lv.pool.filter(function (v, i) { return lv.pool.indexOf(v) === i; }).sort(function (a, b) { return a - b; });
+    lv.choices = Math.min(6, lv.allowed.length);
+  });
 
   /* ===== Niveaux : calculer ===== */
   /* aid : see = les animaux sont dessinés · mental = il faut calculer dans sa tête (la bande des nombres reste disponible) */
@@ -182,7 +191,7 @@
   function nombresQuestion(level, rng, avoid) {
     var n = pick(level.pool, rng), tries = 0;
     while (avoid && avoid.indexOf(n) >= 0 && tries++ < 20) n = pick(level.pool, rng);
-    var choices = shuffle([n].concat(numberDistractors(n, level.cap, level.choices - 1, rng)), rng);
+    var choices = shuffle([n].concat(numberDistractors(n, level.allowed, level.choices - 1, rng)), rng);
     return { type: "nombres", level: level.id, answer: n, choices: choices, say: words(n), key: "n" + n };
   }
   function calcQuestion(op, level, rng, avoid) {
