@@ -53,7 +53,7 @@
 (function () {
   "use strict";
   var CFG = window.LABO_CALCUL || { enabled: false }, E = window.CalcEngine, app = document.getElementById("app"), client = null, role = "teacher";
-  var ACTS = { nombres: "👂 Reconnaître un nombre", addition: "➕ Additions", soustraction: "➖ Soustractions" };
+  var ACTS = { nombres: "👂 ÉCOUTER (reconnaître un nombre)", addition: "➕ Additions", soustraction: "➖ Soustractions" };
   var cache = { settings: {}, results: null, admin: null }, tab = "settings";
 
   function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
