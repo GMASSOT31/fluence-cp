@@ -19,7 +19,7 @@ les fichiers du labo sont publics sur GitHub Pages, seules les **données et les
 | Navigateur | `enabled:false` dans `labo-config.js` | pages du labo « indisponibles », `labo-switch.js` ne fait aucune requête |
 | Retrait complet | supprimer `labo-*`, `calcul/`, les 2 balises `labo-config.js`/`labo-switch.js` de `zoo-connecte.html` et `enseignants.html`, puis (si voulu) supprimer à la main les tables `lab_*` et les fonctions `lab_*` dans Supabase | le site revient exactement à l'état d'avant |
 
-La migration crée l'interrupteur **désactivé** : après application, l'admin l'active depuis l'espace enseignant (mode Calcul › Réglages péda › Accès au laboratoire).
+La migration crée l'interrupteur **désactivé** : après application, l'admin l'active depuis l'espace enseignant (onglet « Enseignants » › Accès au laboratoire de calcul).
 
 ## Animaux et progression (comme le Zoo de Lecture)
 Chaque étape a son animal, du plus lent au plus rapide : plus l'étape validée est haute, plus l'animal court vite (nombres : 🐌 escargot → 🐆 guépard ; addition : 🐜 fourmi → 🦁 lion ; soustraction : 🐊 crocodile → 🦌 cerf ; vitesses « environ » dans `calcul/engine.js`). Un œuf 🥚 éclot quand l'étape est réussie, l'animal grandit (✨) quand elle est maîtrisée. Les menus « ÉCOUTER », « ADDITION » et « SOUSTRACTION » ne montrent que les étapes **réussies + la suivante** (l'ordre et le choix des étapes restent réglables par l'enseignant). « Mes nombres lus » et « Mes calculs gagnés » montrent les animaux (❓ tant que l'étape n'est pas atteinte).
@@ -65,8 +65,8 @@ Ouverts par défaut : tous les niveaux de reconnaissance, a1–a4, s1–s2 (les 
 
 ## Pour passer à la suite (décisions de Gabriel)
 1. Essai de la migration dans une transaction annulée sur la vraie base, puis accord, application, vérification en lecture seule.
-2. Choisir les comptes testeurs dans l'onglet « Accès au laboratoire » (par identifiant).
+2. Choisir les comptes testeurs dans l'onglet « Enseignants » (carte « Accès au laboratoire de calcul ») (par identifiant).
 3. Portefeuille commun (phase ultérieure) : table de mouvements `wallet_ledger(student_id, source, ref_id, amount, unique(source, ref_id))` ; les pièces de test ne sont **jamais** converties automatiquement.
 
 ## Espace enseignant intégré
-`labo-switch.js` (déjà chargé par `enseignants.html`) demande `lab_my_access` ; seulement si le compte est autorisé il charge `calcul/enseignant.js` (aucun appel ni style de plus pour les autres). Le module ajoute une bascule « Lecture | Calcul » dans le menu : en mode Calcul (mémorisé dans le navigateur) le bandeau devient « Zoo de Calcul » (accent vert), « À écouter » disparaît, et « Progression » / « Réglages péda » affichent les versions calcul (mêmes composants que la lecture) ; l'admin y trouve aussi l'interrupteur et la liste des accès. `enseignants.html` n'est pas modifié ; retour en Lecture = page d'origine. Aucune migration.
+`labo-switch.js` (déjà chargé par `enseignants.html`) demande `lab_my_access` ; seulement si le compte est autorisé il charge `calcul/enseignant.js` (aucun appel ni style de plus pour les autres). Le module ajoute une bascule « Lecture | Calcul » dans le menu : en mode Calcul (mémorisé dans le navigateur) le bandeau devient « Zoo de Calcul » (accent vert), « À écouter » disparaît, et « Progression » / « Réglages péda » affichent les versions calcul (mêmes composants que la lecture) ; l'admin trouve l'interrupteur et la liste des accès dans l'onglet « Enseignants ». `enseignants.html` n'est pas modifié ; retour en Lecture = page d'origine. Aucune migration.
