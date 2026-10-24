@@ -117,3 +117,4 @@ Tests : `labo-calcul-test.html?who=ok&all=1` (+ `&egg=addition:a7`, `&order=1`).
 * **Téléphone (≤ 600 px)** : le menu « Moi » ne garde que Boutique et Me déconnecter (le retour à la lecture se fait par la bascule du bandeau).
 * **Pastilles du bandeau** : 👂 E3 · ➕ A2 · ➖ S1 = nombre d'étapes réussies par activité (étapes proposées par l'enseignant), à côté des pièces et des parties ; sur petit téléphone la ligne « Apprendre en s'amusant » est masquée pour leur faire de la place.
 * **Animaux retirés (soustraction)** : contour rouge en pointillés + petite croix ✕, opacité 0,7 (visibles sur fond clair et sombre).
+* **Bandeau sur téléphone** : de 320 à 480 px, bascule en icônes seules et pastilles compactes (mesuré : aucun chevauchement de 320 à 1100 px, bandeau 70 px) ; à 340 px et moins, la pastille « parties » est masquée.
