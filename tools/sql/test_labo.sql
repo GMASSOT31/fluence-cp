@@ -128,6 +128,23 @@ select pg_temp.expect(jsonb_array_length(public.lab_teacher_results()) = 3, 'adm
 select pg_temp.expect(jsonb_array_length(public.lab_admin_state()->'access') = 2, 'admin : liste des accès');
 reset role;
 
+-- 5b. Retrait d'un accès : la ligne est conservée (revoked_at) et l'élève perd l'accès tout de suite
+select set_config('request.jwt.claim.sub', :A, false) \gset
+select a.id as revoke_id from public.lab_access a where a.subject_id = '53000000-0000-0000-0000-000000000003' \gset
+set role authenticated;
+select public.lab_admin_revoke(:'revoke_id');
+select pg_temp.expect(jsonb_array_length(public.lab_admin_state()->'access') = 1, 'admin : accès retiré de la liste');
+reset role;
+set role anon; select set_config('request.jwt.claim.sub','',false) \gset
+select pg_temp.expect(not (public.lab_my_access(repeat('3',64))->>'allowed')::boolean, 'S3 : accès retiré, refusé immédiatement');
+reset role;
+select pg_temp.expect((select count(*) from public.lab_access where revoked_at is not null) = 1, 'la ligne retirée est conservée (aucune suppression)');
+select set_config('request.jwt.claim.sub', :A, false) \gset
+set role authenticated; select public.lab_admin_grant('student','53000000-0000-0000-0000-000000000003'); reset role;
+set role anon; select set_config('request.jwt.claim.sub','',false) \gset
+select pg_temp.expect((public.lab_my_access(repeat('3',64))->>'allowed')::boolean, 'S3 : accès rétabli par une nouvelle autorisation');
+reset role;
+
 -- 6. Interrupteur coupé : tout se referme d'un coup
 select set_config('request.jwt.claim.sub', :A, false) \gset
 set role authenticated; select public.lab_admin_set_enabled(false); reset role;

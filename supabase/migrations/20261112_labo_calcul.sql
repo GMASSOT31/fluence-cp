@@ -6,7 +6,7 @@
 -- * Pièces et droits de jeu de TEST : colonnes test_coins / test_credits de lab_calc_progress, sans lien avec les vrais soldes.
 -- * Idempotence : un tour (round_id) ou une opération (op_id) rejoué ne crédite jamais deux fois.
 -- Pour tout désactiver : update public.app_settings set value = '{"enabled": false}' where key = 'lab_calcul';
--- Pour tout retirer : drop des 5 tables lab_* et des fonctions lab_* (voir labo-calcul/README.md).
+-- Aucune instruction de suppression de données : le retrait d'un accès marque la ligne (revoked_at) au lieu de la supprimer.
 
 insert into public.app_settings(key, value) values ('lab_calcul', '{"enabled": false}'::jsonb)
   on conflict (key) do nothing;
@@ -19,6 +19,7 @@ create table public.lab_access (
   scope text not null default 'self' check (scope in ('self', 'self_and_students')),
   note text check (note is null or char_length(note) <= 200),
   created_at timestamptz not null default now(),
+  revoked_at timestamptz,   -- accès retiré = ligne conservée et marquée (jamais supprimée)
   unique (subject_kind, subject_id)
 );
 create table public.lab_calc_progress (
@@ -71,14 +72,14 @@ as $$ select ss.student_id from public.student_sessions ss join public.students 
 
 create function public.lab__student_allowed(p_student uuid) returns boolean language sql stable security definer set search_path to ''
 as $$ select p_student is not null and public.lab__enabled() and (
-        exists (select 1 from public.lab_access a where a.subject_kind = 'student' and a.subject_id = p_student)
-     or exists (select 1 from public.students s join public.lab_access a on a.subject_kind = 'teacher' and a.subject_id = s.teacher_id and a.scope = 'self_and_students'
+        exists (select 1 from public.lab_access a where a.subject_kind = 'student' and a.subject_id = p_student and a.revoked_at is null)
+     or exists (select 1 from public.students s join public.lab_access a on a.subject_kind = 'teacher' and a.subject_id = s.teacher_id and a.scope = 'self_and_students' and a.revoked_at is null
                 where s.id = p_student)) $$;
 
 create function public.lab__teacher_allowed() returns boolean language sql stable security definer set search_path to ''
 as $$ select auth.uid() is not null and public.lab__enabled() and (
         public.is_zoo_admin()
-     or exists (select 1 from public.lab_access a where a.subject_kind = 'teacher' and a.subject_id = auth.uid())) $$;
+     or exists (select 1 from public.lab_access a where a.subject_kind = 'teacher' and a.subject_id = auth.uid() and a.revoked_at is null)) $$;
 
 -- Élève autorisé (via son jeton) ou erreur uniforme
 create function public.lab__require_student(p_token text) returns uuid language plpgsql stable security definer set search_path to ''
@@ -235,7 +236,7 @@ as $$ begin
   return jsonb_build_object('enabled', public.lab__enabled(),
     'access', coalesce((select jsonb_agg(jsonb_build_object('id', a.id, 'kind', a.subject_kind, 'subject_id', a.subject_id, 'scope', a.scope, 'note', a.note,
         'label', case when a.subject_kind = 'teacher' then (select coalesce(t.display_name, t.email) from public.teachers t where t.id = a.subject_id)
-                      else (select s.nickname from public.students s where s.id = a.subject_id) end) order by a.created_at) from public.lab_access a), '[]'::jsonb),
+                      else (select s.nickname from public.students s where s.id = a.subject_id) end) order by a.created_at) from public.lab_access a where a.revoked_at is null), '[]'::jsonb),
     'teachers', coalesce((select jsonb_agg(jsonb_build_object('id', t.id, 'label', coalesce(t.display_name, t.email)) order by coalesce(t.display_name, t.email)) from public.teachers t where t.ghosted_at is null), '[]'::jsonb),
     'students', coalesce((select jsonb_agg(jsonb_build_object('id', s.id, 'label', s.nickname, 'class_name', c.name) order by c.name, s.nickname)
         from (select * from public.students where ghosted_at is null order by created_at desc limit 500) s join public.classes c on c.id = s.class_id), '[]'::jsonb));
@@ -247,14 +248,14 @@ as $$ declare v uuid; begin
   if p_kind not in ('teacher', 'student') or p_subject is null or p_scope not in ('self', 'self_and_students') or (p_kind = 'student' and p_scope <> 'self') then raise exception 'Données invalides'; end if;
   if (p_kind = 'teacher' and not exists (select 1 from public.teachers where id = p_subject)) or (p_kind = 'student' and not exists (select 1 from public.students where id = p_subject)) then raise exception 'Compte introuvable'; end if;
   insert into public.lab_access(subject_kind, subject_id, scope, note) values (p_kind, p_subject, p_scope, nullif(pg_catalog.left(btrim(p_note), 200), ''))
-    on conflict (subject_kind, subject_id) do update set scope = excluded.scope, note = excluded.note returning id into v;
+    on conflict (subject_kind, subject_id) do update set scope = excluded.scope, note = excluded.note, revoked_at = null returning id into v;
   return v;
 end $$;
 
 create function public.lab_admin_revoke(p_id uuid) returns void language plpgsql security definer set search_path to ''
 as $$ begin
   if auth.uid() is null or not public.is_zoo_admin() then raise exception 'Accès refusé' using errcode = '42501'; end if;
-  delete from public.lab_access where id = p_id;
+  update public.lab_access set revoked_at = now() where id = p_id and revoked_at is null;
 end $$;
 
 create function public.lab_admin_set_enabled(p_enabled boolean) returns void language plpgsql security definer set search_path to ''
