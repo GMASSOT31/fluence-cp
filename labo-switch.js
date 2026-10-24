@@ -1,4 +1,4 @@
-/* Accès au laboratoire privé de calcul — chargé par zoo-connecte.html (bouton « Calcul (test) » pour l'élève) et enseignants.html (bascule Lecture | Calcul intégrée au menu, via calcul/enseignant.js).
+/* Accès au laboratoire privé de calcul — chargé par zoo-connecte.html (bascule « Lecture | Calcul » dans le bandeau pour l'élève) et enseignants.html (bascule Lecture | Calcul intégrée au menu, via calcul/enseignant.js).
    * Ne fait RIEN si labo-config.js est absent ou `enabled:false`, en démo, ou sans connexion : aucune requête dans ces cas.
    * Sinon, UNE requête (fonction lab_my_access) ; le bouton n'apparaît que si le serveur répond « autorisé ».
    * N'utilise pas supabase-js (évite un second client d'authentification dans la page) ; n'écrit rien, ne casse rien : toute erreur est ignorée.
@@ -39,15 +39,12 @@
     }
     function show() {
       if (document.getElementById("labo-switch")) return;
-      var a = document.createElement("a");
-      a.id = "labo-switch"; a.href = "labo-calcul.html"; a.textContent = "➕ Calcul (test)";
-      var st = document.createElement("style");   /* sur téléphone/tablette, au-dessus de la barre du bas (5 boutons) */
-      st.textContent = "#labo-switch{position:fixed;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:40;min-height:48px;display:inline-flex;align-items:center;" +
-        "padding:8px 16px;border-radius:999px;background:#0b7f7d;color:#fff;font:800 16px Figtree,system-ui,sans-serif;text-decoration:none;border:3px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,.3)}" +
-        "@media (max-width:880px){#labo-switch{bottom:calc(92px + env(safe-area-inset-bottom,0px))}}" +
-        "body.playing #labo-switch,body.listen-focus #labo-switch,body.reading-focus #labo-switch{display:none}";
-      document.head.appendChild(st);
-      document.body.appendChild(a);
+      var host = document.querySelector("header .zoo-hero-copy"); if (!host) return;
+      var n = document.createElement("div"); n.id = "labo-switch"; n.setAttribute("role", "group"); n.setAttribute("aria-label", "Matière");
+      n.innerHTML = '<span class="on">📖 Lecture</span><a href="labo-calcul.html">➕ Calcul</a>';
+      var st = document.createElement("style");
+      st.textContent = "#labo-switch{display:inline-flex;margin-top:14px;border:2px solid rgba(255,255,255,.75);border-radius:999px;overflow:hidden;background:rgba(0,0,0,.25)}#labo-switch a,#labo-switch span{min-height:44px;display:inline-flex;flex-direction:row;white-space:nowrap;gap:5px;line-height:1;align-items:center;padding:6px 16px;font:800 16px Figtree,system-ui,sans-serif;color:#fff;text-decoration:none}#labo-switch .on{background:#fff;color:#201049}body.mode-student #labo-switch{display:inline-flex!important}@media (max-width:650px){#labo-switch a,#labo-switch span{padding:6px 11px;font-size:15px}}";
+      document.head.appendChild(st); host.appendChild(n);
     }
     /* Enseignant : la connexion peut avoir lieu après le chargement de la page ; on attend que l'espace s'affiche (une seule question au serveur) */
     function watchLogin() {
