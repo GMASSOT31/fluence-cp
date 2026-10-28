@@ -143,6 +143,6 @@ Tests : `labo-calcul-test.html?who=ok&all=1` (+ `&egg=addition:a7`, `&order=1`).
 * Test : `?wheel=1&slice=5` (3 jeux), `?slice=4` (10 pièces).
 
 ## Aide « Pour arriver à 10 » (a4) : les doigts
-* L'aide de cette étape n'est plus la file de nombres (départ encadré, arrivée en pointillés) mais **deux mains** (`handsSvg`) avec autant de doigts levés que le nombre de départ (pouce, index… sur la 1re main, puis la 2e).
+* L'aide de cette étape n'est plus la file de nombres (départ encadré, arrivée en pointillés) mais **deux mains dessinées en gants de dessin animé** (`handsSvg`, contour noir, doigts qui s’amincissent, poings repliés, pouces vers l’extérieur ; doigts baissés en jaune après la 2e erreur) avec autant de doigts levés que le nombre de départ (pouce, index… sur la 1re main, puis la 2e).
 * 1er appui : la voix et le texte disent « Combien de tes doigts sont baissés si tu lèves seulement 3 doigts ? » (« si tu ne lèves aucun doigt » pour 0), sans donner le résultat. Après la 2e erreur : les doigts baissés sont mis en jaune et « 7 doigts levés, 3 doigts baissés : 7 + 3 = 10 ».
-* Taille : `height: clamp(104px, 19vh, 220px)` (suit la hauteur de la fenêtre : téléphone 375 × 667 ≈ 127 px, tablette ≈ 195 px, portable ≈ 160 px). La file de nombres reste pour « Combien d'écart ? » (s5).
+* Taille : `height: clamp(110px, 21vh, 230px)` (suit la hauteur de la fenêtre : téléphone 375 × 667 ≈ 140 px, tablette ≈ 215 px). La file de nombres reste pour « Combien d'écart ? » (s5).
