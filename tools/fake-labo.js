@@ -1,7 +1,7 @@
 /* Faux client Supabase du LABO DE CALCUL (aucun appel réseau). Reproduit les règles de supabase/migrations/20261112_labo_calcul.sql :
    autorisation, interrupteur, tours idempotents, pièces de test calculées côté « serveur », plafond de 10 séries récompensées par jour.
    Monnaie commune : activée par défaut (?shared=0 la coupe → pièces de test). Options d'URL : ?who=ok (élève autorisé, défaut) | refuse (élève non autorisé) | none (pas de jeton) ; ?off=1 (interrupteur serveur coupé) ;
-   ?role=admin (défaut) | teacher (autorisé) | refuse (enseignant non autorisé) | out (non connecté) ; ?lost=1 (la 1re série est enregistrée mais la réponse se perd) ; ?wheel=1 (une roue à tourner) ; ?slice=6 (la roue tombe sur la case 6) ; ?egg=addition:a7 (retire la réussite de cette étape) ; ?order=1 (ordre n3, n1, n2, n4) ; ?seed=gap (trou dans l'ordre + réussite hors périmètre) ; ?all=1 (toutes les étapes ouvertes et réussies, pour tester les aides) ; ?req=1 (une demande d'enseignant en attente chez l'admin) ; ?asked=1 (l'enseignant a déjà demandé) ; ?fail=1 (le rangement d'une série échoue une fois).
+   ?role=admin (défaut) | teacher (autorisé) | refuse (enseignant non autorisé) | out (non connecté) ; ?lost=1 (la 1re série est enregistrée mais la réponse se perd) ; ?nopin=1 (l'enseignant interdit le changement de code) ; ?wheel=1 (une roue à tourner) ; ?slice=6 (la roue tombe sur la case 6) ; ?egg=addition:a7 (retire la réussite de cette étape) ; ?order=1 (ordre n3, n1, n2, n4) ; ?seed=gap (trou dans l'ordre + réussite hors périmètre) ; ?all=1 (toutes les étapes ouvertes et réussies, pour tester les aides) ; ?req=1 (une demande d'enseignant en attente chez l'admin) ; ?asked=1 (l'enseignant a déjà demandé) ; ?fail=1 (le rangement d'une série échoue une fois).
    Expose window.__lab (journal des appels, état). */
 (function () {
   var q = location.search, opt = function (k, d) { var m = new RegExp("[?&]" + k + "=(\\w+)").exec(q); return m ? m[1] : d; };
@@ -53,7 +53,8 @@
     },
     student_session_profile: function () { needStudent(); return { student_id: "s1", nickname: /[?&]name=(\w+)/.test(q) ? RegExp.$1 : "Léa" }; },
     student_get_progress_v2: function () { needStudent(); return { progress: { avatar: "🦊", coins: lab.realWallet.coins, credits: lab.realWallet.credits }, version: lab.version }; },
-    student_get_teacher_settings: function () { needStudent(); return { sfx: true }; },
+    student_get_teacher_settings: function () { needStudent(); return opt("nopin", "0") === "1" ? { sfx: true, pinChange: false } : { sfx: true }; },
+    student_change_pin: function (a) { needStudent(); return a.p_old_pin === "1234" ? { ok: true } : { ok: false, code: "bad_pin" }; },
     student_claim_coins: function (a) {
       needStudent(); if (!lab.pending) return { claimed: 0, version: lab.version };
       if (a.p_version !== lab.version) throw { message: "SYNC_CONFLICT" };
