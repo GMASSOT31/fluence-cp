@@ -143,6 +143,7 @@ Tests : `labo-calcul-test.html?who=ok&all=1` (+ `&egg=addition:a7`, `&order=1`).
 * Test : `?wheel=1&slice=5` (3 jeux), `?slice=4` (10 pièces).
 
 ## Aide « Pour arriver à 10 » (a4) : les doigts
-* L'aide de cette étape n'est plus la file de nombres (départ encadré, arrivée en pointillés) mais **deux mains** (`handsSvg`) avec autant de doigts levés que le nombre de départ (pouce, index… sur la 1re main, puis la 2e).
-* 1er appui : la voix et le texte disent « Combien de tes doigts sont baissés si tu lèves seulement 3 doigts ? » (« si tu ne lèves aucun doigt » pour 0), sans donner le résultat. Après la 2e erreur : les doigts baissés sont mis en jaune et « 7 doigts levés, 3 doigts baissés : 7 + 3 = 10 ».
-* Taille : `height: clamp(104px, 19vh, 220px)` (suit la hauteur de la fenêtre : téléphone 375 × 667 ≈ 127 px, tablette ≈ 195 px, portable ≈ 160 px). La file de nombres reste pour « Combien d'écart ? » (s5).
+* L'aide de cette étape n'est plus la file de nombres mais **deux mains** (`handsSvg`) avec autant de doigts levés que le nombre de départ (pouce, index, majeur… sur la 1re main, puis la 2e ; pouces vers l'extérieur, la main de gauche est retournée en CSS).
+* **Images** : `img/mains/main-0.svg` à `main-5.svg`, tirées de « Count on fingers » de **dkdlv** (Openclipart, **domaine public / CC0**, https://openclipart.org/detail/177253/count-on-fingers). La planche d'origine a 5 mains (1 à 5 doigts) ; chaque main est découpée dans son fichier (même hauteur, même cadrage) ; le **poing `main-0`** est la main « 1 » dont le contour de paume remplace le pouce par une courbe. Les mains dessinées à la main en SVG (rectangles, puis gants) ont été écartées : trop raides.
+* 1er appui : la voix et le texte disent « Combien de tes doigts sont baissés si tu lèves seulement 3 doigts ? » (« si tu ne lèves aucun doigt » pour 0), sans donner le résultat. Après la 2e erreur : « 7 doigts levés + 3 doigts baissés = 10 doigts : 7 + 3 = 10 » (lu aussi).
+* Taille : `height: clamp(116px, 23vh, 240px)` par main (téléphone 375 × 667 ≈ 153 px). La file de nombres reste pour « Combien d'écart ? » (s5).
