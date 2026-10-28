@@ -1,13 +1,13 @@
 /* Faux client Supabase du LABO DE CALCUL (aucun appel réseau). Reproduit les règles de supabase/migrations/20261112_labo_calcul.sql :
    autorisation, interrupteur, tours idempotents, pièces de test calculées côté « serveur », plafond de 10 séries récompensées par jour.
    Monnaie commune : activée par défaut (?shared=0 la coupe → pièces de test). Options d'URL : ?who=ok (élève autorisé, défaut) | refuse (élève non autorisé) | none (pas de jeton) ; ?off=1 (interrupteur serveur coupé) ;
-   ?role=admin (défaut) | teacher (autorisé) | refuse (enseignant non autorisé) | out (non connecté) ; ?egg=addition:a7 (retire la réussite de cette étape) ; ?order=1 (ordre n3, n1, n2, n4) ; ?seed=gap (trou dans l'ordre + réussite hors périmètre) ; ?all=1 (toutes les étapes ouvertes et réussies, pour tester les aides) ; ?req=1 (une demande d'enseignant en attente chez l'admin) ; ?asked=1 (l'enseignant a déjà demandé) ; ?fail=1 (le rangement d'une série échoue une fois).
+   ?role=admin (défaut) | teacher (autorisé) | refuse (enseignant non autorisé) | out (non connecté) ; ?lost=1 (la 1re série est enregistrée mais la réponse se perd) ; ?egg=addition:a7 (retire la réussite de cette étape) ; ?order=1 (ordre n3, n1, n2, n4) ; ?seed=gap (trou dans l'ordre + réussite hors périmètre) ; ?all=1 (toutes les étapes ouvertes et réussies, pour tester les aides) ; ?req=1 (une demande d'enseignant en attente chez l'admin) ; ?asked=1 (l'enseignant a déjà demandé) ; ?fail=1 (le rangement d'une série échoue une fois).
    Expose window.__lab (journal des appels, état). */
 (function () {
   var q = location.search, opt = function (k, d) { var m = new RegExp("[?&]" + k + "=(\\w+)").exec(q); return m ? m[1] : d; };
   var who = opt("who", "ok"), role = opt("role", "admin");
   var lab = window.__lab = {
-    calls: [], enabled: !/[?&]off=1/.test(q), failOnce: /[?&]fail=1/.test(q),
+    calls: [], enabled: !/[?&]off=1/.test(q), failOnce: /[?&]fail=1/.test(q), lostOnce: /[?&]lost=1/.test(q),
     realWallet: { coins: 13, credits: 20 }, pending: 0, version: 5, shared: !/[?&]shared=0/.test(q),   /* « vrais » soldes de lecture : ne doivent JAMAIS bouger */
     me: { coins: 0, credits: 0, levels: /[?&]all=1/.test(q) ? (function () { var o = {}; ["nombres:n1","nombres:n2","nombres:n3","nombres:n4","nombres:n5","nombres:n6","nombres:n7","nombres:n8","nombres:n9","nombres:n10","nombres:n11","addition:a1","addition:a2","addition:a3","addition:a4","addition:a5","addition:a6","addition:a7","addition:a8","soustraction:s1","soustraction:s2","soustraction:s3","soustraction:s4","soustraction:s5"].forEach(function (k) { o[k] = { r: 3, ok: 2 }; }); return o; })() : {}, hist: [], nums: {}, calcs: {} }, rounds: {}, ops: {}, rewardedToday: 0,
     settings: /[?&]all=1/.test(q) ? { levels: { nombres: ["n1","n2","n3","n4","n5","n6","n7","n8","n9","n10","n11"], addition: ["a1","a2","a3","a4","a5","a6","a7","a8"], soustraction: ["s1","s2","s3","s4","s5"] } } : {}, enabledSwitch: true,
@@ -52,6 +52,7 @@
     lab_student_submit_round: function (a) {
       needStudent();
       if (lab.failOnce) { lab.failOnce = false; throw { message: "Failed to fetch" }; }
+      if (lab.lostOnce) { lab.lostOnce = false; lab.lostPending = true; }   /* ?lost=1 : la série est enregistrée mais la réponse se perd */
       if (["nombres", "addition", "soustraction"].indexOf(a.p_activity) < 0 || !/^[a-z0-9_-]{1,20}$/.test(a.p_level) || a.p_total < 1 || a.p_total > 20 || a.p_correct < 0 || a.p_correct > a.p_total) throw { message: "Données invalides" };
       if (lab.rounds[a.p_round]) return mix({ inserted: false, coins: 0 });
       var pass = Math.min(Math.max(lab.settings.pass || 80, 50), 100), ok = a.p_correct * 100 >= pass * a.p_total, coins = 0;
@@ -65,6 +66,7 @@
       /* collections : comme le serveur — au plus p_correct éléments, nombres 0–100, calculs « a+b » / « a-b » cohérents avec l'activité */
       if (Array.isArray(s.nums) && s.nums.length <= a.p_correct && a.p_activity === "nombres") s.nums.forEach(function (n) { if (Number.isInteger(n) && n >= 0 && n <= 100) lab.me.nums[n] = Math.min((lab.me.nums[n] || 0) + 1, 99); });
       if (Array.isArray(s.calcs) && s.calcs.length <= a.p_correct && a.p_activity !== "nombres") s.calcs.forEach(function (k) { var m = /^(\d{1,3})([+-])(\d{1,3})$/.exec(k); if (m && (m[2] === "+") === (a.p_activity === "addition") && Object.keys(lab.me.calcs).length < 400) lab.me.calcs[k] = Math.min((lab.me.calcs[k] || 0) + 1, 99); });
+      if (lab.lostPending) { lab.lostPending = false; throw { message: "Failed to fetch" }; }   /* enregistré, mais la réponse n'arrive jamais */
       return mix({ inserted: true, coins: coins, shared: !!(coins && lab.shared), success: ok, level: lab.me.levels[key] });
     },
     lab_student_buy_play: function (a) {
