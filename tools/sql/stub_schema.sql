@@ -13,7 +13,7 @@ create table public.teachers (id uuid primary key, email text, display_name text
 create table public.classes (id uuid primary key, teacher_id uuid not null, name text not null);
 create table public.students (id uuid primary key default gen_random_uuid(), teacher_id uuid not null, class_id uuid not null, nickname text not null, ghosted_at timestamptz, created_at timestamptz not null default now());
 create table public.student_sessions (token_hash text primary key, student_id uuid not null, expires_at timestamptz not null);
-create table public.student_progress (student_id uuid primary key, teacher_id uuid, progress jsonb not null default '{}', sync_version bigint not null default 0, pending_coins int not null default 0);
+create table public.student_progress (student_id uuid primary key, teacher_id uuid, progress jsonb not null default '{}', sync_version bigint not null default 0, pending_coins int not null default 0);   -- pending_credits : ajouté par la migration 20261118
 create table public.app_settings (key text primary key, value jsonb not null default '{}', updated_at timestamptz not null default now());
 alter table public.teachers enable row level security; alter table public.classes enable row level security; alter table public.students enable row level security;
 alter table public.student_sessions enable row level security; alter table public.student_progress enable row level security; alter table public.app_settings enable row level security;

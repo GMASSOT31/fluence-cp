@@ -2101,6 +2101,20 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
         renderPanels();
         showGift(n);
       }
+      /* Parties de jeu gagnées à la roue du Zoo de Calcul : elles attendent sur le serveur (pending_credits) comme les pièces */
+      try{
+        var rc=await cloudClient.rpc("student_claim_credits",{p_token:cloudToken,p_version:cloudVersion});
+        if(rc.error)throw rc.error;
+        var cr=rc.data||{};
+        if(Number(cr.claimed)>0){
+          cloudVersion=Number(cr.version);
+          data.credits[cloudStudentId]=Number(cr.credits)||0;
+          renderPanels();
+          toast("🎮 Tu as gagné "+cr.claimed+(cr.claimed>1?" parties de jeu":" partie de jeu")+" à la roue du calcul !");
+        }
+      }catch(e2){
+        if(String(e2.message||"").includes("SYNC_CONFLICT"))throw e2;
+      }
       /* Bons remis par le maître(sse) : ils sortent de « Mes bons » */
       var rv=await cloudClient.rpc("student_claim_vouchers",{p_token:cloudToken,p_version:cloudVersion});
       if(rv.error)throw rv.error;
