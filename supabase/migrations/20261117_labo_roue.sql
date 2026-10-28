@@ -11,7 +11,7 @@ as $$ select coalesce((select count(*)::integer from jsonb_each(case when jsonb_
         where jsonb_typeof(l.value) = 'object' and coalesce(l.value->>'ok', '') ~ '^[0-9]{1,6}$' and (l.value->>'ok')::integer >= 2), 0) $$;
 revoke all on function public.lab__wheels_earned(jsonb) from public, anon, authenticated;
 
-update public.lab_calc_progress set wheels_used = least(public.lab__wheels_earned(progress), 1000);
+update public.lab_calc_progress set wheels_used = least(public.lab__wheels_earned(progress), 1000) where student_id is not null;
 
 create or replace function public.lab_student_state(p_token text) returns jsonb language plpgsql security definer set search_path to ''
 as $$ declare v uuid; v_row public.lab_calc_progress; v_set jsonb; begin
