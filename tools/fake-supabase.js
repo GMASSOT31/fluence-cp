@@ -60,6 +60,7 @@
       var n = srv.pending; srv.pending = 0; srv.me.progress.coins = (srv.me.progress.coins || 0) + n; srv.version++;
       return { claimed: n, coins: srv.me.progress.coins, version: srv.version };
     },
+    student_claim_credits: function () { return { claimed: 0, version: srv.version }; },
     student_submit_score: function (a) {
       if (a.p_version !== srv.version) throw { message: "SYNC_CONFLICT" };
       var m = MODES[a.p_game]; if (!m) throw { message: "Jeu inconnu" };

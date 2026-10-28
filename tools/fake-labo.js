@@ -47,9 +47,16 @@
     lab_student_state: function () { needStudent(); return mix({ progress: { levels: lab.me.levels, hist: lab.me.hist, nums: lab.me.nums, calcs: lab.me.calcs }, settings: lab.settings, wheels: wheelsLeft() }); },
     lab_student_spin_wheel: function () {
       needStudent(); if (wheelsLeft() <= 0) throw { message: "Aucune roue à tourner" };
-      var PR = [1, 2, 1, 3, 5, 2, 10, 3], k = typeof lab.nextSlice === "number" ? lab.nextSlice : Math.floor(Math.random() * 8), c = PR[k]; lab.wheelsUsed++;
-      if (lab.shared) lab.pending = Math.min(lab.pending + c, 10000); else lab.me.coins += c;
-      return { slice: k, coins: c, shared: !!lab.shared, wheels: wheelsLeft(), test_coins: lab.me.coins };
+      var PLAYS = [1, 0, 2, 1, 0, 3, 1, 2], COINS = [0, 5, 0, 0, 10, 0, 0, 0];   /* mêmes 8 cases que la roue du Zoo de Lecture */
+      var k = typeof lab.nextSlice === "number" ? lab.nextSlice : Math.floor(Math.random() * 8), pl = PLAYS[k], c = COINS[k]; lab.wheelsUsed++;
+      if (lab.shared) { if (pl) lab.pendingCredits = Math.min((lab.pendingCredits || 0) + pl, 1000); else lab.pending = Math.min(lab.pending + c, 10000); }
+      else { lab.me.coins += c; lab.me.credits = (lab.me.credits || 0) + pl; }
+      return { slice: k, kind: pl ? "plays" : "coins", coins: c, plays: pl, shared: !!lab.shared, wheels: wheelsLeft(), test_coins: lab.me.coins, test_credits: lab.me.credits || 0 };
+    },
+    student_claim_credits: function (a) {
+      needStudent(); if (!lab.pendingCredits) return { claimed: 0, version: lab.version };
+      if (a.p_version !== lab.version) throw { message: "SYNC_CONFLICT" };
+      var n = lab.pendingCredits; lab.pendingCredits = 0; lab.realWallet.credits += n; lab.version++; return { claimed: n, credits: lab.realWallet.credits, version: lab.version };
     },
     student_session_profile: function () { needStudent(); return { student_id: "s1", nickname: /[?&]name=(\w+)/.test(q) ? RegExp.$1 : "Léa" }; },
     student_get_progress_v2: function () { needStudent(); return { progress: { avatar: "🦊", coins: lab.realWallet.coins, credits: lab.realWallet.credits }, version: lab.version }; },

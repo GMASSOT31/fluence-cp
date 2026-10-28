@@ -136,3 +136,8 @@ Tests : `labo-calcul-test.html?who=ok&all=1` (+ `&egg=addition:a7`, `&order=1`).
 
 ## Cadeau du maître(sse) dans le Zoo de Calcul
 * Les pièces offertes par l'enseignant (`teacher_give_coins`) sont reprises (`student_claim_coins`) **dans le Zoo de Calcul aussi** : à l'arrivée sur chaque écran (`goTo`) et au retour sur la page (focus / onglet visible), au plus une vérification toutes les 10 s, jamais pendant une série. Bulle « Cadeau ! +N pièces d'or » + message, compteur mis à jour. Les pièces gagnées en calcul (`claimCoins`) passent en premier : `claimGifts` attend la fin pour ne pas les prendre pour un cadeau. Les **bons** restent repris par le Zoo de Lecture. Test : `__lab.pending = 10` puis événement `focus`.
+
+## Roue identique à celle du Zoo de Lecture (migration 20261118)
+* Les **8 cases sont celles de la roue de lecture** (`SLICES` de zoo-connecte.html) : 1 jeu, 5 pièces, 2 jeux, 1 jeu, 10 pièces, 3 jeux, 1 jeu, 2 jeux ; mêmes couleurs et mêmes libellés, tirage au serveur (`lab_student_spin_wheel` renvoie `kind` « plays » ou « coins », `coins`, `plays`).
+* Les **parties de jeu** gagnées attendent dans `student_progress.pending_credits` (comme les pièces dans `pending_coins`) et sont reprises par `student_claim_credits` (contrôle de version, `student_claim_coins` n'est pas modifiée). Le Zoo de Calcul les reprend tout de suite (`claimCoins`) ; le Zoo de Lecture aussi à l'accueil (`claimGifts`). Hors monnaie commune : pièces et parties de TEST (`test_coins` / `test_credits`).
+* Test : `?wheel=1&slice=5` (3 jeux), `?slice=4` (10 pièces).

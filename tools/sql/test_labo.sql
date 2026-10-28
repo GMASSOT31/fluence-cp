@@ -275,12 +275,12 @@ select pg_temp.expect((public.lab_student_state(repeat('3',64))->>'wheels')::int
 select pg_temp.expect_fail('select public.lab_student_spin_wheel(repeat(''2'',64))', 'S2 non autorisé : pas de roue');
 select pg_temp.expect_fail('select public.lab_student_spin_wheel(''zzz'')', 'jeton invalide : pas de roue');
 select public.lab_student_spin_wheel(repeat('3',64)) as w1 \gset
-select pg_temp.expect((:'w1'::jsonb->>'coins')::int in (1,2,3,5,10) and (:'w1'::jsonb->>'slice')::int between 0 and 7 and (:'w1'::jsonb->>'wheels')::int = 1 and (:'w1'::jsonb->>'shared')::boolean = false, '1re roue : un lot, une case, 1 roue restante, pièces de TEST');
+select pg_temp.expect(((:'w1'::jsonb->>'kind' = 'coins' and (:'w1'::jsonb->>'coins')::int in (5,10)) or (:'w1'::jsonb->>'kind' = 'plays' and (:'w1'::jsonb->>'plays')::int in (1,2,3))) and (:'w1'::jsonb->>'slice')::int between 0 and 7 and (:'w1'::jsonb->>'wheels')::int = 1 and (:'w1'::jsonb->>'shared')::boolean = false, '1re roue : un lot, une case, 1 roue restante, pièces de TEST');
 select public.lab_student_spin_wheel(repeat('3',64)) as w2 \gset
 select pg_temp.expect((:'w2'::jsonb->>'wheels')::int = 0, '2e roue : plus aucune restante');
 select pg_temp.expect_fail('select public.lab_student_spin_wheel(repeat(''3'',64))', '3e roue refusée (aucune restante)');
 reset role;
-select pg_temp.expect((select test_coins from public.lab_calc_progress where student_id = '53000000-0000-0000-0000-000000000003') = (:'w1'::jsonb->>'coins')::int + (:'w2'::jsonb->>'coins')::int + 2 and (select wheels_used from public.lab_calc_progress where student_id = '53000000-0000-0000-0000-000000000003') = 2, 'pièces de test = lots des 2 roues (+2 déjà là), 2 roues utilisées');
+select pg_temp.expect((select test_coins from public.lab_calc_progress where student_id = '53000000-0000-0000-0000-000000000003') = (:'w1'::jsonb->>'coins')::int + (:'w2'::jsonb->>'coins')::int + 2 and (select test_credits from public.lab_calc_progress where student_id = '53000000-0000-0000-0000-000000000003') = (:'w1'::jsonb->>'plays')::int + (:'w2'::jsonb->>'plays')::int and (select wheels_used from public.lab_calc_progress where student_id = '53000000-0000-0000-0000-000000000003') = 2, 'pièces de test = lots des 2 roues (+2 déjà là), 2 roues utilisées');
 select pg_temp.expect((select pending_coins from public.student_progress where student_id = '53000000-0000-0000-0000-000000000003') = 3, 'S3 : vrai portefeuille inchangé (monnaie commune coupée)');
 -- monnaie commune : le lot va dans pending_coins
 update public.app_settings set value = '{"enabled": true, "shared_wallet": true}' where key = 'lab_calcul';
@@ -288,6 +288,6 @@ update public.lab_calc_progress set progress = '{"levels":{"nombres:n1":{"ok":2}
 set role anon; select set_config('request.jwt.claim.sub','',false) \gset
 select public.lab_student_spin_wheel(repeat('3',64)) as w3 \gset
 reset role;
-select pg_temp.expect((:'w3'::jsonb->>'shared')::boolean and (select pending_coins from public.student_progress where student_id = '53000000-0000-0000-0000-000000000003') = 3 + (:'w3'::jsonb->>'coins')::int, 'monnaie commune : le lot est crédité dans pending_coins');
+select pg_temp.expect((:'w3'::jsonb->>'shared')::boolean and (select pending_coins from public.student_progress where student_id = '53000000-0000-0000-0000-000000000003') = 3 + (:'w3'::jsonb->>'coins')::int and (select pending_credits from public.student_progress where student_id = '53000000-0000-0000-0000-000000000003') = (:'w3'::jsonb->>'plays')::int, 'monnaie commune : le lot est crédité dans pending_coins (pièces) ou pending_credits (parties de jeu)');
 select pg_temp.expect((select progress from public.student_progress where student_id = '53000000-0000-0000-0000-000000000003') = '{}'::jsonb, 'progression de lecture non réécrite');
 \o
