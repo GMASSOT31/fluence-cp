@@ -75,7 +75,7 @@
   .choices { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; max-width: 520px; margin: 10px auto; }
   .choices.c6 { grid-template-columns: repeat(3,1fr); max-width: 680px; }
   .choice { min-height: 84px; font-family: Fredoka, Figtree, sans-serif; font-size: 2.4rem; font-weight: 700; border-radius: 20px; border: 4px solid var(--calc); background: var(--card); color: var(--ink); cursor: pointer; }
-  @media (hover: hover) and (pointer: fine) { .choice:hover:not([disabled]) { background: var(--calc-l); } }   /* pas de survol collant sur tablette */
+  @media (hover: hover) and (pointer: fine) { .choice:hover:not([disabled]) { background: var(--calc-l); color: #0b3b39; } }   /* pas de survol collant sur tablette */
   .choice.good { background: #d9f1e5; border-color: #17794f; color: #17794f; }
   .choice.bad { background: #fbd9d5; border-color: #b3261e; color: #b3261e; animation: cshake .35s; }
   .choice[disabled] { cursor: default; }
