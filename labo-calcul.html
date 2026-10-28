@@ -834,7 +834,10 @@
   function petCards(card, act) {
     var visible = E.visibleLevels(act, enabledLevels(act), S.levels), grid = el("div", "zoo-grid");
     enabledLevels(act).forEach(function (id) {
-      var lv = E.levelInfo(act, id), e = S.levels[act + ":" + id], locked = visible.indexOf(id) < 0 && !(e && e.ok), b = el("div", "zoo-card" + (locked ? " locked" : ""));
+      var lv = E.levelInfo(act, id), e = S.levels[act + ":" + id], locked = visible.indexOf(id) < 0 && !(e && e.ok), b = el("button", "zoo-card" + (locked ? " locked" : ""));
+      b.type = "button"; b.disabled = locked;   /* comme les cartes du Zoo de Lecture : un clic lance l'activité de la carte (étape pas encore ouverte : grisée) */
+      b.setAttribute("aria-label", lv.label + " : " + (locked ? "pas encore ouvert" : e && e.ok ? "réussi, refaire une série" : "un œuf à faire éclore, lancer la série"));
+      if (!locked) b.addEventListener("click", function () { startRound(act, id); });
       b.appendChild(pet(act, id, locked));
       b.appendChild(el("div", "son", lv.label));
       b.appendChild(el("div", "cap", locked ? "Pas encore" : e && e.ok ? cap1(lv.animal.nom) : "Un œuf à faire éclore"));
