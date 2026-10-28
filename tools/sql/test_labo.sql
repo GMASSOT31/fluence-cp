@@ -20,6 +20,7 @@ grant all on before_hash to public;
 \ir ../../supabase/migrations/20261114_labo_monnaie_commune.sql
 \ir ../../supabase/migrations/20261115_labo_demandes.sql
 \ir ../../supabase/migrations/20261116_labo_ordre_etapes.sql
+\ir ../../supabase/migrations/20261117_labo_roue.sql
 
 create function pg_temp.expect_fail(sql text, label text) returns void language plpgsql as $$
 begin
@@ -264,4 +265,29 @@ reset role;
 update public.lab_calc_settings set settings = '{"pass":70,"levels":{"nombres":["n9","n2","n10","n1"],"addition":["a8","a1"]}}'::jsonb where teacher_id = 'cccccccc-0000-0000-0000-000000000003';
 \ir ../../supabase/migrations/20261116_labo_ordre_etapes.sql
 select pg_temp.expect((select settings from public.lab_calc_settings where teacher_id = 'cccccccc-0000-0000-0000-000000000003') = '{"pass":70,"levels":{"nombres":["n1","n2","n9","n10"],"addition":["a1","a8"]}}'::jsonb, 'anciens réglages remis dans l''ordre des étapes, le reste intact');
+
+-- ===== Roue de la 2e étoile (migration 20261117) =====
+reset role;
+update public.app_settings set value = '{"enabled": true, "shared_wallet": false}' where key = 'lab_calcul';
+update public.lab_calc_progress set progress = '{"levels":{"nombres:n1":{"ok":2},"addition:a1":{"ok":2},"addition:a2":{"ok":1}}}'::jsonb, wheels_used = 0 where student_id = '53000000-0000-0000-0000-000000000003';
+set role anon; select set_config('request.jwt.claim.sub','',false) \gset
+select pg_temp.expect((public.lab_student_state(repeat('3',64))->>'wheels')::int = 2, 'S3 : 2 étapes maîtrisées = 2 roues (la 3e n''a qu''une étoile)');
+select pg_temp.expect_fail('select public.lab_student_spin_wheel(repeat(''2'',64))', 'S2 non autorisé : pas de roue');
+select pg_temp.expect_fail('select public.lab_student_spin_wheel(''zzz'')', 'jeton invalide : pas de roue');
+select public.lab_student_spin_wheel(repeat('3',64)) as w1 \gset
+select pg_temp.expect((:'w1'::jsonb->>'coins')::int in (1,2,3,5,10) and (:'w1'::jsonb->>'slice')::int between 0 and 7 and (:'w1'::jsonb->>'wheels')::int = 1 and (:'w1'::jsonb->>'shared')::boolean = false, '1re roue : un lot, une case, 1 roue restante, pièces de TEST');
+select public.lab_student_spin_wheel(repeat('3',64)) as w2 \gset
+select pg_temp.expect((:'w2'::jsonb->>'wheels')::int = 0, '2e roue : plus aucune restante');
+select pg_temp.expect_fail('select public.lab_student_spin_wheel(repeat(''3'',64))', '3e roue refusée (aucune restante)');
+reset role;
+select pg_temp.expect((select test_coins from public.lab_calc_progress where student_id = '53000000-0000-0000-0000-000000000003') = (:'w1'::jsonb->>'coins')::int + (:'w2'::jsonb->>'coins')::int + 2 and (select wheels_used from public.lab_calc_progress where student_id = '53000000-0000-0000-0000-000000000003') = 2, 'pièces de test = lots des 2 roues (+2 déjà là), 2 roues utilisées');
+select pg_temp.expect((select pending_coins from public.student_progress where student_id = '53000000-0000-0000-0000-000000000003') = 3, 'S3 : vrai portefeuille inchangé (monnaie commune coupée)');
+-- monnaie commune : le lot va dans pending_coins
+update public.app_settings set value = '{"enabled": true, "shared_wallet": true}' where key = 'lab_calcul';
+update public.lab_calc_progress set progress = '{"levels":{"nombres:n1":{"ok":2},"addition:a1":{"ok":2},"addition:a2":{"ok":2}}}'::jsonb where student_id = '53000000-0000-0000-0000-000000000003';
+set role anon; select set_config('request.jwt.claim.sub','',false) \gset
+select public.lab_student_spin_wheel(repeat('3',64)) as w3 \gset
+reset role;
+select pg_temp.expect((:'w3'::jsonb->>'shared')::boolean and (select pending_coins from public.student_progress where student_id = '53000000-0000-0000-0000-000000000003') = 3 + (:'w3'::jsonb->>'coins')::int, 'monnaie commune : le lot est crédité dans pending_coins');
+select pg_temp.expect((select progress from public.student_progress where student_id = '53000000-0000-0000-0000-000000000003') = '{}'::jsonb, 'progression de lecture non réécrite');
 \o
