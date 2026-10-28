@@ -166,6 +166,9 @@
   body.mode-student .bottom-nav .panel-nav[aria-current="page"] { background: #05524f; border-color: #05524f; color: #fff; font-weight: 800; }
   body.mode-student .bottom-nav .panel-nav[aria-current="page"] * { color: #fff; }
   body.mode-student .bottom-nav .panel-nav[aria-current="page"] .pn-ico { filter: brightness(0) invert(1); }
+  /* cadeau du maître(sse) */
+  .gift-banner { position: fixed; left: 50%; top: 18%; transform: translateX(-50%); z-index: 9998; cursor: pointer; padding: 14px 26px; text-align: center; color: var(--ink); background: var(--card); border: 3px solid #f5c542; border-radius: 20px; box-shadow: 0 12px 34px rgba(0,0,0,.45); }
+  .gift-banner .gb-title { font: 700 1.5rem Fredoka, Figtree, system-ui, sans-serif; } .gift-banner .gb-coins { font-weight: 800; font-size: 1.4rem; margin: 4px 0; } .gift-banner .gb-sub { font-weight: 600; opacity: .85; }
   /* formulaire « Changer mon code secret » (mêmes règles que le Zoo de Lecture) */
   .pin-dialog { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px; background: rgba(15, 18, 28, .55); }
   .pin-card { width: min(440px, 100%); max-height: calc(100dvh - 32px); overflow: auto; padding: 22px 20px 20px; color: var(--ink); background: var(--card); border: 2px solid var(--line); border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,.35); }
@@ -359,7 +362,7 @@
     var box = $("view"); clear(box);
     ({ home: home, nombres: function (b) { levels(b, "nombres"); }, addition: function (b) { levels(b, "addition"); }, soustraction: function (b) { levels(b, "soustraction"); },
        boutique: function (b) { zooFrame(b, "boutique"); }, jeux: function (b) { zooFrame(b, "jeux"); }, cartes: numsView, reconnues: calcsView, progres: progressView, roue: function () { wheelScreen(function () { goTo("home"); }); } })[v](box);
-    renderPanels(); window.scrollTo(0, 0);
+    renderPanels(); window.scrollTo(0, 0); claimGifts();
   }
 
   /* ===== Boutique et salle d'arcade : espaces PARTAGÉS =====
@@ -629,10 +632,34 @@
     row.appendChild(go); row.appendChild(out); c.appendChild(row); ov.appendChild(c); document.body.appendChild(ov); go.focus();
   }
   /* Pièces gagnées : le serveur les met de côté dans le portefeuille du Zoo ; on les reprend tout de suite (même mécanisme que les cadeaux), sinon le Zoo de Lecture le fera */
+  var claiming = 0;   /* reprise de NOS pièces en cours : claimGifts attend, pour ne pas les prendre pour un cadeau */
   function claimCoins(retry) {
+    if (!retry) claiming++;
     rpc("student_get_progress_v2", { p_token: token }).then(function (r) { return rpc("student_claim_coins", { p_token: token, p_version: r.version }); })
       .then(function (c) { if (c && c.coins != null) { S.coins = Math.max(0, Math.floor(Number(c.coins) || 0)); renderPanels(); } })
-      .catch(function () { if (!retry) setTimeout(function () { claimCoins(true); }, 400); });
+      .then(function () { claiming--; }, function () { if (!retry) setTimeout(function () { claimCoins(true); }, 400); else claiming--; });
+  }
+  /* Cadeau du maître(sse) : pièces en attente sur le serveur, reprises à l'arrivée sur chaque écran et au retour sur la page ; la bulle s'affiche ICI, là où l'élève se trouve */
+  var giftsBusy = false, giftsAt = 0;
+  function claimGifts(force) {
+    if (!token || giftsBusy || claiming || (!force && Date.now() - giftsAt < 10000)) return;
+    giftsBusy = true; giftsAt = Date.now();
+    rpc("student_get_progress_v2", { p_token: token }).then(function (r) { return rpc("student_claim_coins", { p_token: token, p_version: r.version }); })
+      .then(function (c) {
+        var n = Math.floor(Number(c && c.claimed) || 0);
+        if (n > 0) { S.coins = Math.max(0, Math.floor(Number(c.coins) || 0)); renderPanels(); showGift(n); }
+      }).catch(function () {}).then(function () { giftsBusy = false; });
+  }
+  function showGift(n) {
+    toast("🎁 Ton maître(sse) t’a donné " + n + (n > 1 ? " pièces d’or !" : " pièce d’or !"));
+    var old = document.getElementById("gift-banner"); if (old) old.remove();
+    var box = el("div", "gift-banner"); box.id = "gift-banner"; box.setAttribute("role", "status");
+    box.appendChild(el("div", "gb-title", "Cadeau !"));
+    var l = el("div", "gb-coins"); l.appendChild(el("span", "gold-coin")); l.appendChild(document.createTextNode(" +" + n + (n > 1 ? " pièces d’or" : " pièce d’or"))); box.appendChild(l);
+    box.appendChild(el("div", "gb-sub", "Ton maître(sse) t’a fait un cadeau."));
+    box.addEventListener("click", function () { box.remove(); });
+    document.body.appendChild(box); setTimeout(function () { box.remove(); }, 6000);
+    if (window.ZooFx) [784, 1047, 1319, 1568].forEach(function (f, k) { ZooFx.tone(f, k * 0.09, 0.2, "triangle", 0.15); });
   }
   /* Étape suivante : celle qui suit dans la liste (si elle est ouverte à l'élève), sinon la première étape pas encore réussie ; null s'il n'y en a pas d'autre */
   function nextStepFor(act, lv) {
@@ -874,6 +901,8 @@
     var me = $("me-menu"); if (!me.hidden && !(ev.target.closest && ev.target.closest("#bn-me"))) me.hidden = true;
   });
   $("bn-me").addEventListener("click", function (ev) { ev.stopPropagation(); var m = $("me-menu"); m.hidden = !m.hidden; this.setAttribute("aria-expanded", String(!m.hidden)); });
+  document.addEventListener("visibilitychange", function () { if (!document.hidden && !R) claimGifts(); });
+  window.addEventListener("focus", function () { if (!R) claimGifts(); });
   function logout() { try { sessionStorage.removeItem("zoo_student_token"); sessionStorage.removeItem("zoo_student_name"); } catch (e) {} location.href = "eleve.html"; }
   $("btn-logout").addEventListener("click", logout); $("me-logout").addEventListener("click", logout);
   /* Changer son code secret : ancien code, nouveau code deux fois ; le serveur vérifie tout (student_change_pin, comme dans le Zoo de Lecture) */
