@@ -128,3 +128,4 @@ Tests : `labo-calcul-test.html?who=ok&all=1` (+ `&egg=addition:a7`, `&order=1`).
 * **Série ratée sur une étape déjà à 2 étoiles** : plus de « Rejouer » en principal ; message « Presque ! Cette étape est déjà maîtrisée » et **« Étape suivante » en principal**.
 * **« Étape suivante »** = l'étape qui suit dans la liste de l'enseignant (même déjà réussie), sinon la première pas encore réussie ; « Autre étape » seulement s'il n'y en a vraiment plus.
 * **Réponse du serveur perdue puis « Réessayer »** : le serveur répond « déjà enregistré » sans résultat ; le client relisait un état périmé et affichait un faux « à refaire ». Il relit maintenant l'état réel (`lab_student_state`). Test : `?lost=1`.
+* **Survol** : au survol d'une case de réponse le texte devient foncé (#0b3b39) sur le fond clair, lisible en thème clair comme sombre (contraste 10,5:1 ; avant : texte blanc sur fond clair en thème sombre).
