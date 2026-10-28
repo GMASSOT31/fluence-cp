@@ -136,6 +136,11 @@
   .cwheel-ptr { position: absolute; top: -26px; left: 50%; transform: translateX(-50%); font-size: 2.2rem; line-height: 1; color: var(--ink); z-index: 3; }
   .cwheel-win { font-family: Fredoka, Figtree, sans-serif; font-size: 2rem; font-weight: 700; color: var(--calc-d); min-height: 2.4rem; }
   .nline b.st { outline: 3px solid var(--ink); outline-offset: -3px; } .nline b.s1 { background: #cfeeed; border-color: #0b7f7d; } .nline b.s2 { background: #ffe2b8; border-color: #c9740c; }
+  /* aide « pour arriver à 10 » : deux mains, a doigts levés ; la taille suit la hauteur de la fenêtre (portable, tablette, téléphone) */
+  .hands { display: block; margin: 4px auto 2px; height: clamp(104px, 19vh, 220px); width: auto; max-width: 94vw; }
+  .hands .fg { fill: #f7c9a0; stroke: #7a4b2a; stroke-width: 3; } .hands .dn { fill: #e2a878; } .hands .palm { fill: #f7c9a0; stroke: #7a4b2a; stroke-width: 3; }
+  .hands.full .dn { fill: #ffd23f; stroke: #8a5a00; stroke-width: 4; animation: dn-pulse 1.1s ease-in-out 3; }
+  @keyframes dn-pulse { 50% { fill: #fff1a8; } } @media (prefers-reduced-motion: reduce) { .hands.full .dn { animation: none; } }
   .hint { margin: 4px auto 8px; max-width: 640px; font-weight: 700; text-align: center; } .hint .h1 { color: #0b7f7d; } .hint .h2 { color: #b45f06; }
   .pairs { display: grid; gap: 4px 2px; justify-items: center; width: 100%; max-width: 560px; overflow: hidden; margin: 6px auto; padding: 8px; border: 2px dashed var(--line); border-radius: 14px; } .pairs span { line-height: 1.1; } .pairs .ghost { width: 1em; height: 1em; border: 2px dashed var(--line); border-radius: 50%; opacity: .6; } .pairs .extra { background: #ffe2b8; border-radius: 50%; }
   .nline b { min-width: 34px; padding: 6px 0; border-radius: 8px; background: var(--card); border: 2px solid var(--line); font-size: 1rem; }
@@ -487,6 +492,26 @@
     if (q.type === "soustraction") return { from: q.a, steps: q.b, to: q.a - q.b, kind: "sub" };
     return null;
   }
+  /* Deux mains : `up` doigts levés (pouce puis index… sur la 1re main, puis la 2e), les autres baissés (repliés) ; full = les doigts baissés sont mis en couleur */
+  function handsSvg(up, full) {
+    function hand(n, mirror) {
+      var xs = [118, 88, 58, 28], len = { 118: 76, 88: 84, 58: 76, 28: 58 }, o = '<g' + (mirror ? ' transform="translate(330 0) scale(-1 1)"' : '') + '>', k, raised = [];
+      for (k = 0; k < 5; k++) raised.push(k < n);   /* ordre : pouce, index, majeur, annulaire, auriculaire */
+      xs.forEach(function (cx, i) {
+        if (raised[i + 1]) o += '<rect class="fg up" x="' + (cx - 11) + '" y="' + (100 - len[cx]) + '" width="22" height="' + (len[cx] + 20) + '" rx="11"/>';
+        else o += '<rect class="fg dn" x="' + (cx - 11) + '" y="86" width="22" height="34" rx="11"/>';
+      });
+      o += raised[0] ? '<rect class="fg up" x="-11" y="-58" width="22" height="76" rx="11" transform="translate(128 154) rotate(34)"/>'
+                     : '<rect class="fg dn" x="-11" y="-10" width="22" height="34" rx="11" transform="translate(118 140) rotate(72)"/>';
+      return o + '<rect class="palm" x="10" y="100" width="130" height="78" rx="30"/></g>';
+    }
+    return '<svg class="hands' + (full ? ' full' : '') + '" viewBox="0 0 330 182" role="img" aria-label="' + up + (up > 1 ? " doigts levés" : " doigt levé") + ' sur deux mains">' + hand(Math.min(up, 5), false) + hand(Math.max(0, up - 5), true) + '</svg>';
+  }
+  function aidVisual(q, full) {
+    var sp = split(q);
+    if (sp && sp.kind === "gap" && q.hole) { var d = el("div"); d.innerHTML = handsSvg(q.a, full); return d.firstChild; }   /* « pour arriver à 10 » : les doigts, pas la file de nombres */
+    return numberLine(q, full);
+  }
   function numberLine(q, full) {
     var sp = split(q), cap = (sp && sp.kind === "tu") ? 0 : Math.max(10, Math.min(20, q.a + q.b + 2)), l = el("div", "nline"), k;
     if (!cap) { for (k = 10; k <= 100; k += 10) l.appendChild(el("b", "", String(k))); return l; }
@@ -512,6 +537,13 @@
     var sp = split(q), h = el("p", "hint"), W = E.words, say; if (!sp) return { node: null, say: "" };
     function out(t, v) { h.textContent = t; return { node: h, say: v || t }; }
     function eqSpan(t) { h.appendChild(el("span", "h1", t)); }
+    if (sp.kind === "gap" && q.hole) {   /* complément à 10 : les doigts levés et baissés des deux mains */
+      var up = q.a, dn = q.total - q.a, ask = up ? "si tu lèves seulement " + up + (up > 1 ? " doigts" : " doigt") : "si tu ne lèves aucun doigt",
+          askW = up ? "si tu lèves seulement " + W(up) + (up > 1 ? " doigts" : " doigt") : "si tu ne lèves aucun doigt";
+      return full ? out(up + (up > 1 ? " doigts levés" : " doigt levé") + " + " + dn + (dn > 1 ? " doigts baissés" : " doigt baissé") + " = 10 doigts : " + up + " + " + dn + " = 10.",
+                        (up ? W(up) + (up > 1 ? " doigts levés" : " doigt levé") : "Aucun doigt levé") + ", " + W(dn) + (dn > 1 ? " doigts baissés" : " doigt baissé") + ". " + W(up) + " plus " + W(dn) + ", dix.")
+                  : out("Combien de tes doigts sont baissés " + ask + " ?", "Combien de tes doigts sont baissés " + askW + " ?");
+    }
     if (sp.kind === "gap") {
       var g = q.hole ? q.total - q.a : q.a - q.b;
       return full ? out("De " + sp.from + " à " + sp.to + " : " + nb(g, "pas", "pas") + ".", "De " + W(sp.from) + " à " + W(sp.to) + " : " + W(g) + " pas.")
@@ -565,7 +597,7 @@
         if (!helped) { helped = true; R.helps++; }
         if (lineBox.firstChild && (!full || helpFull)) return;
         clear(lineBox); helpFull = !!full;
-        var w = el("div"), ht = helpText(q, helpFull); w.appendChild(numberLine(q, helpFull)); if (ht.node) w.appendChild(ht.node); lineBox.appendChild(w); hb.setAttribute("aria-expanded", "true");
+        var w = el("div"), ht = helpText(q, helpFull); w.appendChild(aidVisual(q, helpFull)); if (ht.node) w.appendChild(ht.node); lineBox.appendChild(w); hb.setAttribute("aria-expanded", "true");
         if (speak && S.settings.voice !== false) { var tx = (lead || "") + ht.say; if (tx) V.speak(tx); }
       };
       hb.addEventListener("click", function () {
