@@ -129,6 +129,12 @@
   }
   @media (max-width: 340px) { body.mode-student #zoo-top-stats .zoo-top-stat:nth-child(2) { display: none; } }   /* très petit écran (320 px) : on garde pièces et niveaux, les parties sont dans la salle de jeux */
   @media (max-width: 350px) { body.mode-student header .zoo-hero h1 { font-size: 1rem; } body.mode-student .zoo-top-stats { right: 3px; gap: 2px; } }   /* petit téléphone : la place revient aux 5 pastilles */
+  /* roue de la 2e étoile */
+  .wheel-go { background: linear-gradient(135deg, #f5a623, #e2572c) !important; color: #fff !important; border-color: #e2572c !important; }
+  .cwheel-wrap { --size: min(78vw, 300px, 42vh); position: relative; width: var(--size); margin: 30px auto 18px; }
+  .cwheel { width: 100%; aspect-ratio: 1; border-radius: 50%; box-shadow: 0 0 0 6px var(--ink); will-change: transform; } .cwheel svg { display: block; width: 100%; height: 100%; }
+  .cwheel-ptr { position: absolute; top: -26px; left: 50%; transform: translateX(-50%); font-size: 2.2rem; line-height: 1; color: var(--ink); z-index: 3; }
+  .cwheel-win { font-family: Fredoka, Figtree, sans-serif; font-size: 2rem; font-weight: 700; color: var(--calc-d); min-height: 2.4rem; }
   .nline b.st { outline: 3px solid var(--ink); outline-offset: -3px; } .nline b.s1 { background: #cfeeed; border-color: #0b7f7d; } .nline b.s2 { background: #ffe2b8; border-color: #c9740c; }
   .hint { margin: 4px auto 8px; max-width: 640px; font-weight: 700; text-align: center; } .hint .h1 { color: #0b7f7d; } .hint .h2 { color: #b45f06; }
   .pairs { display: grid; gap: 4px 2px; justify-items: center; width: 100%; max-width: 560px; overflow: hidden; margin: 6px auto; padding: 8px; border: 2px dashed var(--line); border-radius: 14px; } .pairs span { line-height: 1.1; } .pairs .ghost { width: 1em; height: 1em; border: 2px dashed var(--line); border-radius: 50%; opacity: .6; } .pairs .extra { background: #ffe2b8; border-radius: 50%; }
@@ -250,7 +256,7 @@
   "use strict";
   var CFG = window.LABO_CALCUL || { enabled: false }, E = window.CalcEngine, V = window.CalcVoice;
   var token = null, client = null, R = null, view = "home", toastTimer = null;
-  var S = { name: "", avatar: "🧑", levels: {}, nums: {}, calcs: {}, coins: 0, credits: 0, settings: {} };
+  var S = { name: "", avatar: "🧑", levels: {}, nums: {}, calcs: {}, coins: 0, credits: 0, settings: {}, wheels: 0 };
   var ACT = {
     nombres: { icon: "👂", title: "ÉCOUTER", sub: "J’écoute un nombre et je trouve comment il s’écrit", say: "J’écoute le nombre et je trouve comment il s’écrit." },
     addition: { icon: "➕", title: "Addition", sub: "Je calcule des additions", say: "Je calcule des additions." },
@@ -308,7 +314,7 @@
   function load(st) {
     var p = st.progress || {};
     S.levels = p.levels || {}; S.nums = p.nums || {}; S.calcs = p.calcs || {};
-    S.settings = st.settings || {};
+    S.settings = st.settings || {}; S.wheels = Math.max(0, Math.floor(Number(st.wheels) || 0));
   }
   function enabledLevels(act) {
     var l = S.settings.levels && S.settings.levels[act];
@@ -350,7 +356,7 @@
     var me = $("me-menu"); me.hidden = true; $("bn-me").setAttribute("aria-expanded", "false");
     var box = $("view"); clear(box);
     ({ home: home, nombres: function (b) { levels(b, "nombres"); }, addition: function (b) { levels(b, "addition"); }, soustraction: function (b) { levels(b, "soustraction"); },
-       boutique: function (b) { zooFrame(b, "boutique"); }, jeux: function (b) { zooFrame(b, "jeux"); }, cartes: numsView, reconnues: calcsView, progres: progressView })[v](box);
+       boutique: function (b) { zooFrame(b, "boutique"); }, jeux: function (b) { zooFrame(b, "jeux"); }, cartes: numsView, reconnues: calcsView, progres: progressView, roue: function () { wheelScreen(function () { goTo("home"); }); } })[v](box);
     renderPanels(); window.scrollTo(0, 0);
   }
 
@@ -393,6 +399,7 @@
     pet.addEventListener("click", function () { say(speak); }); row.appendChild(pet);
     var col = el("div", "home-col");
     function sayBtn(text, label) { var b = el("button", "secondary home-say", "🔊"); b.type = "button"; b.setAttribute("aria-label", label); b.title = label; b.addEventListener("click", function () { say(text); }); return b; }
+    if (S.wheels > 0) { var wr = el("div", "home-act-row"), wb = el("button", "primary big-btn home-next wheel-go", "🎡 Lance ta roue !"); wb.type = "button"; wb.addEventListener("click", function () { goTo("roue"); }); wr.appendChild(wb); wr.appendChild(sayBtn("Une roue t’attend ! Touche le gros bouton orange.", "Écouter")); col.appendChild(wr); }
     var mr = el("div", "home-act-row"), go = el("button", "primary big-btn home-next", "🏋️ Je m’entraîne"); go.type = "button";
     go.appendChild(el("small", "home-sub", ACT[n.main.act].icon + " " + ACT[n.main.act].title + " : " + (E.levelInfo(n.main.act, n.main.id) || {}).label));
     go.addEventListener("click", function () { startRound(n.main.act, n.main.id); });
@@ -619,6 +626,12 @@
     go.addEventListener("click", close); out.addEventListener("click", function () { close(); var a = R && R.act; V.stop(); goTo(a || "home"); });
     row.appendChild(go); row.appendChild(out); c.appendChild(row); ov.appendChild(c); document.body.appendChild(ov); go.focus();
   }
+  /* Pièces gagnées : le serveur les met de côté dans le portefeuille du Zoo ; on les reprend tout de suite (même mécanisme que les cadeaux), sinon le Zoo de Lecture le fera */
+  function claimCoins(retry) {
+    rpc("student_get_progress_v2", { p_token: token }).then(function (r) { return rpc("student_claim_coins", { p_token: token, p_version: r.version }); })
+      .then(function (c) { if (c && c.coins != null) { S.coins = Math.max(0, Math.floor(Number(c.coins) || 0)); renderPanels(); } })
+      .catch(function () { if (!retry) setTimeout(function () { claimCoins(true); }, 400); });
+  }
   /* Étape suivante : celle qui suit dans la liste (si elle est ouverte à l'élève), sinon la première étape pas encore réussie ; null s'il n'y en a pas d'autre */
   function nextStepFor(act, lv) {
     var list = enabledLevels(act), vis = E.visibleLevels(act, list, S.levels), i = list.indexOf(lv), c = i >= 0 ? list[i + 1] : null;
@@ -680,14 +693,10 @@
         b("Accueil", "secondary big-btn", function () { goTo("home"); });
         renderPanels();
       }
-      if (res.success && Math.min(after, 2) > Math.min(before, 2)) showEvolution({ act: act, lv: info2, from: { got: Math.min(before, 2), total: 2 }, to: { got: Math.min(after, 2), total: 2 }, onClose: bilan });
+      var mastered = res.success && res.inserted && after >= 2 && before < 2;   /* 2e étoile : une roue à tourner */
+      if (mastered) S.wheels++;
+      if (res.success && Math.min(after, 2) > Math.min(before, 2)) showEvolution({ act: act, lv: info2, from: { got: Math.min(before, 2), total: 2 }, to: { got: Math.min(after, 2), total: 2 }, onClose: function () { if (mastered) wheelScreen(bilan); else bilan(); } });
       else bilan();
-    }
-    /* Pièces gagnées : le serveur les met de côté dans le portefeuille du Zoo ; on les reprend tout de suite (même mécanisme que les cadeaux), sinon le Zoo de Lecture le fera */
-    function claimCoins(retry) {
-      rpc("student_get_progress_v2", { p_token: token }).then(function (r) { return rpc("student_claim_coins", { p_token: token, p_version: r.version }); })
-        .then(function (c) { if (c && c.coins != null) { S.coins = Math.max(0, Math.floor(Number(c.coins) || 0)); renderPanels(); } })
-        .catch(function () { if (!retry) setTimeout(function () { claimCoins(true); }, 400); });
     }
     function send() {
       rpc("lab_student_submit_round", { p_token: token, p_round: R.id, p_activity: R.act, p_level: R.lv, p_correct: g, p_total: n, p_stats: stats }).then(done).catch(function () {
@@ -814,6 +823,47 @@
       });
     });
     box.appendChild(card);
+  }
+
+  /* ===== La roue (2e étoile d'une étape) : le lot est tiré par le serveur, la roue ne fait que l'afficher ===== */
+  var WHEEL = [[1, "#9fd6b0"], [2, "#f5c542"], [1, "#b98be6"], [3, "#f0904a"], [5, "#f5c542"], [2, "#8fc1f0"], [10, "#e47fd0"], [3, "#b98be6"]];   /* mêmes valeurs que sur le serveur */
+  function wheelSvg() {
+    var n = WHEEL.length, step = 360 / n, out = '<svg viewBox="-100 -100 200 200" aria-hidden="true">';
+    WHEEL.forEach(function (sl, i) {
+      var a0 = (-90 + i * step) * Math.PI / 180, a1 = (-90 + (i + 1) * step) * Math.PI / 180, am = -90 + i * step + step / 2, flip = am > 90;
+      out += '<path d="M0 0 L' + (100 * Math.cos(a0)).toFixed(2) + ' ' + (100 * Math.sin(a0)).toFixed(2) + ' A100 100 0 0 1 ' + (100 * Math.cos(a1)).toFixed(2) + ' ' + (100 * Math.sin(a1)).toFixed(2) + ' Z" style="fill:' + sl[1] + '" stroke="#1b2433" stroke-width="1.5"/>';
+      out += '<text transform="rotate(' + (flip ? am + 180 : am) + ') translate(' + (flip ? -90 : 90) + ' 0)" text-anchor="' + (flip ? "start" : "end") + '" dominant-baseline="central" style="fill:#1b2433;font-size:15px;font-weight:800;font-family:Figtree,system-ui,sans-serif">' + sl[0] + ' 🪙</text>';
+    });
+    return out + '<circle r="9" style="fill:#1b2433"/></svg>';
+  }
+  function wheelScreen(onDone) {
+    V.stop(); var box = $("view"); clear(box);
+    var card = el("div", "card calc-card stage"), reduce = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    card.appendChild(el("h2", "", "🎡 La roue des récompenses")); var msg = el("p", "msg", "Tu as gagné une roue ! Touche le bouton pour la lancer."); msg.setAttribute("role", "status"); card.appendChild(msg);
+    var wrap = el("div", "cwheel-wrap"), wheel = el("div", "cwheel"); wheel.innerHTML = wheelSvg(); wrap.appendChild(el("div", "cwheel-ptr", "▼")); wrap.appendChild(wheel); card.appendChild(wrap);
+    var win = el("div", "cwheel-win"); card.appendChild(win);
+    var row = el("div", "crow"), spin = el("button", "primary big-btn", "🎡 Lancer la roue"), done = el("button", "primary big-btn", "Continuer"); spin.type = done.type = "button"; done.hidden = true;
+    row.appendChild(spin); row.appendChild(done); card.appendChild(row); box.appendChild(card);
+    var turns = 0;
+    done.addEventListener("click", function () { V.stop(); (onDone || function () { goTo("home"); })(); });
+    spin.addEventListener("click", function () {
+      spin.disabled = true; msg.className = "msg"; msg.textContent = "La roue tourne…"; win.textContent = ""; done.hidden = true;
+      rpc("lab_student_spin_wheel", { p_token: token }).then(function (r) {
+        var k = Math.max(0, Math.min(7, Math.floor(Number(r.slice) || 0))); turns++;
+        var target = 360 * 5 * turns + (360 - (k * 45 + 22.5)) + (Math.random() * 20 - 10);
+        wheel.style.transition = reduce ? "none" : "transform 4.2s cubic-bezier(.17,.67,.2,1)"; wheel.style.transform = "rotate(" + target + "deg)";
+        setTimeout(function () {
+          var c = Math.floor(Number(r.coins) || 0), word = c + (c > 1 ? " pièces d’or" : " pièce d’or");
+          S.wheels = Math.max(0, Math.floor(Number(r.wheels) || 0));
+          msg.className = "msg good"; msg.textContent = "Bravo ! Tu gagnes " + word + " !"; win.textContent = "+" + c + " 🪙";
+          if (window.ZooFx) { if (!reduce) ZooFx.confetti(c >= 5 ? 130 : 70, true); [523, 659, 784, 1047].forEach(function (f, i) { ZooFx.tone(f, i * 0.09, 0.25, "triangle", 0.12); }); }
+          if (S.settings.voice !== false) V.speak("Et c’est… " + word + " ! Bravo !");
+          if (r.shared) claimCoins(); else renderPanels();
+          if (S.wheels > 0) { spin.disabled = false; spin.textContent = "🎡 Relancer la roue"; spin.hidden = false; } else spin.hidden = true;
+          done.hidden = false; done.focus({ preventScroll: true });
+        }, reduce ? 60 : 4400);
+      }).catch(function () { spin.disabled = false; msg.className = "msg bad"; msg.textContent = "Un petit souci de connexion. Touche encore le bouton."; });
+    });
   }
 
   /* ===== Navigation ===== */

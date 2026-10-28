@@ -1,7 +1,7 @@
 /* Faux client Supabase du LABO DE CALCUL (aucun appel réseau). Reproduit les règles de supabase/migrations/20261112_labo_calcul.sql :
    autorisation, interrupteur, tours idempotents, pièces de test calculées côté « serveur », plafond de 10 séries récompensées par jour.
    Monnaie commune : activée par défaut (?shared=0 la coupe → pièces de test). Options d'URL : ?who=ok (élève autorisé, défaut) | refuse (élève non autorisé) | none (pas de jeton) ; ?off=1 (interrupteur serveur coupé) ;
-   ?role=admin (défaut) | teacher (autorisé) | refuse (enseignant non autorisé) | out (non connecté) ; ?lost=1 (la 1re série est enregistrée mais la réponse se perd) ; ?egg=addition:a7 (retire la réussite de cette étape) ; ?order=1 (ordre n3, n1, n2, n4) ; ?seed=gap (trou dans l'ordre + réussite hors périmètre) ; ?all=1 (toutes les étapes ouvertes et réussies, pour tester les aides) ; ?req=1 (une demande d'enseignant en attente chez l'admin) ; ?asked=1 (l'enseignant a déjà demandé) ; ?fail=1 (le rangement d'une série échoue une fois).
+   ?role=admin (défaut) | teacher (autorisé) | refuse (enseignant non autorisé) | out (non connecté) ; ?lost=1 (la 1re série est enregistrée mais la réponse se perd) ; ?wheel=1 (une roue à tourner) ; ?slice=6 (la roue tombe sur la case 6) ; ?egg=addition:a7 (retire la réussite de cette étape) ; ?order=1 (ordre n3, n1, n2, n4) ; ?seed=gap (trou dans l'ordre + réussite hors périmètre) ; ?all=1 (toutes les étapes ouvertes et réussies, pour tester les aides) ; ?req=1 (une demande d'enseignant en attente chez l'admin) ; ?asked=1 (l'enseignant a déjà demandé) ; ?fail=1 (le rangement d'une série échoue une fois).
    Expose window.__lab (journal des appels, état). */
 (function () {
   var q = location.search, opt = function (k, d) { var m = new RegExp("[?&]" + k + "=(\\w+)").exec(q); return m ? m[1] : d; };
@@ -25,6 +25,10 @@
     lab.settings = { levels: { nombres: ["n3", "n1", "n2", "n4"], addition: ["a1", "a2"], soustraction: ["s1"] } };
   }
   if (/[?&]egg=([a-z]+:[a-z0-9]+)/.test(q)) delete lab.me.levels[RegExp.$1];   /* ?all=1&egg=addition:a7 : toutes réussies sauf celle-ci (œuf à faire éclore) */
+  function earnedWheels() { var n = 0; for (var k in lab.me.levels) if ((lab.me.levels[k].ok || 0) >= 2) n++; return n; }
+  function wheelsLeft() { return Math.max(0, earnedWheels() - lab.wheelsUsed); }
+  lab.wheelsUsed = earnedWheels() - (/[?&]wheel=1/.test(q) ? 1 : 0);   /* roues déjà gagnées au chargement = considérées comme utilisées (comme la migration) ; ?wheel=1 : une roue à tourner */
+  if (/[?&]slice=(\d)/.test(q)) lab.nextSlice = +RegExp.$1;
   function err(m) { return { message: m, code: "42501" }; }
   function studentAllowed() { return lab.enabled && who === "ok"; }
   function teacherAllowed() { return lab.enabled && (role === "admin" || role === "teacher"); }
@@ -40,7 +44,13 @@
       var al = teacherAllowed(); if (role === "refuse" && lab.enabled) return { allowed: false, role: "teacher", requestable: true, requested: lab.myRequested };
       return { allowed: al, role: role === "admin" ? "admin" : "teacher", requestable: false, requested: false };
     },
-    lab_student_state: function () { needStudent(); return mix({ progress: { levels: lab.me.levels, hist: lab.me.hist, nums: lab.me.nums, calcs: lab.me.calcs }, settings: lab.settings }); },
+    lab_student_state: function () { needStudent(); return mix({ progress: { levels: lab.me.levels, hist: lab.me.hist, nums: lab.me.nums, calcs: lab.me.calcs }, settings: lab.settings, wheels: wheelsLeft() }); },
+    lab_student_spin_wheel: function () {
+      needStudent(); if (wheelsLeft() <= 0) throw { message: "Aucune roue à tourner" };
+      var PR = [1, 2, 1, 3, 5, 2, 10, 3], k = typeof lab.nextSlice === "number" ? lab.nextSlice : Math.floor(Math.random() * 8), c = PR[k]; lab.wheelsUsed++;
+      if (lab.shared) lab.pending = Math.min(lab.pending + c, 10000); else lab.me.coins += c;
+      return { slice: k, coins: c, shared: !!lab.shared, wheels: wheelsLeft(), test_coins: lab.me.coins };
+    },
     student_session_profile: function () { needStudent(); return { student_id: "s1", nickname: /[?&]name=(\w+)/.test(q) ? RegExp.$1 : "Léa" }; },
     student_get_progress_v2: function () { needStudent(); return { progress: { avatar: "🦊", coins: lab.realWallet.coins, credits: lab.realWallet.credits }, version: lab.version }; },
     student_get_teacher_settings: function () { needStudent(); return { sfx: true }; },
