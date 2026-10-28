@@ -87,18 +87,32 @@
   /* téléphone : le menu « Moi » ne garde que Boutique et Déconnexion (le reste n'est pas indispensable ; la bascule du bandeau ramène à la lecture) */
   @media (max-width: 600px) { #me-menu [data-go="cartes"], #me-menu [data-go="reconnues"], #me-menu [data-go="progres"], #me-menu #me-lecture { display: none !important; } }
   @media (min-width: 601px) and (max-width: 880px) { body.mode-student .bottom-nav .bn-me { display: flex; } body.mode-student .me-menu:not([hidden]) { display: flex; flex-direction: column; gap: 8px; position: fixed; right: 8px; bottom: calc(var(--bn-h, 76px) + 8px); z-index: 40; padding: 10px; background: var(--card); border: 2px solid var(--line); border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,.35); } body.mode-student .me-menu button { min-height: 48px; padding: 10px 16px; border-radius: 12px; border: 2px solid var(--line); background: var(--card); color: var(--ink); font: 700 1rem inherit; text-align: left; cursor: pointer; } body.mode-student .me-menu button[hidden] { display: none; } }   /* tablettes : le menu « Moi » donne accès à Boutique, mes nombres, progression, déconnexion */
+  /* ordinateur portable : toute la question (calcul, images, aide, réponses, message) tient dans la hauteur de la fenêtre, même avec l'aide complète */
+  @media (min-width: 881px) {
+    .exo { position: relative; padding-top: 10px; padding-bottom: 8px; }
+    .exo > .home-small:first-child { position: absolute; left: 12px; top: 10px; z-index: 2; }
+    .exo .dots { margin: 4px 0 0; }
+    .exo .eq { font-size: clamp(2rem, 8vh, 3.8rem); margin: 2px 0; }
+    .exo .pic { font-size: clamp(1.3rem, 4.2vh, 2rem); margin: 2px auto 4px; gap: 2px 10px; }
+    .exo .pic .grp { padding: 3px 8px; }
+    .exo .crow { margin-top: 4px; }
+    .exo .nline { margin: 2px auto; padding: 2px; } .exo .hint { margin: 2px auto 4px; }
+    .exo .choices { gap: clamp(6px, 1.4vh, 12px); margin: 6px auto; }
+    .exo .choice { min-height: clamp(54px, 10.5vh, 84px); font-size: clamp(1.8rem, 5.4vh, 2.4rem); }
+    .exo .msg { text-align: center; min-height: 1.5em; font-size: clamp(1rem, 2.6vh, 1.15rem); margin: 2px 0; }
+  }
   /* TBI / grands écrans : pendant un exercice, tout est lisible de loin (panneaux latéraux déjà masqués par « listen-focus ») */
-  @media (min-width: 1400px) {
+  @media (min-width: 1400px) {   /* tailles TBI, mais toujours bornées par la hauteur de la fenêtre (un portable de 1440 px de large n'est pas un TBI) */
     body.listen-focus #panel-left, body.listen-focus #panel-right, body.listen-focus header { display: none !important; }
     body.listen-focus #view .card { max-width: 1200px; margin: 0 auto; }
-    body.listen-focus .eq { font-size: 6rem; }   /* 96 px */
-    body.listen-focus .stage .muted, body.listen-focus .hint, body.listen-focus .msg { font-size: 2.2rem; line-height: 1.25; }
-    body.listen-focus .say { min-height: 130px; font-size: 2.2rem; width: min(380px, 70%); }
-    body.listen-focus .crow .home-small, body.listen-focus .home-small { font-size: 1.6rem; min-height: 64px; padding: 10px 24px; }
-    body.listen-focus .choices { max-width: 1000px; gap: 22px; } body.listen-focus .choices.c6 { max-width: 1200px; }
-    body.listen-focus .choice { min-height: 150px; font-size: 4rem; }   /* 64 px */
+    body.listen-focus .eq { font-size: max(80px, min(96px, 9.5vh)); margin: 0; }
+    body.listen-focus .stage .muted, body.listen-focus .hint, body.listen-focus .msg { font-size: max(32px, min(35px, 4vh)); line-height: 1.2; }
+    body.listen-focus .say { min-height: clamp(90px, 13vh, 130px); font-size: 2.2rem; width: min(380px, 70%); }
+    body.listen-focus .exo > .home-small:first-child, body.listen-focus .crow .home-small { font-size: max(1.2rem, min(1.6rem, 2.4vh)); min-height: clamp(48px, 6.5vh, 64px); padding: 8px 22px; }
+    body.listen-focus .choices { max-width: 1000px; gap: clamp(8px, 2vh, 22px); } body.listen-focus .choices.c6 { max-width: 1200px; }
+    body.listen-focus .choice { min-height: clamp(70px, 11.5vh, 150px); font-size: max(48px, min(64px, 6.5vh)); }
     body.listen-focus .nline b { min-width: 52px; font-size: 1.7rem; padding: 10px 0; }
-    body.listen-focus .pic { font-size: 3rem; }
+    body.listen-focus .pic { font-size: max(1.6rem, min(3rem, 4vh)); }
   }
   @media (max-width: 480px) {   /* petit téléphone : bandeau compact, la bascule et les 5 pastilles ne se chevauchent jamais */
     header .zoo-hero .brand .sub { display: none; }
@@ -519,7 +533,7 @@
   function question() {
     V.stop(); if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
     var box = $("view"); clear(box);
-    var q = R.qs[R.i], openHelp = null, helpFull = false, mistakes = 0, firstTry = true, t0 = Date.now(), answered = false, helped = false, card = el("div", "card calc-card");
+    var q = R.qs[R.i], openHelp = null, helpFull = false, mistakes = 0, firstTry = true, t0 = Date.now(), answered = false, helped = false, card = el("div", "card calc-card exo");
     R.q = q;
     var quit = el("button", "secondary home-small", "← Arrêter"); quit.type = "button"; quit.addEventListener("click", function () { if (!R.res.length) { goTo(R.act); return; } stopConfirm(); }); card.appendChild(quit);
     card.appendChild(dots());
@@ -624,7 +638,7 @@
         clear(box); var card = el("div", "card calc-card stage"), act2 = act;
         card.appendChild(el("h2", "", "Série terminée !")); card.appendChild(starsOf(after, "bstars"));
         var score = "Tu as trouvé " + g + (act2 === "nombres" ? (g > 1 ? " nombres" : " nombre") : (g > 1 ? " calculs" : " calcul")) + " du premier coup sur " + n + ".";
-        var enc = after >= 2 ? "Tu es un champion de cette étape !" : after === 1 ? "Encore une série réussie et tu gagnes la 2e étoile !" : "Réussis une série pour gagner ta première étoile !";
+        var enc = after >= 2 ? "Tu es un champion de cette étape !" : after === 1 ? "Rejoue cette étape pour gagner la 2e étoile !" : "Réussis une série pour gagner ta première étoile !";
         card.appendChild(el("p", "msg good", enc));
         var say6 = score + " " + (res.success && !res.coins ? "Ta pièce du jour est déjà gagnée, bravo ! " : "") + enc;
         if (S.settings.voice !== false) setTimeout(function () { if (document.querySelector(".bstars")) V.speak(say6); }, 400);
@@ -639,7 +653,8 @@
         function b(label, cls, fn) { var x = el("button", cls, label); x.type = "button"; x.addEventListener("click", fn); r2.appendChild(x); return x; }
         var next = E.suggestLevel(act2, enabledLevels(act2), S.levels);
         function replay() { startRound(act2, lv); }
-        if (res.success && next && next !== lv) { b("Étape suivante ➜", "primary big-btn", function () { startRound(act2, next); }); b("Rejouer", "secondary big-btn", replay); }
+        if (res.success && after === 1) { b("⭐ Rejouer pour la 2e étoile", "primary big-btn", replay); if (next && next !== lv) b("Étape suivante ➜", "secondary big-btn", function () { startRound(act2, next); }); else b("Autre étape", "secondary big-btn", function () { goTo(act2); }); }   /* 1 étoile : la 2e se gagne en rejouant CETTE étape (l'étape suivante donne une 1re étoile à un autre animal) */
+        else if (res.success && next && next !== lv) { b("Étape suivante ➜", "primary big-btn", function () { startRound(act2, next); }); b("Rejouer", "secondary big-btn", replay); }
         else if (res.success) { b("Autre étape", "primary big-btn", function () { goTo(act2); }); b("Rejouer", "secondary big-btn", replay); }
         else { b("Rejouer", "primary big-btn", replay); b("Autre étape", "secondary big-btn", function () { goTo(act2); }); }
         b("Accueil", "secondary big-btn", function () { goTo("home"); });
