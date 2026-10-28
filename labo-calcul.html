@@ -619,14 +619,33 @@
     go.addEventListener("click", close); out.addEventListener("click", function () { close(); var a = R && R.act; V.stop(); goTo(a || "home"); });
     row.appendChild(go); row.appendChild(out); c.appendChild(row); ov.appendChild(c); document.body.appendChild(ov); go.focus();
   }
+  /* Étape suivante : celle qui suit dans la liste (si elle est ouverte à l'élève), sinon la première étape pas encore réussie ; null s'il n'y en a pas d'autre */
+  function nextStepFor(act, lv) {
+    var list = enabledLevels(act), vis = E.visibleLevels(act, list, S.levels), i = list.indexOf(lv), c = i >= 0 ? list[i + 1] : null;
+    if (c && vis.indexOf(c) >= 0) return c;
+    var sg = E.suggestLevel(act, list, S.levels);
+    return sg && sg !== lv && vis.indexOf(sg) >= 0 ? sg : null;
+  }
   function finish() {
     V.stop(); var box = $("view"); clear(box);
     var n = R.qs.length, g = R.good, wait = el("div", "card calc-card stage"), stats = { replays: R.replays, helps: R.helps, ms: median(R.times), nums: R.nums, calcs: R.calcs };
     var info = el("p", "msg", "Je range ton résultat…"); wait.appendChild(el("h2", "", "Bravo, tu as fini !")); wait.appendChild(info); var row = el("div", "crow"); wait.appendChild(row); box.appendChild(wait);
     /* Ordre : d'abord l'éclosion (si un œuf doit éclore ou un animal grandir), le bilan seulement après « Continuer » ; aucun bouton du bilan n'existe avant */
     function done(res) {
-      var act = R.act, lv = R.lv, key = act + ":" + lv, before = (S.levels[key] || {}).ok || 0, info2 = E.levelInfo(act, lv);
-      if (res.inserted && res.level) {
+      var act = R.act, lv = R.lv, key = act + ":" + lv, before = (S.levels[key] || {}).ok || 0;
+      /* La série était DÉJÀ enregistrée (réponse perdue puis « Réessayer ») : le serveur ne renvoie alors ni résultat ni niveau. On relit l'état réel au lieu de croire à un échec. */
+      if (res.inserted === false && !res.level) {
+        rpc("lab_student_state", { p_token: token }).then(function (st) {
+          load(st); var a2 = (S.levels[key] || {}).ok || 0;
+          finishDone({ inserted: true, reconciled: true, success: a2 > before, coins: null, shared: false, level: S.levels[key] }, before);
+        }).catch(function () { finishDone(res, before); });
+        return;
+      }
+      finishDone(res, before);
+    }
+    function finishDone(res, before) {
+      var act = R.act, lv = R.lv, key = act + ":" + lv, info2 = E.levelInfo(act, lv);
+      if (res.inserted && res.level && !res.reconciled) {
         S.levels[key] = res.level;
         R.nums.forEach(function (x) { S.nums[x] = (S.nums[x] || 0) + 1; });
         R.calcs.forEach(function (x) { S.calcs[x] = (S.calcs[x] || 0) + 1; });
@@ -640,27 +659,28 @@
         var score = "Tu as trouvé " + g + (act2 === "nombres" ? (g > 1 ? " nombres" : " nombre") : (g > 1 ? " calculs" : " calcul")) + " du premier coup sur " + n + ".";
         var enc = after >= 2 ? "Tu es un champion de cette étape !" : after === 1 ? "Rejoue cette étape pour gagner la 2e étoile !" : "Réussis une série pour gagner ta première étoile !";
         card.appendChild(el("p", "msg good", enc));
-        var say6 = score + " " + (res.success && !res.coins ? "Ta pièce du jour est déjà gagnée, bravo ! " : "") + enc;
+        var say6 = score + " " + (res.success && res.coins === 0 ? "Ta pièce du jour est déjà gagnée, bravo ! " : "") + enc;
         if (S.settings.voice !== false) setTimeout(function () { if (document.querySelector(".bstars")) V.speak(say6); }, 400);
         card.appendChild(el("p", "", score));
         var inf = el("p", "msg " + (res.success ? "good" : ""));
-        if (!res.success) inf.textContent = "Continue, tu progresses ! Tu peux refaire cette série.";
+        if (!res.success) inf.textContent = after >= 2 ? "Presque ! Cette étape est déjà maîtrisée, tu peux passer à la suite." : "Continue, tu progresses ! Tu peux refaire cette série.";
+        else if (res.coins === null) inf.textContent = "🎉 Réussi !";
         else if (!res.coins) inf.textContent = "🎉 Réussi ! Ta pièce du jour est déjà gagnée, bravo !";
         else if (res.shared) inf.textContent = "🎉 Réussi ! +" + res.coins + " pièce" + (res.coins > 1 ? "s" : "") + " d’or";
         else inf.textContent = "🎉 Réussi ! (pièces de test : +" + res.coins + ")";
         card.appendChild(inf);
         var r2 = el("div", "crow"); card.appendChild(r2); box.appendChild(card);
         function b(label, cls, fn) { var x = el("button", cls, label); x.type = "button"; x.addEventListener("click", fn); r2.appendChild(x); return x; }
-        var next = E.suggestLevel(act2, enabledLevels(act2), S.levels);
+        var next = nextStepFor(act2, lv);   /* « l'étape suivante » = celle qui vient après dans la liste de l'enseignant */
         function replay() { startRound(act2, lv); }
-        if (res.success && after === 1) { b("⭐ Rejouer pour la 2e étoile", "primary big-btn", replay); if (next && next !== lv) b("Étape suivante ➜", "secondary big-btn", function () { startRound(act2, next); }); else b("Autre étape", "secondary big-btn", function () { goTo(act2); }); }   /* 1 étoile : la 2e se gagne en rejouant CETTE étape (l'étape suivante donne une 1re étoile à un autre animal) */
-        else if (res.success && next && next !== lv) { b("Étape suivante ➜", "primary big-btn", function () { startRound(act2, next); }); b("Rejouer", "secondary big-btn", replay); }
-        else if (res.success) { b("Autre étape", "primary big-btn", function () { goTo(act2); }); b("Rejouer", "secondary big-btn", replay); }
+        function goNext(cls) { if (next) b("Étape suivante ➜", cls + " big-btn", function () { startRound(act2, next); }); else b("Autre étape", cls + " big-btn", function () { goTo(act2); }); }
+        if (res.success && after === 1) { b("⭐ Rejouer pour la 2e étoile", "primary big-btn", replay); goNext("secondary"); }   /* 1 étoile : la 2e se gagne en rejouant CETTE étape */
+        else if (after >= 2) { goNext("primary"); b("Rejouer", "secondary big-btn", replay); }   /* 2 étoiles : on continue (même après une série ratée : l'étape reste maîtrisée) */
         else { b("Rejouer", "primary big-btn", replay); b("Autre étape", "secondary big-btn", function () { goTo(act2); }); }
         b("Accueil", "secondary big-btn", function () { goTo("home"); });
         renderPanels();
       }
-      if (res.success && after > before) showEvolution({ act: act, lv: info2, from: { got: Math.min(before, 2), total: 2 }, to: { got: Math.min(after, 2), total: 2 }, onClose: bilan });
+      if (res.success && Math.min(after, 2) > Math.min(before, 2)) showEvolution({ act: act, lv: info2, from: { got: Math.min(before, 2), total: 2 }, to: { got: Math.min(after, 2), total: 2 }, onClose: bilan });
       else bilan();
     }
     /* Pièces gagnées : le serveur les met de côté dans le portefeuille du Zoo ; on les reprend tout de suite (même mécanisme que les cadeaux), sinon le Zoo de Lecture le fera */

@@ -122,3 +122,9 @@ Tests : `labo-calcul-test.html?who=ok&all=1` (+ `&egg=addition:a7`, `&order=1`).
 ## Correctifs : écran d'ordinateur et 2e étoile
 * **Ordinateur portable** : la question entière (calcul, images, aide complète, réponses, message) tient dans la hauteur de la fenêtre (testé de 650 à 1080 px de haut, 5 étapes dont « Les doubles » 10 + 10 avec l'aide complète). Cause : sur un écran de 1400 px de large ou plus (portable 1440/1512/1728), les **tailles TBI** s'appliquaient, trop hautes (cases de 150 px) ; elles sont maintenant bornées par la hauteur de la fenêtre, et la mise en page « ordinateur » compacte le haut (bouton Arrêter sur la ligne des points).
 * **2e étoile** : la 2e étoile d'une étape se gagne en **rejouant la même étape** ; l'« Étape suivante » fait éclore un autre animal (1re étoile de cette autre étape). Après une 1re réussite, le bilan dit « Rejoue cette étape pour gagner la 2e étoile ! » et le bouton principal est « ⭐ Rejouer pour la 2e étoile » ; après la 2e, « Tu es un champion de cette étape ! » et « Étape suivante » redevient principal.
+
+## Correctifs du bilan (« rejouer » / « autre étape » à tort)
+* **Trois réussites ou plus** : la scène « a fini de grandir » ne se rejoue plus (`after > before` était vrai pour 2 → 3 étoiles) ; on passe directement au bilan.
+* **Série ratée sur une étape déjà à 2 étoiles** : plus de « Rejouer » en principal ; message « Presque ! Cette étape est déjà maîtrisée » et **« Étape suivante » en principal**.
+* **« Étape suivante »** = l'étape qui suit dans la liste de l'enseignant (même déjà réussie), sinon la première pas encore réussie ; « Autre étape » seulement s'il n'y en a vraiment plus.
+* **Réponse du serveur perdue puis « Réessayer »** : le serveur répond « déjà enregistré » sans résultat ; le client relisait un état périmé et affichait un faux « à refaire ». Il relit maintenant l'état réel (`lab_student_state`). Test : `?lost=1`.
