@@ -336,7 +336,7 @@ body:not(.teacher-mode) main{color:#eef0f7}
 <section class="panel feature-card zoo-card" id="zooSettings" data-section="general" data-sub="zoo"><div class="section-head"><div class="section-icon">🦁</div><div><h2>Réglages du Zoo</h2><p class="muted">Conservés sur le serveur et appliqués à vos élèves dès leur prochaine connexion.</p></div></div>
  <form id="zooSettingsForm">
  <h3>Objectif pour valider une étape</h3><div class="eval-grid"><label>Syllabes par minute<input id="thrS" type="number" min="1" max="300" required value="25"></label><label>Mots par minute<input id="thrM" type="number" min="1" max="300" required value="20"></label><label>Texte : mots par minute<input id="thrT" type="number" min="1" max="300" required value="15"></label></div>
- <h3 style="margin-top:24px">Passage au son suivant</h3><label><input type="checkbox" id="lockSounds" checked style="display:inline;width:auto"> Débloquer progressivement les sons</label>
+ <h3 style="margin-top:24px">Passage au son suivant</h3><label><input type="checkbox" id="lockSounds" checked style="display:inline;width:auto"> Débloquer progressivement les sons <span class="muted">(un son s’ouvre quand un niveau du son précédent est certifié 🏅 en évaluation ; les entraînements seuls ne suffisent pas)</span></label>
  <h3 style="margin-top:24px">Mode récompense</h3><label><input type="checkbox" id="rewardMode" checked style="display:inline;width:auto"> Activer la roue et les récompenses</label><label><input type="checkbox" id="soundEffects" checked style="display:inline;width:auto"> Bruitages et voix</label><label><input type="checkbox" id="musicEnabled" checked style="display:inline;width:auto"> Musique dans la salle de jeux <span class="muted">(se coupe aussi si « Bruitages et voix » est décoché)</span></label>
  <label>Nombre maximal de parties par jour<input id="maxPlays" type="number" min="1" max="500" value="6" required></label><label class="rec-choice"><input type="checkbox" id="unlimitedPlays" style="display:inline;width:auto"> Parties illimitées (aucune limite par jour)</label>
  <h3 style="margin-top:24px">Code secret des élèves</h3><label><input type="checkbox" id="pinChange" checked style="display:inline;width:auto"> Les élèves peuvent changer leur code secret <span class="muted">(un bouton 🔑 apparaît à côté de « Me déconnecter » ou « Quitter »)</span></label>
@@ -667,7 +667,8 @@ async function renderProgress(students,classes){
    const thrOf={s:Number($("thrS").value)||25,m:Number($("thrM").value)||20,t:Number($("thrT").value)||15};
    const bestE={},bestT={};readings.forEach(r=>{if(!r||!r.sound||!thrOf[r.k]||r.short)return;const key=r.sound+":"+r.k,v=Number(r.mclm)||0,box=r.src==="train"?bestT:bestE;if(!(key in box)||v>box[key])box[key]=v;});
    const certified=Object.keys(bestE).filter(k=>bestE[k]>=thrOf[k.split(":").pop()]);
-   const alone=Object.keys(bestT).filter(k=>bestT[k]>=thrOf[k.split(":").pop()]&&!certified.includes(k));
+   const trained=Object.keys(bestT).filter(k=>bestT[k]>=thrOf[k.split(":").pop()]);
+   const alone=trained.filter(k=>!certified.includes(k));
    const training=readings.filter(r=>r&&r.src==="train");
    const fraudN=readings.filter(r=>r&&Number(r.fraud)>0).length;
    const latestEval=evaluations.filter(r=>!(Number(r.fraud)>0)).slice().sort((a,b)=>(Number(b.ts)||0)-(Number(a.ts)||0))[0];
@@ -679,7 +680,7 @@ async function renderProgress(students,classes){
    const wrap=document.createElement("div");wrap.className="row progress-row";
    const info=document.createElement("div");const name=document.createElement("strong");name.textContent=s.nickname;
    const summary=document.createElement("div");summary.className="pd-chips";
-   [["🏅 "+certified.length+" "+pl(certified.length,"certifiée","certifiées"),"Étapes certifiées par l’enseignant"],["✓ "+alone.length+" "+pl(alone.length,"réussie","réussies"),"Étapes réussies en entraînement seulement"],
+   [["🏅 "+certified.length+" "+pl(certified.length,"certifiée","certifiées"),"Étapes certifiées par l’enseignant"],["⭐ "+trained.length+" "+pl(trained.length,"étoile","étoiles"),"Étapes réussies en entraînement (une étape certifiée peut aussi avoir son étoile)"],
     ["📋 "+evaluations.length+" "+pl(evaluations.length,"évaluation","évaluations"),null],...(latestEval?[["⚡ "+fmt(latestEval.mclm)+"/min","Dernière fluence : corrects par minute"]]:[]),
     ["🪙 "+fmt(p.coins)+" "+pl(p.coins,"pièce","pièces")+(row&&row.pending_coins>0?" (+"+row.pending_coins+" en attente)":""),null],["🎮 "+games.length+" "+pl(games.length,"jeu","jeux"),null],
     ...(fraudN?[["⚠️ "+fraudN+" "+pl(fraudN,"écarté","écartés"),"Résultat écarté : durée trop courte ou score inhabituel"]]:[])
@@ -724,7 +725,7 @@ async function renderProgress(students,classes){
    {const c=pcard("📖 Sons lus : réussis et certifiés","pd-read"),tot=Math.max(1,cfgSounds.length),sOf=k=>k.split(":")[0];
     const cs=new Set(certified.map(sOf)),as=new Set(alone.map(sOf).filter(x=>!cs.has(x)));
     const big=mk("div","pd-big",String(cs.size+as.size));big.append(mk("small",null," / "+cfgSounds.length+" sons réussis"));
-    c.append(big,bar([[cs.size/tot*100],[as.size/tot*100,"alone"]],"pd-read"),mk("div","pd-note","🏅 "+cs.size+" "+pl(cs.size,"certifié","certifiés")+" · ✓ "+as.size+" en entraînement"));
+    c.append(big,bar([[cs.size/tot*100],[as.size/tot*100,"alone"]],"pd-read"),mk("div","pd-note","🏅 "+cs.size+" "+pl(cs.size,"certifié","certifiés")+" · ⭐ "+as.size+" en entraînement seulement"));
     more(c,readings.slice().sort((a,b)=>(Number(b.ts)||0)-(Number(a.ts)||0)).slice(0,20).filter(Boolean).map(r=>(r.src==="train"?"🟡 Entraînement":"🟢 Évaluation")+" · "+dfmt(r.ts)+" · "+soundName(r.sound)+" · "+kindOf(r.k)+" · "+scoreTxt(r)+" · "+fmt(r.e)+" "+pl(r.e,"erreur","erreurs")+(r.short?" · durée insuffisante":"")));grid.append(c)}
    /* 3. Fluence */
    {const c=pcard("⚡ Fluence (évaluations)","pd-flu");
