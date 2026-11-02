@@ -303,7 +303,7 @@ body:not(.teacher-mode) main{color:#eef0f7}
 <div class="sub-picker two" data-section="eleves" role="group" aria-label="Choisir une rubrique"><button type="button" data-sub-btn="classes"><span class="sp-ico">📚</span><strong>Créer une classe</strong><small>Son nom et le code que taperont les élèves</small></button><button type="button" data-sub-btn="ajout"><span class="sp-ico">🧒</span><strong>Ajout d’élève</strong><small>Inscrire un élève dans une classe</small></button></div>
 <section class="panel feature-card classes-card" id="classesSettings" data-section="eleves" data-sub="classes">
   <div class="section-head"><div class="section-icon">📚</div><div><h2>Créer une classe</h2><p class="muted">Le code d’une classe déjà créée est affiché sur sa carte, dans l’onglet « Élèves » (avec « Copier » et « Fiches de connexion »).</p></div></div>
-  <div class="form-zone"><form id="classForm"><label for="className">Nom de la classe</label><input id="className" required maxlength="80" placeholder="Ex. CP A"><label for="classCode">Code de classe (que vos élèves taperont)</label><input id="classCode" maxlength="30" autocomplete="off" autocapitalize="none" placeholder="Ex. cpmassot"><p class="muted" style="margin:4px 0 0">4 à 20 lettres ou chiffres. Majuscules, accents et espaces ne comptent pas. Évite les codes trop faciles comme 1234.</p><div class="actions"><button>+ Ajouter la classe</button></div></form><div class="class-created hidden" id="classCreated"><p id="classCreatedText"></p><button type="button" id="goAddStudents">➕ Ajouter mes élèves à cette classe</button></div></div>
+  <div class="form-zone"><form id="classForm"><label for="className">Nom de la classe</label><input id="className" required maxlength="80" placeholder="Ex. CP A"><label for="classCode">Code de classe (que vos élèves taperont)</label><input id="classCode" maxlength="30" autocomplete="off" autocapitalize="none" placeholder="Ex. cpmassot"><p class="muted" style="margin:4px 0 0">3 à 20 lettres ou chiffres. Majuscules, accents et espaces ne comptent pas. Évite les codes trop faciles comme 1234.</p><div class="actions"><button>+ Ajouter la classe</button></div></form><div class="class-created hidden" id="classCreated"><p id="classCreatedText"></p><button type="button" id="goAddStudents">➕ Ajouter mes élèves à cette classe</button></div></div>
  </section>
  <section class="panel feature-card student-card" id="addStudentSettings" data-section="eleves" data-sub="ajout">
   <div class="section-head"><div class="section-icon">🧒</div><div><h2>Ajouter un élève</h2><p class="muted">Inscrivez un élève dans la classe de votre choix.</p></div></div>
@@ -368,7 +368,7 @@ body:not(.teacher-mode) main{color:#eef0f7}
  <h3 style="margin:22px 0 8px">✉️ Messages du formulaire de contact</h3><p class="muted">Écrits sans compte depuis la page Contact du site. Répondez par e-mail.</p><p class="msg" id="ctMsg" role="status"></p><div id="ctList" class="content-list"></div>
 </section>
 </div>
-</section></main><script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=19"><\/script>':'<script src="vendor/supabase.js?v=2.118.0"><\/script>');})();</script><script>
+</section></main><script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=20"><\/script>':'<script src="vendor/supabase.js?v=2.118.0"><\/script>');})();</script><script>
 (function(){
 "use strict";
 /* Retour du lien « Mot de passe oublié » : on lit l’adresse avant que la bibliothèque Supabase ne la nettoie */
@@ -396,9 +396,9 @@ function dlg(text,o){o=o||{};return new Promise(res=>{
  row.append(ok,no);box.append(row);ov.append(box);document.body.append(ov);document.addEventListener("keydown",key,true);(inp||ok).focus();
 })}
 function msg(id,text,error){$(id).textContent=text||"";$(id).classList.toggle("err",!!error)}
-const CLASS_CODE_RULE="Le code de classe doit faire de 4 à 20 lettres ou chiffres (majuscules, accents et espaces ne comptent pas).";
+const CLASS_CODE_RULE="Le code de classe doit faire de 3 à 20 lettres ou chiffres (majuscules, accents et espaces ne comptent pas).";
 function normalizeClassCode(v){return String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^A-Za-z0-9]/g,"").toUpperCase()}
-function validClassCode(v){return /^[A-Z0-9]{4,20}$/.test(normalizeClassCode(v))}
+function validClassCode(v){return /^[A-Z0-9]{3,20}$/.test(normalizeClassCode(v))}
 /* Fiches de connexion : un PDF A4 avec 8 petites cartes à découper (format A7), une par élève */
 let jsPdfLoading=null;
 function loadJsPdf(){
@@ -468,7 +468,7 @@ async function renameClass(c,msgId){
  await refresh();if(msgId!=="studentsMsg")msg(msgId,"✏️ « "+old+" » s’appelle maintenant « "+n+" ».");
 }
 async function changeClassCode(c){
- const code=await dlg("Nouveau code pour la classe « "+c.name+" » (4 à 20 lettres ou chiffres).\nAttention : l’ancien code « "+c.access_code+" » ne marchera plus.",{input:true,value:c.access_code||"",ok:"Changer le code",label:"Code de la classe"});
+ const code=await dlg("Nouveau code pour la classe « "+c.name+" » (3 à 20 lettres ou chiffres).\nAttention : l’ancien code « "+c.access_code+" » ne marchera plus.",{input:true,value:c.access_code||"",ok:"Changer le code",label:"Code de la classe"});
  if(code===null)return;
  if(!validClassCode(code)){msg("codeMsg",CLASS_CODE_RULE,true);return;}
  const own=c.teacher_id===currentUser.id;
