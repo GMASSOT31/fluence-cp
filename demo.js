@@ -80,7 +80,13 @@
   function copy(o) { return JSON.parse(JSON.stringify(o)); }
   function uid(p) { S.n++; return p + S.n + "-" + Date.now().toString(36); }
   function student(id) { return S.students.filter(function (s) { return s.id === id; })[0] || null; }
-  function row(id) { return S.progress[id] || (S.progress[id] = { progress: {}, version: 0, updated_at: new Date().toISOString(), pending_coins: 0, given_vouchers: [] }); }
+  function applyLevel(results, queue, sid) {
+    queue.forEach(function (e) {
+      if (e.on) results.push({ id: "adj" + Math.random().toString(36).slice(2), sid: sid, sound: e.sound, k: e.k, n: 0, e: 0, t: 0, mclm: e.mclm, ts: Date.now(), src: "adj", adj: true });
+      else results.forEach(function (r) { if (r.sound === e.sound && r.k === e.k && r.src !== "train") r.void = true; });
+    });
+  }
+    function row(id) { return S.progress[id] || (S.progress[id] = { progress: {}, version: 0, updated_at: new Date().toISOString(), pending_coins: 0, given_vouchers: [], pending_level: [] }); }
   function classmates() {
     var me = student(S.me);
     return S.students.filter(function (s) { return me && s.class_id === me.class_id && !s.ghosted_at; });
@@ -128,6 +134,13 @@
       checkVersion(a.p_version);
       var n = r.pending_coins; r.pending_coins = 0; r.progress.coins = (r.progress.coins || 0) + n; r.version++;
       return { claimed: n, coins: r.progress.coins, version: r.version };
+    },
+    student_claim_level: function (a) {
+      var r = row(S.me), q = r.pending_level || [];
+      if (!q.length) return { claimed: 0, version: r.version };
+      checkVersion(a.p_version);
+      r.progress.results = r.progress.results || []; applyLevel(r.progress.results, q, S.me); r.pending_level = []; r.version++;
+      return { claimed: q.length, results: r.progress.results, version: r.version };
     },
     student_claim_vouchers: function (a) {
       var r = row(S.me);
@@ -177,6 +190,7 @@
       } else throw { message: "Action inconnue" };
       return a.p_action;
     },
+    teacher_adjust_level: function (a) { var r = row(a.p_student); r.pending_level = (r.pending_level || []).concat(a.p_steps); return r.pending_level.length; },
     teacher_give_coins: function (a) { var r = row(a.p_student); r.pending_coins += Number(a.p_amount) || 0; return r.pending_coins; },
     teacher_give_voucher: function (a) { var r = row(a.p_student); if (r.given_vouchers.indexOf(a.p_voucher) < 0) r.given_vouchers.push(a.p_voucher); return r.given_vouchers.length; },
     feedback_mark_replies_seen: function () { return 0; },

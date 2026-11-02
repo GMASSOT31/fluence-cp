@@ -84,6 +84,13 @@
         st.fails++; return Promise.resolve({ data: { ok: false, reason: "bad_pin" }, error: null }); }
       if (name === "student_session_profile") return Promise.resolve(a.p_token === "expire" ? { data: null, error: { message: "Session expirée" } } : { data: { student_id: "s1", nickname: "lea" }, error: null });
       if (name === "teacher_give_voucher") { var pr = st.progress[a.p_student]; if (!pr) return Promise.resolve({ data: null, error: { message: "Élève introuvable" } }); if (pr.given_vouchers.indexOf(a.p_voucher) < 0) pr.given_vouchers.push(a.p_voucher); return Promise.resolve({ data: pr.given_vouchers.length, error: null }); }
+      if (name === "teacher_adjust_level") { st.levelOps = (st.levelOps || []).concat([a]);
+        var sl = st.students.filter(function (x) { return x.id === a.p_student; })[0];
+        if (!sl || sl.teacher_id !== st.user.id) return Promise.resolve({ data: null, error: { message: "Cet élève n'est pas dans tes classes" } });
+        var rl = st.progress[a.p_student] || (st.progress[a.p_student] = { student_id: a.p_student, progress: {}, updated_at: "2026-10-20T11:00:00Z", pending_coins: 0 });
+        rl.progress.results = rl.progress.results || [];
+        a.p_steps.forEach(function (e) { if (e.on) rl.progress.results.push({ id: "adj" + rl.progress.results.length, sid: a.p_student, sound: e.sound, k: e.k, n: 0, e: 0, t: 0, mclm: e.mclm, ts: Date.now(), src: "adj", adj: true }); else rl.progress.results.forEach(function (r) { if (r.sound === e.sound && r.k === e.k && r.src !== "train") r.void = true; }); });
+        return Promise.resolve({ data: a.p_steps.length, error: null }); }
       if (name === "teacher_give_coins") { st.gifts.push(a);
         var stu = st.students.filter(function (x) { return x.id === a.p_student; })[0];
         if (!stu || stu.teacher_id !== st.user.id) return Promise.resolve({ data: null, error: { message: "Cet élève n'est pas dans tes classes" } });

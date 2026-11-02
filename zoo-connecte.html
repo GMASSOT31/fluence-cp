@@ -1628,7 +1628,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
 </main>
 <div class="toast" id="toast" role="status"></div>
 
-<script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=20"><\/script>':'<script src="vendor/supabase.js?v=2.118.0"><\/script>');})();</script>
+<script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=21"><\/script>':'<script src="vendor/supabase.js?v=2.118.0"><\/script>');})();</script>
 <script>
 (function () {
   "use strict";
@@ -2127,6 +2127,17 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
         if(got.length)toast("✅ Ton maître(sse) t’a remis : "+got.join(", ")+".");
         if(!$("v-boutique").hidden)renderBoutique();
       }
+      /* Niveau changé par le maître(sse) (« + niveau » / « − niveau ») : le serveur renvoie les résultats à jour */
+      var rl=await cloudClient.rpc("student_claim_level",{p_token:cloudToken,p_version:cloudVersion});
+      if(rl.error)throw rl.error;
+      var lr=rl.data||{};
+      if(Number(lr.claimed)>0){
+        cloudVersion=Number(lr.version);
+        data.results=data.results.filter(function(x){return x.sid!==cloudStudentId;}).concat(Array.isArray(lr.results)?lr.results:[]);
+        renderPanels();
+        if(!$("v-home").hidden)renderHome();
+        toast("🏅 Ton maître(sse) a changé ton niveau : tu es au niveau "+readLevel(cloudStudentId)+" !");
+      }
     }catch(e){
       if(String(e.message||"").includes("SYNC_CONFLICT"))showSyncConflict(cloudSnapshot());
       else console.warn("Cadeau du maître(sse)",e);
@@ -2191,7 +2202,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   function best(sid, sound, kind) {
     var m = null;
     data.results.forEach(function (r) {
-      if (r.sid === sid && r.sound === sound && r.k === kind && r.src !== "train" && (m === null || r.mclm > m)) m = r.mclm;
+      if (r.sid === sid && r.sound === sound && r.k === kind && r.src !== "train" && !r.void && (m === null || r.mclm > m)) m = r.mclm;
     });
     return m;
   }
@@ -6452,7 +6463,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
 
     /* Courbe */
     /* Les essais trop courts (durée insuffisante) restent dans l’historique mais sortent des records et de la courbe */
-    var rsAll = data.results.filter(function (r) { return r.sid === sid && r.k === progKind; }).sort(function (a, b) { return a.ts - b.ts; });
+    var rsAll = data.results.filter(function (r) { return r.sid === sid && r.k === progKind && r.src !== "adj"; }).sort(function (a, b) { return a.ts - b.ts; });
     var rs = rsAll.filter(function (r) { return !r.short; });
     var card2 = el("div", "card");
     card2.appendChild(el("h2", "", forStudent ? "Mes scores par minute" : "Évolution des scores par minute"));
@@ -6479,7 +6490,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     body.appendChild(card2);
 
     /* Historique */
-    var all = data.results.filter(function (r) { return r.sid === sid; }).sort(function (a, b) { return b.ts - a.ts; });
+    var all = data.results.filter(function (r) { return r.sid === sid && r.src !== "adj"; }).sort(function (a, b) { return b.ts - a.ts; });
     if (!forStudent && all.length) {
       var card3 = el("div", "card");
       card3.appendChild(el("h2", "", "Toutes les lectures"));
