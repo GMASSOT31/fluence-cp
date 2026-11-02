@@ -469,14 +469,17 @@ async function renameClass(c,msgId){
  if(msgId==="studentsMsg")studentsNotice="✏️ « "+old+" » s’appelle maintenant « "+n+" ».";
  await refresh();if(msgId!=="studentsMsg")msg(msgId,"✏️ « "+old+" » s’appelle maintenant « "+n+" ».");
 }
-async function changeClassCode(c){
+async function changeClassCode(c,msgId){
+ msgId=msgId||"codeMsg";
  const code=await dlg("Nouveau code pour la classe « "+c.name+" » (3 à 20 lettres ou chiffres).\nAttention : l’ancien code « "+c.access_code+" » ne marchera plus.",{input:true,value:c.access_code||"",ok:"Changer le code",label:"Code de la classe"});
  if(code===null)return;
- if(!validClassCode(code)){msg("codeMsg",CLASS_CODE_RULE,true);return;}
+ if(!validClassCode(code)){msg(msgId,CLASS_CODE_RULE,true);return;}
  const own=c.teacher_id===currentUser.id;
  const {data,error}=own?await client.from("classes").update({access_code:code}).eq("id",c.id).select("access_code").single():await client.rpc("admin_edit_class",{p_class:c.id,p_access_code:code});
- if(error){msg("codeMsg",errorText(error),true);return;}
- await refresh();msg("codeMsg",own?"Nouveau code pour « "+c.name+" » : "+data.access_code+". Donnez-le à vos élèves.":"Le code de « "+c.name+" » a changé. Prévenez la personne concernée : ses élèves doivent taper le nouveau code.");
+ if(error){msg(msgId,errorText(error),true);return;}
+ const done=own?"🔑 Nouveau code pour « "+c.name+" » : "+data.access_code+". Donnez-le à vos élèves.":"Le code de « "+c.name+" » a changé. Prévenez la personne concernée : ses élèves doivent taper le nouveau code.";
+ if(msgId==="studentsMsg")studentsNotice=done;
+ await refresh();if(msgId!=="studentsMsg")msg(msgId,done);
 }
 function errorText(e){
  const m=e&&e.message?String(e.message):"",c=e&&e.code?String(e.code):"";
@@ -1004,7 +1007,7 @@ async function renderStudentsTab(role){
    cact.append(cghost,cdel);head.append(h);
    /* Code de la classe (celui que les élèves tapent), avec « Copier » */
    if(c.access_code){const cc=document.createElement("span");cc.className="class-code";cc.append("🔑 Code élèves : ");const cv=document.createElement("strong");cv.textContent=c.access_code;cc.append(cv);
-    const cb=document.createElement("button");cb.type="button";cb.className="secondary";cb.textContent="📋 Copier";cb.title="Copier le code de la classe";cb.onclick=async()=>{try{await navigator.clipboard.writeText(c.access_code)}catch(e){const ta=document.createElement("textarea");ta.value=c.access_code;ta.style.cssText="position:fixed;opacity:0";document.body.append(ta);ta.select();try{document.execCommand("copy")}catch(e2){}ta.remove()}cb.textContent="✅ Copié";setTimeout(()=>{cb.textContent="📋 Copier"},1800)};cc.append(cb);head.append(cc);}
+    const cb=document.createElement("button");cb.type="button";cb.className="secondary";cb.textContent="📋 Copier";cb.title="Copier le code de la classe";cb.onclick=async()=>{try{await navigator.clipboard.writeText(c.access_code)}catch(e){const ta=document.createElement("textarea");ta.value=c.access_code;ta.style.cssText="position:fixed;opacity:0";document.body.append(ta);ta.select();try{document.execCommand("copy")}catch(e2){}ta.remove()}cb.textContent="✅ Copié";setTimeout(()=>{cb.textContent="📋 Copier"},1800)};cc.append(cb);if(c.teacher_id===currentUser.id||currentRole==="admin"){const ch=document.createElement("button");ch.type="button";ch.className="secondary";ch.textContent="✏️ Changer";ch.title="Changer le code de la classe";ch.onclick=()=>changeClassCode(c,"studentsMsg");cc.append(ch)}head.append(cc);}
    else{const cc=document.createElement("span");cc.className="class-code muted";cc.textContent="Pas encore de code (Réglages généraux › Mots de passe)";head.append(cc);}
    head.append(cact);box.append(head);
    const members=sts.filter(s=>s.class_id===c.id);
