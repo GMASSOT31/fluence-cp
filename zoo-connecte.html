@@ -590,6 +590,9 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   .listen-dots span { flex: 1; height: 8px; border-radius: 99px; background: var(--line); }
   .listen-dots span.done { background: var(--ok); }
   .listen-dots span.now { background: var(--focus); }
+  @keyframes listen-pulse { 0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(58, 157, 140, .55); } 50% { transform: scale(1.05); box-shadow: 0 0 0 14px rgba(58, 157, 140, 0); } }
+  .listen-play.pulse { animation: listen-pulse 1.6s ease-in-out infinite; }
+  @media (prefers-reduced-motion: reduce) { .listen-play.pulse { animation: none; } }
   .listen-play { display: block; margin: 8px auto; min-height: 64px; padding: 12px 26px; font-size: 1.3rem; font-weight: 800; border-radius: 18px; border: 0; background: #3a9d8c; color: #fff; }
   .listen-go-line { font-size: 1.25rem; font-weight: 800; text-align: center; margin: 10px 0 6px; }
   .parent-note { margin-top: 20px; font-size: .82rem; color: var(--muted); opacity: .75; text-align: center; }
@@ -4055,8 +4058,9 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var bar = el("div", "listen-dots"); bar.setAttribute("aria-hidden", "true");
     for (var i = 0; i < cfg.questions; i++) bar.appendChild(el("span", i < R.n - 1 ? "done" : (i === R.n - 1 ? "now" : ""), ""));
     card.appendChild(bar);
-    var again = el("button", "listen-play", "🔊 Écouter le son"); again.type = "button";
-    again.addEventListener("click", function () { listenSay(q.item); });
+    var again = el("button", "listen-play pulse", "🔊 Écouter le son"); again.type = "button";
+    q.playBtn = again;   /* il pulse tant que l'enfant n'a pas répondu, pour lui montrer où réécouter */
+    again.addEventListener("click", function () { again.classList.remove("pulse"); listenSay(q.item); });
     card.appendChild(again);
     var msg = el("p", "instruction listen-msg", it.word ? "Touche le mot que tu entends." : (it.syl ? "Touche la syllabe que tu entends. Il y a 1 ou 2 bonnes réponses." : "Touche ce que tu entends. Il y a 1 ou 2 bonnes réponses."));
     msg.setAttribute("role", "status"); msg.id = "listen-msg";
@@ -4113,6 +4117,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   }
   function listenPick(q, c, b) {
     if (q.over || b.disabled) return;
+    if (q.playBtn) q.playBtn.classList.remove("pulse");
     if (c.good) {
       b.classList.add("good"); b.disabled = true; q.found.push(c.g);
       sfxGood();
