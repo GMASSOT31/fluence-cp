@@ -65,12 +65,14 @@
       if (!q.length) return { claimed: 0, version: srv.version };
       if (a.p_version !== srv.version) throw { message: "SYNC_CONFLICT" };
       var res = srv.me.progress.results = srv.me.progress.results || [];
+      var L = srv.me.progress.listen = srv.me.progress.listen || { passes: {}, done: {}, tries: 0 };
       q.forEach(function (e) {
+        if (e.k === "l") { if (e.on) L.done[e.sound] = true; else { delete L.done[e.sound]; L.passes[e.sound] = 0; } return; }
         if (e.on) res.push({ id: "adj" + res.length, sid: srv.me.id || "s1", sound: e.sound, k: e.k, n: 0, e: 0, t: 0, mclm: e.mclm, ts: Date.now(), src: "adj", adj: true });
         else res.forEach(function (r) { if (r.sound === e.sound && r.k === e.k && r.src !== "train") r.void = true; });
       });
       srv.pendingLevel = []; srv.version++;
-      return { claimed: q.length, results: res, version: srv.version };
+      return { claimed: q.length, results: res, listen: L, version: srv.version };
     },
     student_claim_credits: function () { return { claimed: 0, version: srv.version }; },
     student_submit_score: function (a) {
