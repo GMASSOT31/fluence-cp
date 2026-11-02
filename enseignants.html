@@ -151,6 +151,8 @@ main{max-width:1050px}
 .class-group .progress-row:first-of-type{border-top:0}
 .class-group-empty{margin:0;padding:12px 16px}
 .sub-picker.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+/* Progression : sur écran large, un élève tient sur une seule ligne (nom, dernière activité, prochaine étape, validation, +10, Détails) */
+@media(min-width:900px){.class-group .progress-row>div:first-child{flex:1 1 0;min-width:0;display:flex;align-items:center;flex-wrap:wrap;gap:6px 14px}.class-group .progress-row .pg-row{margin-top:0;flex:1 1 0;min-width:0;flex-wrap:nowrap;overflow:hidden}.class-group .progress-row .pg-chip,.class-group .progress-row .pg-act{white-space:nowrap;flex:0 0 auto}.class-group .progress-row .pg-chip.next{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}.class-group .progress-row .pg-help{flex:0 0 100%}}
 @media(max-width:560px){.sub-picker.two{grid-template-columns:1fr}.class-group-head,.class-group .progress-row{padding:10px 12px}}
 /* Mode enseignant : bandeau fin + menu latéral (comme l'espace élève) */
 .banner-user{display:none}
@@ -289,11 +291,11 @@ body:not(.teacher-mode) main{color:#eef0f7}
   <div class="side-title">🧑‍🏫 Espace enseignant</div>
   <nav class="teacher-nav" aria-label="Rubriques de l'espace enseignant">
    <button type="button" class="active" data-tab="eleves"><span class="nav-ico" aria-hidden="true">📚</span><span class="nav-label">Ajout d’élèves et création de classe</span></button>
-   <button type="button" data-tab="liste"><span class="nav-ico" aria-hidden="true">🧒</span><span class="nav-label">Élèves</span></button>
-   <button type="button" data-tab="ecouter"><span class="nav-ico" aria-hidden="true">🎧</span><span class="nav-label">À écouter</span><span class="nav-badge hidden" id="listenBadge"></span></button>
-   <button type="button" data-tab="progression"><span class="nav-ico" aria-hidden="true">📈</span><span class="nav-label">Progression</span></button>
+   <button type="button" data-tab="liste"><span class="nav-ico" aria-hidden="true">🧒</span><span class="nav-label">Liste des élèves</span></button>
+   <button type="button" data-tab="progression"><span class="nav-ico" aria-hidden="true">📈</span><span class="nav-label">Progression des élèves</span></button>
    <button type="button" data-tab="reglages"><span class="nav-ico" aria-hidden="true">✏️</span><span class="nav-label">Réglages péda</span></button>
    <button type="button" data-tab="general"><span class="nav-ico" aria-hidden="true">⚙️</span><span class="nav-label">Réglages généraux</span></button>
+   <button type="button" data-tab="ecouter"><span class="nav-ico" aria-hidden="true">🎧</span><span class="nav-label">À écouter</span><span class="nav-badge hidden" id="listenBadge"></span></button>
    <button type="button" data-tab="enseignants" id="teachersAdminTab" class="hidden"><span class="nav-ico" aria-hidden="true">🛡️</span><span class="nav-label">Enseignants</span><span class="nav-badge hidden" id="adminBadge"></span></button>
    <button type="button" data-tab="ameliorations" class="nav-improve"><span class="nav-ico" aria-hidden="true">💡</span><span class="nav-label" id="improveLabel">Améliorations</span><span class="nav-badge hidden" id="feedbackBadge"></span></button>
   </nav>
@@ -304,7 +306,7 @@ body:not(.teacher-mode) main{color:#eef0f7}
   <section class="panel guide hidden" id="guide" aria-live="polite"></section>
 <div class="sub-picker two" data-section="eleves" role="group" aria-label="Choisir une rubrique"><button type="button" data-sub-btn="classes"><span class="sp-ico">📚</span><strong>Créer une classe</strong><small>Son nom et le code que taperont les élèves</small></button><button type="button" data-sub-btn="ajout"><span class="sp-ico">🧒</span><strong>Ajout d’élève</strong><small>Inscrire un élève dans une classe</small></button></div>
 <section class="panel feature-card classes-card" id="classesSettings" data-section="eleves" data-sub="classes">
-  <div class="section-head"><div class="section-icon">📚</div><div><h2>Créer une classe</h2><p class="muted">Le code d’une classe déjà créée est affiché sur sa carte, dans l’onglet « Élèves » (avec « Copier » et « Fiches de connexion »).</p></div></div>
+  <div class="section-head"><div class="section-icon">📚</div><div><h2>Créer une classe</h2><p class="muted">Le code d’une classe déjà créée est affiché sur sa carte, dans l’onglet « Liste des élèves » (avec « Copier » et « Fiches de connexion »).</p></div></div>
   <div class="form-zone"><form id="classForm"><label for="className">Nom de la classe</label><input id="className" required maxlength="80" placeholder="Ex. CP A"><label for="classCode">Code de classe (que vos élèves taperont)</label><input id="classCode" maxlength="30" autocomplete="off" autocapitalize="none" placeholder="Ex. cpmassot"><p class="muted" style="margin:4px 0 0">3 à 20 lettres ou chiffres. Majuscules, accents et espaces ne comptent pas. Évite les codes trop faciles comme 1234.</p><div class="actions"><button>+ Ajouter la classe</button></div></form><div class="class-created hidden" id="classCreated"><p id="classCreatedText"></p><button type="button" id="goAddStudents">➕ Ajouter mes élèves à cette classe</button></div></div>
  </section>
  <section class="panel feature-card student-card" id="addStudentSettings" data-section="eleves" data-sub="ajout">
@@ -349,7 +351,7 @@ body:not(.teacher-mode) main{color:#eef0f7}
   <div class="pw-part" id="pinPart"><h3>Codes PIN des élèves</h3><p class="muted">Définissez ou changez le PIN de chaque élève (4 à 8 chiffres). Transmets-le individuellement à l’élève ou à sa famille.</p><p class="muted">Les élèves peuvent aussi changer eux-mêmes leur code (bouton 🔑). Pour l’autoriser ou l’interdire : Réglages généraux › Zoo › « Code secret des élèves ».</p><p class="msg" id="pinMsg" role="status"></p><div id="classRoster"></div></div>
   <div class="pw-part"><h3>Mon mot de passe</h3><p class="muted">Pour vous connecter à cet espace enseignant. Il sert aussi à lancer les évaluations dans le Zoo des élèves.</p><form id="passwordForm"><label for="changePassword">Nouveau mot de passe (au moins 8 caractères)</label><input id="changePassword" type="password" autocomplete="new-password" minlength="8" maxlength="72" required><label for="changePassword2">Écrivez-le une deuxième fois</label><input id="changePassword2" type="password" autocomplete="new-password" minlength="8" maxlength="72" required><div class="actions"><button id="passwordSave" type="submit">Changer mon mot de passe</button></div></form><p class="msg" id="passwordMsg" role="status"></p></div>
  </section>
- <p class="teacher-footnote">☁️ Les progrès de vos élèves sont sauvegardés en ligne automatiquement : vous les retrouvez dans l’onglet « Progression ». Les lectures enregistrées au micro restent sur la tablette de l’élève.</p>
+ <p class="teacher-footnote">☁️ Les progrès de vos élèves sont sauvegardés en ligne automatiquement : vous les retrouvez dans l’onglet « Progression des élèves ». Les lectures enregistrées au micro restent sur la tablette de l’élève.</p>
  <div class="share-teacher" data-share><strong>Vous aimez Zoo de Lecture ?</strong> <span class="muted">Faites découvrir cet outil gratuit à vos collègues enseignants.</span>
   <button type="button" class="secondary" data-share-btn>🔗 Partager Zoo de Lecture</button>
   <span class="share-more" data-share-more hidden><a data-share-wa href="https://wa.me/">WhatsApp</a><a data-share-mail href="mailto:">E-mail</a><button type="button" class="secondary" data-share-copy>Copier le lien</button></span>
@@ -699,7 +701,7 @@ async function renderProgress(students,classes){
     ...(fraudN?[["⚠️ "+fraudN+" "+pl(fraudN,"écarté","écartés"),"Résultat écarté : durée trop courte ou score inhabituel"]]:[])
    ].forEach(([t,tip])=>{const c=document.createElement("span");c.className="pd-chip";c.textContent=t;if(tip)c.title=tip;summary.append(c)});
    /* Coup d’œil : dernière activité, prochaine étape, besoin de validation (les autres chiffres sont dans « Détails ») */
-   const gk=(cls,t)=>{const e=document.createElement("span");e.className="pg-chip "+cls;e.textContent=t;return e};
+   const gk=(cls,t,tip)=>{const e=document.createElement("span");e.className="pg-chip "+cls;e.textContent=t;if(tip)e.title=tip;return e};
    const tsAll=[...readings.map(r=>Number(r&&r.ts)||0),...games.map(([,h])=>Number(h&&h.bts)||0),Date.parse(row&&row.updated_at||"")||0].filter(x=>x>0),lastTs=tsAll.length?Math.max(...tsAll):0;
    const days=lastTs?Math.floor((Date.now()-lastTs)/864e5):null;
    const when=days===null?"aucune activité":days<=0?"aujourd’hui":days===1?"hier":days<31?"il y a "+days+" jours":new Date(lastTs).toLocaleDateString("fr-FR");
@@ -707,7 +709,7 @@ async function renderProgress(students,classes){
    let nextTxt="";for(const x of cfgSounds){if(!x||!x.id||x.id==="h"||x.id==="sz")continue;const kd=["s","m","t"].find(k=>(!x.only||x.only.includes(k))&&!doneKeys.has(x.id+":"+k));if(kd){nextTxt=(x.label||x.id)+" · "+KN[kd];break}}
    const waitingRec=Array.isArray(p.reviews)?p.reviews.length:0,toValidate=alone.length;
    const glance=document.createElement("div");glance.className="pg-row";
-   glance.append(gk(days===null||days>=7?"warn":"ok","🕒 Dernière activité : "+when),gk("next","➡️ Prochaine étape : "+(nextTxt||"toutes faites 🎉")));
+   glance.append(gk(days===null||days>=7?"warn":"ok","🕒 Activité : "+when,"Dernière activité : "+when),gk("next","➡️ Prochaine : "+(nextTxt||"toutes faites 🎉"),"Prochaine étape : "+(nextTxt||"toutes faites")));
    /* Besoin de validation : une action explicite selon ce qui existe vraiment */
    const gb=(txt,fn)=>{const b2=document.createElement("button");b2.type="button";b2.className="pg-act";b2.textContent=txt;b2.onclick=fn;return b2};
    const toCert=[...alone].filter(k=>!certified.includes(k)).map(k=>{const [sn,kd]=k.split(":");const x=cfgSounds.find(z=>z&&z.id===sn);return (x?(x.label||x.id):sn)+" · "+KN[kd]});
