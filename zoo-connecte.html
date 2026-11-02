@@ -982,7 +982,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   .wheel-go { background: linear-gradient(135deg, #f5a623, #e2572c); color: #fff; border-color: #e2572c; }
   .home-act-row { display: flex; align-items: stretch; gap: 8px; }
   .home-act-row .home-next, .home-act-row .home-alt { flex: 1 1 auto; min-width: 0; }
-  .home-say { flex: 0 0 auto; margin: 0; min-width: 62px; padding: 0 12px; font-size: 1.6rem; line-height: 1; border-radius: 16px; }
+  .home-say { flex: 0 0 auto; margin: 0; min-width: 78px; padding: 0 14px; font-size: 2.1rem; line-height: 1; border-radius: 16px; }
   .home-or { margin: 4px 0 -2px; font-size: .9rem; font-weight: 700; color: var(--muted); }
   .home-next .home-sub { display: block; margin-top: 4px; font-size: .78em; font-weight: 600; opacity: .9; }
   .home-alt .home-sub { display: block; margin-top: 3px; font-size: .78em; font-weight: 600; opacity: .85; }
@@ -4232,6 +4232,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       else renderHome();
     });
   }
+  var homeSaid = {};
   function renderHome() {
     if (cloudToken) claimGifts();
     var body = $("home-body");
@@ -4305,6 +4306,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     row.appendChild(col);
     card.appendChild(row);
     body.appendChild(card);
+    /* La consigne est lue à voix haute une seule fois à l'arrivée (un CP ne sait pas encore tout lire) ; le gros 🔊 permet de la réécouter. Rien si les bruitages sont coupés. */
+    if (data.sfx && !homeSaid[sid]) { homeSaid[sid] = 1; setTimeout(function () { if (!$("v-home").hidden) listenSpeak(say); }, 700); }
     var qc = el("div", "card quote-card"); qc.appendChild(el("blockquote", "", "«\u00a0" + sessionQuote + "\u00a0»")); body.appendChild(qc);
     var waiting = data.reviews.filter(function (r) { return r.sid === sid; }).length;
     if (waiting) {
