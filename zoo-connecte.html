@@ -1054,6 +1054,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     body.mode-student .me-menu button { min-height: 48px; padding: 10px 16px; border-radius: 12px; border: 2px solid var(--line); background: var(--card); color: var(--ink); font: 700 1rem inherit; text-align: left; cursor: pointer; }
     body.mode-student .me-menu button[hidden] { display: none; }
     body.mode-student .bottom-nav [data-go="cartes"], body.mode-student .bottom-nav [data-go="progres"] { display: none; }
+    body.mode-student.newbie .bottom-nav [data-go="jeux"], body.mode-student.newbie .bottom-nav [data-go="boutique"] { display: none; }
     body.mode-student .home-zoo-count { display: none; }
     /* Boutique */
     .shop { border-width: 2px; border-radius: 16px; margin-bottom: 0; padding-bottom: 8px; }
@@ -3607,6 +3608,9 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     $("top-level").textContent = "N" + levelN;
     var lvl = listenLevel(sid), lnx = listenNext(sid);
     $("top-listen").textContent = "E" + lvl;
+    /* Élève qui débute (aucune étape réussie, rien à écouter validé, ni pièces ni parties) : la barre du bas ne montre que Lire, Écouter et Moi */
+    var newbie = cn <= 0 && cr <= 0 && pw <= 0 && lvl === 0 && !allSteps.some(function (x) { return isPassed(sid, x.sound, x.kind); });
+    document.body.classList.toggle("newbie", newbie);
     $("top-listen-box").setAttribute("aria-label", "Niveau d’écoute " + lvl + " : " + nb(lvl, "son validé", "sons validés"));
     $("top-listen-box").title = "Niveau d’écoute : " + nb(lvl, "son validé", "sons validés");
     $("pr-listen").textContent = lnx ? "son : " + lnx.label : "tout est validé";
