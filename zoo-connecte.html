@@ -101,6 +101,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   .pin-msg.bad { color: #b42318; } .pin-msg.good { color: #1a7f37; }
   .game-top-actions { display: flex; align-items: center; gap: 8px; }
   .music-btn { min-width: 48px; min-height: 44px; padding: 6px 12px; font-size: 1.3rem; line-height: 1; }
+  /* Bouton du son : pastille claire à bord violet, visible sur fond sombre comme sur fond clair */
+  .secondary.music-btn, .arcade-screen .secondary.music-btn { background: #fff; color: #2b1b5e; border: 2px solid #8b5cf6; box-shadow: 0 2px 6px rgba(0, 0, 0, .3); }
   .music-btn[hidden] { display: none; }
   .arc-status .music-btn { min-width: 40px; min-height: 34px; padding: 2px 10px; font-size: 1.1rem; border-radius: 999px; }
   .timer-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
