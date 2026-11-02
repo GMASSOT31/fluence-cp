@@ -567,6 +567,9 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     body.mode-student .zoo-top-stat { flex: 1; justify-content: center; gap: 4px; padding: 6px 4px; }
     body.mode-student .zoo-top-stat > span { font-size: 1.05rem; }
     body.mode-student .zoo-top-stat small { font-size: .66rem; }
+    /* Téléphone : « N62 » et « E13 » ne disent rien à un enfant ; ils passent dans le menu « Moi » */
+    body.mode-student .zoo-top-stat.zoo-top-keep { display: none; }
+    .me-stats { padding: 8px 14px; font-size: .85rem; color: var(--muted); border-bottom: 1px solid var(--line); }
   }
 
   /* Écouter : choix écrits, gros et tactiles */
@@ -1628,6 +1631,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     <button type="button" class="panel-nav bn-pin" id="bn-pin" title="Changer mon code secret" aria-label="Changer mon code secret" hidden><span class="pn-ico" aria-hidden="true">🔑</span></button>
   </nav>
   <div class="me-menu" id="me-menu" role="menu" hidden>
+    <div class="me-stats" id="me-stats"></div>
     <button type="button" role="menuitem" id="me-pin" hidden>🔑 Changer mon code secret</button>
     <button type="button" role="menuitem" id="me-logout">🚪 Me déconnecter</button>
   </div>
@@ -3608,6 +3612,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     $("top-level").textContent = "N" + levelN;
     var lvl = listenLevel(sid), lnx = listenNext(sid);
     $("top-listen").textContent = "E" + lvl;
+    $("me-stats").textContent = "Niveau de lecture : N" + levelN + " · Niveau d’écoute : E" + lvl;
     /* Élève qui débute (aucune étape réussie, rien à écouter validé, ni pièces ni parties) : la barre du bas ne montre que Lire, Écouter et Moi */
     var newbie = cn <= 0 && cr <= 0 && pw <= 0 && lvl === 0 && !allSteps.some(function (x) { return isPassed(sid, x.sound, x.kind); });
     document.body.classList.toggle("newbie", newbie);
