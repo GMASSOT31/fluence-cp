@@ -601,7 +601,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     .listen-stars .lstar.new { animation: lstar-pop .7s cubic-bezier(.2, 1.6, .4, 1) both; }
     @keyframes lstar-pop { 0% { transform: scale(.2) rotate(-40deg); opacity: 0; } 70% { transform: scale(1.35) rotate(8deg); opacity: 1; } 100% { transform: scale(1) rotate(0); } }
   }
-  .listen-choice.word { font-size: 1.55rem; padding: 6px 4px; overflow-wrap: anywhere; }
+  .listen-choice.word { font-size: 1.55rem; padding: 6px 4px; white-space: nowrap; overflow: hidden; }   /* jamais coupé en deux : la taille est ajustée par fitListenWords() */
   .listen-choice.good { background: var(--ok-bg); border-color: var(--ok); }
   .listen-choice.bad { background: #fde3e3; border-color: var(--bad); }
   .listen-choice:disabled { opacity: 1; }
@@ -1021,6 +1021,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   body.listen-focus .listen-play { min-height: 76px; font-size: 1.5rem; padding: 14px 34px; }
   body.listen-focus .listen-choices { gap: 14px; margin: 18px 0; }
   body.listen-focus .listen-choice { min-height: clamp(84px, 16vh, 150px); font-size: clamp(2.2rem, 6vh, 3.4rem); }
+  body.listen-focus .listen-choice.word { font-size: clamp(1.4rem, 4.5vh, 2.2rem); }
   body.listen-focus .listen-msg { font-size: 1.15rem; }
   #v-jeux .tk-today { margin: 0 0 10px; padding: 6px 12px; display: inline-block; font-size: .92rem; font-weight: 700; color: var(--ink); background: var(--bg); border: 1.5px solid var(--line); border-radius: 999px; }
   /* LIRE / ÉCOUTER : choix par cartes */
@@ -4068,7 +4069,21 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     card.appendChild(done);
     body.appendChild(card);
     if (window.innerWidth <= 880) card.scrollIntoView({ block: "start" });
+    fitListenWords();
     LS.timers.push(setTimeout(function () { listenSay(q.item); }, 250));
+  }
+  /* Les mots proposés rentrent toujours sur une ligne : on réduit la taille jusqu'à ce que le plus long tienne dans sa case */
+  function fitListenWords() {
+    var bs = document.querySelectorAll(".listen-choice.word");
+    Array.prototype.forEach.call(bs, function (b) { b.style.fontSize = ""; });
+    var min = 99;
+    Array.prototype.forEach.call(bs, function (b) {
+      var fs = parseFloat(getComputedStyle(b).fontSize) || 24, n = 0;
+      while (b.scrollWidth > b.clientWidth + 1 && fs > 14 && n++ < 60) { fs -= 1; b.style.fontSize = fs + "px"; }
+      if (fs < min) min = fs;
+    });
+    /* même taille pour tous les mots, celle du plus long */
+    if (min < 99) Array.prototype.forEach.call(bs, function (b) { b.style.fontSize = min + "px"; });
   }
   function listenReveal(q) {
     q.btns.forEach(function (b, i) { if (q.choices[i].good) b.classList.add("good"); b.disabled = true; });
