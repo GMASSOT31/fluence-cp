@@ -225,7 +225,7 @@
       if (table === "teacher_zoo_settings" && op === "upsert") { S.settings = copy(payload.settings || {}); return null; }
       if (table === "classes" && op === "insert") {
         var code = payload.access_code ? norm(payload.access_code) : "";
-        if (code && !/^[A-Z0-9]{4,20}$/.test(code)) throw { code: "22023", message: "Le code de classe doit faire de 4 à 20 lettres ou chiffres." };
+        if (code && !/^[A-Z0-9]{3,20}$/.test(code)) throw { code: "22023", message: "Le code de classe doit faire de 3 à 20 lettres ou chiffres." };
         if (!code) code = "DEMO" + Math.random().toString(36).slice(2, 6).toUpperCase();
         if (S.classes.some(function (c) { return c.access_code === code; })) throw { code: "23505", message: 'duplicate key value violates unique constraint "classes_access_code_key"' };
         var c = { id: uid("c-"), name: payload.name, access_code: code, teacher_id: S.teacher.id, school_year: null, ghosted_at: null };
@@ -235,7 +235,7 @@
         var cls = S.classes.filter(keep)[0]; if (!cls) throw { message: "Classe introuvable" };
         if (payload.access_code !== undefined) {
           var nc = norm(payload.access_code);
-          if (!/^[A-Z0-9]{4,20}$/.test(nc)) throw { code: "22023", message: "Le code de classe doit faire de 4 à 20 lettres ou chiffres." };
+          if (!/^[A-Z0-9]{3,20}$/.test(nc)) throw { code: "22023", message: "Le code de classe doit faire de 3 à 20 lettres ou chiffres." };
           if (S.classes.some(function (x) { return x !== cls && x.access_code === nc; })) throw { code: "23505", message: 'duplicate key value violates unique constraint "classes_access_code_key"' };
           cls.access_code = nc;
         }
