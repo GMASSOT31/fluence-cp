@@ -145,6 +145,7 @@ main{max-width:1050px}
 .game-rank-row{display:block}.game-rank-bar{height:8px;margin-top:6px;border-radius:99px;background:#ece8fb;overflow:hidden}.game-rank-bar i{display:block;height:100%;background:linear-gradient(90deg,#ffd23f,#ff7a1a);border-radius:99px}
 .class-group-head h4{margin:0;font-size:1.08rem;color:#1b2433}
 .class-group-head span{font-size:.85rem;font-weight:800;color:var(--cg);background:#fff;border-radius:999px;padding:4px 10px}
+.cg-right{display:flex;align-items:center;gap:8px}.cg-toggle{padding:6px 12px;min-height:0;font-size:.85rem}
 .class-group .progress-row{padding:12px 16px;margin:0;border-top:1px solid #eef1f6}
 .pd-level{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:12px 0}.pd-level:empty{display:none}.pd-level input{width:72px;text-align:center}
 .class-group .progress-row:first-of-type{border-top:0}
@@ -304,7 +305,7 @@ body:not(.teacher-mode) main{color:#eef0f7}
 <div class="sub-picker two" data-section="eleves" role="group" aria-label="Choisir une rubrique"><button type="button" data-sub-btn="classes"><span class="sp-ico">📚</span><strong>Créer une classe</strong><small>Son nom et le code que taperont les élèves</small></button><button type="button" data-sub-btn="ajout"><span class="sp-ico">🧒</span><strong>Ajout d’élève</strong><small>Inscrire un élève dans une classe</small></button></div>
 <section class="panel feature-card classes-card" id="classesSettings" data-section="eleves" data-sub="classes">
   <div class="section-head"><div class="section-icon">📚</div><div><h2>Créer une classe</h2><p class="muted">Le code d’une classe déjà créée est affiché sur sa carte, dans l’onglet « Élèves » (avec « Copier » et « Fiches de connexion »).</p></div></div>
-  <div class="form-zone"><form id="classForm"><label for="className">Nom de la classe</label><input id="className" required maxlength="80" placeholder="Ex. CP A"><label for="classCode">Code de classe (que vos élèves taperont)</label><input id="classCode" maxlength="30" autocomplete="off" autocapitalize="none" placeholder="Ex. cpmassot"><p class="muted" style="margin:4px 0 0">4 à 20 lettres ou chiffres. Majuscules, accents et espaces ne comptent pas. Évite les codes trop faciles comme 1234.</p><div class="actions"><button>+ Ajouter la classe</button></div></form><div class="class-created hidden" id="classCreated"><p id="classCreatedText"></p><button type="button" id="goAddStudents">➕ Ajouter mes élèves à cette classe</button></div></div>
+  <div class="form-zone"><form id="classForm"><label for="className">Nom de la classe</label><input id="className" required maxlength="80" placeholder="Ex. CP A"><label for="classCode">Code de classe (que vos élèves taperont)</label><input id="classCode" maxlength="30" autocomplete="off" autocapitalize="none" placeholder="Ex. cpmassot"><p class="muted" style="margin:4px 0 0">3 à 20 lettres ou chiffres. Majuscules, accents et espaces ne comptent pas. Évite les codes trop faciles comme 1234.</p><div class="actions"><button>+ Ajouter la classe</button></div></form><div class="class-created hidden" id="classCreated"><p id="classCreatedText"></p><button type="button" id="goAddStudents">➕ Ajouter mes élèves à cette classe</button></div></div>
  </section>
  <section class="panel feature-card student-card" id="addStudentSettings" data-section="eleves" data-sub="ajout">
   <div class="section-head"><div class="section-icon">🧒</div><div><h2>Ajouter un élève</h2><p class="muted">Inscrivez un élève dans la classe de votre choix.</p></div></div>
@@ -397,9 +398,9 @@ function dlg(text,o){o=o||{};return new Promise(res=>{
  row.append(ok,no);box.append(row);ov.append(box);document.body.append(ov);document.addEventListener("keydown",key,true);(inp||ok).focus();
 })}
 function msg(id,text,error){$(id).textContent=text||"";$(id).classList.toggle("err",!!error)}
-const CLASS_CODE_RULE="Le code de classe doit faire de 4 à 20 lettres ou chiffres (majuscules, accents et espaces ne comptent pas).";
+const CLASS_CODE_RULE="Le code de classe doit faire de 3 à 20 lettres ou chiffres (majuscules, accents et espaces ne comptent pas).";
 function normalizeClassCode(v){return String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^A-Za-z0-9]/g,"").toUpperCase()}
-function validClassCode(v){return /^[A-Z0-9]{4,20}$/.test(normalizeClassCode(v))}
+function validClassCode(v){return /^[A-Z0-9]{3,20}$/.test(normalizeClassCode(v))}
 /* Fiches de connexion : un PDF A4 avec 8 petites cartes à découper (format A7), une par élève */
 let jsPdfLoading=null;
 function loadJsPdf(){
@@ -469,7 +470,7 @@ async function renameClass(c,msgId){
  await refresh();if(msgId!=="studentsMsg")msg(msgId,"✏️ « "+old+" » s’appelle maintenant « "+n+" ».");
 }
 async function changeClassCode(c){
- const code=await dlg("Nouveau code pour la classe « "+c.name+" » (4 à 20 lettres ou chiffres).\nAttention : l’ancien code « "+c.access_code+" » ne marchera plus.",{input:true,value:c.access_code||"",ok:"Changer le code",label:"Code de la classe"});
+ const code=await dlg("Nouveau code pour la classe « "+c.name+" » (3 à 20 lettres ou chiffres).\nAttention : l’ancien code « "+c.access_code+" » ne marchera plus.",{input:true,value:c.access_code||"",ok:"Changer le code",label:"Code de la classe"});
  if(code===null)return;
  if(!validClassCode(code)){msg("codeMsg",CLASS_CODE_RULE,true);return;}
  const own=c.teacher_id===currentUser.id;
@@ -616,6 +617,14 @@ async function renderRecordings(){
 
 /* Administrateur : jeux classés par nombre de parties terminées (tous les enseignants), sans aucun nom d’élève */
 const GAME_NAMES={memory:"🃏 Memory des animaux",snake:"🐍 Le serpent",flap:"🐤 L’oiseau volant",order:"⏱️ Dans l’ordre",simon:"🧠 Répète les animaux",safari:"🦁 Safari des animaux",stack:"🦒 Tour d’animaux",tiles:"🎹 Tuiles des sons",count:"🔢 Compte les animaux (ancien jeu)",catch:"🎯 Attrape-les (ancien jeu)"};
+const openGroups=new Set();   /* blocs de « Progression » dépliés : gardés quand la liste se recharge */
+function foldGroup(head,body,key){
+ body.classList.toggle("hidden",!openGroups.has(key));
+ const bt=document.createElement("button");bt.type="button";bt.className="secondary cg-toggle";
+ const sync=()=>{const o=!body.classList.contains("hidden");bt.textContent=o?"Masquer":"Détails";bt.setAttribute("aria-expanded",String(o))};sync();
+ bt.onclick=()=>{body.classList.toggle("hidden");if(body.classList.contains("hidden"))openGroups.delete(key);else openGroups.add(key);sync()};
+ const right=document.createElement("div");right.className="cg-right";[...head.querySelectorAll(":scope > span")].forEach(x=>right.append(x));right.append(bt);head.append(right);
+}
 async function renderGameRanking(){
  const old=$("gameRanking");if(old)old.remove();
  if(currentRole!=="admin")return;
@@ -630,16 +639,16 @@ async function renderGameRanking(){
   const head=document.createElement("div");head.className="class-group-head";
   const h=document.createElement("h4");h.textContent="🎮 Jeux les plus joués";
   const all=list.reduce((a,[,t])=>a+t.parties,0);
-  const cnt=document.createElement("span");cnt.textContent=all+" partie"+(all>1?"s":"");head.append(h,cnt);box.append(head);
-  if(!list.length){const e=document.createElement("p");e.className="muted class-group-empty";e.textContent="Aucune partie terminée pour le moment.";box.append(e);}
+  const cnt=document.createElement("span");cnt.textContent=all+" partie"+(all>1?"s":"");head.append(h,cnt);box.append(head);const gbody=document.createElement("div");gbody.className="cg-body";box.append(gbody);foldGroup(head,gbody,"games");
+  if(!list.length){const e=document.createElement("p");e.className="muted class-group-empty";e.textContent="Aucune partie terminée pour le moment.";gbody.append(e);}
   const max=list.length?list[0][1].parties:1;
   list.forEach(([id,t],i)=>{
    const row=document.createElement("div");row.className="row game-rank-row";
    const info=document.createElement("div");const name=document.createElement("strong");name.textContent=(i+1)+". "+(GAME_NAMES[id]||id);
    const sub=document.createElement("div");sub.className="muted";sub.textContent=t.parties+" partie"+(t.parties>1?"s":"")+" · "+t.eleves+" élève"+(t.eleves>1?"s":"");
    const bar=document.createElement("div");bar.className="game-rank-bar";const fill=document.createElement("i");fill.style.width=Math.max(4,Math.round(t.parties/max*100))+"%";bar.append(fill);
-   info.append(name,sub,bar);row.append(info);box.append(row);});
-  const note=document.createElement("p");note.className="muted class-group-empty";note.textContent="Parties terminées, tous enseignants confondus. Les parties abandonnées ne sont pas comptées.";box.append(note);
+   info.append(name,sub,bar);row.append(info);gbody.append(row);});
+  const note=document.createElement("p");note.className="muted class-group-empty";note.textContent="Parties terminées, tous enseignants confondus. Les parties abandonnées ne sont pas comptées.";gbody.append(note);
   document.querySelectorAll("#gameRanking").forEach(x=>x.remove());   /* plusieurs chargements peuvent finir en même temps : un seul tableau reste */
   $("progressList").before(box);
  }catch(e){console.warn("Classement des jeux indisponible",e);}
@@ -658,8 +667,8 @@ async function renderProgress(students,classes){
   const head=document.createElement("div");head.className="class-group-head";
   const title=document.createElement("h4");title.textContent="📚 "+c.name;
   const count=document.createElement("span");count.textContent=group.length+(group.length>1?" élèves":" élève");
-  head.append(title,count);card.append(head);container.append(card);
-  if(!group.length){const empty=document.createElement("p");empty.className="muted class-group-empty";empty.textContent="Aucun élève dans cette classe.";card.append(empty);}
+  head.append(title,count);card.append(head);container.append(card);const body=document.createElement("div");body.className="cg-body";card.append(body);foldGroup(head,body,"c:"+c.id);
+  if(!group.length){const empty=document.createElement("p");empty.className="muted class-group-empty";empty.textContent="Aucun élève dans cette classe.";body.append(empty);}
   group.forEach(s=>{
    const row=progressMap.get(s.id),p=row&&row.progress||{};
    const readings=Array.isArray(p.results)?p.results:[];
@@ -784,7 +793,7 @@ async function renderProgress(students,classes){
      if(error){msg("progressMsg",errorText(error),true);return;}
      await renderProgress(students,classes);msg("progressMsg","🎁 10 pièces envoyées à "+s.nickname+". Elles arriveront dans son Zoo dès sa prochaine ouverture.");};
     acts.append(gift);}
-   acts.append(btn);wrap.append(acts,details);card.append(wrap);
+   acts.append(btn);wrap.append(acts,details);body.append(wrap);
   });
  });
  if(!students.length)container.textContent="Aucun élève inscrit.";

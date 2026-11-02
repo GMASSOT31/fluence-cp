@@ -980,6 +980,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   .home-say { flex: 0 0 auto; margin: 0; min-width: 62px; padding: 0 12px; font-size: 1.6rem; line-height: 1; border-radius: 16px; }
   .home-or { margin: 4px 0 -2px; font-size: .9rem; font-weight: 700; color: var(--muted); }
   .home-next .home-sub { display: block; margin-top: 4px; font-size: .78em; font-weight: 600; opacity: .9; }
+  .home-alt .home-sub { display: block; margin-top: 3px; font-size: .78em; font-weight: 600; opacity: .85; }
   .home-more { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
   .home-small { margin: 0; min-height: 44px; padding: 8px 14px; font-size: .95rem; white-space: normal; }
   .home-alt { margin: 0; min-height: 60px; font-size: 1.15rem; line-height: 1.25; padding: 12px 16px; white-space: normal; text-align: left; }
@@ -4226,9 +4227,9 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     function readAct() { var snd = soundById(nx.sound); return { pet: nx.sound, btn: "🏋️ Je m’entraîne", sub: "Je lis " + KW[nx.kind] + " du son " + q(snd.label), say: "Tu vas t’entraîner à lire " + KW[nx.kind] + " du son " + snd.label + ", avec un adulte ou un camarade qui t’écoute. Touche le gros bouton pour commencer.", go: function () { openStep(sid, nx.sound, nx.kind); } }; }
     function listenAct() { return { pet: lx.id, cls: " listen-go", btn: "👂 J’écoute le son " + q(lx.label), say: "Tu vas écouter et retrouver le son " + lx.label + ". Touche le gros bouton pour commencer.", go: function () { LS.pick = lx.id; goTo("audition"); } }; }
     var act = null, other = null;
-    if (wheels) { act = { cls: " wheel-go", btn: "🎡 Lance ta roue !", say: (wheels > 1 ? "Des roues t’attendent." : "Une roue t’attend.") + " Touche le gros bouton pour la lancer.", go: function () { openWheel(sid); } }; other = nx ? readAct() : (lx ? listenAct() : null); }
-    else if (nx) { act = readAct(); other = lx ? listenAct() : null; }
-    else if (lx) { act = listenAct(); }
+    if (wheels) { act = { cls: " wheel-go", btn: "🎡 Lance ta roue !", say: (wheels > 1 ? "Des roues t’attendent." : "Une roue t’attend.") + " Touche le gros bouton pour la lancer.", go: function () { openWheel(sid); } }; other = lx ? listenAct() : (nx ? readAct() : null); }
+    else if (lx) { act = listenAct(); other = nx ? readAct() : null; }
+    else if (nx) { act = readAct(); }
     var card = el("div", "card home-hero");
     card.appendChild(el("h2", "", "Bonjour " + st.name + " !"));
     var say = act ? "Bonjour " + st.name + " ! " + act.say : (waitEval ? "Bravo " + st.name + " ! Tu as réussi tes entraînements. Prépare ton évaluation avec ton enseignant pour ouvrir la suite." : "Bravo " + st.name + " ! Tu as tout réussi.");
@@ -4263,6 +4264,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       col.appendChild(el("p", "home-or", "Ou bien :"));
       var altRow = el("div", "home-act-row");
       var ob = el("button", "secondary big-btn home-alt" + (/listen/.test(other.cls || "") ? " listen-alt" : ""), other.btn); ob.type = "button";
+      if (other.sub) ob.appendChild(el("small", "home-sub", other.sub));
       ob.addEventListener("click", other.go);
       altRow.appendChild(ob); altRow.appendChild(sayBtn(other.say.replace("le gros bouton", "ce bouton"), "Écouter la consigne"));
       col.appendChild(altRow);

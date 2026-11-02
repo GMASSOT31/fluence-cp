@@ -16,7 +16,7 @@
   function fixCode(v, isUpdate, old) {
     var c = v == null ? null : norm(v); if (c === "") c = null;
     if (c === null) return isUpdate ? old : "AB12CD34EF";
-    if (!/^[A-Z0-9]{4,20}$/.test(c)) throw { code: "22023", message: "Le code de classe doit faire de 4 à 20 lettres ou chiffres." };
+    if (!/^[A-Z0-9]{3,20}$/.test(c)) throw { code: "22023", message: "Le code de classe doit faire de 3 à 20 lettres ou chiffres." };
     if (st.classes.some(function (k) { return k.access_code === c; })) throw { code: "23505", message: 'duplicate key value violates unique constraint "classes_access_code_key"' };
     return c;
   }
