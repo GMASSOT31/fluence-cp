@@ -589,6 +589,9 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   .listen-dots span.done { background: var(--ok); }
   .listen-dots span.now { background: var(--focus); }
   .listen-play { display: block; margin: 8px auto; min-height: 64px; padding: 12px 26px; font-size: 1.3rem; font-weight: 800; border-radius: 18px; border: 0; background: #3a9d8c; color: #fff; }
+  .listen-go-line { font-size: 1.25rem; font-weight: 800; text-align: center; margin: 10px 0 6px; }
+  .parent-note { margin-top: 20px; font-size: .82rem; color: var(--muted); opacity: .75; text-align: center; }
+  .parent-note p { margin: 4px 0; }
   .listen-choices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 14px 0; }
   .listen-choice { min-height: 84px; font-size: 2.2rem; font-weight: 800; border-radius: 18px; background: var(--card); color: var(--ink); border: 2px solid var(--line); }
   .listen-stars { display: flex; justify-content: center; gap: 10px; margin: 6px 0 2px; }
@@ -3987,7 +3990,6 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var card = el("div", "card");
     card.appendChild(el("h2", "", "👂 Écouter les sons"));
     if (!ls.length) { card.appendChild(el("p", "instruction", "Aucun son disponible pour le moment.")); body.appendChild(card); return; }
-    card.appendChild(el("p", "instruction", (listenUsesSyl(sid, soundById(listenSelOk(sid)) || {}) ? "Une voix dit une syllabe. Touche comment elle s’écrit : il y en a une ou deux." : "Une voix dit un son. Touche les façons de l’écrire : il y en a une ou deux.") + " Réussis " + nb(cfg.passes, "fois", "fois") + " pour passer au son suivant."));
     var pick = LS.pick && soundById(LS.pick) && listenUnlocked(sid, LS.pick) ? LS.pick : null;
     LS.pick = null;
     var nxt = listenNext(sid);
@@ -4001,8 +4003,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       return;
     }
     var cur = soundById(LS.sound), done = listenDone(sid, LS.sound), need = listenNeed(LS.sound), n = Math.min(L.passes[LS.sound] || 0, need), ch = charFor(LS.sound);
-    card.appendChild(el("p", "hint", cfg.questions + " questions, " + nb(cfg.maxErrors, "erreur permise", "erreurs permises") + "." + (done ? " Ce son est déjà réussi : tu t’entraînes, sans nouvelle pièce." : "")));
-    card.appendChild(el("p", "lire-sub", done ? "👂 Touche la carte pour rejouer." : "👂 Ton prochain son : touche la carte pour commencer !"));
+    card.appendChild(el("p", "lire-sub listen-go-line", done ? "👂 Touche la carte pour rejouer !" : "👂 Touche la carte pour commencer !"));
     var grid = el("div", "zoo-grid listen-next");
     var b = el("button", "zoo-card" + (done ? " heard" : "")); b.type = "button";
     b.appendChild(buildPet(done ? { got: 1, total: 1, locked: false } : { got: 0, total: 1, locked: false }, ch));
@@ -4015,6 +4016,11 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     b.addEventListener("click", function () { listenStart(sid, LS.sound); });
     grid.appendChild(b);
     card.appendChild(grid);
+    /* La consigne détaillée passe en dessous, discrète : elle sert surtout à l'adulte qui accompagne */
+    var note = el("div", "parent-note");
+    note.appendChild(el("p", "", (listenUsesSyl(sid, cur) ? "Une voix dit une syllabe. Touche comment elle s’écrit : il y en a une ou deux." : "Une voix dit un son. Touche les façons de l’écrire : il y en a une ou deux.") + " Réussis " + nb(cfg.passes, "fois", "fois") + " pour passer au son suivant."));
+    note.appendChild(el("p", "", cfg.questions + " questions, " + nb(cfg.maxErrors, "erreur permise", "erreurs permises") + "." + (done ? " Ce son est déjà réussi : on s’entraîne, sans nouvelle pièce." : "")));
+    card.appendChild(note);
     body.appendChild(card);
   }
   function listenStart(sid, soundId) {
