@@ -80,8 +80,9 @@
   function copy(o) { return JSON.parse(JSON.stringify(o)); }
   function uid(p) { S.n++; return p + S.n + "-" + Date.now().toString(36); }
   function student(id) { return S.students.filter(function (s) { return s.id === id; })[0] || null; }
-  function applyLevel(results, queue, sid) {
+  function applyLevel(results, queue, sid, prog) {
     queue.forEach(function (e) {
+      if (e.k === "l") { var L = prog.listen = prog.listen || { passes: {}, done: {}, tries: 0 }; L.done = L.done || {}; L.passes = L.passes || {}; if (e.on) L.done[e.sound] = true; else { delete L.done[e.sound]; L.passes[e.sound] = 0; } return; }
       if (e.on) results.push({ id: "adj" + Math.random().toString(36).slice(2), sid: sid, sound: e.sound, k: e.k, n: 0, e: 0, t: 0, mclm: e.mclm, ts: Date.now(), src: "adj", adj: true });
       else results.forEach(function (r) { if (r.sound === e.sound && r.k === e.k && r.src !== "train") r.void = true; });
     });
@@ -139,8 +140,8 @@
       var r = row(S.me), q = r.pending_level || [];
       if (!q.length) return { claimed: 0, version: r.version };
       checkVersion(a.p_version);
-      r.progress.results = r.progress.results || []; applyLevel(r.progress.results, q, S.me); r.pending_level = []; r.version++;
-      return { claimed: q.length, results: r.progress.results, version: r.version };
+      r.progress.results = r.progress.results || []; applyLevel(r.progress.results, q, S.me, r.progress); r.pending_level = []; r.version++;
+      return { claimed: q.length, results: r.progress.results, listen: r.progress.listen, version: r.version };
     },
     student_claim_vouchers: function (a) {
       var r = row(S.me);

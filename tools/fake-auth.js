@@ -89,7 +89,7 @@
         if (!sl || sl.teacher_id !== st.user.id) return Promise.resolve({ data: null, error: { message: "Cet élève n'est pas dans tes classes" } });
         var rl = st.progress[a.p_student] || (st.progress[a.p_student] = { student_id: a.p_student, progress: {}, updated_at: "2026-10-20T11:00:00Z", pending_coins: 0 });
         rl.progress.results = rl.progress.results || [];
-        a.p_steps.forEach(function (e) { if (e.on) rl.progress.results.push({ id: "adj" + rl.progress.results.length, sid: a.p_student, sound: e.sound, k: e.k, n: 0, e: 0, t: 0, mclm: e.mclm, ts: Date.now(), src: "adj", adj: true }); else rl.progress.results.forEach(function (r) { if (r.sound === e.sound && r.k === e.k && r.src !== "train") r.void = true; }); });
+        a.p_steps.forEach(function (e) { if (e.k === "l") { var LL = rl.progress.listen = rl.progress.listen || { passes: {}, done: {}, tries: 0 }; if (e.on) LL.done[e.sound] = true; else { delete LL.done[e.sound]; LL.passes[e.sound] = 0; } return; } if (e.on) rl.progress.results.push({ id: "adj" + rl.progress.results.length, sid: a.p_student, sound: e.sound, k: e.k, n: 0, e: 0, t: 0, mclm: e.mclm, ts: Date.now(), src: "adj", adj: true }); else rl.progress.results.forEach(function (r) { if (r.sound === e.sound && r.k === e.k && r.src !== "train") r.void = true; }); });
         return Promise.resolve({ data: a.p_steps.length, error: null }); }
       if (name === "teacher_give_coins") { st.gifts.push(a);
         var stu = st.students.filter(function (x) { return x.id === a.p_student; })[0];

@@ -1644,7 +1644,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
 </main>
 <div class="toast" id="toast" role="status"></div>
 
-<script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=21"><\/script>':'<script src="vendor/supabase.js?v=2.118.0"><\/script>');})();</script>
+<script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=22"><\/script>':'<script src="vendor/supabase.js?v=2.118.0"><\/script>');})();</script>
 <script>
 (function () {
   "use strict";
@@ -2150,6 +2150,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       if(Number(lr.claimed)>0){
         cloudVersion=Number(lr.version);
         data.results=data.results.filter(function(x){return x.sid!==cloudStudentId;}).concat(Array.isArray(lr.results)?lr.results:[]);
+        if(lr.listen&&typeof lr.listen==="object")data.listen[cloudStudentId]=listenClean(lr.listen);
         renderPanels();
         if(!$("v-home").hidden)renderHome();
         toast("🏅 Ton maître(sse) a changé ton niveau : tu es au niveau "+readLevel(cloudStudentId)+" !");
