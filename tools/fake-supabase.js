@@ -60,6 +60,18 @@
       var n = srv.pending; srv.pending = 0; srv.me.progress.coins = (srv.me.progress.coins || 0) + n; srv.version++;
       return { claimed: n, coins: srv.me.progress.coins, version: srv.version };
     },
+    student_claim_level: function (a) {
+      var q = srv.pendingLevel || [];
+      if (!q.length) return { claimed: 0, version: srv.version };
+      if (a.p_version !== srv.version) throw { message: "SYNC_CONFLICT" };
+      var res = srv.me.progress.results = srv.me.progress.results || [];
+      q.forEach(function (e) {
+        if (e.on) res.push({ id: "adj" + res.length, sid: srv.me.id || "s1", sound: e.sound, k: e.k, n: 0, e: 0, t: 0, mclm: e.mclm, ts: Date.now(), src: "adj", adj: true });
+        else res.forEach(function (r) { if (r.sound === e.sound && r.k === e.k && r.src !== "train") r.void = true; });
+      });
+      srv.pendingLevel = []; srv.version++;
+      return { claimed: q.length, results: res, version: srv.version };
+    },
     student_claim_credits: function () { return { claimed: 0, version: srv.version }; },
     student_submit_score: function (a) {
       if (a.p_version !== srv.version) throw { message: "SYNC_CONFLICT" };

@@ -146,6 +146,7 @@ main{max-width:1050px}
 .class-group-head h4{margin:0;font-size:1.08rem;color:#1b2433}
 .class-group-head span{font-size:.85rem;font-weight:800;color:var(--cg);background:#fff;border-radius:999px;padding:4px 10px}
 .class-group .progress-row{padding:12px 16px;margin:0;border-top:1px solid #eef1f6}
+.pd-level{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:12px 0}.pd-level:empty{display:none}.pd-level input{width:72px;text-align:center}
 .class-group .progress-row:first-of-type{border-top:0}
 .class-group-empty{margin:0;padding:12px 16px}
 .sub-picker.two{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -368,7 +369,7 @@ body:not(.teacher-mode) main{color:#eef0f7}
  <h3 style="margin:22px 0 8px">✉️ Messages du formulaire de contact</h3><p class="muted">Écrits sans compte depuis la page Contact du site. Répondez par e-mail.</p><p class="msg" id="ctMsg" role="status"></p><div id="ctList" class="content-list"></div>
 </section>
 </div>
-</section></main><script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=19"><\/script>':'<script src="vendor/supabase.js?v=2.118.0"><\/script>');})();</script><script>
+</section></main><script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=21"><\/script>':'<script src="vendor/supabase.js?v=2.118.0"><\/script>');})();</script><script>
 (function(){
 "use strict";
 /* Retour du lien « Mot de passe oublié » : on lit l’adresse avant que la bibliothèque Supabase ne la nettoie */
@@ -663,9 +664,9 @@ async function renderProgress(students,classes){
    const row=progressMap.get(s.id),p=row&&row.progress||{};
    const readings=Array.isArray(p.results)?p.results:[];
    const games=p.hi&&typeof p.hi==="object"?Object.entries(p.hi):[];
-   const evaluations=readings.filter(r=>r&&r.src!=="train");
+   const evaluations=readings.filter(r=>r&&r.src!=="train"&&r.src!=="adj"&&!r.void);
    const thrOf={s:Number($("thrS").value)||25,m:Number($("thrM").value)||20,t:Number($("thrT").value)||15};
-   const bestE={},bestT={};readings.forEach(r=>{if(!r||!r.sound||!thrOf[r.k]||r.short)return;const key=r.sound+":"+r.k,v=Number(r.mclm)||0,box=r.src==="train"?bestT:bestE;if(!(key in box)||v>box[key])box[key]=v;});
+   const bestE={},bestT={};readings.forEach(r=>{if(!r||!r.sound||!thrOf[r.k]||r.short||r.void)return;const key=r.sound+":"+r.k,v=Number(r.mclm)||0,box=r.src==="train"?bestT:bestE;if(!(key in box)||v>box[key])box[key]=v;});
    const certified=Object.keys(bestE).filter(k=>bestE[k]>=thrOf[k.split(":").pop()]);
    const trained=Object.keys(bestT).filter(k=>bestT[k]>=thrOf[k.split(":").pop()]);
    const alone=trained.filter(k=>!certified.includes(k));
@@ -709,13 +710,38 @@ async function renderProgress(students,classes){
    const details=document.createElement("div");details.className="muted hidden";details.style.cssText="width:100%";
    const mk=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e};
    const dfmt=ts=>Number.isFinite(Number(ts))&&Number(ts)>0?new Date(Number(ts)).toLocaleDateString("fr-FR"):"date inconnue";
-   const scoreTxt=r=>Number(r.fraud)>0?"⚠️ Résultat écarté : durée trop courte ou score inhabituel ("+fmt(r.fraud)+")":fmt(r.mclm)+" corrects/min";
+   const scoreTxt=r=>r.src==="adj"?"niveau accordé par l’enseignant":Number(r.fraud)>0?"⚠️ Résultat écarté : durée trop courte ou score inhabituel ("+fmt(r.fraud)+")":fmt(r.mclm)+" corrects/min";
    const kindOf=k=>k==="s"?"syllabes":k==="m"?"mots":k==="t"?"texte":"lecture";
    const soundName=id=>{const x=cfgSounds.find(z=>z&&z.id===id);return x?(x.label||x.id):(id||"son non précisé")};
    const pcard=(title,cls)=>{const c=mk("div","pd-card "+(cls||""));c.append(mk("h5",null,title));return c};
    const more=(c,items)=>{const ul=mk("ul","pd-list hidden");(items.length?items:["Rien pour l’instant."]).forEach(t=>ul.append(mk("li",null,t)));const bt=mk("button","pd-more","Voir le détail");bt.type="button";bt.onclick=()=>{const h=ul.classList.toggle("hidden");bt.textContent=h?"Voir le détail":"Masquer le détail"};c.append(bt,ul)};
    const bar=(parts,cls)=>{const b=mk("div","pd-bar "+cls);parts.forEach(([pct,c2])=>{const i=document.createElement("i");i.style.width=Math.min(100,pct)+"%";if(c2)i.className=c2;b.append(i)});return b};
    const grid=mk("div","pd-grid");
+   /* « + niveau » / « − niveau » : l’enseignant fait sauter ou rétrograder (étapes certifiées 🏅 ajoutées ou retirées) */
+   const levelBox=mk("div","pd-level");
+   if(s.teacher_id===currentUser.id){
+    const stepsT=[];cfgSounds.forEach(x=>{if(!x||!x.id||x.id==="h"||x.id==="sz")return;["s","m","t"].forEach(k=>{if(!x.only||x.only.includes(k))stepsT.push(x.id+":"+k)})});
+    const lv=stepsT.reduce((n,k,i)=>certified.includes(k)?i+1:n,0);
+    const stepName=k=>{const [sn,kd]=k.split(":");return soundName(sn)+" · "+KN[kd]};
+    const inp=mk("input");inp.type="number";inp.min="1";inp.max="20";inp.value="1";inp.setAttribute("aria-label","Nombre de niveaux");
+    const bm=mk("button","secondary","− niveau"),bp=mk("button",null,"+ niveau");bm.type=bp.type="button";
+    const run=async dir=>{
+     const n=Math.min(20,Math.max(1,Math.round(Number(inp.value))||1));inp.value=String(n);
+     let targets,ask;
+     if(dir>0){targets=stepsT.slice(lv,lv+n);if(!targets.length){msg("progressMsg",s.nickname+" est déjà au dernier niveau.");return}
+      ask="Faire passer "+s.nickname+" de « niveau "+lv+" » à « niveau "+Math.min(stepsT.length,lv+n)+" » ?\nÉtapes certifiées 🏅 d’office : "+targets.map(stepName).join(", ")+"."}
+     else{const hi=stepsT.filter(k=>certified.includes(k)).reverse().slice(0,n);if(!hi.length){msg("progressMsg",s.nickname+" n’a aucune étape certifiée à retirer.");return}
+      targets=hi;ask="Retirer la certification 🏅 de : "+hi.map(stepName).join(", ")+" ?\nLes entraînements ⭐ de "+s.nickname+" sont gardés."}
+     if(!await dlg(ask,{ok:dir>0?"Faire monter":"Faire descendre"}))return;
+     bm.disabled=bp.disabled=true;
+     const {error}=await client.rpc("teacher_adjust_level",{p_student:s.id,p_steps:targets.map(k=>{const [sn,kd]=k.split(":");return dir>0?{sound:sn,k:kd,on:true,mclm:thrOf[kd]}:{sound:sn,k:kd,on:false}})});
+     bm.disabled=bp.disabled=false;
+     if(error){msg("progressMsg",errorText(error),true);return}
+     await renderProgress(students,classes);msg("progressMsg","🏅 Niveau de "+s.nickname+" modifié. Il sera pris en compte dans son Zoo à sa prochaine ouverture.");
+    };
+    bm.onclick=()=>run(-1);bp.onclick=()=>run(1);
+    levelBox.append(mk("strong",null,"🎚️ Niveau "+lv+" / "+stepsT.length),inp,bm,bp);
+   }
    /* 1. Sons écoutés */
    {const c=pcard("👂 Sons écoutés","pd-listen"),tot=Math.max(1,lisOrder.length);
     const big=mk("div","pd-big",String(lisOk));big.append(mk("small",null," / "+lisOrder.length+" sons"));
@@ -726,7 +752,7 @@ async function renderProgress(students,classes){
     const cs=new Set(certified.map(sOf)),as=new Set(alone.map(sOf).filter(x=>!cs.has(x)));
     const big=mk("div","pd-big",String(cs.size+as.size));big.append(mk("small",null," / "+cfgSounds.length+" sons réussis"));
     c.append(big,bar([[cs.size/tot*100],[as.size/tot*100,"alone"]],"pd-read"),mk("div","pd-note","🏅 "+cs.size+" "+pl(cs.size,"certifié","certifiés")+" · ⭐ "+as.size+" en entraînement seulement"));
-    more(c,readings.slice().sort((a,b)=>(Number(b.ts)||0)-(Number(a.ts)||0)).slice(0,20).filter(Boolean).map(r=>(r.src==="train"?"🟡 Entraînement":"🟢 Évaluation")+" · "+dfmt(r.ts)+" · "+soundName(r.sound)+" · "+kindOf(r.k)+" · "+scoreTxt(r)+" · "+fmt(r.e)+" "+pl(r.e,"erreur","erreurs")+(r.short?" · durée insuffisante":"")));grid.append(c)}
+    more(c,readings.slice().sort((a,b)=>(Number(b.ts)||0)-(Number(a.ts)||0)).slice(0,20).filter(Boolean).map(r=>(r.src==="train"?"🟡 Entraînement":r.src==="adj"?"⚙️ Niveau ajusté":"🟢 Évaluation")+(r.void?" (annulée)":"")+" · "+dfmt(r.ts)+" · "+soundName(r.sound)+" · "+kindOf(r.k)+" · "+scoreTxt(r)+" · "+fmt(r.e)+" "+pl(r.e,"erreur","erreurs")+(r.short?" · durée insuffisante":"")));grid.append(c)}
    /* 3. Fluence */
    {const c=pcard("⚡ Fluence (évaluations)","pd-flu");
     const okEv=evaluations.filter(r=>r&&!r.short&&Number(r.mclm)>0),cnt={s:0,m:0,t:0};okEv.forEach(r=>{if(cnt[r.k]!=null)cnt[r.k]++});
@@ -749,7 +775,7 @@ async function renderProgress(students,classes){
     const big=mk("div","pd-big",String(played));big.append(mk("small",null," "+pl(played,"partie jouée","parties jouées")));
     c.append(big,mk("div","pd-note",games.length+" "+pl(games.length,"jeu essayé","jeux essayés")));
     more(c,games.map(([g,h])=>(GAME_NAMES[g]||g)+" : "+((h&&Number(h.n))||0)+" "+pl((h&&Number(h.n))||0,"partie","parties")+" · record "+(h&&h.best!=null?h.best:"non défini")));grid.append(c)}
-   details.append(grid,mk("div","pd-foot","En chiffres :"),summary,mk("div","pd-foot","Une étape = un son à un niveau (syllabes, mots ou texte)."),mk("div","pd-foot",row?"Dernière sauvegarde : "+new Date(row.updated_at).toLocaleString("fr-FR"):"Aucune progression enregistrée sur le Zoo connecté."));
+   details.append(grid,levelBox,mk("div","pd-foot","En chiffres :"),summary,mk("div","pd-foot","Une étape = un son à un niveau (syllabes, mots ou texte)."),mk("div","pd-foot",row?"Dernière sauvegarde : "+new Date(row.updated_at).toLocaleString("fr-FR"):"Aucune progression enregistrée sur le Zoo connecté."));
    btn.onclick=()=>{details.classList.toggle("hidden");const open=!details.classList.contains("hidden");btn.textContent=open?"Masquer":"Détails";btn.setAttribute("aria-expanded",String(open))};
    const acts=document.createElement("div");acts.className="row-actions";
    if(s.teacher_id===currentUser.id){const gift=document.createElement("button");gift.type="button";gift.textContent="🎁 +10";gift.title="Donner 10 pièces d’or à "+s.nickname;
