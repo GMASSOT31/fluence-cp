@@ -986,6 +986,24 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   .home-next:not(.listen-go):not(.wheel-go) { background: linear-gradient(135deg, #6d5dfc, #3b82f6); color: #fff; border-color: #4f6af0; }
   .home-next { box-shadow: 0 6px 18px rgba(80, 90, 240, .35); }
   .wheel-go { background: linear-gradient(135deg, #f5a623, #e2572c); color: #fff; border-color: #e2572c; }
+  /* Étape suggérée : TOUJOURS la même couleur (vert) et qui pulse, sur tous les écrans. Un seul bouton vert à la fois : c'est celui qu'il faut toucher. */
+  .go-next, body.mode-student #btn-open:not(:disabled), body.mode-student #btn-start:not(:disabled), body.mode-student #btn-validate, body.mode-student #btn-save,
+  body.mode-student #btn-spin:not(:disabled), body.mode-student #btn-wheel-done, body.mode-student #btn-panel-wheel {
+    background: linear-gradient(135deg, #3ddc77, #16a34a) !important; color: #fff !important; border-color: #15803d !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, .25); animation: go-pulse 1.4s ease-in-out infinite;
+  }
+  .go-next:disabled { animation: none; opacity: .6; }
+  .next-bar { margin: 0 0 12px; display: flex; justify-content: center; }
+  .next-bar .big-btn { margin: 0; width: 100%; max-width: 420px; }
+  body.mode-student #btn-start, body.mode-student #btn-save, body.mode-student #btn-validate, body.mode-student #btn-open { font-size: 1.25rem; padding: 12px 24px; }
+  @keyframes go-pulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 6px 16px rgba(22, 163, 74, .4), 0 0 0 0 rgba(34, 197, 94, .55); }
+    50% { transform: scale(1.04); box-shadow: 0 6px 16px rgba(22, 163, 74, .4), 0 0 0 14px rgba(34, 197, 94, 0); }
+  }
+  .zoo-card.suggested { border-color: #16a34a; border-width: 3px; background: #effcf3; animation: go-pulse 1.4s ease-in-out infinite; }
+  .zoo-card .go-badge { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); padding: 3px 12px; border-radius: 999px; background: #16a34a; color: #fff; font-size: .85rem; font-weight: 800; white-space: nowrap; }
+  .lire-big.suggested, .zoo-card.suggested { border-color: #16a34a !important; border-width: 3px; background: #effcf3 !important; animation: go-pulse 1.4s ease-in-out infinite; }
+  @media (prefers-reduced-motion: reduce) { .go-next, .zoo-card.suggested, .lire-big.suggested, body.mode-student #btn-open, body.mode-student #btn-start, body.mode-student #btn-validate, body.mode-student #btn-save, body.mode-student #btn-spin, body.mode-student #btn-wheel-done, body.mode-student #btn-panel-wheel { animation: none; } }
   .home-act-row { display: flex; align-items: stretch; gap: 8px; }
   .home-act-row .home-next, .home-act-row .home-alt { flex: 1 1 auto; min-width: 0; }
   .home-say { flex: 0 0 auto; margin: 0; min-width: 78px; padding: 0 14px; font-size: 2.1rem; line-height: 1; border-radius: 16px; }
@@ -1662,20 +1680,41 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
 
   /* Sons dans l’ordre de la progression, sans périodes ni révisions */
   var DEFAULT_SOUNDS = [
-    ["voy", "voyelles", ["s"]],
+    ["voy", "voyelles", ["s"]], ["voy2", "é et è", ["s"]],
     ["l", "l"], ["f", "f"], ["ch", "ch"], ["s", "s"], ["m", "m"], ["r", "r"], ["n", "n"], ["v", "v"],
     ["j", "j"], ["z", "z"], ["p", "p"], ["t", "t"], ["c", "c"], ["b", "b"], ["d", "d"], ["g", "g"], ["ou", "ou"], ["au", "au, eau"],
     ["h", "h"], ["on", "on, om"], ["oi", "oi"], ["an", "an, am"], ["en", "en, em"], ["ai", "ai, ei, ê, et"], ["er", "er, ez, es"], ["fr", "fr, pr…"], ["fl", "fl, pl…"], ["in", "in, im"],
     ["ain", "ain, ein"], ["oin", "oin"], ["ian", "ian…"], ["eu", "eu, oeu"], ["k", "k, qu"], ["gn", "gn"], ["ph", "ph"], ["gj", "g qui se lit j"], ["cs", "c qui se lit s"],
     ["es", "es, er, el, ec"], ["elle", "elle, ette…"], ["sz", "s qui se lit z"], ["ill", "ill"], ["y", "y, ii"], ["ti", "ti qui se lit si"], ["w", "w"], ["x", "x"], ["un", "un, yn"]
   ];
+  /* Les voyelles sont en deux étapes : « voy » (a e i o u y) puis « voy2 » (é et è). Les réglages enseignant enregistrés avant n’ont que « voy » */
+  function withVoy2(a) {
+    var i = -1; a.forEach(function (x, k) { if (x.id === "voy") i = k; });
+    if (i >= 0 && !a.some(function (x) { return x.id === "voy2"; })) a.splice(i + 1, 0, { id: "voy2", label: "é et è", only: ["s"] });
+    return a;
+  }
+  /* Élèves qui avaient déjà réussi « voyelles » : « é et è » est considérée comme réussie (copie des résultats réussis et de l’écoute validée) */
+  function voy2Fix(p, thr) {
+    if (!p || typeof p !== "object") return p;
+    var res = Array.isArray(p.results) ? p.results : [], L = p.listen && typeof p.listen === "object" ? p.listen : null;
+    if (res.some(function (r) { return r && r.sound === "voy2"; }) || (L && ((L.done && L.done.voy2) || (L.passes && L.passes.voy2 != null)))) return p;
+    var add = res.filter(function (r) { return r && r.sound === "voy" && r.k === "s" && !r.void && !r.fraud && !r.short && Number(r.mclm) >= thr; })
+      .map(function (r) { var c = Object.assign({}, r); c.sound = "voy2"; if (r.id) c.id = r.id + "-e"; return c; });
+    var ld = !!(L && L.done && L.done.voy);
+    if (!add.length && !ld) return p;
+    var q = Object.assign({}, p);
+    q.results = res.concat(add);
+    if (ld) q.listen = Object.assign({}, L, { done: Object.assign({}, L.done, { voy2: true }), passes: Object.assign({}, L.passes, { voy2: (L.passes && L.passes.voy) || 0 }) });
+    return q;
+  }
   function defaultSounds() {
     return DEFAULT_SOUNDS.map(function (a) { var o = { id: a[0], label: a[1] }; if (a[2]) o.only = a[2]; return o; });
   }
 
   /* Brouillons : n’utilisent que les graphèmes déjà étudiés, nouveau son compris */
   var DEFAULTS = {
-    "s:voy": "o e é e è o u i o a y e u y\nè a u è é a é i e u è y é\nu y e i y i o i a é a è o",
+    "s:voy": "o e a e i o u i o a y e u y\na u o i e a o i e u y a o\nu y e i y i o i a u o e a",
+    "s:voy2": "é è é è é é è è é è é\nè é è é è è é é è é è\né é è è é è é è è é é",
 
     "s:l": "la li lo lu le lé lè la lu li lo le lé lè lu la lo li lé le lè la li lu lo\nal il ol ul el",
     "m:l": "la le il lu lue il la lu le lue\nLola Lila Lili Lulu Ali Léa Léo olé élu Lola Lili Léo olé",
@@ -1876,7 +1915,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   /* Graphèmes à reconnaître et à prononcer, par son : [id, "graphèmes séparés par des virgules", texte à dire]
      (les voix de synthèse disent souvent le nom de la lettre : on leur donne une syllabe proche du son) */
   var LISTEN_ITEMS = [
-    ["voy", "a", "a"], ["voy", "e", "euh"], ["voy", "i", "i"], ["voy", "o", "o"], ["voy", "u", "u"], ["voy", "é", "et"], ["voy", "è", "est"],
+    ["voy", "a", "a"], ["voy", "e", "euh"], ["voy", "i", "i"], ["voy", "o", "o"], ["voy", "u", "u"], ["voy2", "é", "et"], ["voy2", "è", "est"],
     ["l", "l", "leu"], ["f", "f", "feu"], ["ch", "ch", "cheu"], ["s", "s", "seu"], ["m", "m", "meu"], ["r", "r", "reu"], ["n", "n", "neu"],
     ["v", "v", "veu"], ["j", "j", "jeu"], ["z", "z", "zeu"], ["p", "p", "peu"], ["t", "t", "teu"], ["c", "c", "keu"], ["b", "b", "beu"],
     ["d", "d", "deu"], ["g", "g", "gueu"], ["ou", "ou", "ou"], ["au", "au,eau", "o"], ["on", "on,om", "on"], ["oi", "oi", "oua"],
@@ -1960,7 +1999,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
         if (Array.isArray(d.results)) data.results = cleanFraud(d.results);
         if (d.thr && typeof d.thr === "object") ["s", "m", "t"].forEach(function (k) { if (typeof d.thr[k] === "number") data.thr[k] = d.thr[k]; });
         if (d.texts && typeof d.texts === "object") data.texts = d.texts;
-        if (Array.isArray(d.sounds) && d.sounds.length) data.sounds = d.sounds;
+        if (Array.isArray(d.sounds) && d.sounds.length) data.sounds = withVoy2(d.sounds);
         if (typeof d.lock === "boolean") data.lock = d.lock;
         if (typeof d.reward === "boolean") data.reward = d.reward;
         if (typeof d.sfx === "boolean") data.sfx = d.sfx;
@@ -2445,8 +2484,20 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if (v === "ecoute") renderEcoute();
     if (v === "progression") renderProgress();
     if (v === "reglages") renderSettings();
-    if (ses.role === "student") renderPanels();
+    if (ses.role === "student") { renderPanels(); addNextBar(v); }
     if (ses.role === "teacher") updateRecBadge();
+  }
+  /* Sur les écrans « à côté » (cartes, boutique, jeux, progression), un gros bouton vert ramène toujours à l'étape suivante (l'accueil) */
+  function addNextBar(v) {
+    var id = { cartes: "cartes-body", reconnues: "reconnues-body", boutique: "boutique-body", jeux: "jeux-body", progres: "progres-body" }[v];
+    var host = id && $(id);
+    if (!host || ses.viaTeacher || !cloudToken) return;
+    var sid = ses.sid;
+    if (!(nextStep(sid) || listenNext(sid) || (data.reward && pendingWheels(sid).length))) return;
+    var bar = el("div", "next-bar"), b = el("button", "primary big-btn go-next", "👉 Mon étape suivante"); b.type = "button";
+    b.addEventListener("click", function () { goTo("home"); });
+    bar.appendChild(b);
+    host.insertBefore(bar, host.firstChild);
   }
   function goTo(v) {
     if (S.phase === "running") { toast("Arrête d’abord la lecture en cours."); return; }
@@ -2611,6 +2662,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       va.appendChild(el("span", "lb-ico", "🏅")); va.appendChild(el("span", "lb-txt", "Valider un son"));
       va.appendChild(el("small", "", "Avec ton maître(sse)"));
       va.addEventListener("click", function () { LR.goal = "eval"; renderSetup(); });
+      /* le choix conseillé est en vert : s'entraîner s'il reste une étape à travailler, sinon valider avec l'enseignant */
+      (!nextStep(sid) && evalWaiting(sid) ? va : tr).classList.add("suggested");
       row.appendChild(tr); row.appendChild(va); lm.appendChild(row);
       return;
     }
@@ -2622,12 +2675,15 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     top.appendChild(el("p", "lire-sub", goal === "train" ? "🏋️ Choisis une carte pour t’entraîner." : "🏅 Choisis le son à valider."));
     lm.appendChild(top);
     if (!list.length) { lm.appendChild(el("p", "instruction", goal === "train" ? "Aucun son pour l’instant." : "Bravo ! Tous tes sons sont déjà certifiés 🏅.")); return; }
+    /* la carte conseillée : le son de la prochaine étape (entraînement) ; pour valider : le premier son réussi mais pas encore certifié */
+    var sugNx = nextStep(sid), sugId = goal === "train" ? (sugNx ? sugNx.sound : null) : ((list.filter(function (x) { return !soundCertified(sid, x.id) && soundValidated(sid, x.id); })[0] || {}).id || null);
     var grid = el("div", "zoo-grid lire-grid");
     list.forEach(function (s) {
       var total = 0, got = 0, cert = 0;
       KINDS.forEach(function (k) { if (hasContent(s.id, k.k)) { total++; if (isTrained(sid, s.id, k.k)) got++; if (isValid(sid, s.id, k.k)) cert++; } });
       var kind = lireKind(sid, s.id, goal), ch = charFor(s.id);
-      var b = el("button", "zoo-card" + (cert ? " certified" : "")); b.type = "button";
+      var b = el("button", "zoo-card" + (cert ? " certified" : "") + (sugId === s.id ? " suggested" : "")); b.type = "button";
+      if (sugId === s.id) b.appendChild(el("span", "go-badge", "👉 Pour toi"));
       if (cert) b.appendChild(el("span", "cert-stamp", cert === total ? "🏅 Certifiée" : "🏅 " + cert + "/" + total));
       b.appendChild(buildPet({ got: got, total: total, cert: cert, locked: false }, ch));
       b.appendChild(el("div", "son", s.label));
@@ -3101,6 +3157,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       toast(nowPassed ? (evalWaiting(S.sid) ? "Réussi en entraînement ⭐ : prépare ton évaluation avec ton enseignant pour ouvrir la suite !" : "Réussi en entraînement ⭐ : tu passes à la suite !") : "Entraînement enregistré");
       leaveSession(false);
       renderPanels();
+      homeIfStudent();
       return;
     }
     if (current.t < MIN_TRAIN_SEC && !confirm("Lecture très courte (" + current.t + " s) : le score n’est pas fiable. Enregistrer quand même ?")) return;
@@ -3128,12 +3185,15 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     toast(newly ? "Enregistré : certifié par l’enseignant 🏅" : "Résultat enregistré");
     leaveSession(true);
     renderPanels();
+    if (!newly) homeIfStudent();
     if (newly) {
       var afterWheel = function () { if (data.reward) openWheel(sid, intro, petEmoji); else show("home"); };
       showEvolution({ ch: charFor(evoSound), from: petBefore, to: petState(sid, evoSound), sid: sid, zoo: "cartes" }, afterWheel);
     }
   });
-  $("btn-discard").addEventListener("click", function () { leaveSession(false); });
+  $("btn-discard").addEventListener("click", function () { leaveSession(false); homeIfStudent(); });
+  /* Après une lecture, l'élève revient à l'accueil : il y retrouve l'unique gros bouton vert « étape suivante » (pas besoin de rechoisir dans les menus) */
+  function homeIfStudent() { if (ses.role === "student" && !ses.viaTeacher && cloudToken) show("home"); }
   function leaveSession(suggest) {
     if (S.timerId) { clearInterval(S.timerId); S.timerId = null; }
     S.phase = "idle"; current = null;
@@ -3249,7 +3309,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
 
   /* Animaux : un par son, qui grandit avec les trois niveaux */
   var CHARS = {
-    voy: ["🐝", "l’abeille"], l: ["🦙", "le lama"], f: ["🐜", "la fourmi"], ch: ["🦉", "la chouette"], s: ["🐍", "le serpent"],
+    voy: ["🐝", "l’abeille"], voy2: ["🐞", "la coccinelle"], l: ["🦙", "le lama"], f: ["🐜", "la fourmi"], ch: ["🦉", "la chouette"], s: ["🐍", "le serpent"],
     m: ["🐑", "le mouton"], r: ["🦊", "le renard"], n: ["🧸", "Nounours"], v: ["🐄", "la vache"],
     j: ["🐆", "le jaguar"], z: ["🦓", "le zèbre"], p: ["🐼", "le panda"], t: ["🐢", "la tortue"], c: ["🦆", "le canard"],
     b: ["🐳", "la baleine"], d: ["🐬", "le dauphin"], g: ["🦍", "le gorille"], ou: ["🐻", "l’ours"],
@@ -3359,7 +3419,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       if (data.sfx) [392, 523, 659, 784, 1047].forEach(function (f, k) { tone(f, k * 0.09, 0.3, "triangle", 0.16); });
       speak(t + " " + m.replace(/[🏅👂✨]/g, ""));
       var wheel = data.reward && pendingWheels(o.sid).length > 0;
-      var go = el("button", "primary big-btn" + (wheel ? " wheel-go" : ""), wheel ? "🎡 Lancer la roue !" : "Continuer"); go.type = "button";
+      var go = el("button", "primary big-btn go-next" + (wheel ? " wheel-go" : ""), wheel ? "🎡 Lancer la roue !" : "Continuer"); go.type = "button";
       var zoo = el("button", "secondary big-btn", "🐾 Voir mon zoo"); zoo.type = "button";
       function close() { if (ov.parentNode) ov.parentNode.removeChild(ov); var c = $("confetti"); if (c) c.innerHTML = ""; }
       go.addEventListener("click", function () { close(); next(); });
@@ -3483,7 +3543,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     card.appendChild(content);
     var acts = el("div", "gr-actions");
     if (data.reward && credits(sid) > 0 && !limitReached(sid)) {
-      var again = el("button", "primary", "🔁 Rejouer"); again.type = "button";
+      var again = el("button", "primary go-next", "🔁 Rejouer"); again.type = "button";
       again.addEventListener("click", function () { closeGameResult(); playGame(id, sid); });
       acts.appendChild(again);
     }
@@ -3750,7 +3810,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   }
   /* Textes que la voix lit mal (épelés, lus comme une abréviation ou en anglais), mesurés sur une voix française :
      on les remplace par un mot qui se prononce pareil */
-  var SYL_SAY_FIX = { chu: "chue", "ché": "chez", /* « è » : « tai », « pai »… étaient épelés (« té, a, i ») par la voix du téléphone → vrais mots qui se disent pareil */ tai: "taie", pai: "paie", bai: "baie", lai: "lait", fai: "fait", sai: "sais", vai: "vais", nai: "nais", jai: "jais", rai: "raie", dai: "dais", kai: "quai", zi: "zie", za: "zat", zo: "zot", vo: "vos", ba: "bas", jon: "jont", rain: "rin", zain: "zin", jain: "geint" };
+  var SYL_SAY_FIX = { lo: "l’eau", chu: "chue", "ché": "chez", /* « è » : « tai », « pai »… étaient épelés (« té, a, i ») par la voix du téléphone → vrais mots qui se disent pareil */ tai: "taie", pai: "paie", bai: "baie", lai: "lait", fai: "fait", sai: "sais", vai: "vais", nai: "nais", jai: "jais", rai: "raie", dai: "dais", kai: "quai", zi: "zie", za: "zat", zo: "zot", vo: "vos", ba: "bas", jon: "jont", rain: "rin", zain: "zin", jain: "geint" };
   function sylSay(cg, v) {
     var c = sylConsByG(cg), cs = c ? c.say : cg;
     if (v === "e") return SYL_E_WORDS[cg] ? cg + "e" : cs + "eu";
@@ -4023,7 +4083,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var cur = soundById(LS.sound), done = listenDone(sid, LS.sound), need = listenNeed(LS.sound), n = Math.min(L.passes[LS.sound] || 0, need), ch = charFor(LS.sound);
     card.appendChild(el("p", "lire-sub listen-go-line", done ? "👂 Touche la carte pour rejouer !" : "👂 Touche la carte pour commencer !"));
     var grid = el("div", "zoo-grid listen-next");
-    var b = el("button", "zoo-card" + (done ? " heard" : "")); b.type = "button";
+    var b = el("button", "zoo-card suggested" + (done ? " heard" : "")); b.type = "button";
+    b.appendChild(el("span", "go-badge", "👉 Touche ici"));
     b.appendChild(buildPet(done ? { got: 1, total: 1, locked: false } : { got: 0, total: 1, locked: false }, ch));
     b.appendChild(el("div", "son", cur.label));
     var stars = el("div", "mini-stars"); stars.setAttribute("aria-hidden", "true");
@@ -4070,9 +4131,9 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var bar = el("div", "listen-dots"); bar.setAttribute("aria-hidden", "true");
     for (var i = 0; i < cfg.questions; i++) bar.appendChild(el("span", i < R.n - 1 ? "done" : (i === R.n - 1 ? "now" : ""), ""));
     card.appendChild(bar);
-    var again = el("button", "listen-play pulse", "🔊 Écouter le son"); again.type = "button";
+    var again = el("button", "listen-play pulse go-next", "🔊 Écouter le son"); again.type = "button";
     q.playBtn = again;   /* il pulse tant que l'enfant n'a pas répondu, pour lui montrer où réécouter */
-    again.addEventListener("click", function () { again.classList.remove("pulse"); listenSay(q.item); });
+    again.addEventListener("click", function () { again.classList.remove("pulse", "go-next"); listenSay(q.item); });
     card.appendChild(again);
     var msg = el("p", "instruction listen-msg", it.word ? "Touche le mot que tu entends." : (it.syl ? "Touche la syllabe que tu entends. Il y a 1 ou 2 bonnes réponses." : "Touche ce que tu entends. Il y a 1 ou 2 bonnes réponses."));
     msg.setAttribute("role", "status"); msg.id = "listen-msg";
@@ -4085,7 +4146,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       grid.appendChild(b); q.btns.push(b);
     });
     card.appendChild(grid);
-    var done = el("button", "secondary listen-done", "Il n’y en a pas d’autre"); done.type = "button"; done.hidden = true;
+    var done = el("button", "secondary listen-done go-next", "Il n’y en a pas d’autre"); done.type = "button"; done.hidden = true;
     done.addEventListener("click", function () { listenFinishQ(q, "Il y en avait une autre."); });
     q.doneBtn = done;
     card.appendChild(done);
@@ -4129,7 +4190,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   }
   function listenPick(q, c, b) {
     if (q.over || b.disabled) return;
-    if (q.playBtn) q.playBtn.classList.remove("pulse");
+    if (q.playBtn) q.playBtn.classList.remove("pulse", "go-next");
     if (c.good) {
       b.classList.add("good"); b.disabled = true; q.found.push(c.g);
       sfxGood();
@@ -4182,7 +4243,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
        ou le son suivant s’il vient d’être validé ; Arrêter = retour à l’accueil */
     var row = el("div", "row");
     var nx = nowDone ? listenNext(sid) : null;
-    var cont = el("button", "primary big-btn", "Continuer"); cont.type = "button";
+    var cont = el("button", "primary big-btn go-next", "Continuer"); cont.type = "button";
     cont.addEventListener("click", function () {
       if (!nowDone) { listenStart(sid, id); return; }
       if (nx) { LS.sound = nx.id; listenStart(sid, nx.id); } else { LS.pick = null; renderAudition(); }
@@ -4227,7 +4288,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if (!(data.reward && pend.length)) return;
     var wc = el("div", "card");
     wc.appendChild(el("h2", "", pend.length > 1 ? "Des roues t’attendent !" : "Une roue t’attend !"));
-    var wb = el("button", "primary big-btn", "Lancer la roue"); wb.type = "button";
+    var wb = el("button", "primary big-btn go-next", "Lancer la roue"); wb.type = "button";
     wb.addEventListener("click", function () { openWheel(sid); });
     wc.appendChild(wb);
     body.appendChild(wc);
@@ -4290,7 +4351,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     }
     if (act) {
       var mainRow = el("div", "home-act-row");
-      var go = el("button", "primary big-btn home-next" + (act.cls || ""), act.btn); go.type = "button";
+      var go = el("button", "primary big-btn go-next home-next" + (act.cls || ""), act.btn); go.type = "button";
       if (act.sub) go.appendChild(el("small", "home-sub", act.sub));
       go.addEventListener("click", act.go);
       mainRow.appendChild(go); mainRow.appendChild(sayBtn(say, "Écouter la consigne"));
@@ -4356,9 +4417,11 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     head.appendChild(toRec);
     body.appendChild(head);
     var grid = el("div", "zoo-grid");
+    var sugRead = nextStep(sid);
     avail.forEach(function (x) {
       var ps = readState(x.id), ch = charFor(x.id);
-      var b = el("button", "zoo-card" + (ps.cert ? " certified" : "")); b.type = "button";
+      var b = el("button", "zoo-card" + (ps.cert ? " certified" : "") + (sugRead && sugRead.sound === x.id ? " suggested" : "")); b.type = "button";
+      if (sugRead && sugRead.sound === x.id) b.appendChild(el("span", "go-badge", "👉 Pour toi"));
       if (ps.cert && !ps.locked) b.appendChild(el("span", "cert-stamp", ps.cert === ps.total ? "🏅 Certifiée" : "🏅 " + ps.cert + "/" + ps.total));
       b.disabled = ps.locked;
       b.appendChild(buildPet(ps, ch));
@@ -4392,9 +4455,11 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     head.appendChild(toRead);
     body.appendChild(head);
     var grid = el("div", "zoo-grid");
+    var sugListen = listenNext(sid);
     ls.forEach(function (x) {
       var done = listenDone(sid, x.id), unl = listenUnlocked(sid, x.id), need = listenNeed(x.id), n = Math.min(L.passes[x.id] || 0, need), ch = charFor(x.id);
-      var b = el("button", "zoo-card" + (done ? " heard" : "")); b.type = "button";
+      var b = el("button", "zoo-card" + (done ? " heard" : "") + (sugListen && sugListen.id === x.id ? " suggested" : "")); b.type = "button";
+      if (sugListen && sugListen.id === x.id) b.appendChild(el("span", "go-badge", "👉 Pour toi"));
       b.disabled = !unl;
       b.appendChild(buildPet(done ? { got: 1, total: 1, locked: false } : { got: 0, total: 1, locked: !unl }, ch));
       b.appendChild(el("div", "son", x.label));
@@ -6736,10 +6801,11 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       if(typeof teacherSettings.allowRec==="boolean")data.allowRec=teacherSettings.allowRec;
       if(typeof teacherSettings.evalCode==="boolean")data.evalCode=teacherSettings.evalCode;
       if(Number.isInteger(teacherSettings.maxPlays)&&teacherSettings.maxPlays>=0&&teacherSettings.maxPlays<=500)data.maxPlays=teacherSettings.maxPlays;
-      if(Array.isArray(teacherSettings.sounds)&&teacherSettings.sounds.length)data.sounds=teacherSettings.sounds.filter(function(s){return s&&typeof s.id==="string"&&typeof s.label==="string";});
+      if(Array.isArray(teacherSettings.sounds)&&teacherSettings.sounds.length)data.sounds=withVoy2(teacherSettings.sounds.filter(function(s){return s&&typeof s.id==="string"&&typeof s.label==="string";}));
       if(teacherSettings.texts&&typeof teacherSettings.texts==="object")data.texts=teacherSettings.texts;
 
       cloudStudentId=st.student_id;
+      p=voy2Fix(p,Number(data.thr.s)||25);
       data.students=[{id:st.student_id,name:st.nickname,avatar:typeof p.avatar==="string"?p.avatar:undefined}];
       data.results=Array.isArray(p.results)?cleanFraud(p.results):[];
       data.coins={[st.student_id]:Number(p.coins)||0};
