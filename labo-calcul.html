@@ -181,6 +181,17 @@
   .pin-msg { margin: 0; min-height: 1.4em; font-weight: 700; text-align: center; } .pin-msg.bad { color: #ff8a80; } .pin-msg.good { color: #6fdc8c; }
   .pin-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
   .evo .big-btn.primary { background: #ffe56c; color: #201049; border: 3px solid #fff; } .evo .big-btn.secondary { background: transparent; color: #fff; border: 3px solid rgba(255,255,255,.85); }
+  /* Étape suggérée : TOUJOURS le même vert qui pulse, un seul à la fois par écran (comme le Zoo de Lecture) */
+  .go-next { background: linear-gradient(135deg, #3ddc77, #16a34a) !important; color: #fff !important; border-color: #15803d !important; text-shadow: 0 1px 2px rgba(0,0,0,.25); animation: go-pulse 1.4s ease-in-out infinite; }
+  .go-next:disabled { animation: none; opacity: .6; }
+  @keyframes go-pulse { 0%, 100% { transform: scale(1); box-shadow: 0 6px 16px rgba(22,163,74,.4), 0 0 0 0 rgba(34,197,94,.55); } 50% { transform: scale(1.04); box-shadow: 0 6px 16px rgba(22,163,74,.4), 0 0 0 14px rgba(34,197,94,0); } }
+  .zoo-card { position: relative; }
+  .zoo-card.suggested { border-color: #16a34a !important; border-width: 3px; background: #effcf3 !important; animation: go-pulse 1.4s ease-in-out infinite; }
+  .zoo-card .go-badge { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); padding: 3px 12px; border-radius: 999px; background: #16a34a; color: #fff; font-size: .85rem; font-weight: 800; white-space: nowrap; }
+  .next-bar { margin: 0 0 12px; display: flex; justify-content: center; }
+  .next-bar .big-btn { margin: 0; width: 100%; max-width: 420px; }
+  body.zoo-playing .next-bar { display: none; }
+  @media (prefers-reduced-motion: reduce) { .go-next, .zoo-card.suggested { animation: none; } }
 </style>
 </head>
 <body class="mode-student calc">
@@ -365,7 +376,13 @@
     var box = $("view"); clear(box);
     ({ home: home, nombres: function (b) { levels(b, "nombres"); }, addition: function (b) { levels(b, "addition"); }, soustraction: function (b) { levels(b, "soustraction"); },
        boutique: function (b) { zooFrame(b, "boutique"); }, jeux: function (b) { zooFrame(b, "jeux"); }, cartes: numsView, reconnues: calcsView, progres: progressView, roue: function () { wheelScreen(function () { goTo("home"); }); } })[v](box);
-    renderPanels(); window.scrollTo(0, 0); claimGifts();
+    addNextBar(v); renderPanels(); window.scrollTo(0, 0); claimGifts();
+  }
+  /* Sur les écrans « à côté » (nombres, calculs, progression, boutique, jeux), un gros bouton vert ramène toujours à l'étape suivante (l'accueil) */
+  function addNextBar(v) {
+    if (["cartes", "reconnues", "progres", "boutique", "jeux"].indexOf(v) < 0) return;
+    var bar = el("div", "next-bar"), b = el("button", "primary big-btn go-next", "👉 Mon étape suivante"); b.type = "button"; b.addEventListener("click", function () { goTo("home"); });
+    bar.appendChild(b); var box = $("view"); box.insertBefore(bar, box.firstChild); if (v === "boutique" || v === "jeux") fitFrame();
   }
 
   /* ===== Boutique et salle d'arcade : espaces PARTAGÉS =====
@@ -407,8 +424,8 @@
     pet.addEventListener("click", function () { say(speak); }); row.appendChild(pet);
     var col = el("div", "home-col");
     function sayBtn(text, label) { var b = el("button", "secondary home-say", "🔊"); b.type = "button"; b.setAttribute("aria-label", label); b.title = label; b.addEventListener("click", function () { say(text); }); return b; }
-    if (S.wheels > 0) { var wr = el("div", "home-act-row"), wb = el("button", "primary big-btn home-next wheel-go", "🎡 Lance ta roue !"); wb.type = "button"; wb.addEventListener("click", function () { goTo("roue"); }); wr.appendChild(wb); wr.appendChild(sayBtn("Une roue t’attend ! Touche le gros bouton orange.", "Écouter")); col.appendChild(wr); }
-    var mr = el("div", "home-act-row"), go = el("button", "primary big-btn home-next", "🏋️ Je m’entraîne"); go.type = "button";
+    if (S.wheels > 0) { var wr = el("div", "home-act-row"), wb = el("button", "primary big-btn home-next wheel-go go-next", "🎡 Lance ta roue !"); wb.type = "button"; wb.addEventListener("click", function () { goTo("roue"); }); wr.appendChild(wb); wr.appendChild(sayBtn("Une roue t’attend ! Touche le gros bouton orange.", "Écouter")); col.appendChild(wr); }
+    var mr = el("div", "home-act-row"), go = el("button", "primary big-btn home-next" + (S.wheels > 0 ? "" : " go-next"), "🏋️ Je m’entraîne"); go.type = "button";
     go.appendChild(el("small", "home-sub", ACT[n.main.act].icon + " " + ACT[n.main.act].title + " : " + (E.levelInfo(n.main.act, n.main.id) || {}).label));
     go.addEventListener("click", function () { startRound(n.main.act, n.main.id); });
     mr.appendChild(go); mr.appendChild(sayBtn(speak, "Écouter la consigne")); col.appendChild(mr);
@@ -433,7 +450,8 @@
     card.appendChild(el("p", "muted", "Prends ton temps : il n’y a pas de chrono. Rejoue une étape réussie, ou réussis la nouvelle pour faire éclore son animal !"));
     var ids = E.visibleLevels(act, enabledLevels(act), S.levels), sug = suggest(act), grid = el("div", "zoo-grid");
     ids.forEach(function (id) {
-      var lv = E.levelInfo(act, id), e = S.levels[act + ":" + id], b = el("button", "zoo-card" + (id === sug ? " heard" : "")); b.type = "button";
+      var lv = E.levelInfo(act, id), e = S.levels[act + ":" + id], b = el("button", "zoo-card" + (id === sug ? " heard suggested" : "")); b.type = "button";
+      if (id === sug) b.appendChild(el("span", "go-badge", "👉 Pour toi"));
       b.appendChild(pet(act, id, false));
       b.appendChild(el("div", "son", lv.label));
       b.appendChild(el("div", "cap", (id === sug ? "👉 Pour toi · " : "") + statusText(act, id)));
@@ -647,7 +665,7 @@
     var ov = el("div", "game-result buy-confirm"); ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true");
     var c = el("div", "game-result-card"), row = el("div", "gr-actions");
     c.appendChild(el("h2", "", "Arrêter la série ?")); c.appendChild(el("p", "", "Si tu pars maintenant, cette série ne sera pas gardée : tu devras la recommencer pour gagner."));
-    var go = el("button", "primary big-btn", "Continuer la série"), out = el("button", "secondary big-btn", "Quitter la série"); go.type = out.type = "button";
+    var go = el("button", "primary big-btn go-next", "Continuer la série"), out = el("button", "secondary big-btn", "Quitter la série"); go.type = out.type = "button";
     function close() { if (ov.parentNode) ov.parentNode.removeChild(ov); }
     go.addEventListener("click", close); out.addEventListener("click", function () { close(); var a = R && R.act; V.stop(); goTo(a || "home"); });
     row.appendChild(go); row.appendChild(out); c.appendChild(row); ov.appendChild(c); document.body.appendChild(ov); go.focus();
@@ -739,7 +757,7 @@
         else inf.textContent = "🎉 Réussi ! (pièces de test : +" + res.coins + ")";
         card.appendChild(inf);
         var r2 = el("div", "crow"); card.appendChild(r2); box.appendChild(card);
-        function b(label, cls, fn) { var x = el("button", cls, label); x.type = "button"; x.addEventListener("click", fn); r2.appendChild(x); return x; }
+        function b(label, cls, fn) { var x = el("button", cls.indexOf("primary") === 0 ? cls + " go-next" : cls, label); x.type = "button"; x.addEventListener("click", fn); r2.appendChild(x); return x; }
         var next = nextStepFor(act2, lv);   /* « l'étape suivante » = celle qui vient après dans la liste de l'enseignant */
         function replay() { startRound(act2, lv); }
         function goNext(cls) { if (next) b("Étape suivante ➜", cls + " big-btn", function () { startRound(act2, next); }); else b("Autre étape", cls + " big-btn", function () { goTo(act2); }); }
@@ -757,7 +775,7 @@
     function send() {
       rpc("lab_student_submit_round", { p_token: token, p_round: R.id, p_activity: R.act, p_level: R.lv, p_correct: g, p_total: n, p_stats: stats }).then(done).catch(function () {
         info.className = "msg bad"; info.textContent = "Je n’ai pas pu ranger ton résultat."; clear(row);
-        var rt = el("button", "primary big-btn", "Réessayer"); rt.type = "button"; rt.addEventListener("click", function () { info.className = "msg"; info.textContent = "Je range ton résultat…"; clear(row); send(); }); row.appendChild(rt);
+        var rt = el("button", "primary big-btn go-next", "Réessayer"); rt.type = "button"; rt.addEventListener("click", function () { info.className = "msg"; info.textContent = "Je range ton résultat…"; clear(row); send(); }); row.appendChild(rt);
       });
     }
     send();
@@ -787,7 +805,7 @@
       title.textContent = t; msg.textContent = m;
       if (fx) [392, 523, 659, 784, 1047].forEach(function (f, k) { fx.tone(f, k * 0.09, 0.3, "triangle", 0.16); });
       V.speak(t + " " + m.replace(/✨/g, ""));
-      var go = el("button", "primary big-btn", "Continuer"), zoo = el("button", "secondary big-btn", "🐾 Voir mes animaux"); go.type = "button"; zoo.type = "button";
+      var go = el("button", "primary big-btn go-next", "Continuer"), zoo = el("button", "secondary big-btn", "🐾 Voir mes animaux"); go.type = "button"; zoo.type = "button";
       function close() { if (ov.parentNode) ov.parentNode.removeChild(ov); var c = $("confetti"); if (c) c.innerHTML = ""; V.stop(); }
       go.addEventListener("click", function () { close(); if (o.onClose) o.onClose(); }); zoo.addEventListener("click", function () { close(); goTo(o.act === "nombres" ? "cartes" : "reconnues"); });
       acts.appendChild(go); acts.appendChild(zoo); acts.hidden = false; go.focus({ preventScroll: true });
@@ -904,12 +922,12 @@
     card.appendChild(el("h2", "", "🎡 La roue des récompenses")); var msg = el("p", "msg", "Tu as gagné une roue ! Touche le bouton pour la lancer."); msg.setAttribute("role", "status"); card.appendChild(msg);
     var wrap = el("div", "cwheel-wrap"), wheel = el("div", "cwheel"); wheel.innerHTML = wheelSvg(); wrap.appendChild(el("div", "cwheel-ptr", "▼")); wrap.appendChild(wheel); card.appendChild(wrap);
     var win = el("div", "cwheel-win"); card.appendChild(win);
-    var row = el("div", "crow"), spin = el("button", "primary big-btn", "🎡 Lancer la roue"), done = el("button", "primary big-btn", "Continuer"); spin.type = done.type = "button"; done.hidden = true;
+    var row = el("div", "crow"), spin = el("button", "primary big-btn go-next", "🎡 Lancer la roue"), done = el("button", "primary big-btn", "Continuer"); spin.type = done.type = "button"; done.hidden = true;
     row.appendChild(spin); row.appendChild(done); card.appendChild(row); box.appendChild(card);
     var turns = 0;
     done.addEventListener("click", function () { V.stop(); (onDone || function () { goTo("home"); })(); });
     spin.addEventListener("click", function () {
-      spin.disabled = true; msg.className = "msg"; msg.textContent = "La roue tourne…"; win.textContent = ""; done.hidden = true;
+      spin.disabled = true; msg.className = "msg"; msg.textContent = "La roue tourne…"; win.textContent = ""; done.hidden = true; done.classList.remove("go-next");
       rpc("lab_student_spin_wheel", { p_token: token }).then(function (r) {
         var k = Math.max(0, Math.min(7, Math.floor(Number(r.slice) || 0))); turns++;
         var target = 360 * 5 * turns + (360 - (k * 45 + 22.5)) + (Math.random() * 20 - 10);
@@ -926,9 +944,9 @@
           if (r.shared) claimCoins();
           else { if (plays) S.credits = Math.max(0, Math.floor(Number(r.test_credits) || 0)); renderPanels(); }
           if (S.wheels > 0) { spin.disabled = false; spin.textContent = "🎡 Relancer la roue"; spin.hidden = false; } else spin.hidden = true;
-          done.hidden = false; done.focus({ preventScroll: true });
+          spin.classList.remove("go-next"); done.classList.add("go-next"); done.hidden = false; done.focus({ preventScroll: true });
         }, reduce ? 60 : 4400);
-      }).catch(function () { spin.disabled = false; msg.className = "msg bad"; msg.textContent = "Un petit souci de connexion. Touche encore le bouton."; });
+      }).catch(function () { spin.disabled = false; spin.classList.add("go-next"); msg.className = "msg bad"; msg.textContent = "Un petit souci de connexion. Touche encore le bouton."; });
     });
   }
 
