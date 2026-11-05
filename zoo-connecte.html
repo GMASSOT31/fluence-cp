@@ -1985,7 +1985,14 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     sel: { sid: null, sound: null, kind: "s" }
   };
   var cloudMode = true, cloudToken = sessionStorage.getItem("zoo_student_token"), cloudClient = window.supabase.createClient("https://pcxpazpflnlwmhyuozdx.supabase.co","sb_publishable_j65mDpDNsuwwaL6uRjsMtA_U_OXQXlL");
-  var cloudBusy = false, cloudDirty = false, cloudTimer = null, cloudStudentId = null, cloudVersion = 0, cloudConflict = false, cloudStatusNode = null;
+  /* Récompenses de l'enseignant visibles par cet élève : r.to = {t:"all"} (ou absent) | {t:"class",id} | {t:"student",id} ; tout est montré hors compte élève */
+  function shopRewards() {
+    return data.shop.rewards.filter(function (r) {
+      var t = r.to; if (!t || t.t === "all" || !cloudStudentId) return true;
+      return t.t === "class" ? t.id === cloudClassId : t.id === cloudStudentId;
+    });
+  }
+  var cloudBusy = false, cloudDirty = false, cloudTimer = null, cloudStudentId = null, cloudClassId = null, cloudVersion = 0, cloudConflict = false, cloudStatusNode = null;
   /* Records de la classe, calculés par le serveur (student_get_class_records) */
   var classRecords = {}, classSize = 1, classRecordsRefreshing = false, classRecordsChecked = 0;
   function cloudStatus(label){if(window.ZOO_DEMO)label=label.replace("Sauvegardé","Simulé dans la démo").replace("Sauvegarde en attente","Simulation en cours");if(cloudStatusNode){cloudStatusNode.firstChild.textContent=label+" · "+(cloudStatusNode.dataset.nickname||"");cloudStatusNode.classList.toggle("cs-ok",/^☁️/.test(label));}}
@@ -3667,7 +3674,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var nx = nextStep(sid);
     $("pr-next").textContent = nx ? kindInfo(nx.kind).name.toLowerCase() + " : " + soundById(nx.sound).label : (evalWaiting(sid) ? "évaluation à prévoir" : "tout est validé");
     $("pr-games").textContent = nb(cr, "partie", "parties");
-    var minPrice = data.shop.rewards.reduce(function (m, r) { return Math.min(m, r.price); }, data.shop.packPrice);
+    var minPrice = shopRewards().reduce(function (m, r) { return Math.min(m, r.price); }, data.shop.packPrice);
     $("pl-shop").textContent = cn >= minPrice ? "Tu peux acheter !" : "";
     var allSteps = stepsList();
     var doneSteps = allSteps.filter(function (x) { return isValid(sid, x.sound, x.kind); }).length;
@@ -5936,7 +5943,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
         openWheel(sid, "Tu as acheté un tour de roue !");
       }
     }];
-    data.shop.rewards.slice().sort(function (x, y) { return x.price - y.price; }).forEach(function (r) {
+    shopRewards().slice().sort(function (x, y) { return x.price - y.price; }).forEach(function (r) {
       items.push({
         icon: r.icon || "🎁", label: r.label, price: r.price,
         onBuy: function () {
@@ -6038,7 +6045,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var shelf = el("div", "shelf");
     shopItems(sid).forEach(function (it, i) { shelf.appendChild(productCard(it, cn, i)); });
     shop.appendChild(shelf);
-    if (!data.shop.rewards.length) shop.appendChild(el("p", "shop-hint", "Bientôt de nouvelles surprises : le maître(sse) en ajoute !"));
+    if (!shopRewards().length) shop.appendChild(el("p", "shop-hint", "Bientôt de nouvelles surprises : le maître(sse) en ajoute !"));
     body.appendChild(shop);
     var mine = data.vouchers.filter(function (v) { return v.sid === sid && !v.done; });
     if (mine.length) {
@@ -6804,7 +6811,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       if(Array.isArray(teacherSettings.sounds)&&teacherSettings.sounds.length)data.sounds=withVoy2(teacherSettings.sounds.filter(function(s){return s&&typeof s.id==="string"&&typeof s.label==="string";}));
       if(teacherSettings.texts&&typeof teacherSettings.texts==="object")data.texts=teacherSettings.texts;
 
-      cloudStudentId=st.student_id;
+      cloudStudentId=st.student_id;cloudClassId=st.class_id||null;
       p=voy2Fix(p,Number(data.thr.s)||25);
       data.students=[{id:st.student_id,name:st.nickname,avatar:typeof p.avatar==="string"?p.avatar:undefined}];
       data.results=Array.isArray(p.results)?cleanFraud(p.results):[];

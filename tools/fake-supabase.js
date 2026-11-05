@@ -20,7 +20,7 @@
   var api = {
     lab_my_access: function () { return { allowed: /[?&]labo=1/.test(location.search), role: "student" }; },
     student_get_progress_v2: function () { return { progress: JSON.parse(JSON.stringify(srv.me.progress)), version: srv.version }; },
-    student_session_profile: function () { return { student_id: srv.me.id, nickname: srv.me.nickname }; },
+    student_session_profile: function () { return { student_id: srv.me.id, nickname: srv.me.nickname, class_id: srv.me.class_id || "c1" }; },
     student_change_pin: function (a) {
       srv.pinCalls = (srv.pinCalls || []).concat([{ old: a.p_old_pin, neu: a.p_new_pin }]);
       if (srv.pinOff) throw { message: "Ton maître(sse) a désactivé ce changement." };
@@ -31,7 +31,7 @@
       if (a.p_old_pin !== srv.pin) { srv.pinFails = (srv.pinFails || 0) + 1; return { ok: false, code: "bad_old" }; }
       srv.pin = a.p_new_pin; srv.pinFails = 0; return { ok: true };
     },
-    student_get_teacher_settings: function () { return { pinChange: !/sanspin/.test(location.search), reward: true, maxPlays: /illimite/.test(location.search) ? 0 : 50, wheelPrice: /prix4/.test(location.search) ? 4 : 7, evalCode: !/sanscode/.test(location.search) }; },
+    student_get_teacher_settings: function () { return { rewards: /recompenses=1/.test(location.search) ? [{ id: "r1", label: "Gomme tous", price: 5, icon: "🎁" }, { id: "r2", label: "Bonbon ma classe", price: 6, icon: "🍭", to: { t: "class", id: "c1" } }, { id: "r3", label: "Autre classe", price: 7, icon: "📚", to: { t: "class", id: "c2" } }, { id: "r4", label: "Pour moi", price: 8, icon: "⭐", to: { t: "student", id: srv.me.id } }, { id: "r5", label: "Pour un autre", price: 9, icon: "🧸", to: { t: "student", id: "zzz" } }] : undefined, pinChange: !/sanspin/.test(location.search), reward: true, maxPlays: /illimite/.test(location.search) ? 0 : 50, wheelPrice: /prix4/.test(location.search) ? 4 : 7, evalCode: !/sanscode/.test(location.search) }; },
     student_get_class_records: function () {
       var r = {}; Object.keys(MODES).forEach(function (g) { var b = best(g); if (b) { delete b.ts; r[g] = b; } });
       return { classSize: all().length, records: all().length < 2 ? {} : r };
