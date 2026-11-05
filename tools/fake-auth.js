@@ -101,6 +101,12 @@
         if (!s0) return Promise.resolve({ data: null, error: { message: "Élève introuvable" } });
         if (a.p_action === "ghost") s0.ghosted_at = "2026-10-21T09:00:00Z"; else if (a.p_action === "unghost") s0.ghosted_at = null; else if (a.p_action === "delete") st.students = st.students.filter(function (x) { return x !== s0; });
         return Promise.resolve({ data: a.p_action, error: null }); }
+      if (name === "rename_student") { st.renamed = (st.renamed || []).concat([a]);
+        var s1 = st.students.filter(function (x) { return x.id === a.p_student; })[0], nm = String(a.p_nickname || "").trim();
+        if (!s1) return Promise.resolve({ data: null, error: { message: "Élève introuvable" } });
+        if (!nm || nm.length > 60) return Promise.resolve({ data: null, error: { message: "Le prénom doit faire de 1 à 60 caractères" } });
+        if (st.students.some(function (x) { return x !== s1 && x.class_id === s1.class_id && x.nickname.toLowerCase() === nm.toLowerCase(); })) return Promise.resolve({ data: null, error: { message: "Un autre élève de cette classe a déjà ce prénom" } });
+        s1.nickname = nm; return Promise.resolve({ data: nm, error: null }); }
       if (name === "admin_manage_teacher") { st.manageT = (st.manageT || []).concat([a]);
         var t0 = st.teachers.filter(function (x) { return x.id === a.p_teacher; })[0];
         if (a.p_action === "ghost") t0.ghosted_at = "2026-10-21T09:00:00Z"; else if (a.p_action === "unghost") t0.ghosted_at = null;

@@ -1030,13 +1030,27 @@ async function renderStudentsTab(role){
     const status=document.createElement("div");status.className="muted";status.textContent=(st.pin_hash?"PIN défini":"PIN à définir")+(st.ghosted_at?" · ghosté le "+frDate(st.ghosted_at):"")+(!st.ghosted_at&&t.ghosted_at?" · suspendu avec le compte enseignant":"")+(!st.ghosted_at&&!t.ghosted_at&&c.ghosted_at?" · suspendu avec la classe":"");
     info.append(name,status);
     const actions=document.createElement("div");actions.className="actions";actions.style.marginTop="0";
-    const ghost=document.createElement("button");ghost.type="button";ghost.className="secondary";ghost.textContent=st.ghosted_at?"Réactiver":"👻 Ghoster";ghost.onclick=()=>manageStudent(st,st.ghosted_at?"unghost":"ghost",[ghost,del]);
-    const del=document.createElement("button");del.type="button";del.className="danger";del.textContent="🗑️ Supprimer";del.onclick=()=>manageStudent(st,"delete",[ghost,del]);
-    actions.append(ghost,del);line.append(info,actions);box.append(line);
+    const ghost=document.createElement("button");ghost.type="button";ghost.className="secondary";ghost.textContent=st.ghosted_at?"Réactiver":"👻 Ghoster";ghost.onclick=()=>manageStudent(st,st.ghosted_at?"unghost":"ghost",[ghost,ren,del]);
+    const ren=document.createElement("button");ren.type="button";ren.className="secondary";ren.textContent="✏️ Renommer";ren.onclick=()=>renameStudent(st,[ghost,ren,del]);
+    const del=document.createElement("button");del.type="button";del.className="danger";del.textContent="🗑️ Supprimer";del.onclick=()=>manageStudent(st,"delete",[ghost,ren,del]);
+    actions.append(ghost,ren,del);line.append(info,actions);box.append(line);
    });
   });
  });
  if(!box.children.length)box.textContent="Aucun élève pour le moment.";
+}
+/* Réorthographier un prénom : le prénom sert à se connecter ; le serveur refuse un prénom déjà pris dans la classe */
+async function renameStudent(st,buttons){
+ const name=await dlg("Nouvelle orthographe du prénom « "+st.nickname+" » :",{input:true,value:st.nickname,ok:"Renommer",label:"Prénom de l’élève"});
+ if(name===null)return;const n=name.trim();
+ if(!n||n===st.nickname)return;
+ if(n.length>60){msg("studentsMsg","Le prénom doit faire 60 caractères au plus.",true);return;}
+ buttons.forEach(b=>b.disabled=true);
+ const {error}=await client.rpc("rename_student",{p_student:st.id,p_nickname:n});
+ buttons.forEach(b=>b.disabled=false);
+ if(error){msg("studentsMsg",errorText(error),true);return;}
+ studentsNotice="✏️ « "+st.nickname+" » s’appelle maintenant « "+n+" ». Pour se connecter, l’élève tape ce prénom.";
+ await refresh();
 }
 async function manageStudent(st,action,buttons){
  if(action==="delete"&&!await dlg("Supprimer définitivement "+st.nickname+" et toute sa progression ? Cette action est irréversible.",{ok:"Supprimer",danger:true}))return;
