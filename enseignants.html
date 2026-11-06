@@ -164,6 +164,7 @@ body.teacher-mode header .zoo-hero .brand .sub{font-size:.76rem;margin-top:2px}
 body.teacher-mode header .zoo-kicker,body.teacher-mode header .zoo-hero-tag,body.teacher-mode header .zoo-pad,body.teacher-mode header .zoo-star{display:none}
 body.teacher-mode header .zoo-hero-art{flex:0 0 230px;height:150px;transform:scale(.46);margin:-40px -62px}
 body.teacher-mode .banner-user{display:flex;align-items:center;gap:10px;position:relative;z-index:2;min-width:0}
+.banner-user #adminRole{background:#ffd54a;color:#3b2a00;font-weight:900;font-size:.8rem;padding:5px 10px;border-radius:999px;white-space:nowrap}
 .banner-user #who{color:#e9e4ff;font-size:.85rem;font-weight:700;max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .banner-user a,.banner-user button{display:inline-flex;align-items:center;padding:9px 13px;border-radius:12px;font-weight:800;font-size:.88rem;text-decoration:none;white-space:nowrap}
 .banner-user a{background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.45)}
@@ -280,7 +281,7 @@ body:not(.teacher-mode) main{color:#eef0f7}
         <span class="zoo-hero-tag">⭐ Lis · 🏆 Progresse · 🎮 Joue !</span>
       </div>
       <div class="zoo-hero-art" aria-hidden="true"><span class="zoo-star zoo-star-one">✦</span><span class="zoo-mascot zoo-bee">🐝</span><span class="zoo-mascot zoo-llama">🦙</span><span class="zoo-mascot zoo-owl">🦉</span><span class="zoo-star zoo-star-two">✧</span><span class="zoo-pad">✚ <span>● ●</span></span></div>
-      <div class="banner-user" id="bannerUser"><span id="who"></span><a href="eleve.html" id="toStudent" title="Espace élève"><span aria-hidden="true">🎒</span><span class="bu-label">&nbsp;Espace élève</span></a><button id="logout" class="secondary" type="button" title="Déconnexion"><span class="bu-ico" aria-hidden="true">🚪</span><span class="bu-label">Déconnexion</span></button></div>
+      <div class="banner-user" id="bannerUser"><span id="adminRole" class="hidden" title="Vous êtes administrateur du Zoo de Lecture">🛡️ Admin</span><span id="who"></span><a href="eleve.html" id="toStudent" title="Espace élève"><span aria-hidden="true">🎒</span><span class="bu-label">&nbsp;Espace élève</span></a><button id="logout" class="secondary" type="button" title="Déconnexion"><span class="bu-ico" aria-hidden="true">🚪</span><span class="bu-label">Déconnexion</span></button></div>
     </div>
 </header>
 <section class="panel" id="auth"><h2 class="auth-title">🧑‍🏫 Se connecter</h2><form id="authForm"><label for="email" class="sr-only">Adresse e-mail</label><input id="email" type="email" autocomplete="email" required maxlength="254" placeholder="Adresse e-mail"><label for="password" class="sr-only">Mot de passe</label><input id="password" type="password" autocomplete="current-password" minlength="8" required placeholder="Mot de passe"><div class="actions auth-actions"><button id="signin" type="submit">Me connecter</button><button id="reset" type="button" class="secondary">Mot de passe oublié</button><button id="signup" type="button" class="secondary">Créer un compte</button><button id="resendConfirm" type="button" class="secondary hidden">📧 Renvoyer l’e-mail de confirmation</button><button id="toLogin" type="button" class="link-btn hidden">J’ai déjà un compte : me connecter</button><small class="signup-note">Inscription libre et gratuite. Votre compte commence avec 3 places d'élèves ; une fois connecté, vous pouvez demander votre classe entière en un clic (réponse sous 24 h maximum).</small></div></form><p class="demo-link"><a href="zoo-connecte.html?demo=1&amp;new=1">✨ Essayer la démo, sans compte</a><small>Une classe fictive : le Zoo d'un élève, puis l'espace enseignant.</small></p><p class="msg" id="authMsg" role="status"></p><p class="auth-links"><a href="./">← Accueil</a> · <a href="confidentialite.html">Confidentialité</a> · <a href="contact.html">Contact</a> · <a href="mentions-legales.html">Mentions légales</a></p>
@@ -528,7 +529,7 @@ async function refreshNow(){
  msg("spaceMsg","");
  if(profile.data.ghosted_at){await client.auth.signOut();await refreshNow();msg("authMsg","Votre compte est suspendu. Contactez l’administrateur.",true);return;}
  $("teachersAdminTab").classList.toggle("hidden",profile.data.role!=="admin");
- currentRole=profile.data.role==="admin"?"admin":"teacher";$("btnSylTest").onclick=()=>window.open("test-syllabes.html","_blank","noopener");$("improveLabel").textContent=currentRole==="admin"?"Feedback":"Améliorations";
+ currentRole=profile.data.role==="admin"?"admin":"teacher";$("adminRole").classList.toggle("hidden",currentRole!=="admin");$("btnSylTest").onclick=()=>window.open("test-syllabes.html","_blank","noopener");$("improveLabel").textContent=currentRole==="admin"?"Feedback":"Améliorations";
  if(currentRole==="admin")renderFeedbackAdmin().catch(e=>msg("fbAdminMsg",errorText(e),true));else{setFeedbackBadge(0);renderMyFeedback().catch(e=>msg("fbMsg",errorText(e),true));}
  if(profile.data.role!=="admin"&&activeTab==="enseignants")activeTab="eleves";
 
