@@ -181,13 +181,17 @@
   .pin-msg { margin: 0; min-height: 1.4em; font-weight: 700; text-align: center; } .pin-msg.bad { color: #ff8a80; } .pin-msg.good { color: #6fdc8c; }
   .pin-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
   .evo .big-btn.primary { background: #ffe56c; color: #201049; border: 3px solid #fff; } .evo .big-btn.secondary { background: transparent; color: #fff; border: 3px solid rgba(255,255,255,.85); }
-  /* Étape suggérée : TOUJOURS le même vert qui pulse, un seul à la fois par écran (comme le Zoo de Lecture) */
-  .go-next { background: linear-gradient(135deg, #3ddc77, #16a34a) !important; color: #fff !important; border-color: #15803d !important; text-shadow: 0 1px 2px rgba(0,0,0,.25); animation: go-pulse 1.4s ease-in-out infinite; }
+  /* Étape suggérée : TOUJOURS la couleur du parcours en cours, et qui pulse. Trois parcours : ÉCOUTER = violet, Addition = orange, Soustraction = rose (la lecture utilise le vert et le bleu) */
+  :root, body[data-path="nombres"], .go-nombres { --go1: #a78bfa; --go2: #6d28d9; --go-bd: #5b21b6; --go-glow: 109, 40, 217; --go-glow2: 139, 92, 246; --go-pale: #f3efff; }
+  body[data-path="addition"], .go-addition { --go1: #fb923c; --go2: #ea580c; --go-bd: #c2410c; --go-glow: 234, 88, 12; --go-glow2: 251, 146, 60; --go-pale: #fff3e8; }
+  body[data-path="soustraction"], .go-soustraction { --go1: #f472b6; --go2: #db2777; --go-bd: #be185d; --go-glow: 219, 39, 119; --go-glow2: 244, 114, 182; --go-pale: #fff0f7; }
+  .go-next { background: linear-gradient(135deg, var(--go1), var(--go2)) !important; color: #fff !important; border-color: var(--go-bd) !important; text-shadow: 0 1px 2px rgba(0,0,0,.25); animation: go-pulse 1.4s ease-in-out infinite; }
   .go-next:disabled { animation: none; opacity: .6; }
-  @keyframes go-pulse { 0%, 100% { transform: scale(1); box-shadow: 0 6px 16px rgba(22,163,74,.4), 0 0 0 0 rgba(34,197,94,.55); } 50% { transform: scale(1.04); box-shadow: 0 6px 16px rgba(22,163,74,.4), 0 0 0 14px rgba(34,197,94,0); } }
+  .go-next.go-calm { animation: none; opacity: .85; }   /* les autres parcours : visibles mais calmes */
+  @keyframes go-pulse { 0%, 100% { transform: scale(1); box-shadow: 0 6px 16px rgba(var(--go-glow),.4), 0 0 0 0 rgba(var(--go-glow2),.55); } 50% { transform: scale(1.04); box-shadow: 0 6px 16px rgba(var(--go-glow),.4), 0 0 0 14px rgba(var(--go-glow2),0); } }
   .zoo-card { position: relative; }
-  .zoo-card.suggested { border-color: #16a34a !important; border-width: 3px; background: #effcf3 !important; animation: go-pulse 1.4s ease-in-out infinite; }
-  .zoo-card .go-badge { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); padding: 3px 12px; border-radius: 999px; background: #16a34a; color: #fff; font-size: .85rem; font-weight: 800; white-space: nowrap; }
+  .zoo-card.suggested { border-color: var(--go2) !important; border-width: 3px; background: var(--go-pale) !important; animation: go-pulse 1.4s ease-in-out infinite; }
+  .zoo-card .go-badge { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); padding: 3px 12px; border-radius: 999px; background: var(--go2); color: #fff; font-size: .85rem; font-weight: 800; white-space: nowrap; }
   .next-bar { margin: 0 0 12px; display: flex; justify-content: center; }
   .next-bar .big-btn { margin: 0; width: 100%; max-width: 420px; }
   body.zoo-playing .next-bar { display: none; }
@@ -368,9 +372,14 @@
   function start() {
     document.body.classList.remove("calc-gate");
     ["panel-left", "panel-right", "bottom-nav", "zoo-top-stats"].forEach(function (id) { $(id).hidden = false; });
+    pathChosen = false; setPath(pickNext().main.act, false);   /* au départ : la couleur du parcours conseillé, les trois pulsent */
     goTo("home");
   }
+  /* Parcours en cours : ÉCOUTER (violet), Addition (orange) ou Soustraction (rose) ; il change dès que l'élève entre dans une activité */
+  var PATH = "nombres", pathChosen = false;
+  function setPath(a, chosen) { PATH = a; if (chosen !== false) pathChosen = true; document.body.setAttribute("data-path", a); }
   function goTo(v) {
+    if (v === "nombres" || v === "addition" || v === "soustraction") setPath(v); else if (v === "cartes") setPath("nombres");
     V.stop(); R = null; view = v; document.body.classList.remove("listen-focus", "zoo-playing", "zoo-view");
     var me = $("me-menu"); me.hidden = true; $("bn-me").setAttribute("aria-expanded", "false");
     var box = $("view"); clear(box);
@@ -416,7 +425,8 @@
   }
   function pet0(act, id) { return pet(act, id, false); }
   function home(box) {
-    var n = pickNext(), card = el("div", "card home-hero");
+    var n = pickNext(), card = el("div", "card home-hero"), first = pathChosen ? PATH : n.main.act;
+    var order = [first].concat(["nombres", "addition", "soustraction"].filter(function (a) { return a !== first; })); n.main = { act: first, id: suggest(first) };
     card.appendChild(el("h2", "", "Bonjour " + S.name + " !"));
     var speak = "Bonjour " + S.name + " ! Touche le gros bouton pour t’entraîner : " + ACT[n.main.act].say;
     var row = el("div", "home-step");
@@ -424,15 +434,16 @@
     pet.addEventListener("click", function () { say(speak); }); row.appendChild(pet);
     var col = el("div", "home-col");
     function sayBtn(text, label) { var b = el("button", "secondary home-say", "🔊"); b.type = "button"; b.setAttribute("aria-label", label); b.title = label; b.addEventListener("click", function () { say(text); }); return b; }
-    if (S.wheels > 0) { var wr = el("div", "home-act-row"), wb = el("button", "primary big-btn home-next wheel-go go-next", "🎡 Lance ta roue !"); wb.type = "button"; wb.addEventListener("click", function () { goTo("roue"); }); wr.appendChild(wb); wr.appendChild(sayBtn("Une roue t’attend ! Touche le gros bouton orange.", "Écouter")); col.appendChild(wr); }
-    var mr = el("div", "home-act-row"), go = el("button", "primary big-btn home-next" + (S.wheels > 0 ? "" : " go-next"), "🏋️ Je m’entraîne"); go.type = "button";
-    go.appendChild(el("small", "home-sub", ACT[n.main.act].icon + " " + ACT[n.main.act].title + " : " + (E.levelInfo(n.main.act, n.main.id) || {}).label));
-    go.addEventListener("click", function () { startRound(n.main.act, n.main.id); });
-    mr.appendChild(go); mr.appendChild(sayBtn(speak, "Écouter la consigne")); col.appendChild(mr);
-    col.appendChild(el("p", "home-or", "Ou bien :"));
-    var ar = el("div", "home-act-row"), ob = el("button", "secondary big-btn home-alt listen-alt", ACT[n.other.act].icon + " " + ACT[n.other.act].title + " : " + (E.levelInfo(n.other.act, n.other.id) || {}).label); ob.type = "button";
-    ob.addEventListener("click", function () { startRound(n.other.act, n.other.id); });
-    ar.appendChild(ob); ar.appendChild(sayBtn("Ou bien : " + ACT[n.other.act].say, "Écouter la consigne")); col.appendChild(ar);
+    if (S.wheels > 0) { var wr = el("div", "home-act-row"), wb = el("button", "primary big-btn home-next wheel-go go-next", "🎡 Lance ta roue !"); wb.type = "button"; wb.addEventListener("click", function () { goTo("roue"); }); wr.appendChild(wb); wr.appendChild(sayBtn("Une roue t’attend ! Touche le gros bouton qui bouge.", "Écouter")); col.appendChild(wr); }
+    /* Trois parcours, trois couleurs : au départ ils pulsent tous ; ensuite seul le parcours en cours pulse (et passe en premier) */
+    order.forEach(function (a, k) {
+      var id = suggest(a), lbl = (E.levelInfo(a, id) || {}).label, calm = S.wheels > 0 || (pathChosen && a !== PATH);
+      if (k === 1) col.appendChild(el("p", "home-or", "Ou bien :"));
+      var r = el("div", "home-act-row"), b = el("button", "primary big-btn home-next go-" + a + (calm ? " go-calm" : "") + (S.wheels > 0 ? "" : " go-next"), ACT[a].icon + " " + ACT[a].title); b.type = "button";
+      b.appendChild(el("small", "home-sub", lbl));
+      b.addEventListener("click", function () { startRound(a, id); });
+      r.appendChild(b); r.appendChild(sayBtn((k === 0 ? "" : "Ou bien : ") + ACT[a].say, "Écouter la consigne")); col.appendChild(r);
+    });
     var more = el("div", "home-more"), ch = el("button", "secondary home-small", "↔️ Choisir une autre activité"); ch.type = "button"; ch.addEventListener("click", function () { goTo("nombres"); });
     more.appendChild(ch); col.appendChild(more);
     row.appendChild(col); card.appendChild(row); box.appendChild(card);
@@ -463,6 +474,7 @@
 
   /* ===== Une série (l'écran entier est consacré à l'exercice, comme l'écoute de la lecture) ===== */
   function startRound(act, id) {
+    setPath(act);
     var n = Math.max(5, Math.min(20, parseInt(S.settings.questions, 10) || 10));
     R = { act: act, lv: id, qs: E.makeRound(act, id, n), i: 0, good: 0, replays: 0, helps: 0, times: [], id: uuid(), res: [], q: null, nums: [], calcs: [] };
     document.body.classList.add("listen-focus"); question();
