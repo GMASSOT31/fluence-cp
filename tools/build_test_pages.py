@@ -31,7 +31,7 @@ FLAP_HOOK = ("window.__flap={bird:bird,pipes:pipes,state:function(){return{t:t,d
              "setT:function(v){t=v;bi=FLAP_BANNERS.filter(function(x){return x<=v}).length}};")
 TILES_HOOK = ("window.__tiles={rows:function(){return rows},state:function(){return{t:t,lives:lives,score:score,dead:dead,ended:ended,started:started,model:target.model}},setT:function(v){t=v}};")
 HOOK_AT = 'if(!cloudMode){setMode();show("login");'
-HOOK = ("window.__t={data:data,LS:LS,G:G,finishScore:finishScore,winCoin:winCoin,coins:coins,listenEnd:listenEnd,listenStart:listenStart,listenPick:listenPick,"
+HOOK = ("window.__t={data:data,LS:LS,G:G,finishScore:finishScore,winCoin:winCoin,coins:coins,listenEnd:listenEnd,listenStart:listenStart,show:show,listenPick:listenPick,"
         "listenMine:listenMine,listenNeed:listenNeed,pendingWheels:pendingWheels,renderHome:renderHome,renderJeux:renderJeux,"
         "openWheel:openWheel,showEvolution:showEvolution,charFor:charFor,uid:uid,saveReview:saveReview,petState:petState,isValid:isValid,confetti:confetti};")
 
