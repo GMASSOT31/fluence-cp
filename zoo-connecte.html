@@ -604,9 +604,10 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   .zoo-card.written { border-color: #e0a800; box-shadow: 0 0 0 3px #f5c54233; }
   .dic-cells { display: flex; justify-content: center; gap: 8px; margin: 16px 0 10px; }
   .dic-cell { flex: 1 1 0; max-width: 66px; min-width: 28px; height: 74px; border-radius: 14px; border: 3px dashed var(--line); background: var(--card); color: var(--ink); display: flex; align-items: center; justify-content: center; font-size: clamp(1.6rem, 8vw, 2.6rem); font-weight: 800; text-transform: uppercase; }
-  .dic-cell.on { border-style: solid; border-color: #e0a800; background: #fffbe6; }
-  .dic-cell.good { border-style: solid; border-color: var(--ok); background: var(--ok-bg); }
-  .dic-cell.bad { border-style: solid; border-color: var(--bad); background: #fde3e3; }
+  /* fonds clairs fixes : le texte doit rester foncé même en thème sombre */
+  .dic-cell.on { border-style: solid; border-color: #e0a800; background: #fffbe6; color: #3d2c00; }
+  .dic-cell.good { border-style: solid; border-color: #2e9b5b; background: #e3f6ea; color: #14532d; }
+  .dic-cell.bad { border-style: solid; border-color: #d94646; background: #fde3e3; color: #7f1d1d; }
   @keyframes dic-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-9px); } 75% { transform: translateX(9px); } }
   .dic-cells.shake { animation: dic-shake .4s; }
   .dic-keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 14px 0; }
