@@ -1019,7 +1019,7 @@ async function renderStudentsTab(role){
   if(admin){const h=document.createElement("h3");h.className="teacher-group";h.textContent="👤 "+(t.email||"Compte sans e-mail")+" · "+sts.length+" "+pl(sts.length,"élève","élèves")+(t.ghosted_at?" · 👻 compte ghosté":"");box.append(h);}
   if(!cls.length){const p=document.createElement("p");p.className="muted";p.textContent="Aucune classe.";box.append(p);return;}
   cls.forEach(c=>{
-   const head=document.createElement("div");head.className="class-head";
+   const top=document.createElement("div");top.className="class-head";const head=document.createElement("div");head.className="class-head";const cbody=document.createElement("div");cbody.className="class-body";
    const h=document.createElement("h4");h.className="class-tag";h.style.setProperty("--cg",classColor(allClasses.indexOf(c)));h.textContent=(c.ghosted_at?"👻 ":"📚 ")+c.name+(c.ghosted_at?" · ghostée le "+frDate(c.ghosted_at):"");
    const cact=document.createElement("div");cact.className="actions";cact.style.marginTop="0";
    const cghost=document.createElement("button");cghost.type="button";cghost.className="secondary";cghost.textContent=c.ghosted_at?"Réactiver la classe":"👻 Ghoster la classe";cghost.onclick=()=>manageClass(c,c.ghosted_at?"unghost":"ghost",[cghost,cdel]);
@@ -1027,14 +1027,14 @@ async function renderStudentsTab(role){
    if(admin||c.teacher_id===currentUser.id){const cren=document.createElement("button");cren.type="button";cren.className="secondary";cren.textContent="✏️ Renommer";cren.onclick=()=>renameClass(c,"studentsMsg");cact.append(cren);}
    if(!window.__pdfWarm){window.__pdfWarm=1;loadJsPdf().catch(()=>{});}   /* prêt avant l’appui : le partage doit suivre le clic de très près */
    if(allStudents.some(s=>s.class_id===c.id&&!s.ghosted_at)){const cpr=document.createElement("button");cpr.type="button";cpr.className="secondary";cpr.textContent="🖨️ Fiches de connexion";cpr.title="Fiches de connexion à imprimer (PDF)";cpr.onclick=()=>printLoginCards(c,"studentsMsg",cpr);cact.append(cpr);}
-   cact.append(cghost,cdel);head.append(h);
+   cact.append(cghost,cdel);top.append(h);
    /* Code de la classe (celui que les élèves tapent), avec « Copier » */
    if(c.access_code){const cc=document.createElement("span");cc.className="class-code";cc.append("🔑 Code élèves : ");const cv=document.createElement("strong");cv.textContent=c.access_code;cc.append(cv);
     const cb=document.createElement("button");cb.type="button";cb.className="secondary";cb.textContent="📋 Copier";cb.title="Copier le code de la classe";cb.onclick=async()=>{try{await navigator.clipboard.writeText(c.access_code)}catch(e){const ta=document.createElement("textarea");ta.value=c.access_code;ta.style.cssText="position:fixed;opacity:0";document.body.append(ta);ta.select();try{document.execCommand("copy")}catch(e2){}ta.remove()}cb.textContent="✅ Copié";setTimeout(()=>{cb.textContent="📋 Copier"},1800)};cc.append(cb);if(c.teacher_id===currentUser.id||currentRole==="admin"){const ch=document.createElement("button");ch.type="button";ch.className="secondary";ch.textContent="✏️ Changer";ch.title="Changer le code de la classe";ch.onclick=()=>changeClassCode(c,"studentsMsg");cc.append(ch)}head.append(cc);}
    else{const cc=document.createElement("span");cc.className="class-code muted";cc.textContent="Pas encore de code (Réglages généraux › Mots de passe)";head.append(cc);}
-   head.append(cact);box.append(head);
+   head.append(cact);cbody.append(head);
    const members=sts.filter(s=>s.class_id===c.id);
-   if(!members.length){const p=document.createElement("p");p.className="muted";p.textContent="Aucun élève dans cette classe.";box.append(p);}
+   if(!members.length){const p=document.createElement("p");p.className="muted";p.textContent="Aucun élève dans cette classe.";cbody.append(p);}
    members.forEach(st=>{
     const line=document.createElement("div");line.className="row"+(st.ghosted_at||t.ghosted_at||c.ghosted_at?" ghosted":"");
     const info=document.createElement("div");const name=document.createElement("strong");name.textContent=(st.ghosted_at?"👻 ":"🧒 ")+st.nickname;
@@ -1044,8 +1044,13 @@ async function renderStudentsTab(role){
     const ghost=document.createElement("button");ghost.type="button";ghost.className="secondary";ghost.textContent=st.ghosted_at?"Réactiver":"👻 Ghoster";ghost.onclick=()=>manageStudent(st,st.ghosted_at?"unghost":"ghost",[ghost,ren,del]);
     const ren=document.createElement("button");ren.type="button";ren.className="secondary";ren.textContent="✏️ Renommer";ren.onclick=()=>renameStudent(st,[ghost,ren,del]);
     const del=document.createElement("button");del.type="button";del.className="danger";del.textContent="🗑️ Supprimer";del.onclick=()=>manageStudent(st,"delete",[ghost,ren,del]);
-    actions.append(ghost,ren,del);line.append(info,actions);box.append(line);
+    actions.append(ghost,ren,del);line.append(info,actions);cbody.append(line);
    });
+   /* Seul le nom de la classe est listé ; le bouton déploie le code, les actions et les élèves */
+   const ck="lst:"+c.id,tg=document.createElement("button");tg.type="button";tg.className="secondary cg-toggle";cbody.classList.toggle("hidden",!openGroups.has(ck));
+   const sync=()=>{const o=!cbody.classList.contains("hidden");tg.textContent=(o?"▲ Masquer":"▼ Voir les élèves")+" ("+members.length+")";tg.setAttribute("aria-expanded",String(o))};sync();
+   tg.onclick=()=>{cbody.classList.toggle("hidden");if(cbody.classList.contains("hidden"))openGroups.delete(ck);else openGroups.add(ck);sync()};
+   top.append(tg);box.append(top,cbody);
   });
  });
  if(!box.children.length)box.textContent="Aucun élève pour le moment.";
