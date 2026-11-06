@@ -582,6 +582,10 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   .panel-nav.listen-cta .pn-sub { color: #0f4a40; }
   .panel-nav.listen-cta[aria-current="page"] { background: #0f4a40; color: #fff; border-color: #0f4a40; }
   .panel-nav.listen-cta[aria-current="page"] .pn-sub { color: #fff; }
+  .panel-nav.write-cta { background: linear-gradient(145deg, #fff6bf, #ffe27a); border-color: #d9a400; color: #4a3500; }
+  .panel-nav.write-cta .pn-sub { color: #4a3500; }
+  .panel-nav.write-cta[aria-current="page"] { background: #4a3500; color: #fff; border-color: #4a3500; }
+  .panel-nav.write-cta[aria-current="page"] .pn-sub { color: #fff; }
   .listen-card { max-width: 760px; margin: 0 auto; }
   .zoo-card { position: relative; }
   .zoo-card .cert-stamp { position: absolute; top: 6px; right: 6px; padding: 2px 7px; border: 2px solid #b8860b; border-radius: 8px; background: #fff7d6; color: #8a6200; font-size: .72rem; font-weight: 800; transform: rotate(8deg); box-shadow: 0 1px 0 rgba(0,0,0,.15); }
@@ -597,6 +601,19 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   .listen-play.pulse { animation: listen-pulse 1.6s ease-in-out infinite; }
   @media (prefers-reduced-motion: reduce) { .listen-play.pulse { animation: none; } }
   .listen-play { display: block; margin: 8px auto; min-height: 64px; padding: 12px 26px; font-size: 1.3rem; font-weight: 800; border-radius: 18px; border: 0; background: #3a9d8c; color: #fff; }
+  .zoo-card.written { border-color: #e0a800; box-shadow: 0 0 0 3px #f5c54233; }
+  .dic-cells { display: flex; justify-content: center; gap: 8px; margin: 16px 0 10px; }
+  .dic-cell { flex: 1 1 0; max-width: 66px; min-width: 28px; height: 74px; border-radius: 14px; border: 3px dashed var(--line); background: var(--card); color: var(--ink); display: flex; align-items: center; justify-content: center; font-size: clamp(1.6rem, 8vw, 2.6rem); font-weight: 800; text-transform: uppercase; }
+  .dic-cell.on { border-style: solid; border-color: #e0a800; background: #fffbe6; }
+  .dic-cell.good { border-style: solid; border-color: var(--ok); background: var(--ok-bg); }
+  .dic-cell.bad { border-style: solid; border-color: var(--bad); background: #fde3e3; }
+  @keyframes dic-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-9px); } 75% { transform: translateX(9px); } }
+  .dic-cells.shake { animation: dic-shake .4s; }
+  .dic-keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 14px 0; }
+  .dic-key { min-height: 72px; font-size: 2.2rem; font-weight: 800; text-transform: uppercase; border-radius: 16px; background: var(--card); color: var(--ink); border: 2px solid var(--line); border-bottom-width: 5px; }
+  .dic-key:active { transform: translateY(3px); border-bottom-width: 2px; }
+  .dic-actions { display: flex; gap: 10px; justify-content: center; }
+  .dic-actions button { min-height: 64px; font-size: 1.4rem; font-weight: 800; border-radius: 16px; padding: 10px 26px; }
   .listen-go-line { font-size: 1.25rem; font-weight: 800; text-align: center; margin: 10px 0 6px; }
   .parent-note { margin-top: 20px; font-size: .82rem; color: var(--muted); opacity: .75; text-align: center; }
   .parent-note p { margin: 4px 0; }
@@ -985,18 +1002,23 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   .home-pet-emoji { font-size: 4rem; }
   .home-col { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
   .home-next { width: 100%; margin: 0; min-height: 84px; font-size: 1.45rem; line-height: 1.25; padding: 16px 18px; white-space: normal; }
-  .home-next:not(.listen-go):not(.wheel-go) { background: linear-gradient(135deg, #6d5dfc, #3b82f6); color: #fff; border-color: #4f6af0; }
+  .home-next:not(.listen-go):not(.wheel-go):not(.write-go) { background: linear-gradient(135deg, #6d5dfc, #3b82f6); color: #fff; border-color: #4f6af0; }
   .home-next { box-shadow: 0 6px 18px rgba(80, 90, 240, .35); }
   .wheel-go { background: linear-gradient(135deg, #f5a623, #e2572c); color: #fff; border-color: #e2572c; }
   /* Étape suggérée : TOUJOURS la couleur du parcours en cours, et qui pulse, sur tous les écrans. Parcours vert = écoute, parcours bleu = lecture (il devient bleu dès que l'élève entre dans la lecture). Un seul bouton pulse par parcours : c'est celui qu'il faut toucher. */
   :root { --go1: #3ddc77; --go2: #16a34a; --go-bd: #15803d; --go-glow: 22, 163, 74; --go-glow2: 34, 197, 94; --go-pale: #effcf3; }
   body.path-read, .go-blue { --go1: #5aa9ff; --go2: #1d6fe0; --go-bd: #1558b8; --go-glow: 29, 111, 224; --go-glow2: 59, 130, 246; --go-pale: #eef5ff; }
+  body.path-write, .go-yellow { --go1: #ffe14d; --go2: #f5b800; --go-bd: #b88700; --go-glow: 245, 184, 0; --go-glow2: 255, 205, 40; --go-pale: #fffbe6; }
   .go-green { --go1: #3ddc77; --go2: #16a34a; --go-bd: #15803d; --go-glow: 22, 163, 74; --go-glow2: 34, 197, 94; --go-pale: #effcf3; }
   .go-next, body.mode-student #btn-open:not(:disabled), body.mode-student #btn-start:not(:disabled), body.mode-student #btn-validate, body.mode-student #btn-save,
   body.mode-student #btn-spin:not(:disabled), body.mode-student #btn-wheel-done, body.mode-student #btn-panel-wheel {
     background: linear-gradient(135deg, var(--go1), var(--go2)) !important; color: #fff !important; border-color: var(--go-bd) !important;
     text-shadow: 0 1px 2px rgba(0, 0, 0, .25); animation: go-pulse 1.4s ease-in-out infinite;
   }
+  /* Parcours jaune (dictée) : texte foncé, le blanc serait illisible sur du jaune */
+  body.path-write .go-next, .go-yellow.go-next, body.path-write.mode-student #btn-open:not(:disabled), body.path-write.mode-student #btn-start:not(:disabled), body.path-write.mode-student #btn-validate, body.path-write.mode-student #btn-save,
+  body.path-write.mode-student #btn-spin:not(:disabled), body.path-write.mode-student #btn-wheel-done, body.path-write.mode-student #btn-panel-wheel { color: #3d2c00 !important; text-shadow: none; }
+  body.path-write .zoo-card .go-badge, .go-yellow .go-badge { color: #3d2c00; }
   .go-next:disabled { animation: none; opacity: .6; }
   .go-next.go-calm { animation: none; opacity: .8; }   /* l'autre parcours, visible mais calme */
   .next-bar { margin: 0 0 12px; display: flex; justify-content: center; }
@@ -1052,7 +1074,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   body.listen-focus header, body.listen-focus #panel-left, body.listen-focus #panel-right, body.listen-focus .bottom-nav, body.listen-focus #cloud-status { display: none !important; }
   body.listen-focus main { max-width: none; padding: 8px !important; margin: 0; }
   body.listen-focus .layout { display: block; }
-  body.listen-focus #audition-body > .card { max-width: 900px; min-height: calc(100vh - 16px); min-height: calc(100dvh - 16px); margin: 0 auto; display: flex; flex-direction: column; justify-content: center; border-radius: 18px; }
+  body.listen-focus #dictee-body > .card, body.listen-focus #audition-body > .card { max-width: 900px; min-height: calc(100vh - 16px); min-height: calc(100dvh - 16px); margin: 0 auto; display: flex; flex-direction: column; justify-content: center; border-radius: 18px; }
   body.listen-focus .listen-play { min-height: 76px; font-size: 1.5rem; padding: 14px 34px; }
   body.listen-focus .listen-choices { gap: 14px; margin: 18px 0; }
   body.listen-focus .listen-choice { min-height: clamp(84px, 16vh, 150px); font-size: clamp(2.2rem, 6vh, 3.4rem); }
@@ -1235,6 +1257,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       <button type="button" class="panel-nav needs-reward" data-go="boutique"><span class="pn-ico" aria-hidden="true">🛍️</span><span>Boutique<span class="pn-sub" id="pl-shop"></span></span></button>
       <button type="button" class="panel-nav" data-go="cartes"><span class="pn-ico" aria-hidden="true">🐾</span><span>Mes cartes lues</span></button>
       <button type="button" class="panel-nav" data-go="reconnues"><span class="pn-ico" aria-hidden="true">👂</span><span>Mes cartes reconnues</span></button>
+      <button type="button" class="panel-nav" data-go="ecrites"><span class="pn-ico" aria-hidden="true">✏️</span><span>Mes cartes écrites</span></button>
       <button type="button" class="panel-nav" data-go="progres"><span class="pn-ico" aria-hidden="true">📈</span><span>Ma progression<span class="pn-sub" id="pr-prog"></span></span></button>
     </aside>
 
@@ -1423,6 +1446,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   <!-- MES CARTES -->
   <section id="v-cartes" hidden><div id="cartes-body"></div></section>
   <section id="v-reconnues" hidden><div id="reconnues-body"></div></section>
+  <section id="v-ecrites" hidden><div id="ecrites-body"></div></section>
 
   <!-- BOUTIQUE -->
   <section id="v-boutique" hidden><div id="boutique-body"></div></section>
@@ -1473,6 +1497,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
 
   <!-- ÉCOUTER : reconnaissance des sons (élève) -->
   <section id="v-audition" hidden><div id="audition-body"></div></section>
+  <section id="v-dictee" hidden><div id="dictee-body"></div></section>
 
   <!-- LECTURES À ÉCOUTER (maître(sse)) -->
   <section id="v-ecoute" hidden><div id="ecoute-body"></div></section>
@@ -1644,6 +1669,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     <aside class="panel right" id="panel-right" aria-label="Lire et jouer" hidden>
       <button type="button" class="panel-nav big read-cta" data-go="lecture"><span class="pn-ico" aria-hidden="true">📖</span><span>Lire<span class="pn-sub" id="pr-next"></span></span></button>
       <button type="button" class="panel-nav big listen-cta" data-go="audition"><span class="pn-ico" aria-hidden="true">👂</span><span>ÉCOUTER<span class="pn-sub" id="pr-listen"></span></span></button>
+      <button type="button" class="panel-nav big write-cta" data-go="dictee"><span class="pn-ico" aria-hidden="true">✏️</span><span>DICTÉE<span class="pn-sub" id="pr-dictee"></span></span></button>
       <button type="button" class="panel-nav big needs-reward play-cta" data-go="jeux"><span class="play-cta-spark" aria-hidden="true">✦ ✧ ✦</span><span class="pn-ico play-cta-icon" aria-hidden="true">🎮</span><span class="play-cta-copy"><span class="play-cta-kicker">LA SALLE D’ARCADE</span><span class="play-cta-title">JOUER <span aria-hidden="true">➜</span></span><span class="pn-sub play-cta-count" id="pr-games"></span><span class="play-cta-hook">🏆 Relève les défis !</span></span></button>
     </aside>
   </div>
@@ -1651,6 +1677,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   <nav class="bottom-nav" id="bottom-nav" aria-label="Mon espace" hidden>
     <button type="button" class="panel-nav" data-go="lecture"><span class="pn-ico" aria-hidden="true">📖</span><span>Lire</span></button>
     <button type="button" class="panel-nav" data-go="audition"><span class="pn-ico" aria-hidden="true">👂</span><span>Écouter</span></button>
+    <button type="button" class="panel-nav" data-go="dictee"><span class="pn-ico" aria-hidden="true">✏️</span><span>Dictée</span></button>
     <button type="button" class="panel-nav needs-reward" data-go="jeux"><span class="pn-ico" aria-hidden="true">🎮</span><span>Jouer</span></button>
     <button type="button" class="panel-nav needs-reward" data-go="boutique"><span class="pn-ico" aria-hidden="true">🛍️</span><span>Boutique</span></button>
     <button type="button" class="panel-nav" data-go="cartes"><span class="pn-ico" aria-hidden="true">🐾</span><span>Cartes</span></button>
@@ -1951,6 +1978,15 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if (c.maxErrors >= c.questions) c.maxErrors = c.questions - 1;
     return c;
   }
+  /* Dictée : réglages (nombre de syllabes / mots par série, erreurs permises, séries à réussir, pièces) */
+  var DICTEE_DEF = { syl: 2, words: 2, maxErrors: 0, passes: 1, coins: 2 };
+  function dicteeCfgClean(o) {
+    o = o && typeof o === "object" ? o : {};
+    return {
+      syl: listenInt(o.syl, 0, 8, DICTEE_DEF.syl), words: listenInt(o.words, 0, 8, DICTEE_DEF.words), maxErrors: listenInt(o.maxErrors, 0, 5, DICTEE_DEF.maxErrors),
+      passes: listenInt(o.passes, 1, 5, DICTEE_DEF.passes), coins: listenInt(o.coins, 0, 50, DICTEE_DEF.coins)
+    };
+  }
   function listenClean(o) {
     var r = { passes: {}, done: {}, tries: 0 };
     if (!o || typeof o !== "object") return r;
@@ -1987,6 +2023,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     evos: [],   /* scènes d’évolution en attente (lecture notée plus tard par le maître) */
     listen: {},
     listenCfg: listenCfgClean(null),
+    dictee: {},
+    dicteeCfg: dicteeCfgClean(null),
     v: 3,
     sel: { sid: null, sound: null, kind: "s" }
   };
@@ -2039,6 +2077,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
         if (Array.isArray(d.evos)) data.evos = d.evos;
         if (d.listen && typeof d.listen === "object") Object.keys(d.listen).forEach(function (k) { data.listen[k] = listenClean(d.listen[k]); });
         if (d.listenCfg) data.listenCfg = listenCfgClean(d.listenCfg);
+        if (d.dictee && typeof d.dictee === "object") Object.keys(d.dictee).forEach(function (k) { data.dictee[k] = listenClean(d.dictee[k]); });
+        if (d.dicteeCfg) data.dicteeCfg = dicteeCfgClean(d.dicteeCfg);
         /* anciens jeux gagnés : repris sous forme de parties à jouer */
         if (Array.isArray(d.tickets)) d.tickets.forEach(function (t) { data.credits[t.sid] = (data.credits[t.sid] || 0) + (t.left || 0); });
         if ((d.v || 0) < 3 && !data.sounds.some(function (x) { return x.id === "voy"; })) data.sounds.unshift({ id: "voy", label: "voyelles", only: ["s"] });
@@ -2086,6 +2126,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       hi:data.hi[sid]||{}, vouchers:data.vouchers.filter(function(x){return x.sid===sid}),
       reviews:data.reviews.filter(function(x){return x.sid===sid}),
       listen:data.listen[sid]||{},
+      dictee:data.dictee[sid]||{},
       notes:data.notes.filter(function(x){return x.sid===sid}),
       evos:data.evos.filter(function(x){return x.sid===sid}),
       avatar:(studentById(sid)||{}).avatar||null,
@@ -2461,14 +2502,14 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   }
 
   /* ---------- Navigation ---------- */
-  var STUDENT_VIEWS = ["home", "lecture", "audition", "cartes", "reconnues", "boutique", "jeux", "progres", "roue", "jeu"];
+  var STUDENT_VIEWS = ["home", "lecture", "audition", "dictee", "cartes", "reconnues", "ecrites", "boutique", "jeux", "progres", "roue", "jeu"];
   var TEACHER_VIEWS = ["eleves", "ecoute", "progression", "reglages"];
   var VIEWS = ["login"].concat(STUDENT_VIEWS, TEACHER_VIEWS);
-  var GO_GROUP = { lecture: "lecture", audition: "audition", jeux: "jeux", jeu: "jeux", roue: "jeux", boutique: "boutique", cartes: "cartes", reconnues: "reconnues", progres: "progres" };
+  var GO_GROUP = { lecture: "lecture", audition: "audition", jeux: "jeux", jeu: "jeux", roue: "jeux", boutique: "boutique", cartes: "cartes", reconnues: "reconnues", ecrites: "ecrites", dictee: "dictee", progres: "progres" };
   /* Parcours de l'élève : vert (écoute) ou bleu (lecture). Il devient bleu dès que l'élève entre dans la lecture ; tous les boutons « à toucher » prennent cette couleur */
   var PATH = "listen", pathChosen = false;
-  function setPath(p) { PATH = p; pathChosen = true; document.body.classList.toggle("path-read", p === "read"); }
-  function resetPath() { PATH = "listen"; pathChosen = false; document.body.classList.remove("path-read"); }
+  function setPath(p) { PATH = p; pathChosen = true; document.body.classList.toggle("path-read", p === "read"); document.body.classList.toggle("path-write", p === "write"); }
+  function resetPath() { PATH = "listen"; pathChosen = false; document.body.classList.remove("path-read", "path-write"); }
   function show(v) {
     if (STUDENT_VIEWS.indexOf(v) >= 0 && ses.role !== "student") v = "login";
     if (TEACHER_VIEWS.indexOf(v) >= 0 && ses.role !== "teacher") v = "login";
@@ -2480,6 +2521,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if (v !== "eleves") $("codes-out").innerHTML = "";
     if (v !== "ecoute") closeReviewMedia();
     if (v !== "audition") { listenStop(); listenFocus(false); }
+    if (v !== "dictee") dicteeStop();
     VIEWS.forEach(function (name) { $("v-" + name).hidden = (name !== v); });
     Array.prototype.forEach.call($("nav").querySelectorAll("button"), function (b) {
       if (b.getAttribute("data-view") === v) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
@@ -2488,13 +2530,15 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       if (GO_GROUP[v] === b.getAttribute("data-go")) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
     });
     if (v === "login") { resetPath(); renderLogin(); }
-    if (v === "lecture" || v === "cartes") setPath("read"); else if (v === "audition" || v === "reconnues") setPath("listen");
+    if (v === "lecture" || v === "cartes") setPath("read"); else if (v === "audition" || v === "reconnues") setPath("listen"); else if (v === "dictee" || v === "ecrites") setPath("write");
     if (v === "home") renderHome();
     if (v === "lecture") { lireReset(); renderSetup(); }
     if (v === "cartes") renderCartes();
     if (v === "reconnues") renderReconnues();
     if (v === "boutique") renderBoutique();
     if (v === "audition") renderAudition();
+    if (v === "dictee") renderDictee();
+    if (v === "ecrites") renderEcrites();
     if (v === "reglages") listenSettingsFill();
     if (v === "jeux") renderJeux();
     if (v === "progres") renderMyProgress();
@@ -2507,11 +2551,11 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   }
   /* Sur les écrans « à côté » (cartes, boutique, jeux, progression), un gros bouton vert ramène toujours à l'étape suivante (l'accueil) */
   function addNextBar(v) {
-    var id = { cartes: "cartes-body", reconnues: "reconnues-body", boutique: "boutique-body", jeux: "jeux-body", progres: "progres-body" }[v];
+    var id = { cartes: "cartes-body", reconnues: "reconnues-body", ecrites: "ecrites-body", boutique: "boutique-body", jeux: "jeux-body", progres: "progres-body" }[v];
     var host = id && $(id);
     if (!host || ses.viaTeacher || !cloudToken) return;
     var sid = ses.sid;
-    if (!(nextStep(sid) || listenNext(sid) || (data.reward && pendingWheels(sid).length))) return;
+    if (!(nextStep(sid) || listenNext(sid) || dicteeNext(sid) || (data.reward && pendingWheels(sid).length))) return;
     var bar = el("div", "next-bar"), b = el("button", "primary big-btn go-next", "👉 Mon étape suivante"); b.type = "button";
     b.addEventListener("click", function () { goTo("home"); });
     bar.appendChild(b);
@@ -3417,7 +3461,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     }
     function setStars(st, fresh) {
       stars.innerHTML = "";
-      for (var i = 0; i < st.total; i++) stars.appendChild(el("span", "evo-star" + (i < st.got ? " on" : "") + (fresh && i === st.got - 1 ? " new" : ""), o.listen ? "👂" : "★"));
+      for (var i = 0; i < st.total; i++) stars.appendChild(el("span", "evo-star" + (i < st.got ? " on" : "") + (fresh && i === st.got - 1 ? " new" : ""), o.write ? "✏️" : (o.listen ? "👂" : "★")));
     }
     setFace(o.from); setStars(o.from, false);
     var done = false, timers = [];
@@ -3429,13 +3473,14 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       if (!reduce) { flash.classList.add("on"); face.classList.add("pop"); rays.classList.add("on"); confetti(110, false); }
       else rays.classList.add("on");
       var t, m;
-      if (o.listen) { t = "L’œuf éclot !"; m = "Voici " + poss + " : nouvelle carte reconnue 👂"; }
+      if (o.write) { t = "L’œuf éclot !"; m = "Voici " + poss + " : nouvelle carte écrite ✏️"; }
+      else if (o.listen) { t = "L’œuf éclot !"; m = "Voici " + poss + " : nouvelle carte reconnue 👂"; }
       else if (hatch && !full) { t = "L’œuf éclot !"; m = "Voici " + poss + " : bienvenue dans ton zoo !"; }
       else if (full) { t = cap(poss) + " a fini de grandir ! ✨"; m = "Toutes ses étapes sont certifiées 🏅 : sa carte brille dans ton zoo !"; }
       else { var left = o.to.total - o.to.got; t = cap(poss) + " grandit !"; m = "Encore " + nb(left, "étape", "étapes") + " 🏅 et " + poss + " aura fini de grandir."; }
       title.textContent = t; msg.textContent = m;
       if (data.sfx) [392, 523, 659, 784, 1047].forEach(function (f, k) { tone(f, k * 0.09, 0.3, "triangle", 0.16); });
-      speak(t + " " + m.replace(/[🏅👂✨]/g, ""));
+      speak(t + " " + m.replace(/[🏅👂✨✏\uFE0F]/g, ""));
       var wheel = data.reward && pendingWheels(o.sid).length > 0;
       var go = el("button", "primary big-btn go-next" + (wheel ? " wheel-go" : ""), wheel ? "🎡 Lancer la roue !" : "Continuer"); go.type = "button";
       var zoo = el("button", "secondary big-btn", "🐾 Voir mon zoo"); zoo.type = "button";
@@ -3698,11 +3743,13 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     $("top-listen").textContent = "E" + lvl;
     $("me-stats").textContent = "Niveau de lecture : N" + levelN + " · Niveau d’écoute : E" + lvl;
     /* Élève qui débute (aucune étape réussie, rien à écouter validé, ni pièces ni parties) : la barre du bas ne montre que Lire, Écouter et Moi */
-    var newbie = cn <= 0 && cr <= 0 && pw <= 0 && lvl === 0 && !allSteps.some(function (x) { return isPassed(sid, x.sound, x.kind); });
+    var newbie = cn <= 0 && cr <= 0 && pw <= 0 && lvl === 0 && dicteeLevel(sid) === 0 && !allSteps.some(function (x) { return isPassed(sid, x.sound, x.kind); });
     document.body.classList.toggle("newbie", newbie);
     $("top-listen-box").setAttribute("aria-label", "Niveau d’écoute " + lvl + " : " + nb(lvl, "son validé", "sons validés"));
     $("top-listen-box").title = "Niveau d’écoute : " + nb(lvl, "son validé", "sons validés");
     $("pr-listen").textContent = lnx ? "son : " + lnx.label : "tout est validé";
+    var dnx = dicteeNext(sid);
+    $("pr-dictee").textContent = dnx ? "son : " + dnx.label : "tout est validé";
     /* Afficher le dernier son atteint, pas la première étape encore à faire. */
     var animalSound = null;
     data.sounds.forEach(function (sound) {
@@ -4335,6 +4382,272 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   }
   function listenSettingsReset() { data.listenCfg = listenCfgClean(null); save(); listenSettingsFill(); toast("Réglages d’origine rétablis"); }
 
+  /* ---------- Dictée : l'élève entend un son, une syllabe ou un mot et l'écrit avec des lettres à toucher ---------- */
+  /* Mêmes sons et même ordre que « Écouter », mais sa progression est à part (data.dictee) : une série sans aide valide la carte écrite */
+  var DS = { run: null, timers: [], pick: null, sound: null };
+  function dicteeMine(sid) { if (!data.dictee[sid]) data.dictee[sid] = listenClean(null); return data.dictee[sid]; }
+  function dicteeDone(sid, id) { var D = dicteeMine(sid); return !!D.done[id] || (D.passes[id] || 0) >= data.dicteeCfg.passes; }
+  function dicteeUnlocked(sid, id) {
+    if (!data.lock) return true;
+    var p = listenPrev(id);
+    return !p || dicteeDone(sid, p.id);
+  }
+  function dicteeLevel(sid) { return listenSounds().filter(function (s) { return dicteeDone(sid, s.id); }).length; }
+  function dicteeNext(sid) {
+    var ls = listenSounds();
+    for (var i = 0; i < ls.length; i++) if (dicteeUnlocked(sid, ls[i].id) && !dicteeDone(sid, ls[i].id)) return ls[i];
+    return null;
+  }
+  function dicteeClear() { DS.timers.forEach(clearTimeout); DS.timers = []; }
+  function dicteeStop() { dicteeClear(); if (DS.run) { listenStopVoice(); DS.run = null; } }
+  /* Syllabes d'un son : pour un son-voyelle (ou, on, an…), les consonnes viennent de la dictée (pas de l'écoute) */
+  function dicteeSylItems(sid, sound) {
+    if (LISTEN_SYL_CONS[sound.id] || !LISTEN_SYL_VOW[sound.id]) return listenSylItems(sid, sound);
+    var known = [], out = [];
+    listenSounds().forEach(function (s) {
+      if (!dicteeUnlocked(sid, s.id)) return;
+      (LISTEN_SYL_CONS[s.id] || []).forEach(function (e) { if (known.indexOf(e[0]) < 0) known.push(e[0]); });
+    });
+    if (!known.length) return null;
+    LISTEN_SYL_VOW[sound.id].forEach(function (e) {
+      shuffle(known.slice()).forEach(function (cg) { if (sylOK(cg, e[0]) && out.length < 40) out.push(sylItem(cg, e[0], "v")); });
+    });
+    return out.length ? out : null;
+  }
+  /* Une série : d'abord des syllabes (ou le son seul), puis des mots s'il y en a pour ce son */
+  function dicteeBuild(sid, sound) {
+    var cfg = data.dicteeCfg;
+    var syl = shuffle(dicteeSylItems(sid, sound) || listenItems(sound));
+    var words = shuffle((LISTEN_WORDS[sound.id] || []).map(wordItem));
+    var nW = Math.min(words.length, cfg.words), nS = Math.min(syl.length, cfg.syl + (cfg.words - nW));
+    var out = syl.slice(0, nS).concat(words.slice(0, nW));
+    if (!out.length) out = syl.slice(0, 1);
+    return out;
+  }
+  /* Lettres proposées : celles du modèle + des pièges classiques (b d p q, m n u, a o…) */
+  var DIC_CONFUS = { b: "dpq", d: "bpq", p: "bdq", q: "bdp", m: "n", n: "mu", u: "n", a: "o", o: "ae", e: "ao", i: "l", l: "i", f: "t", t: "f", s: "z", z: "s", v: "f", c: "k", k: "c", g: "j", j: "g", r: "n", "é": "eè", "è": "eé" };
+  function dicteeKeys(it) {
+    var need = [];
+    it.g.forEach(function (g) { g.toLowerCase().split("").forEach(function (c) { if (need.indexOf(c) < 0) need.push(c); }); });
+    var total = Math.min(12, Math.max(8, need.length + 3)), keys = need.slice();
+    need.forEach(function (c) { (DIC_CONFUS[c] || "").split("").forEach(function (d) { if (keys.length < total && keys.indexOf(d) < 0) keys.push(d); }); });
+    shuffle("abcdefghijklmnopqrstuvxz".split("")).forEach(function (c) { if (keys.length < total && keys.indexOf(c) < 0) keys.push(c); });
+    return shuffle(keys);
+  }
+
+  /* ---------- Dictée : écrans ---------- */
+  function renderDictee() {
+    listenFocus(false);
+    if (ses.role !== "student") return;
+    dicteeStop();
+    var sid = ses.sid, body = $("dictee-body"), cfg = data.dicteeCfg, ls = listenSounds(), D = dicteeMine(sid);
+    body.innerHTML = "";
+    var card = el("div", "card");
+    card.appendChild(el("h2", "", "✏️ Dictée"));
+    if (!ls.length) { card.appendChild(el("p", "instruction", "Aucun son disponible pour le moment.")); body.appendChild(card); return; }
+    var pick = DS.pick && soundById(DS.pick) && dicteeUnlocked(sid, DS.pick) ? DS.pick : null;
+    DS.pick = null;
+    var nxt = dicteeNext(sid);
+    DS.sound = pick || (nxt ? nxt.id : null);
+    if (!DS.sound) {
+      card.appendChild(el("p", "instruction", "Bravo ! Tous les sons sont écrits 🎉 Tu peux les rejouer dans « Mes cartes écrites »."));
+      var toW = el("button", "secondary", "✏️ Mes cartes écrites"); toW.type = "button";
+      toW.addEventListener("click", function () { goTo("ecrites"); });
+      card.appendChild(toW);
+      body.appendChild(card);
+      return;
+    }
+    var cur = soundById(DS.sound), done = dicteeDone(sid, DS.sound), need = cfg.passes, n = Math.min(D.passes[DS.sound] || 0, need), ch = charFor(DS.sound);
+    card.appendChild(el("p", "lire-sub listen-go-line", done ? "✏️ Touche la carte pour rejouer !" : "✏️ Touche la carte pour commencer !"));
+    var grid = el("div", "zoo-grid listen-next");
+    var b = el("button", "zoo-card suggested" + (done ? " written" : "")); b.type = "button";
+    b.appendChild(el("span", "go-badge", "👉 Touche ici"));
+    b.appendChild(buildPet(done ? { got: 1, total: 1, locked: false } : { got: 0, total: 1, locked: false }, ch));
+    b.appendChild(el("div", "son", cur.label));
+    var stars = el("div", "mini-stars"); stars.setAttribute("aria-hidden", "true");
+    for (var si = 0; si < need; si++) stars.appendChild(el("span", "star " + (done || si < n ? "on" : "off"), "★"));
+    b.appendChild(stars);
+    b.appendChild(el("div", "cap", done ? "✏️ " + cap(ch.nom) : n + " sur " + need));
+    b.setAttribute("aria-label", "Commencer : " + cur.label);
+    b.addEventListener("click", function () { dicteeStart(sid, DS.sound); });
+    grid.appendChild(b);
+    card.appendChild(grid);
+    var note = el("div", "parent-note");
+    note.appendChild(el("p", "", "Une voix dit un son, une syllabe ou un mot. Touche les lettres pour l’écrire, puis valide."));
+    note.appendChild(el("p", "", nb(cfg.syl + cfg.words, "mot ou syllabe", "mots ou syllabes") + " par série, " + nb(cfg.maxErrors, "erreur permise", "erreurs permises") + "." + (done ? " Ce son est déjà écrit : on s’entraîne, sans nouvelle pièce." : "")));
+    card.appendChild(note);
+    body.appendChild(card);
+  }
+  function dicteeStart(sid, soundId) {
+    var sound = soundById(soundId), items = sound ? dicteeBuild(sid, sound) : [];
+    if (!sound || !items.length) { toast("Ce son n’a pas encore d’exercice."); return; }
+    dicteeClear();
+    DS.run = { sid: sid, sound: sound, items: items, n: 0, failed: 0, q: null };
+    listenFocus(true);
+    dicteeQuestion();
+  }
+  function dicteeQuestion() {
+    var R = DS.run, body = $("dictee-body");
+    if (!R) return;
+    if (R.n >= R.items.length) { dicteeEnd(); return; }
+    var it = R.items[R.n], len = it.g[0].length, total = R.items.length;
+    var Q = { item: it, typed: [], tries: 0, over: false };
+    R.q = Q; R.n++;
+    body.innerHTML = "";
+    var card = el("div", "card listen-card");
+    var top = el("div", "listen-top");
+    top.appendChild(el("span", "listen-count", "Dictée " + R.n + " sur " + total));
+    var quit = el("button", "secondary", "Arrêter"); quit.type = "button";
+    quit.addEventListener("click", function () { renderDictee(); });
+    top.appendChild(quit);
+    card.appendChild(top);
+    var bar = el("div", "listen-dots"); bar.setAttribute("aria-hidden", "true");
+    for (var i = 0; i < total; i++) bar.appendChild(el("span", i < R.n - 1 ? "done" : (i === R.n - 1 ? "now" : ""), ""));
+    card.appendChild(bar);
+    var again = el("button", "listen-play go-next", "🔊 Écouter"); again.type = "button";
+    again.addEventListener("click", function () { again.classList.remove("go-next"); listenSay(it); });
+    card.appendChild(again);
+    var msg = el("p", "instruction listen-msg", it.word ? "Écris le mot que tu entends." : "Écris ce que tu entends.");
+    msg.setAttribute("role", "status"); msg.id = "dictee-msg";
+    card.appendChild(msg);
+    var cellsBox = el("div", "dic-cells"), cells = [];
+    for (var c = 0; c < len; c++) { var cell = el("div", "dic-cell", ""); cell.setAttribute("aria-hidden", "true"); cells.push(cell); cellsBox.appendChild(cell); }
+    card.appendChild(cellsBox);
+    var okBtn = el("button", "primary go-next", "✔ Valider"); okBtn.type = "button"; okBtn.disabled = true;
+    function paint() {
+      cells.forEach(function (cl, k) { cl.textContent = Q.typed[k] || ""; cl.className = "dic-cell" + (Q.typed[k] ? " on" : ""); });
+      okBtn.disabled = Q.over || Q.typed.length < len;
+    }
+    var keys = el("div", "dic-keys");
+    dicteeKeys(it).forEach(function (k) {
+      var kb = el("button", "dic-key", k); kb.type = "button";
+      kb.addEventListener("click", function () {
+        if (Q.over || Q.typed.length >= len) return;
+        again.classList.remove("go-next");
+        Q.typed.push(k); paint();
+      });
+      keys.appendChild(kb);
+    });
+    card.appendChild(keys);
+    var acts = el("div", "dic-actions");
+    var back = el("button", "secondary", "⌫ Effacer"); back.type = "button";
+    back.addEventListener("click", function () { if (Q.over) return; Q.typed.pop(); paint(); });
+    acts.appendChild(back); acts.appendChild(okBtn);
+    card.appendChild(acts);
+    okBtn.addEventListener("click", function () {
+      if (Q.over || Q.typed.length < len) return;
+      var word = Q.typed.join("");
+      if (it.g.some(function (g) { return g.toLowerCase() === word; })) {
+        Q.over = true; okBtn.disabled = true;
+        cells.forEach(function (cl) { cl.classList.add("good"); });
+        sfxGood(); msg.textContent = praise() + " !";
+        DS.timers.push(setTimeout(dicteeQuestion, 1000));
+        return;
+      }
+      Q.tries++; sfxBad();
+      cells.forEach(function (cl) { cl.classList.add("bad"); });
+      if (Q.tries < 2) {   /* première erreur : on réécoute et on réessaie */
+        Q.over = true; okBtn.disabled = true;
+        msg.textContent = "Presque ! Écoute encore et essaie une autre fois.";
+        cellsBox.classList.remove("shake"); void cellsBox.offsetWidth; cellsBox.classList.add("shake");
+        DS.timers.push(setTimeout(function () { Q.over = false; Q.typed = []; paint(); listenSay(it); }, 900));
+      } else {   /* deuxième erreur : on montre la bonne réponse, la série ne sera pas validée */
+        Q.over = true; R.failed++; okBtn.disabled = true;
+        var good = it.g[0].toLowerCase();
+        cells.forEach(function (cl, k) { cl.textContent = good.charAt(k); cl.className = "dic-cell good"; });
+        msg.textContent = "On écrit : " + good.toUpperCase() + ".";
+        DS.timers.push(setTimeout(dicteeQuestion, 2800));
+      }
+    });
+    body.appendChild(card);
+    if (window.innerWidth <= 880) card.scrollIntoView({ block: "start" });
+    DS.timers.push(setTimeout(function () { listenSay(it); }, 250));
+  }
+  function dicteeEnd() {
+    var R = DS.run, cfg = data.dicteeCfg, sid = R.sid, id = R.sound.id, D = dicteeMine(sid), body = $("dictee-body");
+    var ok = R.failed <= cfg.maxErrors, wasDone = dicteeDone(sid, id), gained = 0, nowDone = false;
+    D.tries++;
+    if (ok && !wasDone) {
+      D.passes[id] = (D.passes[id] || 0) + 1;
+      if (D.passes[id] >= cfg.passes) {
+        D.done[id] = true; nowDone = true;
+        if (data.reward && cfg.coins > 0) { data.coins[sid] = coins(sid) + cfg.coins; gained = cfg.coins; }
+        if (data.reward) data.wheels.push({ id: uid(), sid: sid, ts: Date.now() });
+      }
+    }
+    save(); renderPanels();
+    body.innerHTML = "";
+    var card = el("div", "card listen-card");
+    card.appendChild(el("h2", "", nowDone ? "Carte écrite ! 🎉" : (ok ? "Bravo ! 👏" : "Presque !")));
+    var have = nowDone || wasDone ? cfg.passes : Math.min(D.passes[id] || 0, cfg.passes), starRow = el("div", "listen-stars");
+    starRow.setAttribute("role", "img"); starRow.setAttribute("aria-label", nb(have, "étoile", "étoiles") + " sur " + cfg.passes);
+    for (var si = 0; si < cfg.passes; si++) starRow.appendChild(el("span", "lstar" + (si < have ? " on" : "") + (ok && !wasDone && si === have - 1 ? " new" : ""), "★"));
+    card.appendChild(starRow);
+    card.appendChild(el("p", "instruction", "Tu as bien écrit " + nb(R.items.length - R.failed, "mot ou syllabe", "mots ou syllabes") + " sur " + R.items.length + "."));
+    if (nowDone) {
+      card.appendChild(el("p", "instruction", "La carte du son " + q(R.sound.label) + " est écrite. Niveau de dictée : " + dicteeLevel(sid) + "."));
+      if (gained) listenCoinBox(card, gained);
+      confetti(70, gained > 0);
+      if (data.sfx) [523, 659, 784, 1047, 1319].forEach(function (f, k) { tone(f, k * 0.1, 0.28, "triangle", 0.16); });
+    } else if (wasDone) {
+      card.appendChild(el("p", "instruction", "Ce son est déjà écrit : tu t’entraînes pour le plaisir."));
+    } else if (ok) {
+      card.appendChild(el("p", "instruction", "Encore " + nb(cfg.passes - (D.passes[id] || 0), "série réussie", "séries réussies") + " pour écrire la carte de ce son."));
+    } else {
+      card.appendChild(el("p", "instruction", "Il faut tout écrire sans aide" + (cfg.maxErrors ? " (" + nb(cfg.maxErrors, "erreur permise", "erreurs permises") + ")" : "") + ". Écoute bien et recommence, tu vas y arriver !"));
+    }
+    var row = el("div", "row");
+    var nx = nowDone ? dicteeNext(sid) : null;
+    var cont = el("button", "primary big-btn go-next", "Continuer"); cont.type = "button";
+    cont.addEventListener("click", function () {
+      if (!nowDone) { dicteeStart(sid, id); return; }
+      if (nx) { DS.sound = nx.id; dicteeStart(sid, nx.id); } else { DS.pick = null; renderDictee(); }
+    });
+    var stopB = el("button", "secondary big-btn", "Arrêter"); stopB.type = "button";
+    stopB.addEventListener("click", function () { listenStopVoice(); listenFocus(false); goTo("home"); });
+    row.appendChild(cont); row.appendChild(stopB);
+    card.appendChild(row);
+    body.appendChild(card);
+    DS.run = null;
+    if (nowDone) showEvolution({ ch: charFor(id), from: { got: 0, total: 1 }, to: { got: 1, total: 1 }, listen: true, write: true, sid: sid, zoo: "ecrites" }, function () {
+      if (data.reward && pendingWheels(sid).length) { listenFocus(false); openWheel(sid, "Bravo, tu as écrit le son " + q(R.sound.label) + " !", charFor(id).e); }
+    });
+  }
+  /* Mes cartes écrites : une carte par son, dans le même ordre que les cartes reconnues */
+  function renderEcrites() {
+    var body = $("ecrites-body");
+    body.innerHTML = "";
+    var sid = ses.sid, st = studentById(sid);
+    if (!st) return;
+    var ls = listenSounds(), D = dicteeMine(sid), cfg = data.dicteeCfg;
+    var won = ls.filter(function (x) { return dicteeDone(sid, x.id); }).length;
+    var head = el("div", "card");
+    head.appendChild(el("h2", "", "Mes cartes écrites"));
+    head.appendChild(el("p", "muted", nb(won, "son écrit", "sons écrits") + " sur " + ls.length + ". Réussis une dictée sans aide " + (cfg.passes > 1 ? cfg.passes + " fois " : "") + "pour gagner la carte d’un son."));
+    var toRead = el("button", "secondary", "👂 Voir mes cartes reconnues"); toRead.type = "button";
+    toRead.addEventListener("click", function () { goTo("reconnues"); });
+    head.appendChild(toRead);
+    body.appendChild(head);
+    var grid = el("div", "zoo-grid"), sug = dicteeNext(sid);
+    ls.forEach(function (x) {
+      var done = dicteeDone(sid, x.id), unl = dicteeUnlocked(sid, x.id), n = Math.min(D.passes[x.id] || 0, cfg.passes), ch = charFor(x.id);
+      var b = el("button", "zoo-card" + (done ? " written" : "") + (sug && sug.id === x.id ? " suggested" : "")); b.type = "button";
+      if (sug && sug.id === x.id) b.appendChild(el("span", "go-badge", "👉 Pour toi"));
+      b.disabled = !unl;
+      b.appendChild(buildPet(done ? { got: 1, total: 1, locked: false } : { got: 0, total: 1, locked: !unl }, ch));
+      b.appendChild(el("div", "son", x.label));
+      var stars = el("div", "mini-stars"); stars.setAttribute("aria-hidden", "true");
+      for (var i = 0; i < cfg.passes; i++) stars.appendChild(el("span", "star " + (done || i < n ? "on" : "off"), "★"));
+      b.appendChild(stars);
+      b.appendChild(el("div", "cap", !unl ? "verrouillé" : (done ? "✏️ " + cap(ch.nom) : "à écrire")));
+      b.setAttribute("aria-label", x.label + " : " + (!unl ? "verrouillé" : (done ? "son écrit" : "à écrire")));
+      b.addEventListener("click", function () { DS.pick = x.id; goTo("dictee"); });
+      grid.appendChild(b);
+    });
+    var gc = el("div", "card"); gc.appendChild(grid);
+    body.appendChild(gc);
+  }
+
   function wheelCard(body, sid) {
     var pend = pendingWheels(sid);
     if (!(data.reward && pend.length)) return;
@@ -4380,13 +4693,19 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     /* « Je m’entraîne » ouvre directement l’exercice recommandé, prêt à démarrer (le choix d’une autre activité reste en dessous) */
     function readAct() { var snd = soundById(nx.sound); return { pet: nx.sound, btn: "🏋️ Je m’entraîne", sub: "Je lis " + KW[nx.kind] + " du son " + q(snd.label), say: "Tu vas t’entraîner à lire " + KW[nx.kind] + " du son " + snd.label + ", avec un adulte ou un camarade qui t’écoute. Touche le gros bouton pour commencer.", kind: "read", go: function () { setPath("read"); openStep(sid, nx.sound, nx.kind); } }; }
     function listenAct() { return { pet: lx.id, kind: "listen", cls: " listen-go", btn: "👂 J’écoute le son " + q(lx.label), say: "Tu vas écouter et retrouver le son " + lx.label + ". Touche le gros bouton pour commencer.", go: function () { setPath("listen"); LS.pick = lx.id; goTo("audition"); } }; }
-    var act = null, other = null;
-    if (wheels) { act = { cls: " wheel-go", btn: "🎡 Lance ta roue !", say: (wheels > 1 ? "Des roues t’attendent." : "Une roue t’attend.") + " Touche le gros bouton pour la lancer.", go: function () { openWheel(sid); } }; other = lx ? listenAct() : (nx ? readAct() : null); }
-    else if (lx) { act = listenAct(); other = nx ? readAct() : null; }
-    else if (nx) { act = readAct(); }
-    /* Deux parcours côte à côte : vert (écoute) et bleu (lecture). Le parcours en cours passe en premier et pulse ; au départ, les deux pulsent */
-    if (act && other && act.kind && other.kind && pathChosen && other.kind === (PATH === "read" ? "read" : "listen") && act.kind !== other.kind) { var swap = act; act = other; other = swap; }
-    function pathCls(a) { return a.kind === "read" ? " go-blue" : (a.kind === "listen" ? " go-green" : ""); }
+    var dx = dicteeNext(sid);
+    function writeAct() { return { pet: dx.id, kind: "write", cls: " write-go", btn: "✏️ J’écris le son " + q(dx.label), say: "Tu vas écouter et écrire le son " + dx.label + ". Touche le gros bouton pour commencer.", go: function () { setPath("write"); DS.pick = dx.id; goTo("dictee"); } }; }
+    var act = null, other = null, others = [];
+    /* Trois parcours : vert (écoute), bleu (lecture), jaune (dictée). Le parcours en cours passe en premier et pulse ; au départ, tous pulsent */
+    var paths = [];
+    if (lx) paths.push(listenAct());
+    if (nx) paths.push(readAct());
+    if (dx) paths.push(writeAct());
+    if (pathChosen) paths.sort(function (a, b) { return (b.kind === PATH ? 1 : 0) - (a.kind === PATH ? 1 : 0); });   /* tri stable : les autres gardent leur ordre */
+    if (wheels) { act = { cls: " wheel-go", btn: "🎡 Lance ta roue !", say: (wheels > 1 ? "Des roues t’attendent." : "Une roue t’attend.") + " Touche le gros bouton pour la lancer.", go: function () { openWheel(sid); } }; others = paths; }
+    else if (paths.length) { act = paths[0]; others = paths.slice(1); }
+    other = others[0] || null;
+    function pathCls(a) { return a.kind === "read" ? " go-blue" : (a.kind === "listen" ? " go-green" : (a.kind === "write" ? " go-yellow" : "")); }
     function calmCls(a) { return pathChosen && a.kind && a.kind !== PATH ? " go-calm" : ""; }
     var card = el("div", "card home-hero");
     card.appendChild(el("h2", "", "Bonjour " + st.name + " !"));
@@ -4418,15 +4737,15 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       doneRow.appendChild(sayBtn(say, "Écouter"));
       col.appendChild(doneRow);
     }
-    if (other) {
-      col.appendChild(el("p", "home-or", "Ou bien :"));
+    if (other) col.appendChild(el("p", "home-or", "Ou bien :"));
+    others.forEach(function (other) {
       var altRow = el("div", "home-act-row");
       var ob = el("button", "primary big-btn go-next home-next" + (other.cls || "") + pathCls(other) + calmCls(other), other.btn); ob.type = "button";
       if (other.sub) ob.appendChild(el("small", "home-sub", other.sub));
       ob.addEventListener("click", other.go);
       altRow.appendChild(ob); altRow.appendChild(sayBtn(other.say.replace("le gros bouton", "ce bouton"), "Écouter la consigne"));
       col.appendChild(altRow);
-    }
+    });
     /* Autres parcours : choisir une autre activité, ou faire son évaluation avec l’enseignant */
     if (nx || waitEval) {
       var more = el("div", "home-more");
@@ -6922,6 +7241,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       data.evos=Array.isArray(p.evos)?p.evos:[];
       data.listen={};data.listen[st.student_id]=listenClean(p.listen);
       data.listenCfg=listenCfgClean(teacherSettings.listenCfg);
+      data.dictee={};data.dictee[st.student_id]=listenClean(p.dictee);
+      data.dicteeCfg=dicteeCfgClean(teacherSettings.dictee);
       if(p.shop&&typeof p.shop==="object"&&Array.isArray(p.shop.rewards)&&!Array.isArray(teacherSettings.rewards))data.shop=p.shop;
       if(Array.isArray(teacherSettings.rewards))data.shop.rewards=teacherSettings.rewards;
       if(Number.isInteger(teacherSettings.packPrice)&&teacherSettings.packPrice>0)data.shop.packPrice=teacherSettings.packPrice;

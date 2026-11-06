@@ -33,7 +33,7 @@ TILES_HOOK = ("window.__tiles={rows:function(){return rows},state:function(){ret
 HOOK_AT = 'if(!cloudMode){setMode();show("login");'
 HOOK = ("window.__t={data:data,LS:LS,G:G,finishScore:finishScore,winCoin:winCoin,coins:coins,listenEnd:listenEnd,listenStart:listenStart,show:show,listenPick:listenPick,"
         "listenMine:listenMine,listenNeed:listenNeed,pendingWheels:pendingWheels,renderHome:renderHome,renderJeux:renderJeux,"
-        "openWheel:openWheel,showEvolution:showEvolution,charFor:charFor,uid:uid,saveReview:saveReview,petState:petState,isValid:isValid,confetti:confetti};")
+        "DS:DS,dicteeNext:dicteeNext,dicteeMine:dicteeMine,openWheel:openWheel,showEvolution:showEvolution,charFor:charFor,uid:uid,saveReview:saveReview,petState:petState,isValid:isValid,confetti:confetti};")
 
 
 def read(name):
