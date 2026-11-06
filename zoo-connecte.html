@@ -988,23 +988,27 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   .home-next:not(.listen-go):not(.wheel-go) { background: linear-gradient(135deg, #6d5dfc, #3b82f6); color: #fff; border-color: #4f6af0; }
   .home-next { box-shadow: 0 6px 18px rgba(80, 90, 240, .35); }
   .wheel-go { background: linear-gradient(135deg, #f5a623, #e2572c); color: #fff; border-color: #e2572c; }
-  /* Étape suggérée : TOUJOURS la même couleur (vert) et qui pulse, sur tous les écrans. Un seul bouton vert à la fois : c'est celui qu'il faut toucher. */
+  /* Étape suggérée : TOUJOURS la couleur du parcours en cours, et qui pulse, sur tous les écrans. Parcours vert = écoute, parcours bleu = lecture (il devient bleu dès que l'élève entre dans la lecture). Un seul bouton pulse par parcours : c'est celui qu'il faut toucher. */
+  :root { --go1: #3ddc77; --go2: #16a34a; --go-bd: #15803d; --go-glow: 22, 163, 74; --go-glow2: 34, 197, 94; --go-pale: #effcf3; }
+  body.path-read, .go-blue { --go1: #5aa9ff; --go2: #1d6fe0; --go-bd: #1558b8; --go-glow: 29, 111, 224; --go-glow2: 59, 130, 246; --go-pale: #eef5ff; }
+  .go-green { --go1: #3ddc77; --go2: #16a34a; --go-bd: #15803d; --go-glow: 22, 163, 74; --go-glow2: 34, 197, 94; --go-pale: #effcf3; }
   .go-next, body.mode-student #btn-open:not(:disabled), body.mode-student #btn-start:not(:disabled), body.mode-student #btn-validate, body.mode-student #btn-save,
   body.mode-student #btn-spin:not(:disabled), body.mode-student #btn-wheel-done, body.mode-student #btn-panel-wheel {
-    background: linear-gradient(135deg, #3ddc77, #16a34a) !important; color: #fff !important; border-color: #15803d !important;
+    background: linear-gradient(135deg, var(--go1), var(--go2)) !important; color: #fff !important; border-color: var(--go-bd) !important;
     text-shadow: 0 1px 2px rgba(0, 0, 0, .25); animation: go-pulse 1.4s ease-in-out infinite;
   }
   .go-next:disabled { animation: none; opacity: .6; }
+  .go-next.go-calm { animation: none; opacity: .8; }   /* l'autre parcours, visible mais calme */
   .next-bar { margin: 0 0 12px; display: flex; justify-content: center; }
   .next-bar .big-btn { margin: 0; width: 100%; max-width: 420px; }
   body.mode-student #btn-start, body.mode-student #btn-save, body.mode-student #btn-validate, body.mode-student #btn-open { font-size: 1.25rem; padding: 12px 24px; }
   @keyframes go-pulse {
-    0%, 100% { transform: scale(1); box-shadow: 0 6px 16px rgba(22, 163, 74, .4), 0 0 0 0 rgba(34, 197, 94, .55); }
-    50% { transform: scale(1.04); box-shadow: 0 6px 16px rgba(22, 163, 74, .4), 0 0 0 14px rgba(34, 197, 94, 0); }
+    0%, 100% { transform: scale(1); box-shadow: 0 6px 16px rgba(var(--go-glow), .4), 0 0 0 0 rgba(var(--go-glow2), .55); }
+    50% { transform: scale(1.04); box-shadow: 0 6px 16px rgba(var(--go-glow), .4), 0 0 0 14px rgba(var(--go-glow2), 0); }
   }
-  .zoo-card.suggested { border-color: #16a34a; border-width: 3px; background: #effcf3; animation: go-pulse 1.4s ease-in-out infinite; }
-  .zoo-card .go-badge { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); padding: 3px 12px; border-radius: 999px; background: #16a34a; color: #fff; font-size: .85rem; font-weight: 800; white-space: nowrap; }
-  .lire-big.suggested, .zoo-card.suggested { border-color: #16a34a !important; border-width: 3px; background: #effcf3 !important; animation: go-pulse 1.4s ease-in-out infinite; }
+  .zoo-card.suggested { border-color: var(--go2); border-width: 3px; background: var(--go-pale); animation: go-pulse 1.4s ease-in-out infinite; }
+  .zoo-card .go-badge { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); padding: 3px 12px; border-radius: 999px; background: var(--go2); color: #fff; font-size: .85rem; font-weight: 800; white-space: nowrap; }
+  .lire-big.suggested, .zoo-card.suggested { border-color: var(--go2) !important; border-width: 3px; background: var(--go-pale) !important; animation: go-pulse 1.4s ease-in-out infinite; }
   @media (prefers-reduced-motion: reduce) { .go-next, .zoo-card.suggested, .lire-big.suggested, body.mode-student #btn-open, body.mode-student #btn-start, body.mode-student #btn-validate, body.mode-student #btn-save, body.mode-student #btn-spin, body.mode-student #btn-wheel-done, body.mode-student #btn-panel-wheel { animation: none; } }
   .home-act-row { display: flex; align-items: stretch; gap: 8px; }
   .home-act-row .home-next, .home-act-row .home-alt { flex: 1 1 auto; min-width: 0; }
@@ -2461,6 +2465,10 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   var TEACHER_VIEWS = ["eleves", "ecoute", "progression", "reglages"];
   var VIEWS = ["login"].concat(STUDENT_VIEWS, TEACHER_VIEWS);
   var GO_GROUP = { lecture: "lecture", audition: "audition", jeux: "jeux", jeu: "jeux", roue: "jeux", boutique: "boutique", cartes: "cartes", reconnues: "reconnues", progres: "progres" };
+  /* Parcours de l'élève : vert (écoute) ou bleu (lecture). Il devient bleu dès que l'élève entre dans la lecture ; tous les boutons « à toucher » prennent cette couleur */
+  var PATH = "listen", pathChosen = false;
+  function setPath(p) { PATH = p; pathChosen = true; document.body.classList.toggle("path-read", p === "read"); }
+  function resetPath() { PATH = "listen"; pathChosen = false; document.body.classList.remove("path-read"); }
   function show(v) {
     if (STUDENT_VIEWS.indexOf(v) >= 0 && ses.role !== "student") v = "login";
     if (TEACHER_VIEWS.indexOf(v) >= 0 && ses.role !== "teacher") v = "login";
@@ -2479,7 +2487,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     Array.prototype.forEach.call(document.querySelectorAll("[data-go]"), function (b) {
       if (GO_GROUP[v] === b.getAttribute("data-go")) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
     });
-    if (v === "login") renderLogin();
+    if (v === "login") { resetPath(); renderLogin(); }
+    if (v === "lecture" || v === "cartes") setPath("read"); else if (v === "audition" || v === "reconnues") setPath("listen");
     if (v === "home") renderHome();
     if (v === "lecture") { lireReset(); renderSetup(); }
     if (v === "cartes") renderCartes();
@@ -4369,12 +4378,16 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var nx = nextStep(sid), lx = listenNext(sid), wheels = data.reward ? pendingWheels(sid).length : 0, waitEval = evalWaiting(sid);
     var KW = { s: "les syllabes", m: "les mots", t: "le texte" };
     /* « Je m’entraîne » ouvre directement l’exercice recommandé, prêt à démarrer (le choix d’une autre activité reste en dessous) */
-    function readAct() { var snd = soundById(nx.sound); return { pet: nx.sound, btn: "🏋️ Je m’entraîne", sub: "Je lis " + KW[nx.kind] + " du son " + q(snd.label), say: "Tu vas t’entraîner à lire " + KW[nx.kind] + " du son " + snd.label + ", avec un adulte ou un camarade qui t’écoute. Touche le gros bouton pour commencer.", go: function () { openStep(sid, nx.sound, nx.kind); } }; }
-    function listenAct() { return { pet: lx.id, cls: " listen-go", btn: "👂 J’écoute le son " + q(lx.label), say: "Tu vas écouter et retrouver le son " + lx.label + ". Touche le gros bouton pour commencer.", go: function () { LS.pick = lx.id; goTo("audition"); } }; }
+    function readAct() { var snd = soundById(nx.sound); return { pet: nx.sound, btn: "🏋️ Je m’entraîne", sub: "Je lis " + KW[nx.kind] + " du son " + q(snd.label), say: "Tu vas t’entraîner à lire " + KW[nx.kind] + " du son " + snd.label + ", avec un adulte ou un camarade qui t’écoute. Touche le gros bouton pour commencer.", kind: "read", go: function () { setPath("read"); openStep(sid, nx.sound, nx.kind); } }; }
+    function listenAct() { return { pet: lx.id, kind: "listen", cls: " listen-go", btn: "👂 J’écoute le son " + q(lx.label), say: "Tu vas écouter et retrouver le son " + lx.label + ". Touche le gros bouton pour commencer.", go: function () { setPath("listen"); LS.pick = lx.id; goTo("audition"); } }; }
     var act = null, other = null;
     if (wheels) { act = { cls: " wheel-go", btn: "🎡 Lance ta roue !", say: (wheels > 1 ? "Des roues t’attendent." : "Une roue t’attend.") + " Touche le gros bouton pour la lancer.", go: function () { openWheel(sid); } }; other = lx ? listenAct() : (nx ? readAct() : null); }
     else if (lx) { act = listenAct(); other = nx ? readAct() : null; }
     else if (nx) { act = readAct(); }
+    /* Deux parcours côte à côte : vert (écoute) et bleu (lecture). Le parcours en cours passe en premier et pulse ; au départ, les deux pulsent */
+    if (act && other && act.kind && other.kind && pathChosen && other.kind === (PATH === "read" ? "read" : "listen") && act.kind !== other.kind) { var swap = act; act = other; other = swap; }
+    function pathCls(a) { return a.kind === "read" ? " go-blue" : (a.kind === "listen" ? " go-green" : ""); }
+    function calmCls(a) { return pathChosen && a.kind && a.kind !== PATH ? " go-calm" : ""; }
     var card = el("div", "card home-hero");
     card.appendChild(el("h2", "", "Bonjour " + st.name + " !"));
     var say = act ? "Bonjour " + st.name + " ! " + act.say : (waitEval ? "Bravo " + st.name + " ! Tu as réussi tes entraînements. Prépare ton évaluation avec ton enseignant pour ouvrir la suite." : "Bravo " + st.name + " ! Tu as tout réussi.");
@@ -4394,7 +4407,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     }
     if (act) {
       var mainRow = el("div", "home-act-row");
-      var go = el("button", "primary big-btn go-next home-next" + (act.cls || ""), act.btn); go.type = "button";
+      var go = el("button", "primary big-btn go-next home-next" + (act.cls || "") + pathCls(act) + calmCls(act), act.btn); go.type = "button";
       if (act.sub) go.appendChild(el("small", "home-sub", act.sub));
       go.addEventListener("click", act.go);
       mainRow.appendChild(go); mainRow.appendChild(sayBtn(say, "Écouter la consigne"));
@@ -4408,7 +4421,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if (other) {
       col.appendChild(el("p", "home-or", "Ou bien :"));
       var altRow = el("div", "home-act-row");
-      var ob = el("button", "secondary big-btn home-alt" + (/listen/.test(other.cls || "") ? " listen-alt" : ""), other.btn); ob.type = "button";
+      var ob = el("button", "primary big-btn go-next home-next" + (other.cls || "") + pathCls(other) + calmCls(other), other.btn); ob.type = "button";
       if (other.sub) ob.appendChild(el("small", "home-sub", other.sub));
       ob.addEventListener("click", other.go);
       altRow.appendChild(ob); altRow.appendChild(sayBtn(other.say.replace("le gros bouton", "ce bouton"), "Écouter la consigne"));
