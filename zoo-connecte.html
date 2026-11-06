@@ -614,6 +614,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   .listen-choice.good { background: var(--ok-bg); border-color: var(--ok); }
   .listen-choice.bad { background: #fde3e3; border-color: var(--bad); }
   .listen-choice:disabled { opacity: 1; }
+  .listen-help { margin: 14px auto; text-align: center; }
+  .listen-help svg { width: 100%; max-width: 270px; max-height: 42vh; height: auto; }
   .listen-done { display: block; margin: 0 auto; min-height: 56px; }
   .listen-msg { text-align: center; min-height: 1.6em; }
   @media (max-width: 480px) { .listen-choices { grid-template-columns: repeat(2, 1fr); } .listen-choice { min-height: 72px; font-size: 1.9rem; } }
@@ -4015,11 +4017,12 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}
     if (LS.audio) { try { LS.audio.pause(); } catch (e) {} LS.audio = null; }
   }
-  function listenSpeak(text) {
+  function listenSpeak(text, onEnd) {
     try {
-      if (!window.speechSynthesis || !window.SpeechSynthesisUtterance) return;
+      if (!window.speechSynthesis || !window.SpeechSynthesisUtterance) { if (onEnd) onEnd(); return; }
       var u = new window.SpeechSynthesisUtterance(text);
       u.lang = "fr-FR"; u.rate = 0.8; u.pitch = 1; u.volume = 1;
+      if (onEnd) { u.onend = onEnd; u.onerror = onEnd; }
       var voices = window.speechSynthesis.getVoices ? window.speechSynthesis.getVoices() : [];
       /* Voix de France d’abord (Thomas sur Mac et iPad, puis toute voix fr-FR) ; une voix canadienne seulement à défaut */
       var frs = voices.filter(function (v) { return /^fr/i.test(v.lang); });
@@ -4028,7 +4031,38 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       if (fr) u.voice = fr;
       window.speechSynthesis.cancel();
       window.speechSynthesis.speak(u);
-    } catch (e) {}
+    } catch (e) { if (onEnd) onEnd(); }
+  }
+  /* Voyelles é / è : quand l’élève se trompe, une phrase et une image pour retenir l’accent (fusée qui monte, flèche qui tombe) */
+  var ACCENT_E = "font-family=\"Fredoka, 'Arial Rounded MT Bold', Arial, sans-serif\" font-weight=\"600\" font-size=\"150\" text-anchor=\"middle\"";
+  var ACCENT_HELP = {
+    "voy2:é": {
+      say: "C’est le é de fusée, donc l’accent monte comme une fusée qui s’envole. é, fusée.", cap: "é comme fusée : l’accent monte",
+      svg: "<svg viewBox=\"0 0 220 250\" role=\"img\" aria-label=\"Une fusée qui s’envole vers le haut, en oblique à droite, au-dessus d’un e\"><rect width=\"220\" height=\"250\" rx=\"14\" fill=\"#1f2a5c\"/><circle cx=\"30\" cy=\"30\" r=\"2.5\" fill=\"#fff\"/><circle cx=\"180\" cy=\"26\" r=\"2\" fill=\"#fff\"/><circle cx=\"196\" cy=\"110\" r=\"2.5\" fill=\"#fff\"/><circle cx=\"24\" cy=\"100\" r=\"2\" fill=\"#fff\"/><circle cx=\"150\" cy=\"60\" r=\"2\" fill=\"#ffe14a\"/><circle cx=\"82\" cy=\"150\" r=\"9\" fill=\"#fff\" opacity=\".85\"/><circle cx=\"98\" cy=\"126\" r=\"11\" fill=\"#fff\" opacity=\".8\"/><circle cx=\"116\" cy=\"102\" r=\"12\" fill=\"#fff\" opacity=\".75\"/><g transform=\"translate(158 62) rotate(45) scale(1.1)\"><path d=\"M-10,12 L-24,30 L-10,26 Z\" fill=\"#d93a3a\"/><path d=\"M10,12 L24,30 L10,26 Z\" fill=\"#d93a3a\"/><path d=\"M0,-38 C16,-22 15,10 11,26 L-11,26 C-15,10 -16,-22 0,-38 Z\" fill=\"#f4f4f6\" stroke=\"#555a66\" stroke-width=\"2\"/><path d=\"M0,-38 C8,-31 12,-24 13,-17 L-13,-17 C-12,-24 -8,-31 0,-38 Z\" fill=\"#d93a3a\"/><circle cx=\"0\" cy=\"-3\" r=\"6.5\" fill=\"#6cc4ff\" stroke=\"#555a66\" stroke-width=\"2\"/><path d=\"M-7,28 Q0,56 7,28 Z\" fill=\"#ff9d1c\"/><path d=\"M-3.5,28 Q0,44 3.5,28 Z\" fill=\"#ffe14a\"/></g><text x=\"110\" y=\"232\" " + ACCENT_E + " fill=\"#fff\">e</text></svg>"
+    },
+    "voy2:è": {
+      say: "C’est le è de flèche, donc l’accent tombe comme la flèche. è, flèche.", cap: "è comme flèche : l’accent tombe",
+      svg: "<svg viewBox=\"0 0 220 250\" role=\"img\" aria-label=\"Une flèche de tir à l’arc qui tombe vers le bas, en oblique à droite, au-dessus d’un e\"><rect width=\"220\" height=\"250\" rx=\"14\" fill=\"#fff8d9\"/><path d=\"M22,22 Q60,26 92,66\" fill=\"none\" stroke=\"#e0b64a\" stroke-width=\"3.5\" stroke-dasharray=\"3 8\" stroke-linecap=\"round\"/><g transform=\"translate(124 92) rotate(-45) scale(1.05)\"><line x1=\"0\" y1=\"-36\" x2=\"0\" y2=\"34\" stroke=\"#c28a45\" stroke-width=\"5\" stroke-linecap=\"round\"/><path d=\"M0,58 L-10,32 L0,38 L10,32 Z\" fill=\"#aab3c2\" stroke=\"#4a5160\" stroke-width=\"2\" stroke-linejoin=\"round\"/><path d=\"M0,-30 L-13,-44 L-13,-62 L0,-48 Z\" fill=\"#e5484d\" stroke=\"#a42a30\" stroke-width=\"1.5\" stroke-linejoin=\"round\"/><path d=\"M0,-30 L13,-44 L13,-62 L0,-48 Z\" fill=\"#e5484d\" stroke=\"#a42a30\" stroke-width=\"1.5\" stroke-linejoin=\"round\"/><path d=\"M0,-12 L-13,-26 L-13,-44 L0,-30 Z\" fill=\"#fff\" stroke=\"#8a93a3\" stroke-width=\"1.5\" stroke-linejoin=\"round\"/><path d=\"M0,-12 L13,-26 L13,-44 L0,-30 Z\" fill=\"#fff\" stroke=\"#8a93a3\" stroke-width=\"1.5\" stroke-linejoin=\"round\"/><path d=\"M-6,-40 L-6,-54 M6,-40 L6,-54 M-6,-22 L-6,-36 M6,-22 L6,-36\" stroke=\"#00000030\" stroke-width=\"1\"/></g><text x=\"110\" y=\"232\" " + ACCENT_E + " fill=\"#1b2433\">e</text></svg>"
+    }
+  };
+  /* L’image remplace les propositions ; elle reste pendant la voix puis 2 secondes ; la question suivante vient ensuite */
+  function listenAccentHelp(q) {
+    var h = ACCENT_HELP[q.item.key], R = LS.run, grid = q.btns[0] && q.btns[0].parentNode;
+    if (!h || !grid) return false;
+    var box = el("div", "listen-help"); box.innerHTML = h.svg;
+    grid.parentNode.replaceChild(box, grid);
+    q.doneBtn.hidden = true;
+    if (q.playBtn) { q.playBtn.disabled = true; q.playBtn.classList.remove("pulse", "go-next"); }   /* pas de réécoute pendant l’explication */
+    $("listen-msg").textContent = h.cap + ".";
+    var fin = false;
+    function after() {
+      if (fin) return; fin = true;
+      LS.timers.push(setTimeout(function () { if (box.isConnected && LS.run === R && R.q === q) listenQuestion(); }, 2000));
+    }
+    listenStopVoice();
+    listenSpeak(h.say, after);
+    LS.timers.push(setTimeout(after, 12000));   /* sans voix disponible : l’image reste quand même assez longtemps */
+    return true;
   }
   function listenSay(item) {
     listenStopVoice();
@@ -4186,6 +4220,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if (!ok) {
       R.failed++;
       if (!q.bad) sfxBad();
+      if (listenAccentHelp(q)) return;
       listenReveal(q);
       msg.textContent = (why ? why + " " : "") + "On écrivait : " + q.goods.join(" ou ") + ".";
       LS.timers.push(setTimeout(listenQuestion, 2600));
