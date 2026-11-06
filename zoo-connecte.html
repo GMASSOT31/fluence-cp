@@ -4765,16 +4765,6 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       altRow.appendChild(ob); altRow.appendChild(sayBtn(other.say.replace("le gros bouton", "ce bouton"), "Écouter la consigne"));
       col.appendChild(altRow);
     });
-    /* Autres parcours : choisir une autre activité, ou faire son évaluation avec l’enseignant */
-    if (nx || waitEval) {
-      var more = el("div", "home-more");
-      var chooseB = el("button", "secondary home-small", "Choisir une autre activité"); chooseB.type = "button";
-      chooseB.addEventListener("click", function () { goTo("lecture"); });
-      var evalB = el("button", "secondary home-small", "Faire mon évaluation avec l’enseignant"); evalB.type = "button";
-      evalB.addEventListener("click", function () { goTo("lecture"); LR.goal = "eval"; renderSetup(); });
-      if (nx) more.appendChild(chooseB);
-      more.appendChild(evalB); col.appendChild(more);
-    }
     row.appendChild(col);
     card.appendChild(row);
     body.appendChild(card);
