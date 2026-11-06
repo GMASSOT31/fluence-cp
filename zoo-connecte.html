@@ -1984,8 +1984,25 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     o = o && typeof o === "object" ? o : {};
     return {
       syl: listenInt(o.syl, 0, 8, DICTEE_DEF.syl), words: listenInt(o.words, 0, 8, DICTEE_DEF.words), maxErrors: listenInt(o.maxErrors, 0, 5, DICTEE_DEF.maxErrors),
-      passes: listenInt(o.passes, 1, 5, DICTEE_DEF.passes), coins: listenInt(o.coins, 0, 50, DICTEE_DEF.coins)
+      passes: listenInt(o.passes, 1, 5, DICTEE_DEF.passes), coins: listenInt(o.coins, 0, 50, DICTEE_DEF.coins), items: dicteeItemsClean(o.items)
     };
+  }
+  /* Exercices choisis par le maître(sse) : { son: { syl: [...], words: [...] } } ; vide = exercice automatique */
+  function dicteeWordsClean(a) {
+    var out = [];
+    (Array.isArray(a) ? a : []).forEach(function (w) {
+      w = String(w).toLowerCase().replace(/[^\p{L}]/gu, "").slice(0, 12);
+      if (w && out.indexOf(w) < 0 && out.length < 40) out.push(w);
+    });
+    return out;
+  }
+  function dicteeItemsClean(o) {
+    var r = {};
+    if (o && typeof o === "object") Object.keys(o).slice(0, 80).forEach(function (k) {
+      var it = o[k] || {}, syl = dicteeWordsClean(it.syl), words = dicteeWordsClean(it.words);
+      if (syl.length || words.length) r[k] = { syl: syl, words: words };
+    });
+    return r;
   }
   function listenClean(o) {
     var r = { passes: {}, done: {}, tries: 0 };
@@ -4417,8 +4434,9 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   /* Une série : d'abord des syllabes (ou le son seul), puis des mots s'il y en a pour ce son */
   function dicteeBuild(sid, sound) {
     var cfg = data.dicteeCfg;
-    var syl = shuffle(dicteeSylItems(sid, sound) || listenItems(sound));
-    var words = shuffle((LISTEN_WORDS[sound.id] || []).map(wordItem));
+    var my = cfg.items[sound.id] || { syl: [], words: [] };
+    var syl = shuffle(my.syl.length ? my.syl.map(function (t) { var say = SYL_SAY_FIX[t] || t; return { key: "syl:" + t, g: [t], say: say, dsay: say }; }) : (dicteeSylItems(sid, sound) || listenItems(sound)));
+    var words = shuffle(my.words.length ? my.words.map(wordItem) : (LISTEN_WORDS[sound.id] || []).map(wordItem));
     var nW = Math.min(words.length, cfg.words), nS = Math.min(syl.length, cfg.syl + (cfg.words - nW));
     var out = syl.slice(0, nS).concat(words.slice(0, nW));
     if (!out.length) out = syl.slice(0, 1);
