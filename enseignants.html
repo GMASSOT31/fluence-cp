@@ -83,7 +83,7 @@ body.calc-mode #sylTestBox{display:none!important}
 .pd-big{font-size:1.7rem;font-weight:850;line-height:1.1}.pd-big small{font-size:.9rem;font-weight:700;color:#5a6476}
 .pd-bar{height:14px;border-radius:99px;background:#dfe5f0;overflow:hidden;display:flex}
 .pd-bar i{display:block;height:100%}
-.pd-listen i{background:#2e9b91}.pd-read i{background:#367bc4}.pd-read i.alone{background:#9db8e8}
+.pd-listen i{background:#2e9b91}.pd-write i{background:#e0a800}.pd-read i{background:#367bc4}.pd-read i.alone{background:#9db8e8}
 .pd-note{font-size:.82rem;color:#5a6476}
 .pd-chips{display:flex;flex-wrap:wrap;gap:6px;width:100%}.pd-chip{background:#eef0f7;border-radius:999px;padding:3px 10px;font-size:.85rem;font-weight:700;color:#2b3345}
 .pd-chart{width:100%;height:80px;display:block}
@@ -721,6 +721,9 @@ async function renderProgress(students,classes){
    const lisNeed=id=>listenPassesCfg+(lisIr>=0&&lisOrder.findIndex(x=>x.id===id)>=lisIr?1:0);
    const lisRows=lisOrder.map(x=>({x,n:Number(lisPasses[x.id])||0,ok:!!lisDone[x.id]||(Number(lisPasses[x.id])||0)>=lisNeed(x.id)})).filter(r=>r.n>0||r.ok);
    const lisOk=lisRows.filter(r=>r.ok).length;
+   const dic=p.dictee&&typeof p.dictee==="object"?p.dictee:{},dicPasses=dic.passes&&typeof dic.passes==="object"?dic.passes:{},dicDone=dic.done&&typeof dic.done==="object"?dic.done:{};
+   const dicRows=lisOrder.map(x=>({x,n:Number(dicPasses[x.id])||0,ok:!!dicDone[x.id]||(Number(dicPasses[x.id])||0)>=cfgDictee.passes})).filter(r=>r.n>0||r.ok);
+   const dicOk=dicRows.filter(r=>r.ok).length;
    const wrap=document.createElement("div");wrap.className="row progress-row";
    const info=document.createElement("div");const name=document.createElement("strong");name.textContent=s.nickname;
    const summary=document.createElement("div");summary.className="pd-chips";
@@ -791,6 +794,11 @@ async function renderProgress(students,classes){
     const big=mk("div","pd-big",String(lisOk));big.append(mk("small",null," / "+lisOrder.length+" sons"));
     c.append(big,bar([[lisOk/tot*100]],"pd-listen"),mk("div","pd-note",(Number(lis.tries)||0)+" "+pl(Number(lis.tries)||0,"exercice fait","exercices faits")));
     more(c,lisRows.map(r=>(r.ok?"✅ ":"⏳ ")+(r.x.label||r.x.id)+" : "+Math.min(r.n,lisNeed(r.x.id))+"/"+lisNeed(r.x.id)+" "+pl(Math.min(r.n,lisNeed(r.x.id)),"réussite","réussites")),lisCtl);grid.append(c)}
+   /* 1 bis. Cartes écrites (dictée) */
+   {const c=pcard("✏️ Cartes écrites","pd-write"),tot=Math.max(1,lisOrder.length);
+    const big=mk("div","pd-big",String(dicOk));big.append(mk("small",null," / "+lisOrder.length+" sons"));
+    c.append(big,bar([[dicOk/tot*100]],"pd-write"),mk("div","pd-note",(Number(dic.tries)||0)+" "+pl(Number(dic.tries)||0,"dictée faite","dictées faites")));
+    more(c,dicRows.map(r=>(r.ok?"✅ ":"⏳ ")+(r.x.label||r.x.id)+" : "+Math.min(r.n,cfgDictee.passes)+"/"+cfgDictee.passes+" "+pl(Math.min(r.n,cfgDictee.passes),"série réussie","séries réussies"))),grid.append(c)}
    /* 2. Sons lus */
    {const c=pcard("📖 Sons lus : réussis et certifiés","pd-read"),tot=Math.max(1,cfgSounds.length),sOf=k=>k.split(":")[0];
     const cs=new Set(certified.map(sOf)),as=new Set(alone.map(sOf).filter(x=>!cs.has(x)));
