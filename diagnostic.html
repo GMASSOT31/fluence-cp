@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="robots" content="noindex,nofollow"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Diagnostic de connexion · Zoo de Lecture</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#14151c;color:#eef0f7;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.4}
+main{max-width:640px;margin:auto;padding:18px 14px 50px}h1{font-size:1.5rem;margin:0 0 6px}p{margin:6px 0}
+.muted{color:#aab0c4;font-size:.95rem}
+.t{display:flex;gap:10px;align-items:flex-start;background:#1d2030;border:2px solid #343a52;border-radius:14px;padding:12px 14px;margin:10px 0}
+.t .i{font-size:1.5rem;line-height:1.2;min-width:1.6em}.t b{display:block}.t small{color:#aab0c4;display:block;margin-top:2px;word-break:break-word}
+.t.ok{border-color:#2e9b5b}.t.ko{border-color:#d94646}.t.wait{border-color:#8b93a8}
+button{display:block;width:100%;margin:12px 0;padding:16px;font:800 1.1rem system-ui;border:0;border-radius:14px;background:#ffe56c;color:#21104f}
+#bilan{background:#241a4a;border:2px solid #7b5cd6;border-radius:14px;padding:14px;margin:16px 0;font-size:1.1rem}
+</style></head><body><main>
+<h1>🩺 Diagnostic de connexion</h1>
+<p class="muted">Cette page vérifie si cet appareil peut se connecter au Zoo. Attendez quelques secondes que tous les tests soient finis, puis envoyez une capture d’écran à Gabriel.</p>
+<div id="tests"></div>
+<button id="etape2" type="button" hidden>▶ Test final : changer de page</button>
+<div id="bilan" hidden></div>
+<p class="muted" id="infos"></p>
+<script src="vendor/supabase.js?v=2.118.0"></script>
+<script>
+(function(){
+"use strict";
+var URL_SB="https://pcxpazpflnlwmhyuozdx.supabase.co",KEY="sb_publishable_j65mDpDNsuwwaL6uRjsMtA_U_OXQXlL";
+var box=document.getElementById("tests"),res={};
+function row(id,titre){var d=document.createElement("div");d.className="t wait";d.id="t-"+id;d.innerHTML='<span class="i">⏳</span><div><b></b><small>test en cours…</small></div>';d.querySelector("b").textContent=titre;box.appendChild(d);return d}
+function set(id,ok,detail){res[id]=ok;var d=document.getElementById("t-"+id);d.className="t "+(ok?"ok":"ko");d.querySelector(".i").textContent=ok?"✅":"❌";d.querySelector("small").textContent=detail||(ok?"OK":"Problème")}
+function late(id){var d=document.getElementById("t-"+id);if(d&&d.className==="t wait")set(id,false,"pas de réponse")}
+var q=new URLSearchParams(location.search);
+var standalone=!!(navigator.standalone||(window.matchMedia&&matchMedia("(display-mode: standalone)").matches));
+document.getElementById("infos").textContent="Appareil : "+navigator.userAgent.replace(/\s+/g," ").slice(0,170)+" · Ouvert "+(standalone?"par l’icône (mode application)":"dans le navigateur")+" · "+new Date().toLocaleString("fr-FR");
+
+if(q.get("etape")==="2"){
+  /* deuxième page : on relit ce que la première a écrit */
+  row("p2","Le stockage est gardé d’une page à l’autre");
+  var v=null;try{v=sessionStorage.getItem("diag_test")}catch(e){}
+  set("p2",v==="ok-"+(q.get("n")||""),v?"valeur retrouvée : "+v:"la valeur écrite sur la page précédente a disparu : l’appareil ne garde pas la connexion entre deux pages");
+  var b=document.getElementById("bilan");b.hidden=false;
+  b.textContent=res.p2?"✅ Cet appareil garde bien la connexion d’une page à l’autre.":"❌ Cet appareil perd la connexion quand on change de page : c’est ce qui empêche d’entrer dans le Zoo.";
+  var back=document.createElement("button");back.type="button";back.textContent="↩ Revenir aux tests";back.onclick=function(){location.href="diagnostic.html"};document.querySelector("main").appendChild(back);
+  return;
+}
+
+row("lib","Le programme de connexion est chargé");
+row("sto","Le stockage de la page fonctionne");
+row("rnd","Le générateur de codes sécurisés fonctionne");
+row("ver","La page de connexion est à jour (pas de vieille copie)");
+row("srv","Le serveur du Zoo répond depuis ce réseau");
+
+set("lib",!!(window.supabase&&window.supabase.createClient),window.supabase?"OK":"vendor/supabase.js n’a pas pu être chargé (bloqué ou ancien appareil)");
+var n=String(Math.floor(Math.random()*1e6));
+try{sessionStorage.setItem("diag_test","ok-"+n);set("sto",sessionStorage.getItem("diag_test")==="ok-"+n,"écriture et lecture")}catch(e){set("sto",false,"impossible d’écrire : "+(e&&e.message||e))}
+try{var a=new Uint8Array(8);crypto.getRandomValues(a);set("rnd",true)}catch(e){set("rnd",false,String(e&&e.message||e))}
+
+fetch("eleve.html?x="+Date.now(),{cache:"no-store"}).then(function(r){return r.text().then(function(t){
+  var ok=t.indexOf("#zt=")>=0;set("ver",ok,ok?"version à jour reçue":"version ANCIENNE reçue (réseau ou appareil qui garde une vieille copie)")})}).catch(function(e){set("ver",false,"impossible de lire la page : "+(e&&e.message||e))});
+
+var ctl=window.AbortController?new AbortController():null,tm=setTimeout(function(){if(ctl)ctl.abort()},9000);
+fetch(URL_SB+"/rest/v1/rpc/ping",{method:"POST",headers:{apikey:KEY,"Content-Type":"application/json"},body:"{}",signal:ctl?ctl.signal:undefined}).then(function(r){
+  clearTimeout(tm);set("srv",r.status>=200&&r.status<500,"réponse du serveur : code "+r.status+(r.status>=200&&r.status<300?"":" (le serveur répond, mais pas comme prévu)"));
+}).catch(function(e){clearTimeout(tm);set("srv",false,"le serveur n’est pas joignable depuis ce réseau ("+(e&&e.name==="AbortError"?"trop long : plus de 9 secondes":(e&&e.message||e))+"). Un filtre du réseau ou de l’appareil bloque peut-être supabase.co")});
+
+setTimeout(function(){["lib","sto","rnd","ver","srv"].forEach(late);
+  var ko=["lib","sto","rnd","ver","srv"].filter(function(k){return !res[k]});
+  var b=document.getElementById("bilan");b.hidden=false;
+  b.textContent=ko.length?"❌ "+ko.length+" test(s) en échec : "+ko.map(function(k){return {lib:"programme de connexion",sto:"stockage",rnd:"codes sécurisés",ver:"version de la page",srv:"serveur du Zoo"}[k]}).join(", ")+".":"✅ Tous les tests sont bons. Faites maintenant le test final ci-dessous.";
+  var e2=document.getElementById("etape2");e2.hidden=false;e2.onclick=function(){location.href="diagnostic.html?etape=2&n="+n};
+},10000);
+})();
+</script></main></body></html>
