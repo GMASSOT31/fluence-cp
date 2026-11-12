@@ -1697,7 +1697,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
 </main>
 <div class="toast" id="toast" role="status"></div>
 
-<script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=22"><\/script>':'<script src="vendor/supabase.js?v=2.118.0"><\/script>');})();</script>
+<script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;/* Connexion élève : le jeton arrive aussi dans l’adresse (#zt=…) pour les appareils qui ne gardent pas sessionStorage d’une page à l’autre (application ajoutée à l’écran d’accueil) ; on le range puis on l’efface de l’adresse */var hm=location.hash.match(/[#&]zt=([0-9a-f]{64})/);if(hm&&!d){window.ZOO_HASH_TOKEN=hm[1];try{sessionStorage.setItem("zoo_student_token",hm[1])}catch(e){}try{history.replaceState(null,"",location.pathname+location.search)}catch(e){}}if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=22"><\/script>':'<script src="vendor/supabase.js?v=2.118.0"><\/script>');})();</script>
 <script>
 (function () {
   "use strict";
@@ -2054,7 +2054,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     v: 3,
     sel: { sid: null, sound: null, kind: "s" }
   };
-  var cloudMode = true, cloudToken = sessionStorage.getItem("zoo_student_token"), cloudClient = window.supabase.createClient("https://pcxpazpflnlwmhyuozdx.supabase.co","sb_publishable_j65mDpDNsuwwaL6uRjsMtA_U_OXQXlL");
+  var cloudMode = true, cloudToken = window.ZOO_HASH_TOKEN || sessionStorage.getItem("zoo_student_token"), cloudClient = window.supabase.createClient("https://pcxpazpflnlwmhyuozdx.supabase.co","sb_publishable_j65mDpDNsuwwaL6uRjsMtA_U_OXQXlL");
   /* Récompenses de l'enseignant visibles par cet élève : r.to = {t:"all"} (ou absent) | {t:"class",id} | {t:"student",id} ; tout est montré hors compte élève */
   function shopRewards() {
     return data.shop.rewards.filter(function (r) {
@@ -7230,7 +7230,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   });
 
   async function bootCloud(){
-    if(!cloudToken){location.replace("eleve.html");return;}
+    if(!cloudToken){location.replace("eleve.html?m=session");return;}
     try {
       var result=await cloudClient.rpc("student_get_progress_v2",{p_token:cloudToken});
       if(result.error)throw result.error;
