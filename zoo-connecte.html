@@ -1972,8 +1972,13 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var c = {
       questions: listenInt(o.questions, 3, 20, LISTEN_DEF.questions), maxErrors: listenInt(o.maxErrors, 0, 10, LISTEN_DEF.maxErrors),
       passes: listenInt(o.passes, 1, 10, LISTEN_DEF.passes), coins: listenInt(o.coins, 0, 50, LISTEN_DEF.coins),
-      say: {}, equiv: o.equiv ? listenGroups(o.equiv) : LISTEN_DEF.equiv.slice(), confus: o.confus ? listenGroups(o.confus) : LISTEN_DEF.confus.slice()
+      say: {}, equiv: o.equiv ? listenGroups(o.equiv) : LISTEN_DEF.equiv.slice(), confus: o.confus ? listenGroups(o.confus) : LISTEN_DEF.confus.slice(),
+      items: {}   /* exercice choisi par le maître(sse) : { son: [syllabes ou mots à écouter] } ; vide = exercice automatique */
     };
+    if (o.items && typeof o.items === "object") Object.keys(o.items).slice(0, 80).forEach(function (k) {
+      var w = dicteeWordsClean(o.items[k]);
+      if (w.length) c.items[k] = w;
+    });
     if (o.say && typeof o.say === "object") Object.keys(o.say).slice(0, 200).forEach(function (k) {
       if (typeof o.say[k] === "string" && o.say[k].trim()) c.say[k] = o.say[k].trim().slice(0, 40);
     });
@@ -4071,6 +4076,19 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     return fakes;
   }
   function wordItem(w) { return { key: "mot:" + w, g: [w], say: w, dsay: w, word: true }; }
+  /* Syllabe ou mot choisi par le maître(sse) : la voix le dit, l’élève retrouve son écriture parmi des variantes (comme pour les mots) */
+  function listenCustomItem(t) { var say = SYL_SAY_FIX[t] || t, it = wordItem(t); it.say = say; it.dsay = say; return it; }
+  /* Variantes d'écriture quand il en manque (syllabes courtes) : une lettre remplacée par une lettre qui se confond, ou deux lettres inversées */
+  var CUSTOM_ALT = { a: "oe", e: "ao", i: "ul", o: "au", u: "oi", "é": "eè", "è": "éa", b: "dp", d: "bp", p: "bd", q: "bd", m: "n", n: "m", f: "v", v: "f", s: "z", z: "s", c: "k", g: "j", j: "g", t: "d", l: "r", r: "l" };
+  function customFakes(w) {
+    var out = [];
+    function add(f) { if (f !== w && out.indexOf(f) < 0 && wordCanon(f) !== wordCanon(w)) out.push(f); }
+    for (var i = 0; i < w.length; i++) {
+      (CUSTOM_ALT[w.charAt(i)] || "").split("").forEach(function (c) { add(w.slice(0, i) + c + w.slice(i + 1)); });
+      if (i + 1 < w.length) add(w.slice(0, i) + w.charAt(i + 1) + w.charAt(i) + w.slice(i + 2));
+    }
+    return shuffle(out);
+  }
   function listenBuildWord(item) {
     var w = item.g[0], fakes = wordFakes(w);
     if (fakes.length < 5) {
@@ -4080,6 +4098,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
         wordFakes(o).forEach(function (f) { if (fakes.length < 5 && f !== w && fakes.indexOf(f) < 0 && wordCanon(f) !== wordCanon(w)) fakes.push(f); });
       });
     }
+    if (fakes.length < 5) customFakes(w).forEach(function (f) { if (fakes.length < 5 && fakes.indexOf(f) < 0) fakes.push(f); });
     var all = [{ g: w, good: true }].concat(fakes.map(function (f) { return { g: f, good: false }; }));
     return { item: item, goods: [w], cands: [], choices: shuffle(all) };
   }
@@ -4227,7 +4246,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     body.appendChild(card);
   }
   function listenStart(sid, soundId) {
-    var sound = soundById(soundId), items = !sound ? [] : (listenWordTurn(sid, soundId) ? LISTEN_WORDS[soundId].map(wordItem) : (listenSylItems(sid, sound) || listenItems(sound)));
+    var my = data.listenCfg.items[soundId];
+    var sound = soundById(soundId), items = !sound ? [] : (my && my.length ? my.map(listenCustomItem) : (listenWordTurn(sid, soundId) ? LISTEN_WORDS[soundId].map(wordItem) : (listenSylItems(sid, sound) || listenItems(sound))));
     if (!sound || !items.length) { toast("Ce son n’a pas encore d’exercice."); return; }
     listenClear();
     LS.run = { sid: sid, sound: sound, items: items, order: [], n: 0, failed: 0, q: null };
