@@ -3901,7 +3901,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   }
   /* Textes que la voix lit mal (épelés, lus comme une abréviation ou en anglais), mesurés sur une voix française :
      on les remplace par un mot qui se prononce pareil */
-  var SYL_SAY_FIX = { lo: "l’eau", chu: "chue", "ché": "chez", /* « è » : « tai », « pai »… étaient épelés (« té, a, i ») par la voix du téléphone → vrais mots qui se disent pareil */ tai: "taie", pai: "paie", bai: "baie", lai: "lait", fai: "fait", sai: "sais", vai: "vais", nai: "nais", jai: "jais", rai: "raie", dai: "dais", kai: "quai", zi: "zie", za: "zat", zo: "zot", vo: "vos", ba: "bas", jon: "jont", rain: "rin", zain: "zin", jain: "geint" };
+  var SYL_SAY_FIX = { lo: "l’eau", chu: "chue", "ché": "chez", /* « è » : « tai », « pai »… étaient épelés (« té, a, i ») par la voix du téléphone → vrais mots qui se disent pareil */ tai: "taie", pai: "paie", bai: "baie", lai: "lait", fai: "fait", sai: "sais", vai: "vais", nai: "nais", jai: "jais", rai: "raie", dai: "dais", kai: "quai", zi: "zie", za: "zat", zo: "zot", vo: "vos", ba: "bas", jon: "jont", rain: "rin", zain: "zin", jain: "geint", fo: "faux", fu: "fut" };
   function sylSay(cg, v) {
     var c = sylConsByG(cg), cs = c ? c.say : cg;
     if (v === "e") return SYL_E_WORDS[cg] ? cg + "e" : cs + "eu";
