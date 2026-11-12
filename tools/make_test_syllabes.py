@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
 """Fabrique test-syllabes.html : page (noindex) qui lit toutes les syllabes de l'exercice d'écoute avec la voix de l'appareil,
-pour repérer celles qui sont épelées. Le code des syllabes est COPIÉ de zoo-connecte.html (entre « Écouter : syllabes » et « function sylItem »)
-afin de rester identique ; relancer ce script si ces règles changent."""
+pour repérer celles qui sont épelées. Les règles des syllabes viennent de exo-data.js (source unique, partagée avec le Zoo et l'espace enseignant) :
+la page les charge directement, il n'y a plus de copie à garder à jour."""
 import os
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-src = open(os.path.join(ROOT, "zoo-connecte.html"), encoding="utf-8").read()
-a = src.index("var SYL_VOWELS =")
-b = src.index("function sylItem")
-block = src[a:b]
+block = ("var SYL_VOWELS = ZooExo.SYL_VOWELS, LISTEN_SYL_VOW = ZooExo.LISTEN_SYL_VOW, sylConsAll = ZooExo.sylConsAll, sylOK = ZooExo.sylOK, sylSay = ZooExo.sylSay;\n")
 page = '''<!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow"><title>Test des syllabes</title>
@@ -29,10 +26,11 @@ button.go { background: #16a34a; color: #fff; border-color: #15803d; }
 <div class="bar"><button class="go" id="all">▶ Tout lire</button><button id="stop">⏹ Stop</button><button id="copy">📋 Copier la liste cochée</button><span id="cnt"></span></div>
 <div class="grid" id="grid"></div>
 <textarea id="res" readonly placeholder="La liste des syllabes cochées apparaît ici."></textarea>
+<script src="exo-data.js?v=1"></script>
 <script>
 (function () {
   function $(i) { return document.getElementById(i); }
-  /* ===== règles copiées de zoo-connecte.html (tools/make_test_syllabes.py) ===== */
+  /* ===== règles des syllabes : exo-data.js ===== */
   ''' + block + '''
   var voices = [];
   function speak(text) {
