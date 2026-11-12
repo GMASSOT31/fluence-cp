@@ -1981,13 +1981,20 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     return c;
   }
   /* Dictée : réglages (nombre de syllabes / mots par série, erreurs permises, séries à réussir, pièces) */
-  var DICTEE_DEF = { syl: 2, words: 2, maxErrors: 0, passes: 1, coins: 2 };
+  var DICTEE_MIN = 8;   /* une série compte au moins 8 questions (même si l'enseignant avait enregistré moins avant) */
+  var DICTEE_DEF = { syl: 4, words: 4, maxErrors: 0, passes: 1, coins: 2 };
   function dicteeCfgClean(o) {
     o = o && typeof o === "object" ? o : {};
-    return {
-      syl: listenInt(o.syl, 0, 8, DICTEE_DEF.syl), words: listenInt(o.words, 0, 8, DICTEE_DEF.words), maxErrors: listenInt(o.maxErrors, 0, 5, DICTEE_DEF.maxErrors),
+    var c = {
+      syl: listenInt(o.syl, 0, 12, DICTEE_DEF.syl), words: listenInt(o.words, 0, 12, DICTEE_DEF.words), maxErrors: listenInt(o.maxErrors, 0, 5, DICTEE_DEF.maxErrors),
       passes: listenInt(o.passes, 1, 5, DICTEE_DEF.passes), coins: listenInt(o.coins, 0, 50, DICTEE_DEF.coins), items: dicteeItemsClean(o.items)
     };
+    var lack = DICTEE_MIN - c.syl - c.words;   /* il manque des questions : on les ajoute (moitié syllabes, moitié mots ; tout d'un côté si l'autre est à 0) */
+    if (lack > 0) {
+      var addS = !c.words ? lack : (!c.syl ? 0 : Math.ceil(lack / 2));
+      c.syl += addS; c.words += lack - addS;
+    }
+    return c;
   }
   /* Exercices choisis par le maître(sse) : { son: { syl: [...], words: [...] } } ; vide = exercice automatique */
   function dicteeWordsClean(a) {
@@ -4439,8 +4446,18 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var my = cfg.items[sound.id] || { syl: [], words: [] };
     var syl = shuffle(my.syl.length ? my.syl.map(function (t) { var say = SYL_SAY_FIX[t] || t; return { key: "syl:" + t, g: [t], say: say, dsay: say }; }) : (dicteeSylItems(sid, sound) || listenItems(sound)));
     var words = shuffle(my.words.length ? my.words.map(wordItem) : (LISTEN_WORDS[sound.id] || []).map(wordItem));
-    var nW = Math.min(words.length, cfg.words), nS = Math.min(syl.length, cfg.syl + (cfg.words - nW));
-    var out = syl.slice(0, nS).concat(words.slice(0, nW));
+    /* n questions tirées dans la liste ; si elle est plus courte, on la repasse dans un autre ordre (jamais deux fois de suite la même) */
+    function take(pool, n) {
+      var out = [];
+      while (pool.length && out.length < n) {
+        var round = shuffle(pool);
+        if (out.length && round.length > 1 && round[0] === out[out.length - 1]) round.push(round.shift());
+        out = out.concat(round.slice(0, n - out.length));
+      }
+      return out;
+    }
+    var nW = words.length ? cfg.words : 0;
+    var out = take(syl, cfg.syl + cfg.words - nW).concat(take(words, nW));
     if (!out.length) out = syl.slice(0, 1);
     return out;
   }
