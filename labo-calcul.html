@@ -17,8 +17,8 @@
   #zoo-frame { display: block; width: 100%; height: 560px; border: 0; border-radius: 16px; background: transparent; }
   body.zoo-view.mode-student main, body.zoo-view main { padding-bottom: 8px !important; }
   body.zoo-playing { overflow: hidden; }
-  body.zoo-playing #zoo-frame { position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh !important; z-index: 90; background: var(--bg); }
-  .test-band { position: sticky; top: 0; z-index: 60; background: #ffe9b8; color: #7a4b00; text-align: center; font-weight: 800; padding: 5px 10px; font-size: .9rem; border-bottom: 2px dashed #7a4b00; }
+  body.zoo-playing #zoo-frame { position: fixed; top: 0; right: 0; bottom: 0; left: 0; width: 100vw; height: 100vh; height: 100dvh !important; z-index: 90; background: var(--bg); }
+  .test-band { position: -webkit-sticky; position: sticky; top: 0; z-index: 60; background: #ffe9b8; color: #7a4b00; text-align: center; font-weight: 800; padding: 5px 10px; font-size: .9rem; border-bottom: 2px dashed #7a4b00; }
   body.calc header .zoo-hero { border-color: #7ff0c6; background: radial-gradient(circle at 83% 18%, rgba(255,196,69,.42), transparent 32%), radial-gradient(circle at 22% 120%, rgba(60,230,170,.42), transparent 45%), linear-gradient(125deg,#053b36 0%,#0a6a5c 57%,#06353a 100%); box-shadow: 0 7px 0 #04302b, 0 15px 30px rgba(5,60,50,.22); }
   body.calc header .zoo-hero .brand .sub { color: #c6fff0; }
   body.calc header .zoo-hero::before { opacity: .22; }
@@ -66,7 +66,7 @@
   .dot.cur { background: var(--calc); } .dot.good { background: #17794f; border-color: #17794f; } .dot.miss { background: var(--card); border-color: #b3261e; border-style: dashed; }
   .stage { text-align: center; padding: 6px 0; }
   .say { width: min(230px,70%); min-height: 90px; font-size: 1.6rem; border-radius: 24px; border: 4px solid var(--calc-d); background: var(--calc); color: #fff; font-weight: 800; margin: 6px auto 12px; display: block; cursor: pointer; font-family: Fredoka, Figtree, sans-serif; }
-  .eq { font-family: Fredoka, Figtree, sans-serif; font-size: clamp(2.4rem,9vw,3.8rem); font-weight: 700; margin: 6px 0; letter-spacing: .04em; }
+  .eq { font-family: Fredoka, Figtree, sans-serif; font-size: max(2.4rem, min(9vw, 3.8rem)); font-weight: 700; margin: 6px 0; letter-spacing: .04em; }
   .pic { display: flex; flex-wrap: wrap; gap: 4px 14px; justify-content: center; align-items: center; margin: 6px auto 10px; font-size: 2rem; line-height: 1.15; max-width: 560px; }
   .pic .grp { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 6px 10px; border: 2px dashed var(--line); border-radius: 14px; }
   .pic .row5 { display: flex; flex-wrap: nowrap; gap: 2px; } .pic .row5.box { margin-top: 8px; }   /* paquets de 5 : une rangée ne coupe jamais un paquet ; un petit espace tous les 10 */
@@ -93,14 +93,14 @@
     .exo { position: relative; padding-top: 10px; padding-bottom: 8px; }
     .exo > .home-small:first-child { position: absolute; left: 12px; top: 10px; z-index: 2; }
     .exo .dots { margin: 4px 0 0; }
-    .exo .eq { font-size: clamp(2rem, 8vh, 3.8rem); margin: 2px 0; }
-    .exo .pic { font-size: clamp(1.3rem, 4.2vh, 2rem); margin: 2px auto 4px; gap: 2px 10px; }
+    .exo .eq { font-size: max(2rem, min(8vh, 3.8rem)); margin: 2px 0; }
+    .exo .pic { font-size: max(1.3rem, min(4.2vh, 2rem)); margin: 2px auto 4px; gap: 2px 10px; }
     .exo .pic .grp { padding: 3px 8px; }
     .exo .crow { margin-top: 4px; }
     .exo .nline { margin: 2px auto; padding: 2px; } .exo .hint { margin: 2px auto 4px; }
-    .exo .choices { gap: clamp(6px, 1.4vh, 12px); margin: 6px auto; }
-    .exo .choice { min-height: clamp(54px, 10.5vh, 84px); font-size: clamp(1.8rem, 5.4vh, 2.4rem); }
-    .exo .msg { text-align: center; min-height: 1.5em; font-size: clamp(1rem, 2.6vh, 1.15rem); margin: 2px 0; }
+    .exo .choices { gap: max(6px, min(1.4vh, 12px)); margin: 6px auto; }
+    .exo .choice { min-height: max(54px, min(10.5vh, 84px)); font-size: max(1.8rem, min(5.4vh, 2.4rem)); }
+    .exo .msg { text-align: center; min-height: 1.5em; font-size: max(1rem, min(2.6vh, 1.15rem)); margin: 2px 0; }
   }
   /* TBI / grands écrans : pendant un exercice, tout est lisible de loin (panneaux latéraux déjà masqués par « listen-focus ») */
   @media (min-width: 1400px) {   /* tailles TBI, mais toujours bornées par la hauteur de la fenêtre (un portable de 1440 px de large n'est pas un TBI) */
@@ -108,10 +108,10 @@
     body.listen-focus #view .card { max-width: 1200px; margin: 0 auto; }
     body.listen-focus .eq { font-size: max(80px, min(96px, 9.5vh)); margin: 0; }
     body.listen-focus .stage .muted, body.listen-focus .hint, body.listen-focus .msg { font-size: max(32px, min(35px, 4vh)); line-height: 1.2; }
-    body.listen-focus .say { min-height: clamp(90px, 13vh, 130px); font-size: 2.2rem; width: min(380px, 70%); }
-    body.listen-focus .exo > .home-small:first-child, body.listen-focus .crow .home-small { font-size: max(1.2rem, min(1.6rem, 2.4vh)); min-height: clamp(48px, 6.5vh, 64px); padding: 8px 22px; }
-    body.listen-focus .choices { max-width: 1000px; gap: clamp(8px, 2vh, 22px); } body.listen-focus .choices.c6 { max-width: 1200px; }
-    body.listen-focus .choice { min-height: clamp(70px, 11.5vh, 150px); font-size: max(48px, min(64px, 6.5vh)); }
+    body.listen-focus .say { min-height: max(90px, min(13vh, 130px)); font-size: 2.2rem; width: min(380px, 70%); }
+    body.listen-focus .exo > .home-small:first-child, body.listen-focus .crow .home-small { font-size: max(1.2rem, min(1.6rem, 2.4vh)); min-height: max(48px, min(6.5vh, 64px)); padding: 8px 22px; }
+    body.listen-focus .choices { max-width: 1000px; gap: max(8px, min(2vh, 22px)); } body.listen-focus .choices.c6 { max-width: 1200px; }
+    body.listen-focus .choice { min-height: max(70px, min(11.5vh, 150px)); font-size: max(48px, min(64px, 6.5vh)); }
     body.listen-focus .nline b { min-width: 52px; font-size: 1.7rem; padding: 10px 0; }
     body.listen-focus .pic { font-size: max(1.6rem, min(3rem, 4vh)); }
   }
@@ -139,7 +139,7 @@
   .nline b.st { outline: 3px solid var(--ink); outline-offset: -3px; } .nline b.s1 { background: #cfeeed; border-color: #0b7f7d; } .nline b.s2 { background: #ffe2b8; border-color: #c9740c; }
   /* aide « pour arriver à 10 » : deux mains, a doigts levés ; la taille suit la hauteur de la fenêtre (portable, tablette, téléphone) */
   .hands { display: flex; justify-content: center; align-items: flex-end; gap: 12px; margin: 4px auto 2px; }
-  .hands img { display: block; height: clamp(116px, 23vh, 240px); width: auto; max-width: 44vw; } .hands img.flip { transform: scaleX(-1); }
+  .hands img { display: block; height: max(116px, min(23vh, 240px)); width: auto; max-width: 44vw; } .hands img.flip { transform: scaleX(-1); }
   .hint { margin: 4px auto 8px; max-width: 640px; font-weight: 700; text-align: center; } .hint .h1 { color: #0b7f7d; } .hint .h2 { color: #b45f06; }
   .pairs { display: grid; gap: 4px 2px; justify-items: center; width: 100%; max-width: 560px; overflow: hidden; margin: 6px auto; padding: 8px; border: 2px dashed var(--line); border-radius: 14px; } .pairs span { line-height: 1.1; } .pairs .ghost { width: 1em; height: 1em; border: 2px dashed var(--line); border-radius: 50%; opacity: .6; } .pairs .extra { background: #ffe2b8; border-radius: 50%; }
   .nline b { min-width: 34px; padding: 6px 0; border-radius: 8px; background: var(--card); border: 2px solid var(--line); font-size: 1rem; }
@@ -174,7 +174,7 @@
   .gift-banner { position: fixed; left: 50%; top: 18%; transform: translateX(-50%); z-index: 9998; cursor: pointer; padding: 14px 26px; text-align: center; color: var(--ink); background: var(--card); border: 3px solid #f5c542; border-radius: 20px; box-shadow: 0 12px 34px rgba(0,0,0,.45); }
   .gift-banner .gb-title { font: 700 1.5rem Fredoka, Figtree, system-ui, sans-serif; } .gift-banner .gb-coins { font-weight: 800; font-size: 1.4rem; margin: 4px 0; } .gift-banner .gb-sub { font-weight: 600; opacity: .85; }
   /* formulaire « Changer mon code secret » (mêmes règles que le Zoo de Lecture) */
-  .pin-dialog { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px; background: rgba(15, 18, 28, .55); }
+  .pin-dialog { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 60; display: grid; place-items: center; padding: 16px; background: rgba(15, 18, 28, .55); }
   .pin-card { width: min(440px, 100%); max-height: calc(100dvh - 32px); overflow: auto; padding: 22px 20px 20px; color: var(--ink); background: var(--card); border: 2px solid var(--line); border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,.35); }
   .pin-card h2 { margin: 0 0 10px; font-family: Fredoka, Figtree, system-ui, sans-serif; font-size: 1.3rem; text-align: center; }
   .pin-form { display: grid; gap: 12px; text-align: left; } .pin-label { display: grid; gap: 4px; font-weight: 700; }
