@@ -52,6 +52,10 @@
             if (op === "upsert" || op === "update") { var pl = Array.isArray(payload) ? payload[0] : payload; st.appSettings[pl.key || "auto_seats"] = pl.value; out = { data: null, error: null }; }
             else out = { data: single ? { key: "auto_seats", value: st.appSettings.auto_seats } : [{ key: "auto_seats", value: st.appSettings.auto_seats }], error: null };
           }
+          else if (table === "teacher_zoo_settings") {   // réglages de l'enseignant : l'upsert est gardé dans window.__auth.zooSettings (relu au rechargement de la page dans le même test)
+            if (op === "upsert") { st.zooSettings = payload; out = { data: null, error: null }; }
+            else out = { data: single ? (st.zooSettings ? { settings: st.zooSettings.settings } : null) : (st.zooSettings ? [{ settings: st.zooSettings.settings }] : []), error: null };
+          }
           else if (table === "students" && op === "insert") { var srow = Object.assign({ id: "n" + (st.students.length + 1), pin_hash: null }, payload); st.students.push(srow); out = { data: single ? { id: srow.id } : [srow], error: null }; }
           else if (table === "students") out = { data: (st.teachers[0].role === "admin" ? st.students : st.students.filter(function (x) { return x.teacher_id === st.user.id; })).map(function (x) { return Object.assign({ ghosted_at: null }, x); }), error: null };
           else if (table === "student_progress") out = { data: Object.keys(st.progress).map(function (k) { return st.progress[k]; }), error: null };
