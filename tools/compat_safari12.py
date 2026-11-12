@@ -44,7 +44,7 @@ def fix_clamp(text):
 def fix(path):
     s = open(path, encoding="utf-8").read()
     o = s
-    s, nsticky = re.subn(r"(?<![-\w])position:\s*sticky", "position: -webkit-sticky; position: sticky", s)
+    s, nsticky = re.subn(r"(?<![-\w])(?<!-webkit-sticky; )position:\s*sticky", "position: -webkit-sticky; position: sticky", s)
     s, ninset = re.subn(r"(?<![-\w])inset:\s*(-?\d+(?:px|%)?)(\s*[;}\"'])", lambda m: "top: %s; right: %s; bottom: %s; left: %s%s" % (m.group(1), m.group(1), m.group(1), m.group(1), m.group(2)), s)
     s, nclamp = fix_clamp(s)
     # canvas dont la hauteur venait seulement de aspect-ratio : height:auto garde le rapport des attributs width/height du canvas
