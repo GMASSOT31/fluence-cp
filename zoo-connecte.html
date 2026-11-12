@@ -5850,7 +5850,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     function showLives() { var h = ""; for (var i = 0; i < TILES_LIVES; i++) h += i < lives ? "❤️" : "🖤"; livesEl.textContent = h; livesEl.setAttribute("aria-label", nb(lives, "vie", "vies")); }
     showLives();
     function speed() {   /* px par image à 60 i/s : de plus en plus vite */
-      var v = 1.6 + 3.6 * Math.pow(Math.min(1, t / 90), 0.9);
+      var v = 0.75 + 4.45 * Math.pow(Math.min(1, t / 90), 1.5);   /* départ très lent (CP) : ~0,9 px/image à 10 s, ~1,2 à 20 s, même vitesse qu’avant à 90 s */
       return t > 90 ? v + 0.4 * ((t - 90) / 20) : v;
     }
     function burst(x, y, n, cols) {
