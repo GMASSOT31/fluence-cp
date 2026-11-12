@@ -4095,7 +4095,11 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   }
 
   /* Voix : fichier sons/<clé>.mp3 s’il existe, sinon synthèse vocale en français (texte réglable) */
+  /* Voix : sur les anciens iPad (Safari 12), parler juste après un cancel() est souvent perdu ou rejoue la phrase d’avant (« fo » au lieu de « fu »).
+     On laisse donc un court délai après l’arrêt ; LS_SEQ garantit que seule la dernière demande est dite. */
+  var LS_SEQ = 0;
   function listenStopVoice() {
+    LS_SEQ++;
     try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}
     if (LS.audio) { try { LS.audio.pause(); } catch (e) {} LS.audio = null; }
   }
@@ -4111,8 +4115,12 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       var frFR = frs.filter(function (v) { return /^fr[-_]FR/i.test(v.lang); });
       var fr = frFR.filter(function (v) { return /thomas|audrey|aurélie|marie|google/i.test(v.name); })[0] || frFR[0] || frs[0];
       if (fr) u.voice = fr;
+      var mine = ++LS_SEQ;
       window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(u);
+      setTimeout(function () {
+        if (mine !== LS_SEQ) return;   // une demande plus récente (ou un arrêt) a pris la place
+        try { window.speechSynthesis.speak(u); } catch (e) { if (onEnd) onEnd(); }
+      }, 90);
     } catch (e) { if (onEnd) onEnd(); }
   }
   /* Voyelles é / è : quand l’élève se trompe, une phrase et une image pour retenir l’accent (fusée qui monte, flèche qui tombe) */
