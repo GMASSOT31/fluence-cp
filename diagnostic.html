@@ -18,6 +18,7 @@ button{display:block;width:100%;margin:12px 0;padding:16px;font:800 1.1rem syste
 <div id="bilan" hidden></div>
 <p class="muted" id="infos"></p>
 <script src="vendor/supabase.js?v=2.118.0"></script>
+<script src="vendor/supabase-lite.js?v=1"></script>
 <script>
 (function(){
 "use strict";
@@ -47,7 +48,7 @@ row("rnd","Le générateur de codes sécurisés fonctionne");
 row("ver","La page de connexion est à jour (pas de vieille copie)");
 row("srv","Le serveur du Zoo répond depuis ce réseau");
 
-set("lib",!!(window.supabase&&window.supabase.createClient),window.supabase?"OK":"vendor/supabase.js n’a pas pu être chargé (bloqué ou ancien appareil)");
+set("lib",!!(window.supabase&&window.supabase.createClient),window.supabase?(window.supabase.lite?"client de secours utilisé (appareil ancien) : la connexion marche avec lui":"OK"):"la connexion n’a pas pu être chargée (bloquée ou appareil trop ancien)");
 var n=String(Math.floor(Math.random()*1e6));
 try{sessionStorage.setItem("diag_test","ok-"+n);set("sto",sessionStorage.getItem("diag_test")==="ok-"+n,"écriture et lecture")}catch(e){set("sto",false,"impossible d’écrire : "+(e&&e.message||e))}
 try{var a=new Uint8Array(8);crypto.getRandomValues(a);set("rnd",true)}catch(e){set("rnd",false,String(e&&e.message||e))}
