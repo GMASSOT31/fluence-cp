@@ -1698,7 +1698,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
 <div class="toast" id="toast" role="status"></div>
 
 <script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;/* Connexion élève : le jeton arrive aussi dans l’adresse (#zt=…) pour les appareils qui ne gardent pas sessionStorage d’une page à l’autre (application ajoutée à l’écran d’accueil) ; on le range puis on l’efface de l’adresse */var hm=location.hash.match(/[#&]zt=([0-9a-f]{64})/);if(hm&&!d){window.ZOO_HASH_TOKEN=hm[1];try{sessionStorage.setItem("zoo_student_token",hm[1])}catch(e){}try{history.replaceState(null,"",location.pathname+location.search)}catch(e){}}if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=22"><\/script>':'<script src="vendor/supabase.js?v=2.118.0"><\/script><script src="vendor/supabase-lite.js?v=1"><\/script>');})();</script>
-<script src="exo-data.js?v=1"></script>
+<script src="profils.js?v=1"></script>
+<script src="exo-data.js?v=2"></script>
 <script>
 (function () {
   "use strict";
@@ -2323,6 +2324,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     return DEFAULTS[key] || "";
   }
   function hasContent(sound, kind) { return parseItems(contentOf(sound, kind)).words.length > 0; }
+  /* Mots que l'élève sait écrire à ce stade : seulement ceux dont tous les graphèmes sont déjà enseignés (ordre des sons de l'enseignant) */
+  function wordsOf(id) { return ZooExo.wordsFor(id, data.sounds.map(function (s) { return s.id; })); }
   function soundById(id) { return data.sounds.filter(function (s) { return s.id === id; })[0] || null; }
   function studentById(id) { return data.students.filter(function (s) { return s.id === id; })[0] || null; }
   function missingTag(s, kind) {
@@ -3739,6 +3742,11 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if (!st) return;
     $("pl-name").textContent = st.name;
     $("pl-avatar").textContent = AVATARS.some(function (a) { return a.icon === st.avatar; }) ? st.avatar : "🧑";
+    /* « Qui es-tu ? » : le profil mémorisé sur cet appareil suit le prénom et l’avatar (rien n’est écrit s’ils n’ont pas changé) */
+    try {
+      var zpId = sessionStorage.getItem("zoo_profile_id");
+      if (zpId && window.ZooProfils) ZooProfils.update(zpId, { name: st.name, avatar: AVATARS.some(function (a) { return a.icon === st.avatar; }) ? st.avatar : "" });
+    } catch (e) {}
     var cn = coins(sid), cr = credits(sid), pw = pendingWheels(sid).length;
     $("pl-coins").textContent = String(cn);
     $("pl-games").textContent = String(cr);
@@ -4019,7 +4027,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var w = item.g[0], fakes = wordFakes(w);
     if (fakes.length < 5) {
       var same = [];
-      Object.keys(LISTEN_WORDS).forEach(function (id) { if (LISTEN_WORDS[id].indexOf(w) >= 0) same = same.concat(LISTEN_WORDS[id]); });
+      data.sounds.forEach(function (sd) { var ws = wordsOf(sd.id); if (ws.indexOf(w) >= 0) same = same.concat(ws); });
       shuffle(same.filter(function (x) { return x !== w; })).forEach(function (o) {
         wordFakes(o).forEach(function (f) { if (fakes.length < 5 && f !== w && fakes.indexOf(f) < 0 && wordCanon(f) !== wordCanon(w)) fakes.push(f); });
       });
@@ -4037,7 +4045,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   function listenWordTurn(sid, id) {   /* vrai si le prochain exercice de ce son se fait avec des mots */
     var need = listenNeed(id);
     var mine = data.listenCfg.items[id];
-    return need > data.listenCfg.passes && !!(LISTEN_WORDS[id] || (mine && mine.words.length)) && !listenDone(sid, id) && (listenMine(sid).passes[id] || 0) === need - 1;
+    return need > data.listenCfg.passes && !!(wordsOf(id).length || (mine && mine.words.length)) && !listenDone(sid, id) && (listenMine(sid).passes[id] || 0) === need - 1;
   }
 
   /* Voix : fichier sons/<clé>.mp3 s’il existe, sinon synthèse vocale en français (texte réglable) */
@@ -4183,7 +4191,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   function listenStart(sid, soundId) {
     var my = data.listenCfg.items[soundId] || { syl: [], words: [] };
     var sound = soundById(soundId), items = !sound ? [] : (listenWordTurn(sid, soundId)
-      ? (my.words.length ? my.words.map(listenCustomItem) : LISTEN_WORDS[soundId].map(wordItem))
+      ? (my.words.length ? my.words.map(listenCustomItem) : wordsOf(soundId).map(wordItem))
       : (my.syl.length ? my.syl.map(listenCustomItem) : (listenSylItems(sid, sound) || listenItems(sound))));
     if (!sound || !items.length) { toast("Ce son n’a pas encore d’exercice."); return; }
     listenClear();
@@ -4402,7 +4410,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var cfg = data.dicteeCfg;
     var my = cfg.items[sound.id] || { syl: [], words: [] };
     var syl = shuffle(my.syl.length ? my.syl.map(function (t) { var say = SYL_SAY_FIX[t] || t; return { key: "syl:" + t, g: [t], say: say, dsay: say }; }) : (dicteeSylItems(sid, sound) || listenItems(sound)));
-    var words = shuffle(my.words.length ? my.words.map(wordItem) : (LISTEN_WORDS[sound.id] || []).map(wordItem));
+    var words = shuffle(my.words.length ? my.words.map(wordItem) : wordsOf(sound.id).map(wordItem));
     /* n questions tirées dans la liste ; si elle est plus courte, on la repasse dans un autre ordre (jamais deux fois de suite la même) */
     function take(pool, n) {
       var out = [];

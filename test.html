@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="robots" content="noindex,nofollow"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Test de la voix · Zoo de Lecture</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#14151c;color:#eef0f7;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.4;text-align:center}
+main{max-width:560px;margin:auto;padding:22px 16px 50px}h1{font-size:1.6rem;margin:0 0 8px}p{margin:8px 0;font-size:1.1rem}
+.muted{color:#aab0c4;font-size:1rem}
+button{display:block;width:100%;margin:14px 0;padding:20px;font:800 1.3rem system-ui,sans-serif;border:0;border-radius:16px;background:#ffe56c;color:#21104f}
+button.no{background:#ff9d9d}button.ok{background:#8de3a9}button.alt{background:#c9cdf0}
+#mot{font:800 4rem system-ui,sans-serif;min-height:1.3em;margin:18px 0;color:#ffe56c}
+#fin{font-size:1.3rem;background:#1d2030;border:2px solid #2e9b5b;border-radius:14px;padding:14px;margin-top:16px}
+</style></head><body><main>
+<h1>🔊 Test de la voix</h1>
+<div id="e1">
+  <p>Mettez le son de la tablette assez fort, puis touchez le bouton. <b>Écoutez</b> : la voix va dire quelques sons.</p>
+  <button id="go" type="button">▶ Lancer le test</button>
+</div>
+<div id="e2" hidden><div id="mot">…</div><p class="muted">Écoutez bien…</p></div>
+<div id="e3" hidden>
+  <p><b>Avez-vous entendu les sons clairement, comme « fa », « lu », « fo » ?</b></p>
+  <button class="ok" id="oui" type="button">👍 Oui, c’est bien dit</button>
+  <button class="no" id="non" type="button">👎 Non</button>
+</div>
+<div id="e4" hidden>
+  <p><b>Qu’est-ce qui ne va pas ?</b></p>
+  <button class="alt" data-p="rien" type="button">🔇 Je n’entends rien</button>
+  <button class="alt" data-p="epelle" type="button">🔤 Ça dit les lettres (« F A »…)</button>
+  <button class="alt" data-p="autre" type="button">🤔 Les sons sont mal dits</button>
+</div>
+<div id="fin" hidden></div>
+<script src="exo-data.js?v=2"></script>
+<script>
+(function () {
+  "use strict";
+  var $ = function (x) { return document.getElementById(x); };
+  var URL_SB = "https://pcxpazpflnlwmhyuozdx.supabase.co", KEY = "sb_publishable_j65mDpDNsuwwaL6uRjsMtA_U_OXQXlL";
+  var Z = window.ZooExo, ss = window.speechSynthesis, ok = !!(ss && window.SpeechSynthesisUtterance);
+  var ITEMS = [Z.sylSay("f", "a"), Z.sylSay("l", "u"), Z.sylSay("f", "o"), Z.sylSay("m", "i"), "mouton", "vélo"];
+  var log = [], chosen = "";
+  function show(id) { ["e1", "e2", "e3", "e4", "fin"].forEach(function (x) { $(x).hidden = x !== id; }); }
+  function pickVoice() {   // même choix de voix que le Zoo
+    var voices = ss && ss.getVoices ? ss.getVoices() : [];
+    var frs = voices.filter(function (v) { return /^fr/i.test(v.lang); });
+    var frFR = frs.filter(function (v) { return /^fr[-_]FR/i.test(v.lang); });
+    return frFR.filter(function (v) { return /thomas|audrey|aurélie|marie|google/i.test(v.name); })[0] || frFR[0] || frs[0] || null;
+  }
+  function speak(text, done) {
+    var t0 = Date.now(), rec = { texte: text, debut: null, fin: null, erreur: "" }, finished = false;
+    log.push(rec);
+    function end() { if (finished) return; finished = true; clearTimeout(guard); done(); }
+    var guard = setTimeout(end, 5000);   // si la voix ne répond jamais, on passe à la suite
+    try {
+      var u = new window.SpeechSynthesisUtterance(text);
+      u.lang = "fr-FR"; u.rate = 0.8; u.pitch = 1; u.volume = 1;
+      var v = pickVoice(); if (v) { u.voice = v; chosen = v.name + " (" + v.lang + ")"; }
+      u.onstart = function () { rec.debut = Date.now() - t0; };
+      u.onend = function () { rec.fin = Date.now() - t0; end(); };
+      u.onerror = function (e) { rec.erreur = (e && e.error) || "erreur"; end(); };
+      ss.cancel();
+      setTimeout(function () { try { ss.speak(u); } catch (e) { rec.erreur = String(e); end(); } }, 90);
+    } catch (e) { rec.erreur = String(e); end(); }
+  }
+  function run(i) {
+    if (i >= ITEMS.length) { show("e3"); return; }
+    $("mot").textContent = ITEMS[i];
+    speak(ITEMS[i], function () { setTimeout(function () { run(i + 1); }, 900); });
+  }
+  function report(reponse) {
+    var voices = ss && ss.getVoices ? ss.getVoices() : [];
+    var fr = voices.filter(function (v) { return /^fr/i.test(v.lang); }).map(function (v) { return v.name + " [" + v.lang + (v.localService ? ", locale" : ", réseau") + (v["default"] ? ", défaut" : "") + "]"; });
+    var lignes = [
+      "TEST DE LA VOIX — réponse : " + reponse,
+      "Appareil : " + navigator.userAgent.replace(/\s+/g, " ").slice(0, 200),
+      "Écran : " + screen.width + "×" + screen.height + " (fenêtre " + innerWidth + "×" + innerHeight + ", densité " + (window.devicePixelRatio || 1) + ")",
+      "Synthèse vocale : " + (ok ? "présente" : "ABSENTE") + " · voix au total : " + voices.length + " · voix françaises : " + fr.length,
+      "Voix françaises : " + (fr.join(" ; ") || "aucune"),
+      "Voix choisie : " + (chosen || "aucune (voix par défaut de l’appareil)"),
+      "Lecture : " + log.map(function (r) { return "« " + r.texte + " » début " + (r.debut === null ? "jamais" : r.debut + " ms") + ", fin " + (r.fin === null ? "jamais" : r.fin + " ms") + (r.erreur ? ", erreur " + r.erreur : ""); }).join(" | ")
+    ];
+    var email = "voix-" + Math.random().toString(36).slice(2, 8) + "@test.zoodelecture.fr";   // une adresse par essai : la limite « 3 par jour » ne gêne pas
+    var txt = lignes.join("\n");
+    show("fin");
+    $("fin").textContent = "⏳ Envoi du résultat…";
+    var ctl = window.AbortController ? new AbortController() : null, tm = setTimeout(function () { if (ctl) ctl.abort(); }, 10000);
+    fetch(URL_SB + "/rest/v1/rpc/submit_contact_message", { method: "POST", headers: { apikey: KEY, "Content-Type": "application/json" }, body: JSON.stringify({ p_email: email, p_message: txt, p_website: "" }), signal: ctl ? ctl.signal : undefined })
+      .then(function (r) { return r.json(); })
+      .then(function (j) { clearTimeout(tm); $("fin").textContent = j && j.ok ? "✅ Merci ! Le résultat a été envoyé à Gabriel. Vous pouvez fermer cette page." : "⚠️ L’envoi n’a pas marché. Faites une capture d’écran de cette page et envoyez-la à Gabriel."; if (!(j && j.ok)) fallback(txt); })
+      .catch(function () { clearTimeout(tm); $("fin").textContent = "⚠️ L’envoi n’a pas marché. Faites une capture d’écran de cette page et envoyez-la à Gabriel."; fallback(txt); });
+  }
+  function fallback(txt) { var p = document.createElement("p"); p.className = "muted"; p.style.textAlign = "left"; p.style.whiteSpace = "pre-wrap"; p.style.fontSize = ".8rem"; p.textContent = txt; $("fin").appendChild(p); }
+  $("go").onclick = function () {
+    if (!ok) { report("pas de synthèse vocale sur cet appareil"); return; }
+    show("e2"); try { ss.getVoices(); } catch (e) {}
+    setTimeout(function () { run(0); }, 400);   // laisse la liste des voix se charger
+  };
+  $("oui").onclick = function () { report("OUI, les sons sont bien dits"); };
+  $("non").onclick = function () { show("e4"); };
+  [].forEach.call(document.querySelectorAll("#e4 button"), function (b) {
+    b.onclick = function () { report("NON — " + { rien: "on n’entend rien", epelle: "la voix dit les lettres", autre: "les sons sont mal dits" }[b.getAttribute("data-p")]); };
+  });
+})();
+</script></main></body></html>

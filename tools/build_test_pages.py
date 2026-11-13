@@ -70,7 +70,7 @@ def main():
     ens = ens.replace('<script src="labo-config.js?v=1" defer></script>', '<script>window.__labNoClient=1</script><script src="fake-labo.js"></script><script src="fake-labo-fetch.js"></script>\n<script src="labo-config.js?v=1" defer></script>', 1)
     write("enseignants-test.html", ens)
     write("eleve-test.html", swap_backend(read("eleve.html"), "fake-auth.js"))
-    for name in ["zoo-connecte.html", "enseignants.html", "eleve.html", "index.html", "mentions-legales.html", "confidentialite.html", "demo.js", "demo-tour.js", "share.js", "zoo-embed.js", "exo-data.js"]:
+    for name in ["zoo-connecte.html", "enseignants.html", "eleve.html", "index.html", "mentions-legales.html", "confidentialite.html", "demo.js", "demo-tour.js", "share.js", "zoo-embed.js", "exo-data.js", "profils.js"]:
         shutil.copy(os.path.join(ROOT, name), os.path.join(OUT, name))
     shutil.copytree(os.path.join(ROOT, "img"), os.path.join(OUT, "img"), dirs_exist_ok=True)
     os.makedirs(os.path.join(OUT, "vendor"), exist_ok=True)   # client de secours pour anciens appareils (sans la vraie bibliothèque Supabase, remplacée par les faux serveurs)

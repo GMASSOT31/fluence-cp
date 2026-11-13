@@ -75,7 +75,7 @@
       getUser: function () { return Promise.resolve({ data: { user: /out/.test(location.search) ? null : st.user }, error: null }); },
       onAuthStateChange: function (f) { st.listeners.push(f); return { data: { subscription: { unsubscribe: function () {} } } }; },
       updateUser: function () { return Promise.resolve({ error: null }); }, resetPasswordForEmail: function () { return Promise.resolve({ error: null }); },
-      signInWithPassword: function () { return Promise.resolve({ error: null }); }, signOut: function () { return Promise.resolve({}); }, signUp: function () { return Promise.resolve({ data: {} }); }, resend: function () { return Promise.resolve({ error: null }); }
+      signInWithPassword: function () { return Promise.resolve({ error: /badpw/.test(location.search) ? { code: "invalid_credentials", message: "Invalid login credentials" } : null }); }, signOut: function () { return Promise.resolve({}); }, signUp: function () { return Promise.resolve({ data: {} }); }, resend: function () { return Promise.resolve({ error: null }); }
     },
     from: q,
     rpc: function (name, a) {
@@ -87,6 +87,7 @@
         if (ok) { st.fails = 0; return Promise.resolve({ data: { ok: true, student_id: "s1", nickname: a.p_nickname }, error: null }); }
         st.fails++; return Promise.resolve({ data: { ok: false, reason: "bad_pin" }, error: null }); }
       if (name === "student_session_profile") return Promise.resolve(a.p_token === "expire" ? { data: null, error: { message: "Session expirée" } } : { data: { student_id: "s1", nickname: "lea" }, error: null });
+      if (name === "get_exo_defaults") return Promise.resolve({ data: (st.appSettings && st.appSettings.exo_defaults) || (/exodefaut=1/.test(location.search) ? { texts: { "s:l": "la li lo lu" }, dictee: { syl: 3, words: 1, items: { l: { syl: ["la", "lo"], words: [] } } }, listenCfg: { questions: 5, items: { l: { syl: ["la", "lu"], words: [] } } }, sounds: [{ id: "l", label: "l" }, { id: "f", label: "f" }, { id: "ou", label: "ou" }] } : {}), error: null });
       if (name === "get_dictee_defaults") return Promise.resolve({ data: (st.appSettings && st.appSettings.dictee_defaults) || (/dicteedefaut=1/.test(location.search) ? { syl: 3, words: 1, items: { l: { syl: ["la", "lo"], words: [] } } } : {}), error: null });
       if (name === "teacher_give_voucher") { var pr = st.progress[a.p_student]; if (!pr) return Promise.resolve({ data: null, error: { message: "Élève introuvable" } }); if (pr.given_vouchers.indexOf(a.p_voucher) < 0) pr.given_vouchers.push(a.p_voucher); return Promise.resolve({ data: pr.given_vouchers.length, error: null }); }
       if (name === "teacher_adjust_level") { st.levelOps = (st.levelOps || []).concat([a]);
