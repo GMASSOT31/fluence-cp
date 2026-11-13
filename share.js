@@ -5,7 +5,10 @@
   var TITRE = "Zoo de Lecture";
   var TEXTE = "Je viens de découvrir Zoo de Lecture 🦁, un outil gratuit créé par un professeur des écoles pour travailler la lecture au CP. Il aide à organiser des ateliers autonomes et à adapter les activités aux élèves. À découvrir :";
   /* Cible du partage : le site entier, ou (bouton data-share-page) la page du guide en cours */
-  function cible(page) {
+  function cible(page, box) {
+    /* Bouton à lien particulier : data-share-url (+ data-share-text, data-share-title) sur le conteneur [data-share] */
+    var u = box && box.getAttribute("data-share-url");
+    if (u) { var t = box.getAttribute("data-share-title") || TITRE; return { url: u, titre: t, texte: box.getAttribute("data-share-text") || t, objet: t }; }
     if (!page) return { url: URL_SITE, titre: TITRE, texte: TEXTE, objet: "Un outil de lecture pour le CP : Zoo de Lecture" };
     var c = document.querySelector("link[rel=canonical]"), h = document.querySelector("h1");
     var titre = h ? h.textContent.replace(/\s+/g, " ").trim() : document.title;
@@ -17,9 +20,9 @@
     var btns = box.querySelectorAll("[data-share-btn]"), more = box.querySelector("[data-share-more]"), status = box.querySelector("[data-share-status]");
     if (!btns.length || !more) return;
     var wa = more.querySelector("[data-share-wa]"), mail = more.querySelector("[data-share-mail]"), copy = more.querySelector("[data-share-copy]");
-    var cur = cible(false);
+    var cur = cible(false, box);
     function viser(page) {
-      cur = cible(page);
+      cur = cible(page, box);
       var msg = cur.texte + " " + cur.url;
       if (wa) { wa.href = "https://wa.me/?text=" + encodeURIComponent(msg); wa.target = "_blank"; wa.rel = "noopener noreferrer"; }
       if (mail) mail.href = "mailto:?subject=" + encodeURIComponent(cur.objet) + "&body=" + encodeURIComponent(msg);
