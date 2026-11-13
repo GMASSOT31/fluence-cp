@@ -1964,11 +1964,11 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       questions: listenInt(o.questions, 3, 20, LISTEN_DEF.questions), maxErrors: listenInt(o.maxErrors, 0, 10, LISTEN_DEF.maxErrors),
       passes: listenInt(o.passes, 1, 10, LISTEN_DEF.passes), coins: listenInt(o.coins, 0, 50, LISTEN_DEF.coins),
       say: {}, equiv: o.equiv ? listenGroups(o.equiv) : LISTEN_DEF.equiv.slice(), confus: o.confus ? listenGroups(o.confus) : LISTEN_DEF.confus.slice(),
-      items: {}   /* exercice choisi par le maître(sse) : { son: [syllabes ou mots à écouter] } ; vide = exercice automatique */
+      items: {}   /* exercice choisi par le maître(sse) : { son: { syl: [syllabes ou sons], words: [mots de la dernière série] } } ; liste vide = automatique */
     };
     if (o.items && typeof o.items === "object") Object.keys(o.items).slice(0, 80).forEach(function (k) {
-      var w = dicteeWordsClean(o.items[k]);
-      if (w.length) c.items[k] = w;
+      var v = o.items[k], syl = dicteeWordsClean(Array.isArray(v) ? v : (v && v.syl)), words = dicteeWordsClean(v && !Array.isArray(v) ? v.words : []);   /* ancien format : un tableau = les syllabes */
+      if (syl.length || words.length) c.items[k] = { syl: syl, words: words };
     });
     if (o.say && typeof o.say === "object") Object.keys(o.say).slice(0, 200).forEach(function (k) {
       if (typeof o.say[k] === "string" && o.say[k].trim()) c.say[k] = o.say[k].trim().slice(0, 40);
@@ -4036,7 +4036,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   }
   function listenWordTurn(sid, id) {   /* vrai si le prochain exercice de ce son se fait avec des mots */
     var need = listenNeed(id);
-    return need > data.listenCfg.passes && !!LISTEN_WORDS[id] && !listenDone(sid, id) && (listenMine(sid).passes[id] || 0) === need - 1;
+    var mine = data.listenCfg.items[id];
+    return need > data.listenCfg.passes && !!(LISTEN_WORDS[id] || (mine && mine.words.length)) && !listenDone(sid, id) && (listenMine(sid).passes[id] || 0) === need - 1;
   }
 
   /* Voix : fichier sons/<clé>.mp3 s’il existe, sinon synthèse vocale en français (texte réglable) */
@@ -4180,8 +4181,10 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     body.appendChild(card);
   }
   function listenStart(sid, soundId) {
-    var my = data.listenCfg.items[soundId];
-    var sound = soundById(soundId), items = !sound ? [] : (my && my.length ? my.map(listenCustomItem) : (listenWordTurn(sid, soundId) ? LISTEN_WORDS[soundId].map(wordItem) : (listenSylItems(sid, sound) || listenItems(sound))));
+    var my = data.listenCfg.items[soundId] || { syl: [], words: [] };
+    var sound = soundById(soundId), items = !sound ? [] : (listenWordTurn(sid, soundId)
+      ? (my.words.length ? my.words.map(listenCustomItem) : LISTEN_WORDS[soundId].map(wordItem))
+      : (my.syl.length ? my.syl.map(listenCustomItem) : (listenSylItems(sid, sound) || listenItems(sound))));
     if (!sound || !items.length) { toast("Ce son n’a pas encore d’exercice."); return; }
     listenClear();
     LS.run = { sid: sid, sound: sound, items: items, order: [], n: 0, failed: 0, q: null };
