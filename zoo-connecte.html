@@ -288,6 +288,11 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   .login-card { max-width: 440px; margin: 28px auto; }
   .bad-msg { color: var(--bad); font-weight: 600; min-height: 1.4em; margin: 0 0 10px; }
   .link { background: none; border: 0; color: var(--focus); text-decoration: underline; padding: 8px 4px; font-size: 1rem; }
+  .day-fil { display: flex; align-items: center; justify-content: center; margin: 4px 0 12px; }
+  .day-step { display: flex; flex-direction: column; align-items: center; min-width: 74px; padding: 6px 10px; margin: 0 4px; border-radius: 14px; background: #f3f5fb; border: 2px solid #dfe3f0; font-weight: 800; font-size: .85rem; color: #4a5470; }
+  .day-step .day-ico { font-size: 1.6rem; line-height: 1.2; }
+  .day-step.done { background: #e6f8ec; border-color: #46b36c; color: #1f6b3a; }
+  .day-arrow { font-size: 1.6rem; color: #9aa3bd; font-weight: 800; }
   .home-step { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
   .pw-row { display: flex; gap: 8px; flex-wrap: wrap; width: 100%; margin-top: 8px; }
   .pw-row input { flex: 1; min-width: 150px; padding: 8px 10px; font-size: 1rem; }
@@ -3270,6 +3275,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       ses.mode = "live";
       setMode();
     }
+    if (ses.role === "student" && !ses.viaTeacher) dayMark(sid, "r");
     toast(newly ? "Enregistré : certifié par l’enseignant 🏅" : "Résultat enregistré");
     leaveSession(true);
     renderPanels();
@@ -4298,6 +4304,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     LS.phase = "end";
     var ok = R.failed <= cfg.maxErrors, wasDone = listenDone(sid, id), gained = 0, nowDone = false;
     L.tries++;
+    if (ok) dayMark(sid, "l");
     if (ok && !wasDone) {
       L.passes[id] = (L.passes[id] || 0) + 1;
       if (L.passes[id] >= listenNeed(id)) {
@@ -4569,6 +4576,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var R = DS.run, cfg = data.dicteeCfg, sid = R.sid, id = R.sound.id, D = dicteeMine(sid), body = $("dictee-body");
     var ok = R.failed <= cfg.maxErrors, wasDone = dicteeDone(sid, id), gained = 0, nowDone = false;
     D.tries++;
+    if (ok) dayMark(sid, "w");
     if (ok && !wasDone) {
       D.passes[id] = (D.passes[id] || 0) + 1;
       if (D.passes[id] >= cfg.passes) {
@@ -4678,6 +4686,10 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     });
   }
   var homeSaid = {};
+  /* Fil du jour : ce que l'élève a déjà fait aujourd'hui (écouter l, écrire w, lire r). Mémorisé seulement sur l'appareil, jamais envoyé au serveur. */
+  function dayKey() { var d = new Date(); return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(); }
+  function dayGet(sid) { try { var o = JSON.parse(localStorage.getItem("zoo_day_" + sid) || "{}"); return o && o.d === dayKey() ? o : { d: dayKey() }; } catch (e) { return { d: dayKey() }; } }
+  function dayMark(sid, k) { try { var o = dayGet(sid); o[k] = 1; localStorage.setItem("zoo_day_" + sid, JSON.stringify(o)); } catch (e) {} }
   function renderHome() {
     if (cloudToken) claimGifts();
     var body = $("home-body");
@@ -4712,6 +4724,16 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var card = el("div", "card home-hero");
     card.appendChild(el("h2", "", "Bonjour " + st.name + " !"));
     var say = act ? "Bonjour " + st.name + " ! " + act.say : (waitEval ? "Bravo " + st.name + " ! Tu as réussi tes entraînements. Prépare ton évaluation avec ton enseignant pour ouvrir la suite." : "Bravo " + st.name + " ! Tu as tout réussi.");
+    /* Fil du jour : trois étapes dans l'ordre pédagogique, avec une coche sur ce qui est fait aujourd'hui */
+    var dg = dayGet(sid), fil = el("div", "day-fil"); fil.setAttribute("role", "list");
+    [["l", "👂", "Écouter"], ["w", "✏️", "Écrire"], ["r", "📖", "Lire"]].forEach(function (d, i) {
+      var ok = !!dg[d[0]], c = el("span", "day-step" + (ok ? " done" : ""));
+      c.setAttribute("role", "listitem"); c.setAttribute("aria-label", d[2] + (ok ? " : fait aujourd’hui" : " : pas encore fait aujourd’hui"));
+      c.appendChild(el("span", "day-ico", ok ? "✅" : d[1])); c.appendChild(el("span", "day-lab", d[2]));
+      fil.appendChild(c);
+      if (i < 2) fil.appendChild(el("span", "day-arrow", "›"));
+    });
+    card.appendChild(fil);
     var row = el("div", "home-step");
     var petWrap = el("button", "home-pet"); petWrap.type = "button"; petWrap.setAttribute("aria-label", "Écouter la consigne");
     var pid = act && act.pet ? act.pet : (nx ? nx.sound : null);
