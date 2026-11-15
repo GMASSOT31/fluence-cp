@@ -4340,13 +4340,20 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
        ou le son suivant s’il vient d’être validé ; Arrêter = retour à l’accueil */
     var row = el("div", "row");
     var nx = nowDone ? listenNext(sid) : null;
-    var cont = el("button", "primary big-btn go-next", "Continuer"); cont.type = "button";
+    /* Suite logique en un seul gros bouton : un son vient d'être reconnu → on passe à la dictée */
+    var follow = nowDone ? dicteeNext(sid) : null;   /* la prochaine étape de dictée de l'élève */
+    var cont = el("button", follow ? "secondary big-btn" : "primary big-btn go-next", follow ? "Son suivant" : "Continuer"); cont.type = "button";
     cont.addEventListener("click", function () {
       if (!nowDone) { listenStart(sid, id); return; }
       if (nx) { LS.sound = nx.id; listenStart(sid, nx.id); } else { LS.pick = null; renderAudition(); }
     });
     var stopB = el("button", "secondary big-btn", "Arrêter"); stopB.type = "button";
     stopB.addEventListener("click", function () { listenStopVoice(); listenFocus(false); goTo("home"); });
+    if (follow) {
+      var fb = el("button", "primary big-btn go-next go-yellow", "✏️ J’écris le son " + q(follow.label)); fb.type = "button";
+      fb.addEventListener("click", function () { listenStopVoice(); listenFocus(false); setPath("write"); DS.pick = follow.id; goTo("dictee"); });
+      row.appendChild(fb);
+    }
     row.appendChild(cont); row.appendChild(stopB);
     card.appendChild(row);
     body.appendChild(card);
@@ -4608,13 +4615,20 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     }
     var row = el("div", "row");
     var nx = nowDone ? dicteeNext(sid) : null;
-    var cont = el("button", "primary big-btn go-next", "Continuer"); cont.type = "button";
+    /* Suite logique en un seul gros bouton : un son vient d'être écrit → on passe à la lecture */
+    var follow = nowDone ? nextStep(sid) : null;   /* la prochaine étape de lecture de l'élève */
+    var cont = el("button", follow ? "secondary big-btn" : "primary big-btn go-next", follow ? "Son suivant" : "Continuer"); cont.type = "button";
     cont.addEventListener("click", function () {
       if (!nowDone) { dicteeStart(sid, id); return; }
       if (nx) { DS.sound = nx.id; dicteeStart(sid, nx.id); } else { DS.pick = null; renderDictee(); }
     });
     var stopB = el("button", "secondary big-btn", "Arrêter"); stopB.type = "button";
     stopB.addEventListener("click", function () { listenStopVoice(); listenFocus(false); goTo("home"); });
+    if (follow) {
+      var fb = el("button", "primary big-btn go-next go-blue", "🏋️ Je m’entraîne à lire"); fb.type = "button";
+      fb.addEventListener("click", function () { listenStopVoice(); listenFocus(false); setPath("read"); openStep(sid, follow.sound, follow.kind); });
+      row.appendChild(fb);
+    }
     row.appendChild(cont); row.appendChild(stopB);
     card.appendChild(row);
     body.appendChild(card);
