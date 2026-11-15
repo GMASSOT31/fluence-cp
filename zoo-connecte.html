@@ -288,6 +288,9 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   .login-card { max-width: 440px; margin: 28px auto; }
   .bad-msg { color: var(--bad); font-weight: 600; min-height: 1.4em; margin: 0 0 10px; }
   .link { background: none; border: 0; color: var(--focus); text-decoration: underline; padding: 8px 4px; font-size: 1rem; }
+  .quit-ask { background: #fff4e0; border: 3px solid #f0a82e; border-radius: 16px; padding: 12px 14px; margin: 0 0 12px; text-align: center; }
+  .quit-ask .quit-msg { font-weight: 800; font-size: 1.15rem; margin: 0 0 8px; color: #5a3a00; }
+  .quit-ask .big-btn { margin: 6px 0; width: 100%; }
   .home-step { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
   .pw-row { display: flex; gap: 8px; flex-wrap: wrap; width: 100%; margin-top: 8px; }
   .pw-row input { flex: 1; min-width: 150px; padding: 8px 10px; font-size: 1rem; }
@@ -4052,6 +4055,21 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   /* Voix : sur les anciens iPad (Safari 12), parler juste après un cancel() est souvent perdu ou rejoue la phrase d’avant (« fo » au lieu de « fu »).
      On laisse donc un court délai après l’arrêt ; LS_SEQ garantit que seule la dernière demande est dite. */
   var LS_SEQ = 0;
+  /* « Arrêter » en pleine série : un message simple (pas de boîte du navigateur, souvent bloquée) pour ne pas perdre ses réponses par accident.
+     Pas de question si on est encore à la première question : il n'y a rien à perdre. */
+  function quitAsk(card, ask, onYes) {
+    if (!ask) { onYes(); return; }
+    if (card.querySelector(".quit-ask")) return;
+    var box = el("div", "quit-ask"); box.setAttribute("role", "alertdialog"); box.setAttribute("aria-label", "Arrêter la série ?");
+    box.appendChild(el("p", "quit-msg", "Tu arrêtes ? Cette série ne sera pas gardée."));
+    var keep = el("button", "primary big-btn", "▶ Je continue"); keep.type = "button";
+    var stop = el("button", "secondary big-btn", "Oui, j’arrête"); stop.type = "button";
+    keep.addEventListener("click", function () { if (box.parentNode) box.parentNode.removeChild(box); });
+    stop.addEventListener("click", onYes);
+    box.appendChild(keep); box.appendChild(stop);
+    card.insertBefore(box, card.firstChild);
+    try { box.scrollIntoView({ block: "nearest" }); keep.focus({ preventScroll: true }); } catch (e) {}
+  }
   function listenStopVoice() {
     LS_SEQ++;
     try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}
@@ -4214,7 +4232,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var top = el("div", "listen-top");
     top.appendChild(el("span", "listen-count", "Question " + R.n + " sur " + cfg.questions));
     var quit = el("button", "secondary", "Arrêter"); quit.type = "button";
-    quit.addEventListener("click", function () { renderAudition(); });
+    quit.addEventListener("click", function () { quitAsk(card, R.n > 1, function () { renderAudition(); }); });
     top.appendChild(quit);
     card.appendChild(top);
     var bar = el("div", "listen-dots"); bar.setAttribute("aria-hidden", "true");
@@ -4500,7 +4518,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var top = el("div", "listen-top");
     top.appendChild(el("span", "listen-count", "Dictée " + R.n + " sur " + total));
     var quit = el("button", "secondary", "Arrêter"); quit.type = "button";
-    quit.addEventListener("click", function () { renderDictee(); });
+    quit.addEventListener("click", function () { quitAsk(card, R.n > 1, function () { renderDictee(); }); });
     top.appendChild(quit);
     card.appendChild(top);
     var bar = el("div", "listen-dots"); bar.setAttribute("aria-hidden", "true");
