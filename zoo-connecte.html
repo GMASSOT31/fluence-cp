@@ -288,6 +288,11 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   .login-card { max-width: 440px; margin: 28px auto; }
   .bad-msg { color: var(--bad); font-weight: 600; min-height: 1.4em; margin: 0 0 10px; }
   .link { background: none; border: 0; color: var(--focus); text-decoration: underline; padding: 8px 4px; font-size: 1rem; }
+  .day-fil { display: flex; align-items: center; justify-content: center; margin: 4px 0 12px; }
+  .day-step { display: flex; flex-direction: column; align-items: center; min-width: 74px; padding: 6px 10px; margin: 0 4px; border-radius: 14px; background: #f3f5fb; border: 2px solid #dfe3f0; font-weight: 800; font-size: .85rem; color: #4a5470; }
+  .day-step .day-ico { font-size: 1.6rem; line-height: 1.2; }
+  .day-step.done { background: #e6f8ec; border-color: #46b36c; color: #1f6b3a; }
+  .day-arrow { font-size: 1.6rem; color: #9aa3bd; font-weight: 800; }
   .quit-ask { background: #fff4e0; border: 3px solid #f0a82e; border-radius: 16px; padding: 12px 14px; margin: 0 0 12px; text-align: center; }
   .quit-ask .quit-msg { font-weight: 800; font-size: 1.15rem; margin: 0 0 8px; color: #5a3a00; }
   .quit-ask .big-btn { margin: 6px 0; width: 100%; }
@@ -3273,6 +3278,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       ses.mode = "live";
       setMode();
     }
+    if (ses.role === "student" && !ses.viaTeacher) dayMark(sid, "r");
     toast(newly ? "Enregistré : certifié par l’enseignant 🏅" : "Résultat enregistré");
     leaveSession(true);
     renderPanels();
@@ -4316,6 +4322,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     LS.phase = "end";
     var ok = R.failed <= cfg.maxErrors, wasDone = listenDone(sid, id), gained = 0, nowDone = false;
     L.tries++;
+    if (ok) dayMark(sid, "l");
     if (ok && !wasDone) {
       L.passes[id] = (L.passes[id] || 0) + 1;
       if (L.passes[id] >= listenNeed(id)) {
@@ -4351,13 +4358,20 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
        ou le son suivant s’il vient d’être validé ; Arrêter = retour à l’accueil */
     var row = el("div", "row");
     var nx = nowDone ? listenNext(sid) : null;
-    var cont = el("button", "primary big-btn go-next", "Continuer"); cont.type = "button";
+    /* Suite logique en un seul gros bouton : un son vient d'être reconnu → on passe à la dictée */
+    var follow = nowDone ? dicteeNext(sid) : null;   /* la prochaine étape de dictée de l'élève */
+    var cont = el("button", follow ? "secondary big-btn" : "primary big-btn go-next", follow ? "Son suivant" : "Continuer"); cont.type = "button";
     cont.addEventListener("click", function () {
       if (!nowDone) { listenStart(sid, id); return; }
       if (nx) { LS.sound = nx.id; listenStart(sid, nx.id); } else { LS.pick = null; renderAudition(); }
     });
     var stopB = el("button", "secondary big-btn", "Arrêter"); stopB.type = "button";
     stopB.addEventListener("click", function () { listenStopVoice(); listenFocus(false); goTo("home"); });
+    if (follow) {
+      var fb = el("button", "primary big-btn go-next go-yellow", "✏️ J’écris le son " + q(follow.label)); fb.type = "button";
+      fb.addEventListener("click", function () { listenStopVoice(); listenFocus(false); setPath("write"); DS.pick = follow.id; goTo("dictee"); });
+      row.appendChild(fb);
+    }
     row.appendChild(cont); row.appendChild(stopB);
     card.appendChild(row);
     body.appendChild(card);
@@ -4587,6 +4601,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var R = DS.run, cfg = data.dicteeCfg, sid = R.sid, id = R.sound.id, D = dicteeMine(sid), body = $("dictee-body");
     var ok = R.failed <= cfg.maxErrors, wasDone = dicteeDone(sid, id), gained = 0, nowDone = false;
     D.tries++;
+    if (ok) dayMark(sid, "w");
     if (ok && !wasDone) {
       D.passes[id] = (D.passes[id] || 0) + 1;
       if (D.passes[id] >= cfg.passes) {
@@ -4618,13 +4633,20 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     }
     var row = el("div", "row");
     var nx = nowDone ? dicteeNext(sid) : null;
-    var cont = el("button", "primary big-btn go-next", "Continuer"); cont.type = "button";
+    /* Suite logique en un seul gros bouton : un son vient d'être écrit → on passe à la lecture */
+    var follow = nowDone ? nextStep(sid) : null;   /* la prochaine étape de lecture de l'élève */
+    var cont = el("button", follow ? "secondary big-btn" : "primary big-btn go-next", follow ? "Son suivant" : "Continuer"); cont.type = "button";
     cont.addEventListener("click", function () {
       if (!nowDone) { dicteeStart(sid, id); return; }
       if (nx) { DS.sound = nx.id; dicteeStart(sid, nx.id); } else { DS.pick = null; renderDictee(); }
     });
     var stopB = el("button", "secondary big-btn", "Arrêter"); stopB.type = "button";
     stopB.addEventListener("click", function () { listenStopVoice(); listenFocus(false); goTo("home"); });
+    if (follow) {
+      var fb = el("button", "primary big-btn go-next go-blue", "🏋️ Je m’entraîne à lire"); fb.type = "button";
+      fb.addEventListener("click", function () { listenStopVoice(); listenFocus(false); setPath("read"); openStep(sid, follow.sound, follow.kind); });
+      row.appendChild(fb);
+    }
     row.appendChild(cont); row.appendChild(stopB);
     card.appendChild(row);
     body.appendChild(card);
@@ -4696,6 +4718,10 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     });
   }
   var homeSaid = {};
+  /* Fil du jour : ce que l'élève a déjà fait aujourd'hui (écouter l, écrire w, lire r). Mémorisé seulement sur l'appareil, jamais envoyé au serveur. */
+  function dayKey() { var d = new Date(); return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(); }
+  function dayGet(sid) { try { var o = JSON.parse(localStorage.getItem("zoo_day_" + sid) || "{}"); return o && o.d === dayKey() ? o : { d: dayKey() }; } catch (e) { return { d: dayKey() }; } }
+  function dayMark(sid, k) { try { var o = dayGet(sid); o[k] = 1; localStorage.setItem("zoo_day_" + sid, JSON.stringify(o)); } catch (e) {} }
   function renderHome() {
     if (cloudToken) claimGifts();
     var body = $("home-body");
@@ -4730,6 +4756,16 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var card = el("div", "card home-hero");
     card.appendChild(el("h2", "", "Bonjour " + st.name + " !"));
     var say = act ? "Bonjour " + st.name + " ! " + act.say : (waitEval ? "Bravo " + st.name + " ! Tu as réussi tes entraînements. Prépare ton évaluation avec ton enseignant pour ouvrir la suite." : "Bravo " + st.name + " ! Tu as tout réussi.");
+    /* Fil du jour : trois étapes dans l'ordre pédagogique, avec une coche sur ce qui est fait aujourd'hui */
+    var dg = dayGet(sid), fil = el("div", "day-fil"); fil.setAttribute("role", "list");
+    [["l", "👂", "Écouter"], ["w", "✏️", "Écrire"], ["r", "📖", "Lire"]].forEach(function (d, i) {
+      var ok = !!dg[d[0]], c = el("span", "day-step" + (ok ? " done" : ""));
+      c.setAttribute("role", "listitem"); c.setAttribute("aria-label", d[2] + (ok ? " : fait aujourd’hui" : " : pas encore fait aujourd’hui"));
+      c.appendChild(el("span", "day-ico", ok ? "✅" : d[1])); c.appendChild(el("span", "day-lab", d[2]));
+      fil.appendChild(c);
+      if (i < 2) fil.appendChild(el("span", "day-arrow", "›"));
+    });
+    card.appendChild(fil);
     var row = el("div", "home-step");
     var petWrap = el("button", "home-pet"); petWrap.type = "button"; petWrap.setAttribute("aria-label", "Écouter la consigne");
     var pid = act && act.pet ? act.pet : (nx ? nx.sound : null);
@@ -5280,9 +5316,16 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     $("announce").hidden = true; $("announce").className = "announce";
     $("wheel-wrap").className = "wheel-wrap";
     $("wheel").style.transform = "rotate(0deg)";
-    $("btn-spin").hidden = false; $("btn-spin").disabled = false; $("btn-spin").textContent = "Lancer la roue";
     $("btn-wheel-done").hidden = true;
+    /* La consigne est dite à voix haute, et le bouton ne s'active qu'ensuite : pas de lancer par erreur pendant les félicitations */
+    var sp = $("btn-spin"), wait = !reduceMotion() && data.sfx;
+    sp.hidden = false; sp.disabled = wait; sp.textContent = wait ? "🔊 Écoute…" : "Lancer la roue";
+    if (wait) {
+      speak(($("wheel-msg").textContent || "").replace(/[🎡🏅👂✨✏\uFE0F]/g, ""));
+      W.timers.push(setTimeout(function () { sp.disabled = false; sp.textContent = "Lancer la roue"; }, 3200));
+    }
   }
+  function reduceMotion() { try { return !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches); } catch (e) { return false; } }
   $("btn-spin").addEventListener("click", function () {
     if (W.spun) return;
     var pend = pendingWheels(W.sid);
@@ -5321,9 +5364,9 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       if (!reduce) confetti(jackpot ? 140 : 70, sl.t === "coins");
       try { if (data.sfx && navigator.vibrate) navigator.vibrate(jackpot ? [120, 60, 120, 60, 240] : [100]); } catch (e) {}
       var more = pendingWheels(sid).length > 0;
-      if (more) { W.spun = false; $("btn-spin").disabled = false; $("btn-spin").textContent = "Relancer la roue"; $("btn-spin").hidden = false; }
-      else $("btn-spin").hidden = true;
-      $("btn-wheel-done").hidden = false;
+      /* Un seul gros bouton à la fois : « Relancer la roue » s'il reste des tours, sinon « Continuer » */
+      if (more) { W.spun = false; $("btn-spin").disabled = false; $("btn-spin").textContent = "Relancer la roue"; $("btn-spin").hidden = false; $("btn-wheel-done").hidden = true; }
+      else { $("btn-spin").hidden = true; $("btn-wheel-done").hidden = false; $("btn-wheel-done").classList.add("go-next"); }
       renderPanels();
     }
     function stopped() {
@@ -5349,7 +5392,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     }
     W.raf = requestAnimationFrame(frame);
   });
-  $("btn-wheel-done").addEventListener("click", function () { show("jeux"); });
+  $("btn-wheel-done").addEventListener("click", function () { show(ses.role === "student" ? "home" : "jeux"); });   /* l'étape suivante (gros bouton) attend à l'accueil */
 
   /* Jeux de récompense */
   var G = { timers: [] };
