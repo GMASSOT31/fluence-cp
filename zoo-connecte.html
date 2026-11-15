@@ -5284,9 +5284,16 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     $("announce").hidden = true; $("announce").className = "announce";
     $("wheel-wrap").className = "wheel-wrap";
     $("wheel").style.transform = "rotate(0deg)";
-    $("btn-spin").hidden = false; $("btn-spin").disabled = false; $("btn-spin").textContent = "Lancer la roue";
     $("btn-wheel-done").hidden = true;
+    /* La consigne est dite à voix haute, et le bouton ne s'active qu'ensuite : pas de lancer par erreur pendant les félicitations */
+    var sp = $("btn-spin"), wait = !reduceMotion() && data.sfx;
+    sp.hidden = false; sp.disabled = wait; sp.textContent = wait ? "🔊 Écoute…" : "Lancer la roue";
+    if (wait) {
+      speak(($("wheel-msg").textContent || "").replace(/[🎡🏅👂✨✏\uFE0F]/g, ""));
+      W.timers.push(setTimeout(function () { sp.disabled = false; sp.textContent = "Lancer la roue"; }, 3200));
+    }
   }
+  function reduceMotion() { try { return !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches); } catch (e) { return false; } }
   $("btn-spin").addEventListener("click", function () {
     if (W.spun) return;
     var pend = pendingWheels(W.sid);
@@ -5325,9 +5332,9 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       if (!reduce) confetti(jackpot ? 140 : 70, sl.t === "coins");
       try { if (data.sfx && navigator.vibrate) navigator.vibrate(jackpot ? [120, 60, 120, 60, 240] : [100]); } catch (e) {}
       var more = pendingWheels(sid).length > 0;
-      if (more) { W.spun = false; $("btn-spin").disabled = false; $("btn-spin").textContent = "Relancer la roue"; $("btn-spin").hidden = false; }
-      else $("btn-spin").hidden = true;
-      $("btn-wheel-done").hidden = false;
+      /* Un seul gros bouton à la fois : « Relancer la roue » s'il reste des tours, sinon « Continuer » */
+      if (more) { W.spun = false; $("btn-spin").disabled = false; $("btn-spin").textContent = "Relancer la roue"; $("btn-spin").hidden = false; $("btn-wheel-done").hidden = true; }
+      else { $("btn-spin").hidden = true; $("btn-wheel-done").hidden = false; $("btn-wheel-done").classList.add("go-next"); }
       renderPanels();
     }
     function stopped() {
@@ -5353,7 +5360,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     }
     W.raf = requestAnimationFrame(frame);
   });
-  $("btn-wheel-done").addEventListener("click", function () { show("jeux"); });
+  $("btn-wheel-done").addEventListener("click", function () { show(ses.role === "student" ? "home" : "jeux"); });   /* l'étape suivante (gros bouton) attend à l'accueil */
 
   /* Jeux de récompense */
   var G = { timers: [] };
