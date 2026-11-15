@@ -2489,7 +2489,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if (!keepSel) applySuggestion();
     save();
     setMode();
-    if (data.reward && pendingWheels(sid).length > 0) {
+    /* Les félicitations d'abord : si un animal a évolué en attendant (lecture notée par l'enseignant), l'accueil joue la scène d'évolution, puis ouvre la roue */
+    if (data.reward && pendingWheels(sid).length > 0 && !data.evos.some(function (v) { return v.sid === sid; })) {
       openWheel(sid, "Bravo ! Tu as des tours de roue à utiliser.");
     } else {
       show("home");
@@ -3506,8 +3507,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       title.textContent = t; msg.textContent = m;
       if (data.sfx) [392, 523, 659, 784, 1047].forEach(function (f, k) { tone(f, k * 0.09, 0.3, "triangle", 0.16); });
       speak(t + " " + m.replace(/[🏅👂✨✏\uFE0F]/g, ""));
-      var wheel = data.reward && pendingWheels(o.sid).length > 0;
-      var go = el("button", "primary big-btn go-next" + (wheel ? " wheel-go" : ""), wheel ? "🎡 Lancer la roue !" : "Continuer"); go.type = "button";
+      var go = el("button", "primary big-btn go-next", "Continuer"); go.type = "button";   /* la roue s'ouvre à l'écran suivant : un seul « Lancer la roue », jamais deux de suite */
       var zoo = el("button", "secondary big-btn", "🐾 Voir mon zoo"); zoo.type = "button";
       function close() { if (ov.parentNode) ov.parentNode.removeChild(ov); var c = $("confetti"); if (c) c.innerHTML = ""; }
       go.addEventListener("click", function () { close(); next(); });
