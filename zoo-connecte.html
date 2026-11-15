@@ -1669,17 +1669,17 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     </div>
 
     <aside class="panel right" id="panel-right" aria-label="Lire et jouer" hidden>
-      <button type="button" class="panel-nav big read-cta" data-go="lecture"><span class="pn-ico" aria-hidden="true">📖</span><span>Lire<span class="pn-sub" id="pr-next"></span></span></button>
       <button type="button" class="panel-nav big listen-cta" data-go="audition"><span class="pn-ico" aria-hidden="true">👂</span><span>ÉCOUTER<span class="pn-sub" id="pr-listen"></span></span></button>
       <button type="button" class="panel-nav big write-cta" data-go="dictee"><span class="pn-ico" aria-hidden="true">✏️</span><span>DICTÉE<span class="pn-sub" id="pr-dictee"></span></span></button>
+      <button type="button" class="panel-nav big read-cta" data-go="lecture"><span class="pn-ico" aria-hidden="true">📖</span><span>Lire<span class="pn-sub" id="pr-next"></span></span></button>
       <button type="button" class="panel-nav big needs-reward play-cta" data-go="jeux"><span class="play-cta-spark" aria-hidden="true">✦ ✧ ✦</span><span class="pn-ico play-cta-icon" aria-hidden="true">🎮</span><span class="play-cta-copy"><span class="play-cta-kicker">LA SALLE D’ARCADE</span><span class="play-cta-title">JOUER <span aria-hidden="true">➜</span></span><span class="pn-sub play-cta-count" id="pr-games"></span><span class="play-cta-hook">🏆 Relève les défis !</span></span></button>
     </aside>
   </div>
 
   <nav class="bottom-nav" id="bottom-nav" aria-label="Mon espace" hidden>
-    <button type="button" class="panel-nav" data-go="lecture"><span class="pn-ico" aria-hidden="true">📖</span><span>Lire</span></button>
     <button type="button" class="panel-nav" data-go="audition"><span class="pn-ico" aria-hidden="true">👂</span><span>Écouter</span></button>
     <button type="button" class="panel-nav" data-go="dictee"><span class="pn-ico" aria-hidden="true">✏️</span><span>Dictée</span></button>
+    <button type="button" class="panel-nav" data-go="lecture"><span class="pn-ico" aria-hidden="true">📖</span><span>Lire</span></button>
     <button type="button" class="panel-nav needs-reward" data-go="jeux"><span class="pn-ico" aria-hidden="true">🎮</span><span>Jouer</span></button>
     <button type="button" class="panel-nav needs-reward" data-go="boutique"><span class="pn-ico" aria-hidden="true">🛍️</span><span>Boutique</span></button>
     <button type="button" class="panel-nav" data-go="cartes"><span class="pn-ico" aria-hidden="true">🐾</span><span>Cartes</span></button>
@@ -4698,11 +4698,11 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var dx = dicteeNext(sid);
     function writeAct() { return { pet: dx.id, kind: "write", cls: " write-go", btn: "✏️ J’écris le son " + q(dx.label), say: "Tu vas écouter et écrire le son " + dx.label + ". Touche le gros bouton pour commencer.", go: function () { setPath("write"); DS.pick = dx.id; goTo("dictee"); } }; }
     var act = null, other = null, others = [];
-    /* Trois parcours : vert (écoute), bleu (lecture), jaune (dictée). Le parcours en cours passe en premier et pulse ; au départ, tous pulsent */
+    /* Trois parcours : vert (écoute), jaune (dictée), bleu (lecture). Le parcours en cours passe en premier et pulse ; au départ, tous pulsent */
     var paths = [];
-    if (lx) paths.push(listenAct());
-    if (nx) paths.push(readAct());
+    if (lx) paths.push(listenAct());   /* ordre pédagogique : écouter, écrire (dictée), puis lire */
     if (dx) paths.push(writeAct());
+    if (nx) paths.push(readAct());
     if (pathChosen) paths.sort(function (a, b) { return (b.kind === PATH ? 1 : 0) - (a.kind === PATH ? 1 : 0); });   /* tri stable : les autres gardent leur ordre */
     if (wheels) { act = { cls: " wheel-go", btn: "🎡 Lance ta roue !", say: (wheels > 1 ? "Des roues t’attendent." : "Une roue t’attend.") + " Touche le gros bouton pour la lancer.", go: function () { openWheel(sid); } }; others = paths; }
     else if (paths.length) { act = paths[0]; others = paths.slice(1); }
