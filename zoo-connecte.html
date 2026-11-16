@@ -3847,7 +3847,9 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   function listenUnlocked(sid, id) {
     if (!data.lock) return true;
     var p = listenPrev(id);
-    return !p || listenDone(sid, p.id) || soundCertified(sid, p.id);   /* un son déjà médaillé 🏅 en lecture ne bloque pas la suite */
+    if (p && !listenDone(sid, p.id) && !soundCertified(sid, p.id)) return false;   /* un son déjà médaillé 🏅 en lecture ne bloque pas la suite */
+    /* pas plus de 2 sons d'avance sur la médaille de lecture (aussi dans « Mes cartes ») ; un son déjà commencé ou réussi reste ouvert */
+    return aheadOK(sid, id) || listenDone(sid, id) || (listenMine(sid).passes[id] || 0) > 0;
   }
   function listenLevel(sid) { return listenSounds().filter(function (s) { return listenDone(sid, s.id); }).length; }
   function listenNext(sid) {
@@ -4202,7 +4204,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var nxt = listenNext(sid);
     LS.sound = pick || (nxt ? nxt.id : null);
     if (!LS.sound) {
-      card.appendChild(el("p", "instruction", "Bravo ! Tous les sons sont réussis 🎉 Tu peux les rejouer dans « Mes cartes reconnues »."));
+      card.appendChild(el("p", "instruction", ls.some(function (s) { return !listenDone(sid, s.id); }) ? "Bravo ! Va voir ton maître(sse) pour passer ta médaille 🏅. En attendant, tu peux rejouer tes cartes." : "Bravo ! Tous les sons sont réussis 🎉 Tu peux les rejouer dans « Mes cartes reconnues »."));
       var toRec = el("button", "secondary", "👂 Mes cartes reconnues"); toRec.type = "button";
       toRec.addEventListener("click", function () { goTo("reconnues"); });
       card.appendChild(toRec);
@@ -4434,7 +4436,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   function dicteeUnlocked(sid, id) {
     if (!data.lock) return true;
     var p = listenPrev(id);
-    return !p || dicteeDone(sid, p.id) || soundCertified(sid, p.id);
+    if (p && !dicteeDone(sid, p.id) && !soundCertified(sid, p.id)) return false;
+    return aheadOK(sid, id) || dicteeDone(sid, id) || (dicteeMine(sid).passes[id] || 0) > 0;
   }
   function dicteeLevel(sid) { return listenSounds().filter(function (s) { return dicteeDone(sid, s.id); }).length; }
   function dicteeNext(sid) {
@@ -4547,7 +4550,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var nxt = dicteeNext(sid);
     DS.sound = pick || (nxt ? nxt.id : null);
     if (!DS.sound) {
-      card.appendChild(el("p", "instruction", "Bravo ! Tous les sons sont écrits 🎉 Tu peux les rejouer dans « Mes cartes écrites »."));
+      card.appendChild(el("p", "instruction", listenSounds().some(function (s) { return !dicteeDone(sid, s.id); }) ? "Bravo ! Va voir ton maître(sse) pour passer ta médaille 🏅. En attendant, tu peux rejouer tes cartes." : "Bravo ! Tous les sons sont écrits 🎉 Tu peux les rejouer dans « Mes cartes écrites »."));
       var toW = el("button", "secondary", "✏️ Mes cartes écrites"); toW.type = "button";
       toW.addEventListener("click", function () { goTo("ecrites"); });
       card.appendChild(toW);
@@ -4746,7 +4749,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       var stars = el("div", "mini-stars"); stars.setAttribute("aria-hidden", "true");
       for (var i = 0; i < cfg.passes; i++) stars.appendChild(el("span", "star " + (done || i < n ? "on" : "off"), "★"));
       b.appendChild(stars);
-      b.appendChild(el("div", "cap", !unl ? "verrouillé" : (done ? "✏️ " + cap(ch.nom) : "à écrire")));
+      b.appendChild(el("div", "cap", !unl ? (aheadOK(sid, x.id) ? "verrouillé" : "🏅 d’abord") : (done ? "✏️ " + cap(ch.nom) : "à écrire")));
       b.setAttribute("aria-label", x.label + " : " + (!unl ? "verrouillé" : (done ? "son écrit" : "à écrire")));
       b.addEventListener("click", function () { DS.pick = x.id; goTo("dictee"); });
       grid.appendChild(b);
@@ -4952,7 +4955,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       var stars = el("div", "mini-stars"); stars.setAttribute("aria-hidden", "true");
       for (var i = 0; i < need; i++) stars.appendChild(el("span", "star " + (done || i < n ? "on" : "off"), "★"));
       b.appendChild(stars);
-      b.appendChild(el("div", "cap", !unl ? "verrouillé" : (done ? "👂 " + cap(ch.nom) : (n ? n + " sur " + need : "à écouter"))));
+      b.appendChild(el("div", "cap", !unl ? (aheadOK(sid, x.id) ? "verrouillé" : "🏅 d’abord") : (done ? "👂 " + cap(ch.nom) : (n ? n + " sur " + need : "à écouter"))));
       b.setAttribute("aria-label", x.label + " : " + (!unl ? "verrouillé" : (done ? "son reconnu" : n + " réussite" + (n > 1 ? "s" : "") + " sur " + need)));
       b.addEventListener("click", function () { LS.pick = x.id; goTo("audition"); });
       grid.appendChild(b);
