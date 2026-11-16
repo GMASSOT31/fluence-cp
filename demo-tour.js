@@ -62,7 +62,7 @@
   var SHORT = [
     WELCOME,
     { page: "zoo", stage: 1, enter: function () { go("home"); }, target: ".home-hero", title: "La prochaine activité",
-      text: "Chaque jour, l'élève voit une seule action, avec 🔊 pour entendre la consigne : ici, s'entraîner sur les mots du son « f ». Avec vous, il passe l'évaluation pour la faire certifier.",
+      text: "Chaque jour, l'élève voit sa mission : un son, trois étapes (écouter, écrire, lire) et un seul gros bouton, avec 🔊 pour entendre la consigne. Avec vous, il passe l'évaluation de lecture pour la faire certifier.",
       primary: "Passer l'évaluation", run: openReading },
     { page: "zoo", stage: 2, target: "#session", title: "Une lecture d'une minute",
       text: "L'élève lit à voix haute les mots du son « f » ; vous touchez ceux où il bute. Le score : les mots lus correctement par minute.",

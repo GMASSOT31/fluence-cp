@@ -288,11 +288,16 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   .login-card { max-width: 440px; margin: 28px auto; }
   .bad-msg { color: var(--bad); font-weight: 600; min-height: 1.4em; margin: 0 0 10px; }
   .link { background: none; border: 0; color: var(--focus); text-decoration: underline; padding: 8px 4px; font-size: 1rem; }
-  .day-fil { display: flex; align-items: center; justify-content: center; margin: 4px 0 12px; }
-  .day-step { display: flex; flex-direction: column; align-items: center; min-width: 74px; padding: 6px 10px; margin: 0 4px; border-radius: 14px; background: #f3f5fb; border: 2px solid #dfe3f0; font-weight: 800; font-size: .85rem; color: #4a5470; }
-  .day-step .day-ico { font-size: 1.6rem; line-height: 1.2; }
-  .day-step.done { background: #e6f8ec; border-color: #46b36c; color: #1f6b3a; }
-  .day-arrow { font-size: 1.6rem; color: #9aa3bd; font-weight: 800; }
+  /* Carte mission : un son = 3 étapes (écouter, écrire, lire) ; seule l'étape à faire est un gros bouton */
+  .ms-title { font-family: "Fredoka", sans-serif; font-weight: 600; font-size: 1.3rem; margin: 0 0 2px; }
+  .ms-step { display: flex; align-items: center; min-height: 54px; padding: 8px 14px; border-radius: 16px; background: #f1f3f9; border: 2px solid #e1e5f0; color: #7a839c; font-weight: 800; font-size: 1.1rem; }
+  .ms-step .ms-n { flex: 0 0 auto; width: 30px; height: 30px; margin-right: 12px; border-radius: 50%; background: #fff; border: 2px solid #d5dae8; display: flex; align-items: center; justify-content: center; font-size: .95rem; color: #4a5470; }
+  .ms-step small { display: block; font-size: .8rem; font-weight: 600; }
+  .ms-step.done { background: #e6f8ec; border-color: #a9dfbd; color: #1f6b3a; }
+  .ms-step.done .ms-n { border-color: #a9dfbd; }
+  .ms-medal { width: 100%; margin: 0; text-align: left; cursor: pointer; background: #fff7e0; border: 2px dashed #e0a500; color: #6b4700; font-family: inherit; box-shadow: none; }
+  .ms-medal .ms-n { border-color: #e0a500; }
+  .home-next .ms-n { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; margin-right: 10px; border-radius: 50%; background: #fff; color: #333; font-size: .95rem; text-shadow: none; vertical-align: middle; }
   .quit-ask { background: #fff4e0; border: 3px solid #f0a82e; border-radius: 16px; padding: 12px 14px; margin: 0 0 12px; text-align: center; }
   .quit-ask .quit-msg { font-weight: 800; font-size: 1.15rem; margin: 0 0 8px; color: #5a3a00; }
   .quit-ask .big-btn { margin: 6px 0; width: 100%; }
@@ -1677,17 +1682,13 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     </div>
 
     <aside class="panel right" id="panel-right" aria-label="Lire et jouer" hidden>
-      <button type="button" class="panel-nav big listen-cta" data-go="audition"><span class="pn-ico" aria-hidden="true">👂</span><span>ÉCOUTER<span class="pn-sub" id="pr-listen"></span></span></button>
-      <button type="button" class="panel-nav big write-cta" data-go="dictee"><span class="pn-ico" aria-hidden="true">✏️</span><span>DICTÉE<span class="pn-sub" id="pr-dictee"></span></span></button>
-      <button type="button" class="panel-nav big read-cta" data-go="lecture"><span class="pn-ico" aria-hidden="true">📖</span><span>Lire<span class="pn-sub" id="pr-next"></span></span></button>
+      <button type="button" class="panel-nav big" data-go="home"><span class="pn-ico" aria-hidden="true">🎯</span><span>Ma mission<span class="pn-sub" id="pr-next"></span></span></button>
       <button type="button" class="panel-nav big needs-reward play-cta" data-go="jeux"><span class="play-cta-spark" aria-hidden="true">✦ ✧ ✦</span><span class="pn-ico play-cta-icon" aria-hidden="true">🎮</span><span class="play-cta-copy"><span class="play-cta-kicker">LA SALLE D’ARCADE</span><span class="play-cta-title">JOUER <span aria-hidden="true">➜</span></span><span class="pn-sub play-cta-count" id="pr-games"></span><span class="play-cta-hook">🏆 Relève les défis !</span></span></button>
     </aside>
   </div>
 
   <nav class="bottom-nav" id="bottom-nav" aria-label="Mon espace" hidden>
-    <button type="button" class="panel-nav" data-go="audition"><span class="pn-ico" aria-hidden="true">👂</span><span>Écouter</span></button>
-    <button type="button" class="panel-nav" data-go="dictee"><span class="pn-ico" aria-hidden="true">✏️</span><span>Dictée</span></button>
-    <button type="button" class="panel-nav" data-go="lecture"><span class="pn-ico" aria-hidden="true">📖</span><span>Lire</span></button>
+    <button type="button" class="panel-nav" data-go="home"><span class="pn-ico" aria-hidden="true">🎯</span><span>Mission</span></button>
     <button type="button" class="panel-nav needs-reward" data-go="jeux"><span class="pn-ico" aria-hidden="true">🎮</span><span>Jouer</span></button>
     <button type="button" class="panel-nav needs-reward" data-go="boutique"><span class="pn-ico" aria-hidden="true">🛍️</span><span>Boutique</span></button>
     <button type="button" class="panel-nav" data-go="cartes"><span class="pn-ico" aria-hidden="true">🐾</span><span>Cartes</span></button>
@@ -1705,7 +1706,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
 </main>
 <div class="toast" id="toast" role="status"></div>
 
-<script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;/* Connexion élève : le jeton arrive aussi dans l’adresse (#zt=…) pour les appareils qui ne gardent pas sessionStorage d’une page à l’autre (application ajoutée à l’écran d’accueil) ; on le range puis on l’efface de l’adresse */var hm=location.hash.match(/[#&]zt=([0-9a-f]{64})/);if(hm&&!d){window.ZOO_HASH_TOKEN=hm[1];try{sessionStorage.setItem("zoo_student_token",hm[1])}catch(e){}try{history.replaceState(null,"",location.pathname+location.search)}catch(e){}}if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=22"><\/script>':'<script src="vendor/supabase.js?v=2.118.0"><\/script><script src="vendor/supabase-lite.js?v=1"><\/script>');})();</script>
+<script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;/* Connexion élève : le jeton arrive aussi dans l’adresse (#zt=…) pour les appareils qui ne gardent pas sessionStorage d’une page à l’autre (application ajoutée à l’écran d’accueil) ; on le range puis on l’efface de l’adresse */var hm=location.hash.match(/[#&]zt=([0-9a-f]{64})/);if(hm&&!d){window.ZOO_HASH_TOKEN=hm[1];try{sessionStorage.setItem("zoo_student_token",hm[1])}catch(e){}try{history.replaceState(null,"",location.pathname+location.search)}catch(e){}}if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=23"><\/script>':'<script src="vendor/supabase.js?v=2.118.0"><\/script><script src="vendor/supabase-lite.js?v=1"><\/script>');})();</script>
 <script src="profils.js?v=1"></script>
 <script>/* Filet de sécurité : si on ouvre la démo sur un appareil qui a déjà servi à un élève (profil « Qui es-tu ? » mémorisé), un écran demande d'abord « Tu es élève ? » (un élève en autonomie arrivait ici par erreur et croyait être dans sa classe). Enseignants et visiteurs : un seul bouton pour continuer. */
 (function(){
@@ -2610,7 +2611,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var host = id && $(id);
     if (!host || ses.viaTeacher || !cloudToken) return;
     var sid = ses.sid;
-    if (!(nextStep(sid) || listenNext(sid) || dicteeNext(sid) || (data.reward && pendingWheels(sid).length))) return;
+    if (!(mission(sid).sound || (data.reward && pendingWheels(sid).length))) return;
     var bar = el("div", "next-bar"), b = el("button", "primary big-btn go-next", "👉 Mon étape suivante"); b.type = "button";
     b.addEventListener("click", function () { goTo("home"); });
     bar.appendChild(b);
@@ -3787,8 +3788,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var wb = $("btn-panel-wheel");
     wb.hidden = !(data.reward && pw > 0);
     wb.textContent = pw > 1 ? "Lancer la roue (" + pw + ")" : "Lancer la roue";
-    var nx = nextStep(sid);
-    $("pr-next").textContent = nx ? kindInfo(nx.kind).name.toLowerCase() + " : " + soundById(nx.sound).label : (evalWaiting(sid) ? "évaluation à prévoir" : "tout est validé");
+    var pms = mission(sid);
+    $("pr-next").textContent = pms.sound ? { listen: "écouter", write: "écrire", read: "lire" }[pms.kind] + " : " + pms.sound.label : (pms.medal || evalWaiting(sid) ? "médaille à passer" : "tout est validé");
     $("pr-games").textContent = nb(cr, "partie", "parties");
     var minPrice = shopRewards().reduce(function (m, r) { return Math.min(m, r.price); }, data.shop.packPrice);
     $("pl-shop").textContent = cn >= minPrice ? "Tu peux acheter !" : "";
@@ -3799,7 +3800,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     /* Le niveau N est celui de l'étape certifiée la plus haute : les entraînements n'y comptent pas */
     $("pl-level").textContent = "N" + levelN;
     $("top-level").textContent = "N" + levelN;
-    var lvl = listenLevel(sid), lnx = listenNext(sid);
+    var lvl = listenLevel(sid);
     $("top-listen").textContent = "E" + lvl;
     $("me-stats").textContent = "Niveau de lecture : N" + levelN + " · Niveau d’écoute : E" + lvl;
     /* Élève qui débute (aucune étape réussie, rien à écouter validé, ni pièces ni parties) : la barre du bas ne montre que Lire, Écouter et Moi */
@@ -3807,9 +3808,6 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     document.body.classList.toggle("newbie", newbie);
     $("top-listen-box").setAttribute("aria-label", "Niveau d’écoute " + lvl + " : " + nb(lvl, "son validé", "sons validés"));
     $("top-listen-box").title = "Niveau d’écoute : " + nb(lvl, "son validé", "sons validés");
-    $("pr-listen").textContent = lnx ? "son : " + lnx.label : "tout est validé";
-    var dnx = dicteeNext(sid);
-    $("pr-dictee").textContent = dnx ? "son : " + dnx.label : "tout est validé";
     /* Afficher le dernier son atteint, pas la première étape encore à faire. */
     var animalSound = null;
     data.sounds.forEach(function (sound) {
@@ -3849,7 +3847,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   function listenUnlocked(sid, id) {
     if (!data.lock) return true;
     var p = listenPrev(id);
-    return !p || listenDone(sid, p.id);
+    return !p || listenDone(sid, p.id) || soundCertified(sid, p.id);   /* un son déjà médaillé 🏅 en lecture ne bloque pas la suite */
   }
   function listenLevel(sid) { return listenSounds().filter(function (s) { return listenDone(sid, s.id); }).length; }
   function listenNext(sid) {
@@ -4379,8 +4377,10 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
        ou le son suivant s’il vient d’être validé ; Arrêter = retour à l’accueil */
     var row = el("div", "row");
     var nx = nowDone ? listenNext(sid) : null;
-    /* Suite logique en un seul gros bouton : un son vient d'être reconnu → on passe à la dictée */
-    var follow = nowDone ? dicteeNext(sid) : null;   /* la prochaine étape de dictée de l'élève */
+    if (nx && !aheadOK(sid, nx.id)) nx = null;   /* pas plus de 2 sons d'avance sur la médaille */
+    /* Suite logique en un seul gros bouton : l'étape suivante de la mission (en général, écrire le son qui vient d'être reconnu) */
+    var follow = nowDone ? missionAct(sid, mission(sid)) : null;
+    if (follow && follow.kind === "listen") follow = null;   /* « Continuer » y mène déjà */
     var cont = el("button", follow ? "secondary big-btn" : "primary big-btn go-next", follow ? "Son suivant" : "Continuer"); cont.type = "button";
     cont.addEventListener("click", function () {
       if (!nowDone) { listenStart(sid, id); return; }
@@ -4389,8 +4389,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var stopB = el("button", "secondary big-btn", "Arrêter"); stopB.type = "button";
     stopB.addEventListener("click", function () { listenStopVoice(); listenFocus(false); goTo("home"); });
     if (follow) {
-      var fb = el("button", "primary big-btn go-next go-yellow", "✏️ J’écris le son " + q(follow.label)); fb.type = "button";
-      fb.addEventListener("click", function () { listenStopVoice(); listenFocus(false); setPath("write"); DS.pick = follow.id; goTo("dictee"); });
+      var fb = el("button", "primary big-btn go-next " + (follow.kind === "write" ? "go-yellow" : "go-blue"), follow.btn); fb.type = "button";
+      fb.addEventListener("click", function () { listenStopVoice(); listenFocus(false); follow.go(); });
       row.appendChild(fb);
     }
     row.appendChild(cont); row.appendChild(stopB);
@@ -4434,13 +4434,55 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   function dicteeUnlocked(sid, id) {
     if (!data.lock) return true;
     var p = listenPrev(id);
-    return !p || dicteeDone(sid, p.id);
+    return !p || dicteeDone(sid, p.id) || soundCertified(sid, p.id);
   }
   function dicteeLevel(sid) { return listenSounds().filter(function (s) { return dicteeDone(sid, s.id); }).length; }
   function dicteeNext(sid) {
     var ls = listenSounds();
     for (var i = 0; i < ls.length; i++) if (dicteeUnlocked(sid, ls[i].id) && !dicteeDone(sid, ls[i].id)) return ls[i];
     return null;
+  }
+  /* ---------- Mission : un son = 3 étapes dans l'ordre (écouter, écrire, lire), puis le son suivant ----------
+     La lecture d'un son reste fermée tant que le son d'avant n'a pas sa médaille 🏅 (isUnlocked). Pour ne pas attendre l'adulte,
+     l'élève peut écouter et écrire jusqu'à MISSION_AHEAD sons après le premier son sans médaille (décidé le 16/11/2026). */
+  var MISSION_AHEAD = 2;
+  function aheadOK(sid, id) {
+    if (!data.lock) return true;
+    var av = availSounds(), idx = -1, front = av.length, i;
+    for (i = 0; i < av.length; i++) { if (av[i].id === id) idx = i; if (front === av.length && !soundCertified(sid, av[i].id)) front = i; }
+    return idx < 0 || idx <= front + MISSION_AHEAD;
+  }
+  /* Renvoie { sound, kind: listen|write|read, level, steps: [{k, st: done|go|wait|lock|medal}], medal: premier son lu ⭐ sans médaille, capped } */
+  function mission(sid) {
+    var out = { sound: null, kind: null, level: null, steps: [], medal: null, capped: false };
+    for (var i = 0; i < data.sounds.length; i++) {
+      var s = data.sounds[i], inL = !LISTEN_SKIP[s.id];
+      var cert = soundCertified(sid, s.id);   /* son déjà médaillé 🏅 en lecture : écoute et dictée comptées comme faites (pas de rattrapage imposé) */
+      var L = !inL || cert || listenDone(sid, s.id), W = !inL || cert || dicteeDone(sid, s.id), todo = null, hasR = false;
+      KINDS.forEach(function (k) { if (hasContent(s.id, k.k)) { hasR = true; if (!todo && !isPassed(sid, s.id, k.k)) todo = k.k; } });
+      var R = !hasR ? "none" : (todo ? (isUnlocked(sid, s.id) ? "wait" : "lock") : (cert ? "done" : "medal"));
+      if (R === "medal" && !out.medal) out.medal = s;
+      var kind = null;
+      if (!L || !W) {
+        if (aheadOK(sid, s.id) && (L ? dicteeUnlocked(sid, s.id) : listenUnlocked(sid, s.id))) kind = L ? "write" : "listen";
+        else out.capped = true;
+      }
+      if (!kind && R === "wait") kind = "read";
+      if (!kind) continue;
+      out.sound = s; out.kind = kind; out.level = todo;
+      if (inL) { out.steps.push({ k: "listen", st: L ? "done" : (kind === "listen" ? "go" : "wait") }); out.steps.push({ k: "write", st: W ? "done" : (kind === "write" ? "go" : "wait") }); }
+      if (hasR) out.steps.push({ k: "read", st: kind === "read" ? "go" : R });
+      break;
+    }
+    return out;
+  }
+  /* Le gros bouton de l'étape en cours (texte, consigne lue, action) */
+  function missionAct(sid, ms) {
+    if (!ms || !ms.sound) return null;
+    var s = ms.sound, KW = { s: "les syllabes", m: "les mots", t: "le texte" };
+    if (ms.kind === "listen") return { pet: s.id, kind: "listen", cls: " listen-go", btn: "👂 J’écoute le son " + q(s.label), say: "Tu vas écouter et retrouver le son " + s.label + ". Touche le gros bouton pour commencer.", go: function () { setPath("listen"); LS.pick = s.id; goTo("audition"); } };
+    if (ms.kind === "write") return { pet: s.id, kind: "write", cls: " write-go", btn: "✏️ J’écris le son " + q(s.label), say: "Tu vas écouter et écrire le son " + s.label + ". Touche le gros bouton pour commencer.", go: function () { setPath("write"); DS.pick = s.id; goTo("dictee"); } };
+    return { pet: s.id, kind: "read", btn: "📖 Je lis le son " + q(s.label), sub: "Je lis " + KW[ms.level], say: "Tu vas t’entraîner à lire " + KW[ms.level] + " du son " + s.label + ", avec un adulte ou un camarade qui t’écoute. Touche le gros bouton pour commencer.", go: function () { setPath("read"); openStep(sid, s.id, ms.level); } };
   }
   function dicteeClear() { DS.timers.forEach(clearTimeout); DS.timers = []; }
   function dicteeStop() { dicteeClear(); if (DS.run) { listenStopVoice(); DS.run = null; } }
@@ -4654,8 +4696,10 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     }
     var row = el("div", "row");
     var nx = nowDone ? dicteeNext(sid) : null;
-    /* Suite logique en un seul gros bouton : un son vient d'être écrit → on passe à la lecture */
-    var follow = nowDone ? nextStep(sid) : null;   /* la prochaine étape de lecture de l'élève */
+    if (nx && !aheadOK(sid, nx.id)) nx = null;   /* pas plus de 2 sons d'avance sur la médaille */
+    /* Suite logique en un seul gros bouton : l'étape suivante de la mission (lire ce son, ou écouter le son suivant si la lecture attend la médaille) */
+    var follow = nowDone ? missionAct(sid, mission(sid)) : null;
+    if (follow && follow.kind === "write") follow = null;   /* « Continuer » y mène déjà */
     var cont = el("button", follow ? "secondary big-btn" : "primary big-btn go-next", follow ? "Son suivant" : "Continuer"); cont.type = "button";
     cont.addEventListener("click", function () {
       if (!nowDone) { dicteeStart(sid, id); return; }
@@ -4664,8 +4708,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var stopB = el("button", "secondary big-btn", "Arrêter"); stopB.type = "button";
     stopB.addEventListener("click", function () { listenStopVoice(); listenFocus(false); goTo("home"); });
     if (follow) {
-      var fb = el("button", "primary big-btn go-next go-blue", "🏋️ Je m’entraîne à lire"); fb.type = "button";
-      fb.addEventListener("click", function () { listenStopVoice(); listenFocus(false); setPath("read"); openStep(sid, follow.sound, follow.kind); });
+      var fb = el("button", "primary big-btn go-next " + (follow.kind === "read" ? "go-blue" : "go-green"), follow.kind === "read" ? "🏋️ Je m’entraîne à lire" : follow.btn); fb.type = "button";
+      fb.addEventListener("click", function () { listenStopVoice(); listenFocus(false); follow.go(); });
       row.appendChild(fb);
     }
     row.appendChild(cont); row.appendChild(stopB);
@@ -4755,41 +4799,17 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if (myNotes.length) { data.notes = data.notes.filter(function (n) { return n.sid !== sid; }); save(); }
     playPendingEvos(sid);
     /* Une seule prochaine action, bien visible, avec sa consigne lue à voix haute (🔊) pour les CP */
-    var nx = nextStep(sid), lx = listenNext(sid), wheels = data.reward ? pendingWheels(sid).length : 0, waitEval = evalWaiting(sid);
-    var KW = { s: "les syllabes", m: "les mots", t: "le texte" };
-    /* « Je m’entraîne » ouvre directement l’exercice recommandé, prêt à démarrer (le choix d’une autre activité reste en dessous) */
-    function readAct() { var snd = soundById(nx.sound); return { pet: nx.sound, btn: "🏋️ Je m’entraîne", sub: "Je lis " + KW[nx.kind] + " du son " + q(snd.label), say: "Tu vas t’entraîner à lire " + KW[nx.kind] + " du son " + snd.label + ", avec un adulte ou un camarade qui t’écoute. Touche le gros bouton pour commencer.", kind: "read", go: function () { setPath("read"); openStep(sid, nx.sound, nx.kind); } }; }
-    function listenAct() { return { pet: lx.id, kind: "listen", cls: " listen-go", btn: "👂 J’écoute le son " + q(lx.label), say: "Tu vas écouter et retrouver le son " + lx.label + ". Touche le gros bouton pour commencer.", go: function () { setPath("listen"); LS.pick = lx.id; goTo("audition"); } }; }
-    var dx = dicteeNext(sid);
-    function writeAct() { return { pet: dx.id, kind: "write", cls: " write-go", btn: "✏️ J’écris le son " + q(dx.label), say: "Tu vas écouter et écrire le son " + dx.label + ". Touche le gros bouton pour commencer.", go: function () { setPath("write"); DS.pick = dx.id; goTo("dictee"); } }; }
-    var act = null, other = null, others = [];
-    /* Trois parcours : vert (écoute), jaune (dictée), bleu (lecture). Le parcours en cours passe en premier et pulse ; au départ, tous pulsent */
-    var paths = [];
-    if (lx) paths.push(listenAct());   /* ordre pédagogique : écouter, écrire (dictée), puis lire */
-    if (dx) paths.push(writeAct());
-    if (nx) paths.push(readAct());
-    if (pathChosen) paths.sort(function (a, b) { return (b.kind === PATH ? 1 : 0) - (a.kind === PATH ? 1 : 0); });   /* tri stable : les autres gardent leur ordre */
-    if (wheels) { act = { cls: " wheel-go", btn: "🎡 Lance ta roue !", say: (wheels > 1 ? "Des roues t’attendent." : "Une roue t’attend.") + " Touche le gros bouton pour la lancer.", go: function () { openWheel(sid); } }; others = paths; }
-    else if (paths.length) { act = paths[0]; others = paths.slice(1); }
-    other = others[0] || null;
+    var ms = mission(sid), nx = nextStep(sid), wheels = data.reward ? pendingWheels(sid).length : 0, waitEval = !!ms.medal || evalWaiting(sid);
+    /* Une mission = un son, trois étapes dans l'ordre pédagogique (écouter, écrire, lire) : un seul gros bouton, celui de l'étape à faire */
+    var step = missionAct(sid, ms), act = step;
+    if (wheels) act = { cls: " wheel-go", btn: "🎡 Lance ta roue !", say: (wheels > 1 ? "Des roues t’attendent." : "Une roue t’attend.") + " Touche le gros bouton pour la lancer.", go: function () { openWheel(sid); } };
     function pathCls(a) { return a.kind === "read" ? " go-blue" : (a.kind === "listen" ? " go-green" : (a.kind === "write" ? " go-yellow" : "")); }
-    function calmCls(a) { return pathChosen && a.kind && a.kind !== PATH ? " go-calm" : ""; }
     var card = el("div", "card home-hero");
     card.appendChild(el("h2", "", "Bonjour " + st.name + " !"));
-    var say = act ? "Bonjour " + st.name + " ! " + act.say : (waitEval ? "Bravo " + st.name + " ! Tu as réussi tes entraînements. Prépare ton évaluation avec ton enseignant pour ouvrir la suite." : "Bravo " + st.name + " ! Tu as tout réussi.");
-    /* Fil du jour : trois étapes dans l'ordre pédagogique, avec une coche sur ce qui est fait aujourd'hui */
-    var dg = dayGet(sid), fil = el("div", "day-fil"); fil.setAttribute("role", "list");
-    [["l", "👂", "Écouter"], ["w", "✏️", "Écrire"], ["r", "📖", "Lire"]].forEach(function (d, i) {
-      var ok = !!dg[d[0]], c = el("span", "day-step" + (ok ? " done" : ""));
-      c.setAttribute("role", "listitem"); c.setAttribute("aria-label", d[2] + (ok ? " : fait aujourd’hui" : " : pas encore fait aujourd’hui"));
-      c.appendChild(el("span", "day-ico", ok ? "✅" : d[1])); c.appendChild(el("span", "day-lab", d[2]));
-      fil.appendChild(c);
-      if (i < 2) fil.appendChild(el("span", "day-arrow", "›"));
-    });
-    card.appendChild(fil);
+    var say = act ? "Bonjour " + st.name + " ! " + act.say : (waitEval ? "Bravo " + st.name + " ! Tu as réussi tes entraînements. Va voir ton maître ou ta maîtresse pour passer ta médaille." : "Bravo " + st.name + " ! Tu as tout réussi.");
     var row = el("div", "home-step");
     var petWrap = el("button", "home-pet"); petWrap.type = "button"; petWrap.setAttribute("aria-label", "Écouter la consigne");
-    var pid = act && act.pet ? act.pet : (nx ? nx.sound : null);
+    var pid = step ? step.pet : (nx ? nx.sound : null);
     if (pid) petWrap.appendChild(buildPet(petState(sid, pid), charFor(pid))); else petWrap.appendChild(el("span", "home-pet-emoji", "🏆"));
     petWrap.addEventListener("click", function () { listenSpeak(say); });
     row.appendChild(petWrap);
@@ -4801,28 +4821,52 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       b.addEventListener("click", function () { listenSpeak(text); });
       return b;
     }
-    if (act) {
-      var mainRow = el("div", "home-act-row");
-      var go = el("button", "primary big-btn go-next home-next" + (act.cls || "") + pathCls(act) + calmCls(act), act.btn); go.type = "button";
-      if (act.sub) go.appendChild(el("small", "home-sub", act.sub));
-      go.addEventListener("click", act.go);
-      mainRow.appendChild(go); mainRow.appendChild(sayBtn(say, "Écouter la consigne"));
-      col.appendChild(mainRow);
-    } else {
+    function bigRow(a, n, calm) {
+      var r = el("div", "home-act-row");
+      var go = el("button", "primary big-btn go-next home-next" + (a.cls || "") + pathCls(a) + (calm ? " go-calm" : ""), ""); go.type = "button";
+      if (n) go.appendChild(el("span", "ms-n", String(n)));
+      go.appendChild(document.createTextNode(a.btn));
+      if (a.sub) go.appendChild(el("small", "home-sub", a.sub));
+      go.addEventListener("click", a.go);
+      r.appendChild(go); r.appendChild(sayBtn(calm ? a.say.replace("le gros bouton", "ce bouton") : (a === act ? say : a.say), "Écouter la consigne"));
+      return r;
+    }
+    function smallRow(cls, n, txt, sub) {
+      var d = el("div", "ms-step" + cls); d.appendChild(el("span", "ms-n", n));
+      var t = el("span", "", txt); if (sub) t.appendChild(el("small", "", sub));
+      d.appendChild(t); return d;
+    }
+    if (wheels) col.appendChild(bigRow(act, 0, false));
+    /* La médaille d'un son déjà lu ⭐ se passe avec l'enseignant : rappel cliquable, pendant que l'élève avance seul sur la suite */
+    var mb = null;
+    if (ms.medal && (!ms.sound || ms.medal.id !== ms.sound.id)) {
+      mb = el("button", "ms-step ms-medal", ""); mb.type = "button";
+      mb.appendChild(el("span", "ms-n", "🏅"));
+      var mt = el("span", "", "Médaille du son " + q(ms.medal.label)); mt.appendChild(el("small", "", "🙋 à passer avec ton maître(sse)"));
+      mb.appendChild(mt);
+      mb.addEventListener("click", function () {
+        var lv = null; KINDS.forEach(function (k) { if (!lv && hasContent(ms.medal.id, k.k) && !isValid(sid, ms.medal.id, k.k)) lv = k.k; });
+        if (!lv) return;
+        setPath("read"); data.sel.sid = sid; data.sel.sound = ms.medal.id; data.sel.kind = lv; save();
+        show("lecture"); lireLaunch("eval", ms.medal.id, lv);
+      });
+    }
+    if (step) {
+      col.appendChild(el("p", "ms-title", "Ma mission : le son " + q(ms.sound.label)));
+      var NAMES = { listen: "👂 J’écoute", write: "✏️ J’écris", read: "📖 Je lis" };
+      ms.steps.forEach(function (x, i) {
+        if (x.st === "go") col.appendChild(bigRow(step, i + 1, !!wheels));
+        else if (x.st === "done") col.appendChild(smallRow(" done", "✅", NAMES[x.k], ""));
+        else if (x.st === "medal") col.appendChild(smallRow(" done", "⭐", NAMES[x.k], "🏅 médaille à passer avec ton maître(sse)"));
+        else col.appendChild(smallRow("", String(i + 1), NAMES[x.k], x.st === "lock" ? "🔒 après ta médaille du son d’avant" : ""));
+      });
+    } else if (!wheels) {
       var doneRow = el("div", "home-act-row");
-      doneRow.appendChild(el("p", "home-done", waitEval ? "Bravo ! Prépare ton évaluation avec ton enseignant pour ouvrir la suite. 🏅" : "Tu as tout réussi. Bravo ! 🎉"));
+      doneRow.appendChild(el("p", "home-done", waitEval ? "Bravo ! Va voir ton maître(sse) pour passer ta médaille. 🏅" : "Tu as tout réussi. Bravo ! 🎉"));
       doneRow.appendChild(sayBtn(say, "Écouter"));
       col.appendChild(doneRow);
     }
-    if (other) col.appendChild(el("p", "home-or", "Ou bien :"));
-    others.forEach(function (other) {
-      var altRow = el("div", "home-act-row");
-      var ob = el("button", "primary big-btn go-next home-next" + (other.cls || "") + pathCls(other) + calmCls(other), other.btn); ob.type = "button";
-      if (other.sub) ob.appendChild(el("small", "home-sub", other.sub));
-      ob.addEventListener("click", other.go);
-      altRow.appendChild(ob); altRow.appendChild(sayBtn(other.say.replace("le gros bouton", "ce bouton"), "Écouter la consigne"));
-      col.appendChild(altRow);
-    });
+    if (mb) col.appendChild(mb);
     row.appendChild(col);
     card.appendChild(row);
     body.appendChild(card);
