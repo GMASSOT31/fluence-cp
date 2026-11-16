@@ -250,6 +250,12 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   .simon-btn.lit { opacity: 1; transform: scale(1.06); box-shadow: 0 0 0 4px #fff, 0 0 24px 6px rgba(255, 255, 255, 0.8); }
   .mem-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; max-width: 520px; margin: 0 auto; }
   .mem-card { aspect-ratio: 1; padding: 0; font-size: 2.4rem; line-height: 1; border-radius: 14px; background: var(--k-m); color: var(--ink); }
+  /* Anciens iPad (avant iOS 15) : « aspect-ratio » inconnu → les boutons des jeux étaient écrasés ; hauteur proche du carré */
+  @supports not (aspect-ratio: 1) {
+    .order-btn { height: 21vw; max-height: 96px; }
+    .simon-btn { height: 34vw; max-height: 138px; }
+    .mem-card { height: 21vw; max-height: 122px; }
+  }
   .mem-card.open { background: var(--card); border: 2px solid var(--line); }
   .mem-card.done { background: var(--ok-bg); border: 2px solid var(--ok); }
   .snake-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }
@@ -1730,6 +1736,24 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
 })();
 </script>
 <script src="exo-data.js?v=2"></script>
+<script>/* Anciens iPad (iOS 12 et avant) : le navigateur ne connaît pas les événements « pointer » → les jeux au doigt (Serpent, Oiseau, Tuiles, Tour, Safari) ne réagissaient pas. On les traduit en événements tactiles (ou souris sur un vieil ordinateur). Rien ne change sur les appareils récents. */
+(function () {
+  if (window.PointerEvent || !window.EventTarget) return;
+  var touch = "ontouchstart" in window;
+  var MAP = touch ? { pointerdown: "touchstart", pointermove: "touchmove", pointerup: "touchend", pointercancel: "touchcancel" } : { pointerdown: "mousedown", pointermove: "mousemove", pointerup: "mouseup", pointerleave: "mouseleave" };
+  var add = EventTarget.prototype.addEventListener;
+  window.ZOO_POINTER_SHIM = true;
+  EventTarget.prototype.addEventListener = function (type, fn, opt) {
+    if (typeof type !== "string" || type.indexOf("pointer") !== 0) return add.call(this, type, fn, opt);
+    var to = MAP[type];
+    if (!to || typeof fn !== "function") return;
+    return add.call(this, to, function (e) {
+      var p = (e.changedTouches && e.changedTouches[0]) || e;
+      fn.call(this, { type: type, target: e.target, currentTarget: e.currentTarget, clientX: p.clientX, clientY: p.clientY, pageX: p.pageX, pageY: p.pageY, pointerId: p.identifier || 0, pointerType: touch ? "touch" : "mouse", button: 0, isPrimary: true,
+        preventDefault: function () { e.preventDefault(); }, stopPropagation: function () { e.stopPropagation(); } });
+    }, opt);
+  };
+})();</script>
 <script>
 (function () {
   "use strict";
