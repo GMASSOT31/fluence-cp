@@ -29,7 +29,7 @@ function sawConfusion(n, c) { return E.LEVELS.nombres.some(function (lv) { retur
 [[13, 30], [14, 40], [15, 50], [16, 60], [30, 13], [34, 43], [71, 61], [77, 67], [77, 17], [71, 81], [84, 44], [84, 24], [84, 48], [97, 87], [97, 79], [91, 81], [80, 20], [80, 60], [99, 100], [100, 10], [100, 90], [12, 21], [13, 3]]
   .forEach(function (p) { ok(sawConfusion(p[0], p[1]), "confusion attendue jamais proposée : " + p[0] + " → " + p[1]); });
 /* tailles attendues : 6 propositions partout sauf « 17 à 20 » (4 nombres)
-ok(E.LEVELS.nombres.map(function (l) { return l.choices; }).join() === "6,6,4,6,6,6,6,6,6,6,6", "propositions par niveau : " + E.LEVELS.nombres.map(function (l) { return l.choices; }));
+ok(E.LEVELS.nombres.map(function (l) { return l.choices; }).join() === "6,6,4,6,6,6,6,6,6,6,6,6,6,6,6", "propositions par niveau : " + E.LEVELS.nombres.map(function (l) { return l.choices; }));
 /* les 101 nombres sont atteignables dans au moins un niveau */
 var covered = {}; E.LEVELS.nombres.forEach(function (lv) { lv.pool.forEach(function (n) { covered[n] = 1; }); });
 ok(Object.keys(covered).length === 101, "les 101 nombres sont travaillés (" + Object.keys(covered).length + ")");
@@ -77,5 +77,22 @@ ok(E.visibleLevels("addition", ["a1", "a2", "a3", "a4"], { "addition:a1": { ok: 
 ok(E.visibleLevels("nombres", [], { "nombres:n1": { ok: 1 }, "nombres:n4": { ok: 1 } }).join() === "n1,n2,n4", "une étape réussie après un trou reste visible (n1, n2 à faire, n4 réussie)");
 ok(E.visibleLevels("addition", ["a3", "a4"], {}).join() === "a3", "ordre et choix de l’enseignant respectés");
 ok(E.topAnimal({ "nombres:n3": { ok: 1 }, "addition:a2": { ok: 1 } }).e === "🐿️" && E.topAnimal({}) === null, "animal le plus rapide éclos : 🐿️ (20 km/h) devant 🦔 (7 km/h)");
+/* étapes par dizaine (17/11/2026) : 20–29, 30–39, 40–49, 50–59 entre « 17 à 20 » et « 20 à 59 » */
+ok(E.DEFAULT_LEVELS.nombres.join() === "n1,n2,n3,d20,d30,d40,d50,n4,n5,n6,n7,n8,n9,n10,n11", "ordre par défaut : " + E.DEFAULT_LEVELS.nombres);
+["d20", "d30", "d40", "d50"].forEach(function (id, i) {
+  var lv = E.levelInfo("nombres", id), lo = 20 + 10 * i;
+  ok(lv.allowed.join() === Array.apply(null, Array(10)).map(function (_, k) { return lo + k; }).join() && lv.choices === 6, id + " : nombres " + lo + " à " + (lo + 9) + ", 6 propositions");
+});
+ok(E.visibleLevels("nombres", [], { "nombres:n1": { ok: 1 }, "nombres:n2": { ok: 1 }, "nombres:n3": { ok: 1 } }).join() === "n1,n2,n3,d20", "après 17 à 20 : 20 à 29");
+ok(E.suggestLevel("nombres", [], { "nombres:n1": { ok: 1 }, "nombres:n2": { ok: 1 }, "nombres:n3": { ok: 1 }, "nombres:d20": { ok: 1 } }) === "d30", "étape suivante après 20 à 29 : 30 à 39");
+ok(E.levelsOf("nombres", ["n1", "n2", "n3", "n4", "n5"]).join() === "n1,n2,n3,d20,d30,d40,d50,n4,n5", "ancien réglage : nouvelles étapes insérées après 17 à 20");
+ok(E.levelsOf("nombres", ["n3", "n1", "n2", "n4"]).join() === "n3,d20,d30,d40,d50,n1,n2,n4", "ancien réglage dans un autre ordre : insérées après 17 à 20");
+ok(E.levelsOf("nombres", ["n1", "n2", "n4"]).join() === "n1,n2,d20,d30,d40,d50,n4", "17 à 20 décochée : insérées avant 20 à 59");
+ok(E.levelsOf("nombres", ["n1", "n2", "n3", "n4", "v2"]).join() === "n1,n2,n3,n4", "réglage enregistré après l'ajout (repère v2) : étapes décochées respectées");
+ok(E.levelsOf("nombres", ["n1", "d30", "n3"]).join() === "n1,d30,n3", "une nouvelle étape déjà présente : rien d'ajouté");
+ok(E.levelsOf("addition", ["a1", "a2"]).join() === "a1,a2" && E.marks("nombres").join() === "v2", "addition inchangée ; repère v2");
+ok(E.animalOf("nombres", "n4").e === "🐕", "« 20 à 59 » garde le chien (animal du milieu du bandeau)");
+var seen20 = {}; for (var s20 = 0; s20 < 300; s20++) E.makeRound("nombres", "d20", 10, E.seeded(s20)).forEach(function (q) { seen20[q.answer] = 1; q.choices.forEach(function (c) { ok(c >= 20 && c <= 29, "d20 : proposition hors 20–29 : " + c); }); });
+ok(Object.keys(seen20).length === 10, "d20 : les 10 nombres sont demandés");
 console.log(fails ? fails + " ÉCHEC(S) sur " + checks + " contrôles" : "TOUS LES CONTRÔLES PASSENT (" + checks + ")");
 process.exit(fails ? 1 : 0);
