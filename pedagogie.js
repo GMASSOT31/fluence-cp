@@ -90,7 +90,7 @@
       var empty = mk("div", "pb-empty");
       empty.append(mk("p", null, "Vos élèves apparaîtront ici dès que vous aurez créé votre classe et inscrit vos élèves."));
       var go = mk("button", "primary", "📚 Créer ma classe et mes élèves"); go.type = "button";
-      go.onclick = function () { C.showTab("eleves"); };
+      go.onclick = function () { var b = document.querySelector('[data-sub-btn="classes"]'); if (b) b.click(); else C.showTab("eleves"); };
       empty.append(go); box.append(empty); return;
     }
     if (!state.classId || !classes.some(function (c) { return c.id === state.classId; })) state.classId = classes[0].id;

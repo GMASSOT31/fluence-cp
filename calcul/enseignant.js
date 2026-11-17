@@ -55,7 +55,7 @@
   var nav, bProg, bReg, bEcou, content;
   function build() {
     nav = $("nav.teacher-nav"); content = $(".teacher-content"); if (!nav || !content) return false;
-    bProg = $('[data-tab="pedagogie"]', nav); bReg = $('[data-tab="reglages"]', nav); bEcou = $('[data-tab="ecouter"]', nav);
+    bProg = $('[data-tab="pedagogie"]', nav); bReg = $('[data-tab="general"]', nav); bEcou = $('[data-tab="ecouter"]', nav);
     if (!bProg || !bReg) return false;
     /* bascule */
     var sw = el("div", "calc-switch"), bl = el("button", "", "📖 Lecture"), bc = el("button", "", "➕ Calcul"); bl.type = bc.type = "button";
@@ -87,9 +87,9 @@
     if (m === "calcul") {
       bProg.dataset.tab = "calc-progression"; bReg.dataset.tab = "calc-reglages"; if (bEcou) bEcou.classList.add("hidden");
       skin(true, banner);
-      if (cur === "pedagogie" || cur === "ecouter") bProg.click(); else if (cur === "reglages") bReg.click();
+      if (cur === "pedagogie" || cur === "ecouter") bProg.click(); else if (cur === "general" || cur === "reglages") bReg.click();
     } else {
-      bProg.dataset.tab = "pedagogie"; bReg.dataset.tab = "reglages"; if (bEcou) bEcou.classList.remove("hidden");
+      bProg.dataset.tab = "pedagogie"; bReg.dataset.tab = "general"; if (bEcou) bEcou.classList.remove("hidden");
       skin(false, banner);
       if (cur === "calc-progression") bProg.click(); else if (cur === "calc-reglages") bReg.click();
     }
