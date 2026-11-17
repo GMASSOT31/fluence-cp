@@ -233,7 +233,7 @@ body.teacher-mode .teacher-header .teacher-nav button.active{background:#1b2433;
 .pb-detail-btn.on{background:#1b2433;color:#fff}
 @media(max-width:600px){.pb-detail{margin-left:0;padding:4px 10px 10px}}
 @media(max-width:880px){.pb-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:600px){.pb-row{grid-template-columns:1fr auto;grid-template-areas:"who see" "prog prog" "time flu"}.pb-who{grid-area:who}.pb-btns{grid-area:see}.pb-prog{grid-area:prog}.pb-time{grid-area:time;font-size:.9rem}.pb-flu{grid-area:flu;text-align:right;font-size:.9rem}.pb-time::before{content:"⏱️ "}.pb-flu::before{content:"⚡ "}}
+@media(max-width:600px){.pb-row{grid-template-columns:1fr auto;grid-template-areas:"who who" "see see" "prog prog" "time flu"}.pb-who{grid-area:who}.pb-btns{grid-area:see;justify-content:flex-start}.pb-prog{grid-area:prog}.pb-time{grid-area:time;font-size:.9rem}.pb-flu{grid-area:flu;text-align:right;font-size:.9rem}.pb-time::before{content:"⏱️ "}.pb-flu::before{content:"⚡ "}}
 
 .nav-label{flex:1;min-width:0}
 .nav-badge{min-width:22px;height:22px;padding:0 7px;border-radius:999px;background:#e5484d;color:#fff;font-size:.78rem;font-weight:800;display:inline-grid;place-items:center}
@@ -351,7 +351,7 @@ body.teacher-mode .teacher-header .teacher-nav button.nav-improve.active,.teache
  #space .sub-picker.set-pick strong{font-size:.85rem}
 }
 
-/* Menu « ⋯ » des actions risquées (Liste des élèves) */
+/* Menu « ⋯ » des actions risquées (Mes classes, et Détails d’un élève dans Ma classe) */
 .more-menu{position:relative;display:inline-block}.more-btn{min-width:46px;padding:6px 12px;font-size:1.25rem;font-weight:900;line-height:1}
 .more-pop{position:absolute;right:0;top:calc(100% + 6px);z-index:30;min-width:240px;display:flex;flex-direction:column;gap:6px;padding:8px;background:#fff;border:1px solid #dfe3ec;border-radius:14px;box-shadow:0 12px 30px rgba(20,25,40,.2)}
 .more-pop button{width:100%;text-align:left;margin:0}
@@ -383,7 +383,7 @@ body.teacher-mode .teacher-header .teacher-nav button.nav-improve.active,.teache
   <nav class="teacher-nav" aria-label="Rubriques de l'espace enseignant">
    <button type="button" data-tab="pedagogie"><span class="nav-ico" aria-hidden="true">🏫</span><span class="nav-label">Ma classe</span></button>
    <button type="button" data-tab="ecouter"><span class="nav-ico" aria-hidden="true">🎧</span><span class="nav-label">À écouter</span><span class="nav-badge hidden" id="listenBadge"></span></button>
-   <button type="button" data-tab="eleves"><span class="nav-ico" aria-hidden="true">🧒</span><span class="nav-label">Mes élèves</span></button>
+   <button type="button" data-tab="eleves"><span class="nav-ico" aria-hidden="true">📚</span><span class="nav-label">Mes classes</span></button>
    <button type="button" data-tab="reglages"><span class="nav-ico" aria-hidden="true">🎓</span><span class="nav-label">Pédagogie</span></button>
    <button type="button" data-tab="general"><span class="nav-ico" aria-hidden="true">⚙️</span><span class="nav-label">Réglages<span class="nav-long"> généraux</span></span></button>
    <button type="button" data-tab="enseignants" id="teachersAdminTab" class="hidden nav-extra"><span class="nav-ico" aria-hidden="true">🛡️</span><span class="nav-label">Enseignants</span><span class="nav-badge hidden" id="adminBadge"></span></button>
@@ -394,9 +394,9 @@ body.teacher-mode .teacher-header .teacher-nav button.nav-improve.active,.teache
  <div class="teacher-content">
   <p id="spaceMsg" class="msg" role="status"></p>
   <section class="panel guide hidden" id="guide" aria-live="polite"></section>
-<div class="sub-picker" data-section="eleves" role="group" aria-label="Choisir une rubrique"><button type="button" data-sub-btn="liste"><span class="sp-ico">📋</span><strong>Liste des élèves</strong><small>Codes, renommer, suspendre</small></button><button type="button" data-sub-btn="classes"><span class="sp-ico">📚</span><strong>Créer une classe</strong><small>Son nom et le code que taperont les élèves</small></button><button type="button" data-sub-btn="ajout"><span class="sp-ico">🧒</span><strong>Ajouter un élève</strong><small>Inscrire un élève dans une classe</small></button></div>
+<div class="sub-picker" data-section="eleves" role="group" aria-label="Choisir une rubrique"><button type="button" data-sub-btn="liste"><span class="sp-ico">📚</span><strong>Mes classes</strong><small>Code, fiches de connexion, élèves suspendus</small></button><button type="button" data-sub-btn="classes"><span class="sp-ico">📚</span><strong>Créer une classe</strong><small>Son nom et le code que taperont les élèves</small></button><button type="button" data-sub-btn="ajout"><span class="sp-ico">🧒</span><strong>Ajouter un élève</strong><small>Inscrire un élève dans une classe</small></button></div>
 <section class="panel feature-card classes-card" id="classesSettings" data-section="eleves" data-sub="classes">
-  <div class="section-head"><div class="section-icon">📚</div><div><h2>Créer une classe</h2><p class="muted">Le code d’une classe déjà créée est affiché sur sa carte, dans l’onglet « Liste des élèves » (avec « Copier » et « Fiches de connexion »).</p></div></div>
+  <div class="section-head"><div class="section-icon">📚</div><div><h2>Créer une classe</h2><p class="muted">Le code d’une classe déjà créée est affiché sur sa carte, dans « Mes classes » (avec « Copier » et « Fiches de connexion »).</p></div></div>
   <div class="form-zone"><form id="classForm"><div id="classTeacherBox" class="hidden"><label for="classTeacher">Choisir l’enseignant</label><select id="classTeacher"></select><p class="muted" style="margin:4px 0 0">Administrateur : la classe sera créée dans le compte de cet enseignant.</p></div><label for="className">Nom de la classe</label><input id="className" required maxlength="80" placeholder="Ex. CP A"><label for="classCode">Code de classe (que vos élèves taperont)</label><input id="classCode" maxlength="30" autocomplete="off" autocapitalize="none" placeholder="Ex. cpmassot"><p class="muted" style="margin:4px 0 0">3 à 20 lettres ou chiffres. Majuscules, accents et espaces ne comptent pas. Évitez les codes trop faciles comme 1234.</p><div class="actions"><button>+ Ajouter la classe</button></div></form><div class="class-created hidden" id="classCreated"><p id="classCreatedText"></p><button type="button" id="goAddStudents">➕ Ajouter mes élèves à cette classe</button></div></div>
  </section>
  <section class="panel feature-card student-card" id="addStudentSettings" data-section="eleves" data-sub="ajout">
@@ -407,7 +407,7 @@ body.teacher-mode .teacher-header .teacher-nav button.nav-improve.active,.teache
   <div class="seat-request" id="seatRequestBox"><form id="seatRequestForm"><label for="seatCount">Combien d'élèves voulez-vous inscrire en plus ? C'est gratuit.</label><div class="seat-row"><input id="seatCount" type="number" min="1" max="500" step="1" value="22" required><span>élèves en plus</span><button id="seatSend">🎓 Activer gratuitement ma classe entière</button><button type="button" id="seatCancel" class="secondary hidden">Annuler la demande</button></div></form><p class="muted" id="seatInfo"></p><p class="msg" id="seatMsg" role="status"></p></div>
  </section>
  <section class="panel feature-card student-card" id="studentsPanel" data-section="eleves" data-sub="liste">
-  <div class="section-head"><div class="section-icon">🧒</div><div><h2>Élèves</h2><p class="muted" id="studentsPanelHint"></p></div></div>
+  <div class="section-head"><div class="section-icon">📚</div><div><h2>Mes classes</h2><p class="muted" id="studentsPanelHint"></p></div></div>
   <p class="msg" id="studentsMsg" role="status"></p><div id="studentsAdminList" class="content-list"></div>
  </section>
  <section class="panel feature-card peda-board" id="pedaPanel" data-section="pedagogie"><div class="section-head"><div class="section-icon">🏫</div><div><h2>Ma classe</h2><p class="muted">Ce qui demande votre attention, puis chaque élève : touchez « Détails » pour voir ses résultats.</p></div></div><div id="pedaBoard"></div><div id="gameRankBox"></div></section>
@@ -464,7 +464,7 @@ body.teacher-mode .teacher-header .teacher-nav button.nav-improve.active,.teache
  <h3 style="margin:22px 0 8px">✉️ Messages du formulaire de contact</h3><p class="muted">Écrits sans compte depuis la page Contact du site. Répondez par e-mail.</p><p class="msg" id="ctMsg" role="status"></p><div id="ctList" class="content-list"></div>
 </section>
 </div>
-</section></main><script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=28"><\/script>':'<script src="vendor/supabase.js?v=2.118.0"><\/script>');})();</script><script src="profils.js?v=1"></script><script src="exo-data.js?v=5"></script><script src="pedagogie.js?v=10"></script><script>
+</section></main><script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=28"><\/script>':'<script src="vendor/supabase.js?v=2.118.0"><\/script>');})();</script><script src="profils.js?v=1"></script><script src="exo-data.js?v=5"></script><script src="pedagogie.js?v=11"></script><script>
 (function(){
 "use strict";
 /* Retour du lien « Mot de passe oublié » : on lit l’adresse avant que la bibliothèque Supabase ne la nettoie */
@@ -738,8 +738,8 @@ $("addReward").onclick=()=>{const label=$("rewardName").value.trim(),price=Numbe
 async function loadPendingRewards(){const {data,error}=await client.from("student_progress").select("student_id,progress,given_vouchers").eq("teacher_id",currentUser.id);const box=$("pendingRewards");box.replaceChildren();if(error){box.textContent=errorText(error);return;}let count=0;(data||[]).forEach(row=>{const given=Array.isArray(row.given_vouchers)?row.given_vouchers:[];(row.progress?.vouchers||[]).filter(v=>!v.done&&!given.includes(v.id)).forEach(v=>{count++;const div=document.createElement("div");div.className="row";const name=allStudents.find(s=>s.id===row.student_id)?.nickname||"Élève";const label=document.createElement("span");label.textContent=(v.icon||"🎁")+" "+name+" : "+v.label;const done=document.createElement("button");done.type="button";done.textContent="✅ Remis";done.title="La récompense a été donnée : le bon disparaît du Zoo de l’élève";done.onclick=async()=>{done.disabled=true;const {error}=await client.rpc("teacher_give_voucher",{p_student:row.student_id,p_voucher:String(v.id)});if(error){done.disabled=false;msg("settingsMsg",errorText(error),true);return;}await loadPendingRewards();};div.append(label,done);box.append(div)})});if(!count)box.textContent="Aucune récompense à remettre.";}
 
 /* Pont vers pedagogie.js (tableau de bord) : ce script est fermé, on lui donne ce dont il a besoin */
-window.ZooPedaCtx=()=>({studentDetail,refresh,client,currentUser,currentRole,allStudents,allClasses,cfgSounds,voy2Fix,pl,showTab,printLoginCards,queueSave,pdfMake,pdfText,pdfSlug,listenPasses:listenPassesCfg,dicteePasses:cfgDictee.passes});
-/* Menu à 5 entrées : Ma classe, À écouter, Mes élèves, Pédagogie (reglages : objectifs, ordre des sons, médaille, exercices), Réglages généraux (general : jeux et sons, boutique, mots de passe) */
+window.ZooPedaCtx=()=>({studentDetail,studentActions,refresh,client,currentUser,currentRole,allStudents,allClasses,cfgSounds,voy2Fix,pl,showTab,printLoginCards,queueSave,pdfMake,pdfText,pdfSlug,listenPasses:listenPassesCfg,dicteePasses:cfgDictee.passes});
+/* Menu à 5 entrées : Ma classe (tout sur chaque élève), À écouter, Mes classes (classes, codes, élèves suspendus ; data-tab « eleves »), Pédagogie (reglages : objectifs, ordre des sons, médaille, exercices), Réglages généraux (general : jeux et sons, boutique, mots de passe) */
 const NAV_OF={liste:"eleves"};
 function showTab(tab){
  if(tab==="liste"){tab="eleves";activeSubs.eleves="liste"}
@@ -1187,7 +1187,7 @@ function moreMenu(label,items){
 async function renderStudentsTab(role){
  const box=$("studentsAdminList"),admin=role==="admin";box.replaceChildren();
  msg("studentsMsg",studentsNotice);studentsNotice="";
- $("studentsPanelHint").textContent=(admin?"Tous les élèves, rangés par compte enseignant puis par classe.":"Tous vos élèves, rangés par classe.")+" Le bouton « ⋯ » d’un élève ou d’une classe permet de renommer, suspendre (plus de connexion, rien n’est effacé) ou supprimer.";
+ $("studentsPanelHint").textContent=(admin?"Toutes les classes, rangées par compte enseignant.":"Vos classes : le code que tapent les élèves et les fiches de connexion.")+" Pour un élève (résultats, renommer, suspendre…), allez dans « Ma classe » puis « Détails ». Les élèves suspendus sont ici, avec « Réactiver ».";
  let groups=[{id:currentUser.id,email:currentUser.email,ghosted_at:null}];
  if(admin){const {data,error}=await client.from("teachers").select("id,email,ghosted_at").order("created_at",{ascending:true});if(error){msg("studentsMsg",errorText(error),true);return;}groups=data;}
  groups.forEach(t=>{
@@ -1209,9 +1209,14 @@ async function renderStudentsTab(role){
     const cb=document.createElement("button");cb.type="button";cb.className="secondary";cb.textContent="📋 Copier";cb.title="Copier le code de la classe";cb.onclick=async()=>{try{await navigator.clipboard.writeText(c.access_code)}catch(e){const ta=document.createElement("textarea");ta.value=c.access_code;ta.style.cssText="position:fixed;opacity:0";document.body.append(ta);ta.select();try{document.execCommand("copy")}catch(e2){}ta.remove()}cb.textContent="✅ Copié";setTimeout(()=>{cb.textContent="📋 Copier"},1800)};cc.append(cb);if(c.teacher_id===currentUser.id||currentRole==="admin"){const ch=document.createElement("button");ch.type="button";ch.className="secondary";ch.textContent="✏️ Changer";ch.title="Changer le code de la classe";ch.onclick=()=>changeClassCode(c,"studentsMsg");cc.append(ch)}head.append(cc);}
    else{const cc=document.createElement("span");cc.className="class-code muted";cc.textContent="Pas encore de code (Réglages généraux › Mots de passe)";head.append(cc);}
    head.append(cact);cbody.append(head);
-   const members=sts.filter(s=>s.class_id===c.id);
-   if(!members.length){const p=document.createElement("p");p.className="muted";p.textContent="Aucun élève dans cette classe.";cbody.append(p);}
-   members.forEach(st=>{
+   const members=sts.filter(s=>s.class_id===c.id),active=members.filter(s=>!s.ghosted_at),gone=members.filter(s=>s.ghosted_at);
+   /* Les élèves actifs sont dans « Ma classe » (un seul endroit par élève) ; ici : leur nombre, un lien, et les élèves suspendus */
+   {const p=document.createElement("div");p.className="row class-count";const t2=document.createElement("strong");t2.textContent=active.length?"🧒 "+active.length+" "+pl(active.length,"élève","élèves"):"Aucun élève dans cette classe.";p.append(t2);
+    if(active.length&&!c.ghosted_at){const go=document.createElement("button");go.type="button";go.className="secondary";go.textContent="🏫 Voir mes élèves dans « Ma classe »";go.onclick=()=>{if(window.ZooPeda&&window.ZooPeda.pick)window.ZooPeda.pick(c.id);const nb=document.querySelector('.teacher-nav [data-tab="pedagogie"],.teacher-nav [data-tab="calc-progression"]');if(nb)nb.click();else showTab("pedagogie")};p.append(go);}
+    else if(!active.length){const go=document.createElement("button");go.type="button";go.className="secondary";go.textContent="➕ Ajouter un élève";go.onclick=()=>{activeSubs.eleves="ajout";if($("classSelect")&&[...$("classSelect").options].some(o=>o.value===c.id))$("classSelect").value=c.id;showTab("eleves")};if(admin||c.teacher_id===currentUser.id)p.append(go);}
+    cbody.append(p);}
+   if(gone.length){const h5=document.createElement("p");h5.className="muted";h5.style.margin="10px 0 4px";h5.textContent=gone.length>1?"⏸️ Élèves suspendus (ils ne peuvent plus se connecter, rien n’est effacé) :":"⏸️ Élève suspendu (il ne peut plus se connecter, rien n’est effacé) :";cbody.append(h5);}
+   gone.forEach(st=>{
     const line=document.createElement("div");line.className="row"+(st.ghosted_at||t.ghosted_at||c.ghosted_at?" ghosted":"");
     const info=document.createElement("div");const name=document.createElement("strong");name.textContent=(st.ghosted_at?"👻 ":"🧒 ")+st.nickname;
     const status=document.createElement("div");status.className="muted";status.textContent=(st.pin_hash?"Code secret choisi":"Code secret à choisir")+(st.ghosted_at?" · suspendu le "+frDate(st.ghosted_at):"")+(!st.ghosted_at&&t.ghosted_at?" · suspendu avec le compte enseignant":"")+(!st.ghosted_at&&!t.ghosted_at&&c.ghosted_at?" · suspendu avec la classe":"");
@@ -1226,20 +1231,16 @@ async function renderStudentsTab(role){
     else actions.append(moreMenu("Autres actions pour "+st.nickname,mv.concat([ren,ghost,del])));
     line.append(info,actions);cbody.append(line);
    });
-   /* Seul le nom de la classe est listé ; le bouton déploie le code, les actions et les élèves */
-   const ck="lst:"+c.id,tg=document.createElement("button");tg.type="button";tg.className="secondary cg-toggle";cbody.classList.toggle("hidden",!openGroups.has(ck));
-   const sync=()=>{const o=!cbody.classList.contains("hidden");tg.textContent=(o?"▲ Masquer":"▼ Voir les élèves")+" ("+members.length+")";tg.setAttribute("aria-expanded",String(o))};sync();
-   tg.onclick=()=>{cbody.classList.toggle("hidden");if(cbody.classList.contains("hidden"))openGroups.delete(ck);else openGroups.add(ck);sync()};
-   top.append(tg);box.append(top,cbody);
+   box.append(top,cbody);
   });
  });
  if(!box.children.length)box.textContent="Aucun élève pour le moment.";
 }
 /* Réorthographier un prénom : le prénom sert à se connecter ; le serveur refuse un prénom déjà pris dans la classe */
 /* Admin : changer un élève de classe (même enseignant ou un autre). Rien n’est effacé : progression, animaux, pièces et historique suivent l’élève */
-function moveStudent(st,teachers){
+function moveStudent(st,teachers,done){
  const others=allClasses.filter(c=>c.id!==st.class_id);
- if(!others.length){msg("studentsMsg","Il n’y a pas d’autre classe où l’envoyer.",true);return}
+ if(!others.length){if(done)done("Il n’y a pas d’autre classe où l’envoyer.",true);else msg("studentsMsg","Il n’y a pas d’autre classe où l’envoyer.",true);return}
  const mk=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
  const ov=mk("div","dlg-ov");ov.setAttribute("role","dialog");ov.setAttribute("aria-modal","true");const box=mk("div","dlg-box");
  box.append(mk("p","dlg-text","Dans quelle classe mettre « "+st.nickname+" » ?"));
@@ -1254,30 +1255,43 @@ function moveStudent(st,teachers){
  ok.onclick=async()=>{ok.disabled=no.disabled=true;const c=allClasses.find(x=>x.id===sel.value);
   const {data,error}=await client.rpc("admin_move_student",{p_student:st.id,p_class:sel.value});
   if(error){ok.disabled=no.disabled=false;info.className="msg err";info.textContent=errorText(error);return}
-  close();studentsNotice="↔️ « "+st.nickname+" » est maintenant dans la classe « "+(c?c.name:"?")+" ». Rien n’a été effacé."+(data&&data.access_code?" Code de connexion de sa classe : "+data.access_code+".":"");
-  if(c)openGroups.add("lst:"+c.id);await refresh()};
+  close();const t="↔️ « "+st.nickname+" » est maintenant dans la classe « "+(c?c.name:"?")+" ». Rien n’a été effacé."+(data&&data.access_code?" Code de connexion de sa classe : "+data.access_code+".":"");
+  if(!done)studentsNotice=t;await refresh();if(done)done(t)};
  row.append(ok,no);box.append(sel,info,row);ov.append(box);document.body.append(ov);document.addEventListener("keydown",key,true);sel.focus();
 }
-async function renameStudent(st,buttons){
+/* Actions sur le compte d’un élève, dans « Détails » de Ma classe : un seul endroit par élève.
+   done(texte, erreur) affiche le résultat (Ma classe se recharge ensuite). */
+function studentActions(st,done){
+ const admin=currentRole==="admin",mk=(t,cls)=>{const b=document.createElement("button");b.type="button";b.className=cls||"secondary";b.textContent=t;return b};
+ const ren=mk("✏️ Renommer"),ghost=mk("⏸️ Suspendre (ne peut plus se connecter)"),del=mk("🗑️ Supprimer définitivement","danger"),all=[ren,ghost,del];
+ ren.onclick=()=>renameStudent(st,all,done);ghost.onclick=()=>manageStudent(st,"ghost",all,done);del.onclick=()=>manageStudent(st,"delete",all,done);
+ const items=[ren,ghost,del];
+ if(admin){const mv=mk("↔️ Changer de classe");mv.onclick=async()=>{const {data,error}=await client.from("teachers").select("id,email,ghosted_at").order("created_at",{ascending:true});if(error){done(errorText(error),true);return}moveStudent(st,data,done)};items.unshift(mv);}
+ return moreMenu("Autres actions pour "+st.nickname,items);
+}
+async function renameStudent(st,buttons,done){
+ const say=(t,e)=>done?done(t,e):msg("studentsMsg",t,e);
  const name=await dlg("Nouvelle orthographe du prénom « "+st.nickname+" » :",{input:true,value:st.nickname,ok:"Renommer",label:"Prénom de l’élève"});
  if(name===null)return;const n=name.trim();
  if(!n||n===st.nickname)return;
- if(n.length>60){msg("studentsMsg","Le prénom doit faire 60 caractères au plus.",true);return;}
+ if(n.length>60){say("Le prénom doit faire 60 caractères au plus.",true);return;}
  buttons.forEach(b=>b.disabled=true);
  const {error}=await client.rpc("rename_student",{p_student:st.id,p_nickname:n});
  buttons.forEach(b=>b.disabled=false);
- if(error){msg("studentsMsg",errorText(error),true);return;}
- studentsNotice="✏️ « "+st.nickname+" » s’appelle maintenant « "+n+" ». Pour se connecter, l’élève tape ce prénom.";
- await refresh();
+ if(error){say(errorText(error),true);return;}
+ const t="✏️ « "+st.nickname+" » s’appelle maintenant « "+n+" ». Pour se connecter, l’élève tape ce prénom.";
+ if(!done)studentsNotice=t;
+ await refresh();if(done)done(t);
 }
-async function manageStudent(st,action,buttons){
+async function manageStudent(st,action,buttons,done){
  if(action==="delete"&&!await dlg("Supprimer définitivement « "+st.nickname+" » ?\nToute sa progression (lectures, animaux, pièces) sera effacée. Cette action est irréversible.\nPour seulement l’empêcher de se connecter, choisissez plutôt « Suspendre ».",{ok:"Supprimer",danger:true}))return;
  buttons.forEach(b=>b.disabled=true);
  const {error}=await client.rpc("manage_student",{p_student:st.id,p_action:action});
  buttons.forEach(b=>b.disabled=false);
- if(error){msg("studentsMsg",errorText(error),true);return;}
- studentsNotice={ghost:"⏸️ "+st.nickname+" : connexion suspendue, ses données sont gardées.",unghost:"✅ "+st.nickname+" peut de nouveau se connecter.",delete:"🗑️ "+st.nickname+" : compte supprimé."}[action];
- await refresh();
+ if(error){if(done)done(errorText(error),true);else msg("studentsMsg",errorText(error),true);return;}
+ const t={ghost:"⏸️ "+st.nickname+" : connexion suspendue, ses données sont gardées.",unghost:"✅ "+st.nickname+" peut de nouveau se connecter.",delete:"🗑️ "+st.nickname+" : compte supprimé."}[action];
+ if(!done)studentsNotice=t;
+ await refresh();if(done)done(t);
 }
 async function manageClass(c,action,buttons){
  const n=allStudents.filter(s=>s.class_id===c.id).length;
@@ -1429,5 +1443,5 @@ refresh();
 <script src="share.js" defer></script>
 <script src="install.js?v=1" defer></script>
 <script src="labo-config.js?v=1" defer></script>
-<script src="labo-switch.js?v=11" defer></script>
+<script src="labo-switch.js?v=12" defer></script>
 </body></html>

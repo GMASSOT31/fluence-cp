@@ -130,6 +130,7 @@
     head.append(acts);
     box.append(head, mk("p", "msg", null));
     box.lastChild.id = "pedaMsg"; box.lastChild.setAttribute("role", "status");
+    if (state.notice) { box.lastChild.textContent = state.notice; state.notice = null; }
 
     if (!studs.length) { box.append(mk("p", "muted", "Aucun élève dans cette classe.")); return; }
     var wait = mk("p", "muted", "Chargement…"); box.append(wait);
@@ -330,11 +331,23 @@
     var m = mk("p", "msg pb-dmsg"); m.setAttribute("role", "status");
     if (state.flash && state.flash.id === r.s.id) { m.textContent = state.flash.text; m.classList.toggle("err", !!state.flash.err); state.flash = null; }
     w.append(m);
+    var fa = mk("div", "pd-actions pb-dacts");
     if (C.pdfMake) {
       var fi = mk("button", "secondary pb-see", "📄 Fiche de suivi (PDF)"); fi.type = "button"; fi.title = "Fiche de suivi de " + r.s.nickname + " à imprimer : toile des 6 compétences";
       fi.onclick = function () { makeFiches([r], state.cls, fi, "fiche-suivi-" + (C.pdfSlug(r.s.nickname) || "eleve")); };
-      var fa = mk("div", "pd-actions pb-dacts"); fa.append(fi); w.append(fa);
+      fa.append(fi);
     }
+    /* Un seul endroit par élève : renommer, suspendre, supprimer (et, pour l'admin, changer de classe) sont ici, dans « ⋯ » */
+    if (C.studentActions && (C.currentRole === "admin" || r.s.teacher_id === C.currentUser.id)) {
+      fa.append(C.studentActions(r.s, function (text, err) {
+        if (err) { m.textContent = text; m.classList.add("err"); return; }
+        if (window.ZooPedaCtx) C = window.ZooPedaCtx();
+        var still = (C.allStudents || []).some(function (x) { return x.id === r.s.id && !x.ghosted_at && x.class_id === state.classId; });
+        if (still) state.flash = { id: r.s.id, text: text, err: false }; else { delete state.open[r.s.id]; state.notice = text; }
+        render();
+      }));
+    }
+    if (fa.children.length) w.append(fa);
     if (!C.studentDetail) return w;
     w.append(C.studentDetail(r.s, r.row, function (text, err, reload) {
       if (reload) { state.flash = { id: r.s.id, text: text, err: err }; render(); return; }
@@ -627,5 +640,7 @@
     return box;
   }
 
-  window.ZooPeda = { asgLabel: asgLabel, asgState: asgState, asgStatusText: asgStatusText, render: render, openDetail: openDetail, analyse: analyse, classify: classify, axes: axes, drawFiche: drawFiche, state: state };
+  /* « Mes classes » › « Voir mes élèves » : ouvrir Ma classe sur cette classe */
+  function pick(id) { if (id && id !== state.classId) { state.classId = id; state.open = {}; state.filter = "all"; } }
+  window.ZooPeda = { pick: pick, asgLabel: asgLabel, asgState: asgState, asgStatusText: asgStatusText, render: render, openDetail: openDetail, analyse: analyse, classify: classify, axes: axes, drawFiche: drawFiche, state: state };
 })();
