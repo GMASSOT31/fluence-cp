@@ -55,7 +55,7 @@
     var b = Array.prototype.filter.call(r.querySelectorAll("button"), function (x) { return /Détails/.test(x.textContent); })[0];
     if (b) b.click();
   }
-  var LEO_TEXT = "Pour chaque élève, « Détails » ouvre 4 cartes : sons écoutés, sons lus, courbe de progrès de la fluence et activité de jeux. Chaque carte donne ses dates et scores.";
+  var LEO_TEXT = "Pour chaque élève, « Détails » ouvre ses cartes : sons écoutés, sons écrits, sons lus, vitesse de lecture et jeux. Chaque carte donne ses dates et ses résultats.";
   function toTeacher() { T.step++; save(); location.href = "enseignants.html?demo=1"; return new Promise(function () {}); }
 
   /* « Découvrir l'essentiel en 2 minutes » : 5 étapes */

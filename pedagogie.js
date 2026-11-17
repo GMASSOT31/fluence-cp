@@ -185,16 +185,16 @@
     var total = rows.length ? rows[0].total : 0;
     var tiles = mk("div", "pb-tiles");
     [["⏱️", avg === null ? "—" : avg + " min", "Temps de travail moyen par élève"],
-     ["🏅", (Math.round(med * 10) / 10).toString().replace(".", ",") + " / " + total, "Sons validés (élève du milieu de la classe)"],
+     ["🏅", Math.round(med) + " sur " + total, "Sons validés par un élève moyen de la classe"],
      ["💤", String(rows.filter(function (r) { return r.inactive; }).length), "Élèves inactifs (plus de " + INACTIVE_DAYS + " jours)"],
-     ["📊", series[0] + " · " + series[1] + " · " + series[2], "Séances d’écoute · dictée · lecture"]
+     ["📊", String(series[0] + series[1] + series[2]), "Exercices faits : 👂 " + series[0] + " écoute · ✏️ " + series[1] + " dictée · 📖 " + series[2] + " lecture"]
     ].forEach(function (t) { var d = mk("div", "pb-tile"); d.append(mk("span", "pb-ico", t[0]), mk("b", null, t[1]), mk("small", null, t[2])); tiles.append(d); });
     sec.append(tiles);
     return sec;
   }
 
   /* 3. Tableau de suivi individuel */
-  var FILTERS = [["all", "Tous"], ["late", "En difficulté"], ["ahead", "En avance"], ["idle", "Inactifs"], ["allo", "Allophones"]];
+  var FILTERS = [["all", "Tous"], ["late", "En difficulté"], ["ahead", "En avance"], ["idle", "Inactifs"], ["allo", "Apprennent le français"]];
   function keep(r, f) { return f === "all" || (f === "late" && r.color === "red") || (f === "ahead" && r.ahead && !r.inactive) || (f === "idle" && r.inactive) || (f === "allo" && r.allo); }
   function matrix(rows) {
     var sec = section("3", "Suivi individuel", null);
@@ -215,7 +215,7 @@
       b.onclick = function () { state.filter = f[0]; paint(); };
       bar.append(b);
     });
-    var legend = mk("p", "muted pb-legend", "🔴 en difficulté (bloqué, ou " + LATE + " sons de retard sur l’élève du milieu de la classe) · 🟡 avance normalement · 🟢 en avance de " + AHEAD + " sons ou plus · ⚪ inactif depuis " + INACTIVE_DAYS + " jours");
+    var legend = mk("p", "muted pb-legend", "🔴 en difficulté (bloqué, ou " + LATE + " sons de retard sur un élève moyen de la classe) · 🟡 avance normalement · 🟢 en avance de " + AHEAD + " sons ou plus · ⚪ inactif depuis " + INACTIVE_DAYS + " jours");
     sec.append(bar, legend, list);
     paint();
     return sec;
@@ -226,7 +226,7 @@
     var who = mk("div", "pb-who");
     who.append(mk("span", "pb-dot", dot), mk("strong", null, r.s.nickname));
     var al = mk("button", "pb-allo" + (r.allo ? " on" : ""), "🌍"); al.type = "button";
-    al.title = r.allo ? "Élève allophone (toucher pour retirer)" : "Marquer comme élève allophone";
+    al.title = r.allo ? "Élève qui apprend le français (toucher pour retirer)" : "Marquer : élève qui apprend le français";
     al.setAttribute("aria-pressed", String(r.allo));
     al.onclick = function () {
       var i = window.pedaAllo.indexOf(r.s.id);
@@ -246,10 +246,10 @@
     else if (!r.cur) txt = "Tous les sons validés 🎉";
     else txt = "Son «\u00a0" + soundName(r.cur.id) + "\u00a0» · " + (r.blocked ? (r.err !== null && r.answers >= 6 ? "bloqué (" + r.err + " % d’erreurs)" : "bloqué (" + r.readTries + " lectures sans réussite)") : (r.curSent ? "lecture enregistrée, à écouter" : "en cours"));
     if (r.recs) txt += " · 🎧 " + plur(r.recs, "lecture à écouter", "lectures à écouter");
-    prog.append(pbar, mk("small", null, r.nValid + "/" + r.total + " · " + txt));
+    prog.append(pbar, mk("small", null, r.nValid + " " + (r.nValid > 1 ? "sons" : "son") + " sur " + r.total + " · " + txt));
     if (r.asg) { var ast = asgState(r.asg, r.remed); prog.append(mk("small", "pb-asg" + (ast.ok ? " ok" : ""), "🎯 " + asgLabel(r.asg) + " · " + asgStatusText(r.asg, r.remed))); }
     var flu = mk("div", "pb-flu", r.flu ? Math.round(Number(r.flu.mclm)) + "/min" : "—");
-    flu.title = r.flu ? "Dernière lecture : " + Math.round(Number(r.flu.mclm)) + " corrects par minute (" + ({ s: "syllabes", m: "mots", t: "texte" }[r.flu.k] || "lecture") + ")" : "Pas encore de lecture";
+    flu.title = r.flu ? "Dernière lecture : " + Math.round(Number(r.flu.mclm)) + " " + (r.flu.k === "s" ? "syllabes lues" : "mots lus") + " par minute (" + ({ s: "syllabes", m: "mots", t: "texte" }[r.flu.k] || "lecture") + ")" : "Pas encore de lecture";
     var act = mk("button", "secondary pb-see", "Voir"); act.type = "button"; act.title = "Voir les détails de " + r.s.nickname;
     act.onclick = function () { openDetails(r.s); };
     var btns = mk("div", "pb-btns"); btns.append(act);
@@ -373,7 +373,7 @@
     /* légende */
     doc.setLineWidth(0.7); doc.setDrawColor(91, 33, 182); doc.line(M, 66, M + 8, 66);
     doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(70); doc.text(T(r.s.nickname), M + 10, 67);
-    if (ref) { doc.setLineWidth(0.4); doc.setDrawColor(150); doc.setLineDashPattern([1.2, 1.2], 0); doc.line(M, 71, M + 8, 71); doc.setLineDashPattern([], 0); doc.text("Milieu de la classe", M + 10, 72); }
+    if (ref) { doc.setLineWidth(0.4); doc.setDrawColor(150); doc.setLineDashPattern([1.2, 1.2], 0); doc.line(M, 71, M + 8, 71); doc.setLineDashPattern([], 0); doc.text("Élève moyen de la classe", M + 10, 72); }
 
     /* Tableau des 6 axes */
     var y = 170;
@@ -416,7 +416,7 @@
       ax.flu.slice(0, 5).forEach(function (x) {
         if (y > 280) return; y += 5.4;
         doc.text(T(frDate(Number(x.ts) || Date.now()) + "   Son « " + soundName(x.sound) + " » · " + (KN[x.k] || "lecture") + (x.src === "train" ? " (entraînement)" : "")), M + 2, y);
-        doc.text(Math.round(Number(x.mclm)) + " corrects / min", W - M - 2, y, { align: "right" });
+        doc.text(Math.round(Number(x.mclm)) + (x.k === "s" ? " syllabes / min" : " mots / min"), W - M - 2, y, { align: "right" });
       });
     }
     doc.setFontSize(7.5); doc.setTextColor(140);
