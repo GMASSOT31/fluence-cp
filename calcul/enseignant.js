@@ -25,7 +25,7 @@
     return fetch(C.url + "/rest/v1/rpc/" + name, { method: "POST", headers: { "Content-Type": "application/json", apikey: C.key, Authorization: "Bearer " + (token() || C.key) }, body: JSON.stringify(args || {}) })
       .then(function (r) { return r.text().then(function (txt) { var j = null; try { j = txt ? JSON.parse(txt) : null; } catch (e) {} if (!r.ok) throw new Error((j && j.message) || ("HTTP " + r.status)); return j; }); });
   }
-  function enabled(act) { var l = settings.levels && settings.levels[act]; return (l && l.length ? l : E.DEFAULT_LEVELS[act]).filter(function (id) { return E.levelInfo(act, id); }); }
+  function enabled(act) { return E.levelsOf(act, settings.levels && settings.levels[act]); }
 
   /* ===== Style : accent vert du calcul (la lecture reste violette) ===== */
   function css() {
@@ -340,7 +340,7 @@
       }
       f.appendChild(el("p", "muted", "L’élève ne voit que les étapes déjà réussies et la suivante : l’ordre des étapes est celui de cette liste (cochez celles que vous proposez)."));
       function collect() {
-        var levels = {}; Object.keys(orders).forEach(function (a) { levels[a] = orders[a].filter(function (id) { return boxes[a][id]; }); });
+        var levels = {}; Object.keys(orders).forEach(function (a) { levels[a] = orders[a].filter(function (id) { return boxes[a][id]; }); if (levels[a].length) levels[a] = levels[a].concat(E.marks(a)); });
         return { questions: +q.value, pass: +p.value, voice: v.checked, levels: levels };
       }
       var okTimer = null;

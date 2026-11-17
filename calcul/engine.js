@@ -83,6 +83,11 @@
     { id: "n1", label: "0 à 10", emoji: "🔟", pool: range(0, 10) },
     { id: "n2", label: "11 à 16", emoji: "🧒", pool: range(11, 16) },
     { id: "n3", label: "17 à 20", emoji: "🖐️", pool: range(17, 20) },
+    /* étapes intermédiaires (17/11/2026) : une dizaine à la fois avant la révision « 20 à 59 » (identifiants nouveaux, les anciens ne changent jamais) */
+    { id: "d20", label: "20 à 29", emoji: "2️⃣", pool: range(20, 29) },
+    { id: "d30", label: "30 à 39", emoji: "3️⃣", pool: range(30, 39) },
+    { id: "d40", label: "40 à 49", emoji: "4️⃣", pool: range(40, 49) },
+    { id: "d50", label: "50 à 59", emoji: "5️⃣", pool: range(50, 59) },
     { id: "n4", label: "20 à 59", emoji: "🔢", pool: range(20, 59) },
     { id: "n5", label: "13 ou 30 ? 14 ou 40 ?", emoji: "👂", pool: [13, 14, 15, 16, 30, 40, 50, 60] },
     { id: "n6", label: "60 à 69", emoji: "6️⃣", pool: range(60, 69) },
@@ -131,8 +136,9 @@
      kmh = vitesse de course maximale approximative (arrondie), affichée « environ » sur la carte. */
   var ANIMAUX = {
     nombres: [
-      ["🐌", "l’escargot", 0.05], ["🐢", "la tortue", 0.5], ["🦔", "le hérisson", 7], ["🐓", "la poule", 14], ["🐖", "le cochon", 17], ["🐕", "le chien", 30],
-      ["🐘", "l’éléphant", 40], ["🐇", "le lapin", 56], ["🦒", "la girafe", 60], ["🐎", "le cheval", 88], ["🐆", "le guépard", 110]],
+      ["🐌", "l’escargot", 0.05], ["🐢", "la tortue", 0.5], ["🦔", "le hérisson", 7], ["🐭", "la souris", 13], ["🐓", "la poule", 14], ["🐖", "le cochon", 17],
+      ["🐄", "la vache", 25], ["🐕", "le chien", 30], ["🐑", "le mouton", 35], ["🐘", "l’éléphant", 40], ["🐻", "l’ours", 50], ["🐇", "le lapin", 56],
+      ["🦒", "la girafe", 60], ["🐎", "le cheval", 88], ["🐆", "le guépard", 110]],
     addition: [
       ["🐜", "la fourmi", 1], ["🐿️", "l’écureuil", 20], ["🦛", "l’hippopotame", 30], ["🐈", "le chat", 48], ["🦊", "le renard", 50], ["🦓", "le zèbre", 65],
       ["🦘", "le kangourou", 70], ["🦁", "le lion", 80]],
@@ -145,7 +151,7 @@
   function animalOf(activity, id) { var l = levelInfo(activity, id); return l ? l.animal : null; }
   /* Étapes visibles pour l'élève : celles déjà réussies + la suivante (jamais les autres). enabled = ordre choisi par l'enseignant. */
   function visibleLevels(activity, enabled, levels) {
-    var list = (enabled && enabled.length ? enabled : DEFAULT_LEVELS[activity]).filter(function (id) { return levelInfo(activity, id); }), out = [], i;
+    var list = levelsOf(activity, enabled), out = [], i;
     var next = false;   /* toute étape réussie reste visible (même après un trou dans l'ordre), plus la première pas encore réussie */
     for (i = 0; i < list.length; i++) {
       if (((levels || {})[activity + ":" + list[i]] || {}).ok) out.push(list[i]);
@@ -167,6 +173,25 @@
     addition: ["a1", "a2", "a3", "a4"],
     soustraction: ["s1", "s2"]
   };
+  /* Étapes ajoutées après coup : un enseignant qui avait déjà réglé l'ordre (liste sans ces étapes) les reçoit à leur place,
+     juste après `after` (comme withVoy2() du Zoo de Lecture). Le repère `mark` est enregistré avec la liste par l'espace enseignant :
+     ensuite, ses choix (étapes décochées) sont respectés. */
+  var ADDED = { nombres: [{ ids: ["d20", "d30", "d40", "d50"], after: "n3", before: "n4", mark: "v2" }] };
+  function withAdded(activity, list) {
+    var out = list.slice();
+    (ADDED[activity] || []).forEach(function (a) {
+      if (out.indexOf(a.mark) >= 0 || a.ids.some(function (id) { return out.indexOf(id) >= 0; })) return;
+      var i = out.indexOf(a.after), j = out.indexOf(a.before);
+      if (i >= 0) out.splice.apply(out, [i + 1, 0].concat(a.ids));
+      else if (j >= 0) out.splice.apply(out, [j, 0].concat(a.ids));
+    });
+    return out;
+  }
+  function marks(activity) { return (ADDED[activity] || []).map(function (a) { return a.mark; }); }
+  /* Étapes ouvertes : la liste de l'enseignant (complétée par les étapes ajoutées), sinon l'ordre par défaut ; identifiants inconnus retirés */
+  function levelsOf(activity, enabled) {
+    return (enabled && enabled.length ? withAdded(activity, enabled) : DEFAULT_LEVELS[activity] || []).filter(function (id) { return levelInfo(activity, id); });
+  }
   function levelInfo(activity, id) {
     var list = LEVELS[activity] || [], i;
     for (i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
@@ -224,7 +249,7 @@
   }
   /* Niveau suggéré : le premier niveau ouvert qui n'est pas encore réussi (levels = progression serveur) */
   function suggestLevel(activity, enabled, levels) {
-    var list = (enabled && enabled.length ? enabled : DEFAULT_LEVELS[activity]).filter(function (id) { return levelInfo(activity, id); }), i;
+    var list = levelsOf(activity, enabled), i;
     for (i = 0; i < list.length; i++) if (!((levels || {})[activity + ":" + list[i]] || {}).ok) return list[i];
     return list[list.length - 1] || null;
   }
@@ -236,7 +261,7 @@
 
   root.CalcEngine = {
     words: words, seeded: seeded, shuffle: shuffle, numberDistractors: numberDistractors, calcDistractors: calcDistractors,
-    LEVELS: LEVELS, DEFAULT_LEVELS: DEFAULT_LEVELS, levelInfo: levelInfo, animalOf: animalOf, visibleLevels: visibleLevels, topAnimal: topAnimal, makeRound: makeRound, suggestLevel: suggestLevel, status: status
+    LEVELS: LEVELS, DEFAULT_LEVELS: DEFAULT_LEVELS, levelInfo: levelInfo, levelsOf: levelsOf, marks: marks, animalOf: animalOf, visibleLevels: visibleLevels, topAnimal: topAnimal, makeRound: makeRound, suggestLevel: suggestLevel, status: status
   };
   if (typeof module !== "undefined" && module.exports) module.exports = root.CalcEngine;
 })(typeof window !== "undefined" ? window : this);

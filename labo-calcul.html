@@ -320,7 +320,7 @@
 <script src="labo-config.js?v=2"></script>
 <script src="vendor/supabase.js?v=2.118.0"></script>
 <script src="vendor/supabase-lite.js?v=1"></script>
-<script src="calcul/engine.js?v=5"></script>
+<script src="calcul/engine.js?v=6"></script>
 <script src="calcul/zoo-effects.js?v=2"></script>
 <script src="calcul/voice.js?v=2"></script>
 <script>
@@ -390,8 +390,7 @@
     S.settings = st.settings || {}; S.wheels = Math.max(0, Math.floor(Number(st.wheels) || 0));
   }
   function enabledLevels(act) {
-    var l = S.settings.levels && S.settings.levels[act];
-    return (l && l.length ? l : E.DEFAULT_LEVELS[act]).filter(function (id) { return E.levelInfo(act, id); });
+    return E.levelsOf(act, S.settings.levels && S.settings.levels[act]);
   }
 
   /* ===== Chiffres : niveau = niveaux réussis, nombres = nombres reconnus ===== */
@@ -901,7 +900,7 @@
   function cap1(t) { return t.charAt(0).toUpperCase() + t.slice(1); }
   /* Pour un enfant de CP : une comparaison, pas des km/h (les km/h restent dans l'espace enseignant) */
   var VELO = "aussi vite qu’un vélo", VILLE = "aussi vite qu’une voiture en ville", ROUTE = "presque aussi vite qu’une voiture sur la route";
-  var SPEED = { "🐌": "tout doucement, comme un escargot", "🐢": "plus vite qu’un escargot, mais moins vite que toi qui marches", "🦔": "à peu près comme toi quand tu cours doucement", "🐓": "presque " + VELO, "🐖": VELO, "🐕": "plus vite qu’un vélo",
+  var SPEED = { "🐌": "tout doucement, comme un escargot", "🐢": "plus vite qu’un escargot, mais moins vite que toi qui marches", "🦔": "à peu près comme toi quand tu cours doucement", "🐭": "aussi vite que toi quand tu cours très fort", "🐓": "presque " + VELO, "🐖": VELO, "🐄": "plus vite qu’un vélo", "🐕": "plus vite qu’un vélo", "🐑": "presque " + VILLE, "🐻": VILLE,
     "🐘": "presque " + VILLE, "🐇": VILLE, "🦒": "plus vite qu’une voiture en ville", "🐎": ROUTE, "🐆": "aussi vite qu’une voiture sur l’autoroute",
     "🐜": "plus vite qu’un escargot", "🐿️": VELO, "🦛": "plus vite qu’un vélo", "🐈": "presque " + VILLE, "🦊": VILLE, "🦓": "plus vite qu’une voiture en ville", "🦘": "bien plus vite qu’une voiture en ville", "🦁": ROUTE,
     "🐊": VELO, "🦏": VILLE, "🐺": "plus vite qu’une voiture en ville", "🐪": "plus vite qu’une voiture en ville", "🦌": "bien plus vite qu’une voiture en ville" };
