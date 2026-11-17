@@ -35,16 +35,16 @@
   body.calc .home-next:not(.listen-go) { background: linear-gradient(135deg, #0fa38d, #0b7f7d); border-color: #0b7f7d; box-shadow: 0 6px 18px rgba(11,127,125,.35); }
   body.calc .home-alt.listen-alt { border-color: #d9822b; color: #a85a0f; background: rgba(217,130,43,.1); }
   body.calc .primary { background: var(--calc-d); color: #fff; }
-  /* panneau de droite : trois activités + salle de jeux (identique à la lecture) */
-  .panel-nav.nombres-cta { background: linear-gradient(145deg,#d6f3ee,#aee8dc); border-color: #0b7f7d; color: #064b49; }
-  .panel-nav.nombres-cta .pn-sub { color: #064b49; }
-  .panel-nav.add-cta { background: linear-gradient(145deg,#fff1cf,#ffdc8f); border-color: #d9a21f; color: #6b4300; }
-  .panel-nav.add-cta .pn-sub { color: #6b4300; }
-  .panel-nav.sub-cta { background: linear-gradient(145deg,#ffe3ea,#ffc2d1); border-color: #d6486b; color: #7a1631; }
-  .panel-nav.sub-cta .pn-sub { color: #7a1631; }
-  .panel-nav.nombres-cta[aria-current="page"] { background: #064b49; border-color: #064b49; color: #fff; } .panel-nav.nombres-cta[aria-current="page"] .pn-sub { color: #fff; }
-  .panel-nav.add-cta[aria-current="page"] { background: #6b4300; border-color: #6b4300; color: #fff; } .panel-nav.add-cta[aria-current="page"] .pn-sub { color: #fff; }
-  .panel-nav.sub-cta[aria-current="page"] { background: #7a1631; border-color: #7a1631; color: #fff; } .panel-nav.sub-cta[aria-current="page"] .pn-sub { color: #fff; }
+  /* panneau de droite : trois activités + salle de jeux. MÊMES couleurs partout (accueil, exercice, panneau, barre du bas) : Écouter violet, Addition orange, Soustraction rose */
+  .panel-nav.nombres-cta { background: linear-gradient(145deg,#f3efff,#ddd0ff); border-color: #6d28d9; color: #4c1d95; }
+  .panel-nav.nombres-cta .pn-sub { color: #4c1d95; }
+  .panel-nav.add-cta { background: linear-gradient(145deg,#fff3e8,#ffd5ad); border-color: #ea580c; color: #7c2d12; }
+  .panel-nav.add-cta .pn-sub { color: #7c2d12; }
+  .panel-nav.sub-cta { background: linear-gradient(145deg,#fff0f7,#ffc6e0); border-color: #db2777; color: #831843; }
+  .panel-nav.sub-cta .pn-sub { color: #831843; }
+  .panel-nav.nombres-cta[aria-current="page"] { background: #5b21b6; border-color: #5b21b6; color: #fff; } .panel-nav.nombres-cta[aria-current="page"] .pn-sub { color: #fff; }
+  .panel-nav.add-cta[aria-current="page"] { background: #c2410c; border-color: #c2410c; color: #fff; } .panel-nav.add-cta[aria-current="page"] .pn-sub { color: #fff; }
+  .panel-nav.sub-cta[aria-current="page"] { background: #be185d; border-color: #be185d; color: #fff; } .panel-nav.sub-cta[aria-current="page"] .pn-sub { color: #fff; }
   body.mode-student .bottom-nav [data-go="boutique"], body.mode-student .bottom-nav [data-go="cartes"], body.mode-student .bottom-nav [data-go="reconnues"], body.mode-student .bottom-nav [data-go="progres"] { display: none; }
   #panel-right .panel-nav.big.nombres-cta, #panel-right .panel-nav.big.add-cta, #panel-right .panel-nav.big.sub-cta { font-size: 1.12rem; padding: 20px 14px; }
   @media (max-width: 880px) { body.calc #panel-left { display: none; } }
@@ -91,7 +91,6 @@
   /* ordinateur portable : toute la question (calcul, images, aide, réponses, message) tient dans la hauteur de la fenêtre, même avec l'aide complète */
   @media (min-width: 881px) {
     .exo { position: relative; padding-top: 10px; padding-bottom: 8px; }
-    .exo > .home-small:first-child { position: absolute; left: 12px; top: 10px; z-index: 2; }
     .exo .dots { margin: 4px 0 0; }
     .exo .eq { font-size: max(2rem, min(8vh, 3.8rem)); margin: 2px 0; }
     .exo .pic { font-size: max(1.3rem, min(4.2vh, 2rem)); margin: 2px auto 4px; gap: 2px 10px; }
@@ -109,7 +108,7 @@
     body.listen-focus .eq { font-size: max(80px, min(96px, 9.5vh)); margin: 0; }
     body.listen-focus .stage .muted, body.listen-focus .hint, body.listen-focus .msg { font-size: max(32px, min(35px, 4vh)); line-height: 1.2; }
     body.listen-focus .say { min-height: max(90px, min(13vh, 130px)); font-size: 2.2rem; width: min(380px, 70%); }
-    body.listen-focus .exo > .home-small:first-child, body.listen-focus .crow .home-small { font-size: max(1.2rem, min(1.6rem, 2.4vh)); min-height: max(48px, min(6.5vh, 64px)); padding: 8px 22px; }
+    body.listen-focus .exo-quit, body.listen-focus .exo-tool { font-size: max(1.2rem, min(1.6rem, 2.4vh)); min-height: max(48px, min(6.5vh, 64px)); padding: 8px 22px; }
     body.listen-focus .choices { max-width: 1000px; gap: max(8px, min(2vh, 22px)); } body.listen-focus .choices.c6 { max-width: 1200px; }
     body.listen-focus .choice { min-height: max(70px, min(11.5vh, 150px)); font-size: max(48px, min(64px, 6.5vh)); }
     body.listen-focus .nline b { min-width: 52px; font-size: 1.7rem; padding: 10px 0; }
@@ -117,7 +116,7 @@
   }
   @media (max-width: 480px) {   /* petit téléphone : bandeau compact, la bascule et les 5 pastilles ne se chevauchent jamais */
     header .zoo-hero .brand .sub { display: none; }
-    #labo-switch .on b { display: none; } #labo-switch a, #labo-switch span { padding: 0 12px; }
+    #labo-switch a, #labo-switch span { padding: 0 9px; }   /* les mots « Lecture » et « Calcul » restent écrits */
     body.mode-student .zoo-top-stats { gap: 3px; right: 6px; }
     body.mode-student .zoo-top-stat { padding: 3px 4px; gap: 2px; min-width: 0; border-radius: 9px; }
     body.mode-student .zoo-top-stat > span { font-size: .95rem; } body.mode-student .zoo-top-stat strong { font-size: .85rem; }
@@ -165,11 +164,17 @@
   .pill.done { border-color: #17794f; color: #17794f; } .pill.mastered { border-color: var(--calc); color: var(--calc); }
   @media (max-width: 600px) { .choices.c6 { grid-template-columns: repeat(2,1fr); } .choices { gap: 10px; } .choice { min-height: 78px; font-size: 2.1rem; } }
   @media (prefers-reduced-motion: reduce) { .choice.bad { animation: none; } }
-  #labo-switch{display:inline-flex;height:26px;margin-top:0;border:2px solid rgba(255,255,255,.75);border-radius:999px;overflow:hidden;background:rgba(0,0,0,.25)}#labo-switch a,#labo-switch span{display:inline-flex;align-items:center;flex-direction:row;white-space:nowrap;gap:4px;line-height:1;padding:0 11px;font:800 14px Figtree,system-ui,sans-serif;color:#fff;text-decoration:none}#labo-switch .on{background:#fff;color:#201049}body.mode-student #labo-switch{display:inline-flex!important}@media (max-width:650px){#labo-switch{height:24px}#labo-switch a:not(.on) b{display:none}#labo-switch a{min-width:38px;justify-content:center;padding:0 9px}#labo-switch span{padding:0 10px;font-size:13.5px}}
+  #labo-switch{display:inline-flex;height:26px;margin-top:0;border:2px solid rgba(255,255,255,.75);border-radius:999px;overflow:hidden;background:rgba(0,0,0,.25)}#labo-switch a,#labo-switch span{display:inline-flex;align-items:center;flex-direction:row;white-space:nowrap;gap:4px;line-height:1;padding:0 11px;font:800 14px Figtree,system-ui,sans-serif;color:#fff;text-decoration:none}#labo-switch .on{background:#fff;color:#201049}body.mode-student #labo-switch{display:inline-flex!important}@media (max-width:650px){#labo-switch{height:24px}#labo-switch a{min-width:38px;justify-content:center;padding:0 9px}#labo-switch span{padding:0 10px;font-size:13.5px}}
   /* barre du bas : l'onglet actif est blanc sur vert foncé (contraste > 7:1), icône comprise */
   body.mode-student .bottom-nav .panel-nav[aria-current="page"] { background: #05524f; border-color: #05524f; color: #fff; font-weight: 800; }
   body.mode-student .bottom-nav .panel-nav[aria-current="page"] * { color: #fff; }
   body.mode-student .bottom-nav .panel-nav[aria-current="page"] .pn-ico { filter: brightness(0) invert(1); }
+  body.mode-student .bottom-nav [data-go="nombres"][aria-current="page"] { background: #5b21b6; border-color: #5b21b6; }
+  body.mode-student .bottom-nav [data-go="addition"][aria-current="page"] { background: #c2410c; border-color: #c2410c; }
+  body.mode-student .bottom-nav [data-go="soustraction"][aria-current="page"] { background: #be185d; border-color: #be185d; }
+  body.mode-student .bottom-nav [data-go="nombres"] { border-bottom: 4px solid #8b5cf6; } body.mode-student .bottom-nav [data-go="addition"] { border-bottom: 4px solid #f97316; } body.mode-student .bottom-nav [data-go="soustraction"] { border-bottom: 4px solid #ec4899; }
+  body.mode-student .bottom-nav .bn-long { letter-spacing: -.02em; }
+  @media (max-width: 400px) { body.mode-student .bottom-nav .bn-long { font-size: .62rem; } }
   /* cadeau du maître(sse) */
   .gift-banner { position: fixed; left: 50%; top: 18%; transform: translateX(-50%); z-index: 9998; cursor: pointer; padding: 14px 26px; text-align: center; color: var(--ink); background: var(--card); border: 3px solid #f5c542; border-radius: 20px; box-shadow: 0 12px 34px rgba(0,0,0,.45); }
   .gift-banner .gb-title { font: 700 1.5rem Fredoka, Figtree, system-ui, sans-serif; } .gift-banner .gb-coins { font-weight: 800; font-size: 1.4rem; margin: 4px 0; } .gift-banner .gb-sub { font-weight: 600; opacity: .85; }
@@ -197,6 +202,51 @@
   .next-bar .big-btn { margin: 0; width: 100%; max-width: 420px; }
   body.zoo-playing .next-bar { display: none; }
   @media (prefers-reduced-motion: reduce) { .go-next, .zoo-card.suggested { animation: none; } }
+  /* ===== Accueil « Ma mission » : un seul gros bouton ; les deux autres activités en petit, sous « Ou bien » ===== */
+  .home-or { margin: 10px 0 0; font-size: .95rem; }
+  .home-alts { display: flex; flex-wrap: wrap; margin: 0 -5px; }
+  .home-alt-act { flex: 1 1 150px; margin: 5px; min-height: 56px; display: flex; align-items: center; justify-content: center; padding: 8px 14px; border-radius: 16px; border: 2px solid var(--line); border-left-width: 8px; background: var(--card); color: var(--ink); font: 700 1.1rem Fredoka, Figtree, sans-serif; cursor: pointer; }
+  .home-alt-act .ha-ico { margin-right: 8px; font-size: 1.3rem; }
+  .home-alt-act.alt-nombres { border-color: #8b5cf6; } .home-alt-act.alt-addition { border-color: #f97316; } .home-alt-act.alt-soustraction { border-color: #ec4899; }
+  @media (hover: hover) and (pointer: fine) { .home-alt-act:hover { background: var(--go-pale); color: #201049; } }
+  /* ===== Exercice : couleur de l'activité en cours ; vrais boutons pour Arrêter, Réécouter et Je m'aide ; consigne en gros ===== */
+  body[data-path] #view { --calc: var(--go2); --calc-d: var(--go-bd); --calc-l: var(--go-pale); }
+  .exo-top { position: relative; display: flex; align-items: center; justify-content: center; min-height: 52px; }
+  .exo-top .dots { margin: 0; }
+  .exo-quit { position: absolute; left: 0; top: 50%; -webkit-transform: translateY(-50%); transform: translateY(-50%); min-height: 48px; padding: 8px 16px; border-radius: 14px; border: 2px solid var(--line); background: var(--card); color: var(--ink); font: 800 1rem Figtree, sans-serif; cursor: pointer; }
+  .exo-tool { min-height: 56px; margin: 0 5px; padding: 10px 20px; border-radius: 16px; border: 3px solid var(--calc); background: var(--card); color: var(--ink); font: 700 1.2rem Fredoka, Figtree, sans-serif; cursor: pointer; }
+  .exo-tool[aria-expanded="true"] { background: var(--calc); color: #fff; }
+  .exo-ask { margin: 4px 0 10px; font: 700 max(1.35rem, min(5.2vw, 1.8rem)) Fredoka, Figtree, sans-serif; color: var(--ink); }
+  .exo .crow { margin-top: 8px; }
+  /* l'exercice remplit l'écran et son contenu est centré en hauteur (plus de grand vide sous les réponses sur tablette) */
+  body.listen-focus #view > .exo { display: flex; flex-direction: column; min-height: calc(100vh - 24px); }
+  body.listen-focus #view > .exo > * { width: 100%; }   /* les marges « auto » d'un élément flex l'empêcheraient sinon de prendre toute la largeur */
+  body.listen-focus #view > .exo > .stage { margin-top: auto; }
+  body.listen-focus #view > .exo > .msg { margin-bottom: auto; }
+  @media (max-width: 600px) {
+    .exo-top { flex-wrap: wrap; justify-content: flex-start; }
+    .exo-quit { position: static; -webkit-transform: none; transform: none; }
+    .exo-top .dots { flex: 1 1 100%; margin: 8px 0 0; }
+    .exo-tool { padding: 10px 14px; font-size: 1.1rem; }
+  }
+  /* ordinateur : la question entière (aide complète comprise) tient toujours dans la hauteur de la fenêtre */
+  @media (min-width: 881px) {
+    .exo-top { min-height: 26px; }
+    .exo-quit { top: 0; -webkit-transform: none; transform: none; min-height: 48px; padding: 6px 14px; }
+    .exo-tool { min-height: 48px; padding: 6px 18px; font-size: 1.1rem; }
+    .exo .crow { margin-top: 4px; }
+    .exo .hands img { height: max(100px, min(20vh, 240px)); }
+  }
+  /* tablette en hauteur (iPad) : tout en plus grand */
+  @media (min-width: 601px) and (max-width: 1399px) and (min-height: 900px) {
+    body.listen-focus .exo .eq { font-size: 5rem; }
+    body.listen-focus .exo .say { min-height: 120px; font-size: 2.1rem; width: min(340px, 70%); }
+    body.listen-focus .exo .exo-ask { font-size: 2rem; }
+    body.listen-focus .exo .choices { max-width: 640px; gap: 16px; } body.listen-focus .exo .choices.c6 { max-width: 780px; }
+    body.listen-focus .exo .choice { min-height: 120px; font-size: 3.2rem; }
+    body.listen-focus .exo .msg { font-size: 1.5rem; }
+    body.listen-focus .exo .pic { font-size: 2.6rem; }
+  }
 </style>
 </head>
 <body class="mode-student calc">
@@ -205,25 +255,23 @@
     <div class="zoo-hero">
       <div class="zoo-hero-copy">
         <span class="zoo-kicker">✦ LE GRAND JEU DU CALCUL ✦</span>
-        <div class="brand"><h1>Zoo de <span>Calcul</span></h1><span class="sub">Apprendre en s’amusant</span></div>
+        <div class="brand"><h1>Zoo de <span>Calcul</span></h1></div>
         <span class="zoo-hero-tag">➕ Compte · 🏆 Progresse · 🎮 Joue !</span>
         <div id="labo-switch" role="group" aria-label="Matière"><a href="zoo-connecte.html" aria-label="Zoo de Lecture" title="Zoo de Lecture">📖<b> Lecture</b></a><span class="on">➕<b> Calcul</b></span></div>
       </div>
       <div class="zoo-hero-art" aria-hidden="true"><span class="zoo-star zoo-star-one">✦</span><span class="zoo-mascot zoo-bee" id="mascot-1">🐌</span><span class="zoo-mascot zoo-llama" id="mascot-2">🐕</span><span class="zoo-mascot zoo-owl" id="mascot-3">🐆</span><span class="zoo-star zoo-star-two">✧</span><span class="zoo-pad">➕ <span>● ●</span></span></div>
     </div>
-    <div class="zoo-top-stats needs-reward" id="zoo-top-stats" hidden aria-label="Mes pièces, mes parties et mes niveaux">
+    <div class="zoo-top-stats needs-reward" id="zoo-top-stats" hidden aria-label="Mes pièces, mes parties et mes animaux">
       <div class="zoo-top-stat zoo-top-gold"><span class="gold-coin" aria-hidden="true"></span><strong id="top-coins">0</strong><small>Pièces</small></div>
       <div class="zoo-top-stat"><span aria-hidden="true">🎮</span><strong id="top-games">0</strong><small>Parties</small></div>
-      <div class="zoo-top-stat zoo-top-keep zoo-top-lv" id="top-lv-nombres" role="img"><span aria-hidden="true">👂</span><strong>E0</strong></div>
-      <div class="zoo-top-stat zoo-top-keep zoo-top-lv" id="top-lv-addition" role="img"><span aria-hidden="true">➕</span><strong>A0</strong></div>
-      <div class="zoo-top-stat zoo-top-keep zoo-top-lv" id="top-lv-soustraction" role="img"><span aria-hidden="true">➖</span><strong>S0</strong></div>
+      <div class="zoo-top-stat zoo-top-keep" id="top-pets" role="img"><span aria-hidden="true">🐾</span><strong id="top-pets-n">0</strong><small>Animaux</small></div>
     </div>
   </header>
 
   <div class="layout" id="layout">
     <aside class="panel left" id="panel-left" aria-label="Mon espace" hidden>
       <div class="pcard">
-        <div class="avatar-profile"><div class="avatar-trigger" id="pl-avatar-box" role="img" aria-label="Mon avatar"><span id="pl-avatar" aria-hidden="true">🧑</span></div><div class="avatar-profile-name"><div class="who-name" id="pl-name"></div><span class="avatar-hint">Pour changer d’avatar, va dans Lecture</span></div></div>
+        <div class="avatar-profile"><div class="avatar-trigger" id="pl-avatar-box" role="img" aria-label="Mon avatar"><span id="pl-avatar" aria-hidden="true">🧑</span></div><div class="avatar-profile-name"><div class="who-name" id="pl-name"></div></div></div>
         <div class="row">
           <button type="button" class="ghost-sm" id="btn-logout">Me déconnecter</button>
           <button type="button" class="ghost-sm" id="btn-pin-left" title="Changer mon code secret" aria-label="Changer mon code secret" hidden>🔑</button>
@@ -247,8 +295,8 @@
 
   <nav class="bottom-nav" id="bottom-nav" aria-label="Mon espace" hidden>
     <button type="button" class="panel-nav" data-go="nombres"><span class="pn-ico" aria-hidden="true">👂</span><span>Écouter</span></button>
-    <button type="button" class="panel-nav" data-go="addition"><span class="pn-ico" aria-hidden="true">➕</span><span>Plus</span></button>
-    <button type="button" class="panel-nav" data-go="soustraction"><span class="pn-ico" aria-hidden="true">➖</span><span>Moins</span></button>
+    <button type="button" class="panel-nav" data-go="addition"><span class="pn-ico" aria-hidden="true">➕</span><span>Addition</span></button>
+    <button type="button" class="panel-nav" data-go="soustraction"><span class="pn-ico" aria-hidden="true">➖</span><span class="bn-long">Soustraction</span></button>
     <button type="button" class="panel-nav" data-go="jeux"><span class="pn-ico" aria-hidden="true">🎮</span><span>Jouer</span></button>
     <button type="button" class="panel-nav" data-go="boutique"><span class="pn-ico" aria-hidden="true">🛍️</span><span>Boutique</span></button>
     <button type="button" class="panel-nav" data-go="cartes"><span class="pn-ico" aria-hidden="true">🔢</span><span>Nombres</span></button>
@@ -282,7 +330,7 @@
   var token = null, client = null, R = null, view = "home", toastTimer = null;
   var S = { name: "", avatar: "🧑", levels: {}, nums: {}, calcs: {}, coins: 0, credits: 0, settings: {}, wheels: 0 };
   var ACT = {
-    nombres: { icon: "👂", title: "ÉCOUTER", sub: "J’écoute un nombre et je trouve comment il s’écrit", say: "J’écoute le nombre et je trouve comment il s’écrit." },
+    nombres: { icon: "👂", title: "Écouter", sub: "J’écoute un nombre et je trouve comment il s’écrit", say: "J’écoute le nombre et je trouve comment il s’écrit." },
     addition: { icon: "➕", title: "Addition", sub: "Je calcule des additions", say: "Je calcule des additions." },
     soustraction: { icon: "➖", title: "Soustraction", sub: "Je calcule des soustractions", say: "Je calcule des soustractions." }
   };
@@ -358,13 +406,11 @@
   function suggest(act) { return E.suggestLevel(act, enabledLevels(act), S.levels); }
   function levelLabel(act) { var id = suggest(act), l = id && E.levelInfo(act, id); return l ? (((S.levels[act + ":" + id] || {}).ok ? l.animal.e : "🥚") + " " + l.label) : ""; }
 
-  var LV_CHIPS = [["nombres", "E", "Écouter"], ["addition", "A", "Plus"], ["soustraction", "S", "Moins"]];   /* pastilles d'en-tête : étapes réussies par activité */
   function renderPanels() {
     var top = E.topAnimal(S.levels);
-    $("top-coins").textContent = S.coins; $("top-games").textContent = S.credits; LV_CHIPS.forEach(function (c) {
-      var n = enabledLevels(c[0]).filter(function (id) { return ((S.levels[c[0] + ":" + id] || {}).ok || 0) >= 1; }).length, box = $("top-lv-" + c[0]);
-      box.querySelector("strong").textContent = c[1] + n; box.setAttribute("aria-label", c[2] + " : " + nb(n, "étape réussie", "étapes réussies")); box.title = c[2] + " : " + nb(n, "étape réussie", "étapes réussies");
-    });
+    $("top-coins").textContent = S.coins; $("top-games").textContent = S.credits;
+    /* pastille « Animaux » : un animal par étape réussie (étapes proposées par l'enseignant), à la place des anciennes pastilles E0 / A0 / S0 */
+    var pets = levelsDone(); $("top-pets-n").textContent = pets; $("top-pets").setAttribute("aria-label", nb(pets, "animal dans mon zoo", "animaux dans mon zoo")); $("top-pets").title = nb(pets, "animal dans mon zoo", "animaux dans mon zoo");
     $("pl-name").textContent = S.name; $("pl-avatar").textContent = S.avatar;
     $("pr-prog").textContent = levelsDone() ? "✓ " + nb(levelsDone(), "niveau réussi", "niveaux réussis") + (levelsMastered() ? " · ⭐ " + levelsMastered() : "") : "";
     $("pr-games").textContent = nb(S.credits, "partie", "parties");
@@ -374,7 +420,7 @@
   function start() {
     document.body.classList.remove("calc-gate");
     ["panel-left", "panel-right", "bottom-nav", "zoo-top-stats"].forEach(function (id) { $(id).hidden = false; });
-    pathChosen = false; setPath(pickNext().main.act, false);   /* au départ : la couleur du parcours conseillé, les trois pulsent */
+    pathChosen = false; setPath(pickNext().main.act, false);   /* au départ : la couleur du parcours conseillé (seul son bouton pulse) */
     goTo("home");
   }
   /* Parcours en cours : ÉCOUTER (violet), Addition (orange) ou Soustraction (rose) ; il change dès que l'élève entre dans une activité */
@@ -430,24 +476,31 @@
     var n = pickNext(), card = el("div", "card home-hero"), first = pathChosen ? PATH : n.main.act;
     var order = [first].concat(["nombres", "addition", "soustraction"].filter(function (a) { return a !== first; })); n.main = { act: first, id: suggest(first) };
     card.appendChild(el("h2", "", "Bonjour " + S.name + " !"));
-    var speak = "Bonjour " + S.name + " ! Touche le gros bouton pour t’entraîner : " + ACT[n.main.act].say;
+    var speak = S.wheels > 0 ? "Bonjour " + S.name + " ! Une roue t’attend ! Touche le gros bouton qui bouge." : "Bonjour " + S.name + " ! Touche le gros bouton pour t’entraîner : " + ACT[n.main.act].say;
     var row = el("div", "home-step");
     var pet = el("button", "home-pet"); pet.type = "button"; pet.setAttribute("aria-label", "Écouter la consigne"); pet.appendChild(pet0(n.main.act, n.main.id));
     pet.addEventListener("click", function () { say(speak); }); row.appendChild(pet);
     var col = el("div", "home-col");
     function sayBtn(text, label) { var b = el("button", "secondary home-say", "🔊"); b.type = "button"; b.setAttribute("aria-label", label); b.title = label; b.addEventListener("click", function () { say(text); }); return b; }
-    if (S.wheels > 0) { var wr = el("div", "home-act-row"), wb = el("button", "primary big-btn home-next wheel-go go-next", "🎡 Lance ta roue !"); wb.type = "button"; wb.addEventListener("click", function () { goTo("roue"); }); wr.appendChild(wb); wr.appendChild(sayBtn("Une roue t’attend ! Touche le gros bouton qui bouge.", "Écouter")); col.appendChild(wr); }
-    /* Trois parcours, trois couleurs : au départ ils pulsent tous ; ensuite seul le parcours en cours pulse (et passe en premier) */
-    order.forEach(function (a, k) {
-      var id = suggest(a), lbl = (E.levelInfo(a, id) || {}).label, calm = S.wheels > 0 || (pathChosen && a !== PATH);
-      if (k === 1) col.appendChild(el("p", "home-or", "Ou bien :"));
-      var r = el("div", "home-act-row"), b = el("button", "primary big-btn home-next go-" + a + (calm ? " go-calm" : "") + (S.wheels > 0 ? "" : " go-next"), ACT[a].icon + " " + ACT[a].title); b.type = "button";
-      b.appendChild(el("small", "home-sub", lbl));
-      b.addEventListener("click", function () { startRound(a, id); });
-      r.appendChild(b); r.appendChild(sayBtn((k === 0 ? "" : "Ou bien : ") + ACT[a].say, "Écouter la consigne")); col.appendChild(r);
+    if (S.wheels > 0) { var wr = el("div", "home-act-row"), wb = el("button", "primary big-btn home-next wheel-go go-next", "🎡 Lance ta roue !"); wb.type = "button"; wb.addEventListener("click", function () { goTo("roue"); }); wr.appendChild(wb); wr.appendChild(sayBtn("Une roue t’attend ! Touche le gros bouton qui bouge.", "Écouter la consigne")); col.appendChild(wr); }
+    /* « Ma mission » comme en Lecture : UN seul gros bouton qui pulse (l'activité conseillée, ou la roue si elle attend) ; les deux autres en petit sous « Ou bien » */
+    var mainAct = S.wheels > 0 ? null : order[0], others = order.filter(function (a) { return a !== mainAct; });
+    if (mainAct) {
+      var mr = el("div", "home-act-row"), mb = el("button", "primary big-btn home-next go-next go-" + mainAct, ACT[mainAct].icon + " " + ACT[mainAct].title); mb.type = "button";
+      mb.appendChild(el("small", "home-sub", (E.levelInfo(mainAct, suggest(mainAct)) || {}).label));
+      mb.addEventListener("click", function () { startRound(mainAct, suggest(mainAct)); });
+      mr.appendChild(mb); mr.appendChild(sayBtn(ACT[mainAct].say, "Écouter la consigne")); col.appendChild(mr);
+    }
+    col.appendChild(el("p", "home-or", "Ou bien :"));
+    var alt = el("div", "home-alts");
+    others.forEach(function (a) {
+      var b = el("button", "home-alt-act alt-" + a); b.type = "button";
+      b.appendChild(el("span", "ha-ico", ACT[a].icon)); b.appendChild(el("span", "ha-t", ACT[a].title));
+      b.setAttribute("aria-label", ACT[a].title + " : " + ((E.levelInfo(a, suggest(a)) || {}).label || ""));
+      b.addEventListener("click", function () { startRound(a, suggest(a)); });
+      alt.appendChild(b);
     });
-    var more = el("div", "home-more"), ch = el("button", "secondary home-small", "↔️ Choisir une autre activité"); ch.type = "button"; ch.addEventListener("click", function () { goTo("nombres"); });
-    more.appendChild(ch); col.appendChild(more);
+    col.appendChild(alt);
     row.appendChild(col); card.appendChild(row); box.appendChild(card);
     var qc = el("div", "card quote-card"); qc.appendChild(el("blockquote", "", "« " + QUOTES[new Date().getDate() % QUOTES.length] + " »")); box.appendChild(qc);
   }
@@ -600,19 +653,20 @@
     var box = $("view"); clear(box);
     var q = R.qs[R.i], openHelp = null, helpFull = false, mistakes = 0, firstTry = true, t0 = Date.now(), answered = false, helped = false, card = el("div", "card calc-card exo");
     R.q = q;
-    var quit = el("button", "secondary home-small", "← Arrêter"); quit.type = "button"; quit.addEventListener("click", function () { if (!R.res.length) { goTo(R.act); return; } stopConfirm(); }); card.appendChild(quit);
-    card.appendChild(dots());
+    /* en haut : « Arrêter » (vrai bouton, discret mais facile à toucher) et les points de progression */
+    var top = el("div", "exo-top"), quit = el("button", "exo-quit", "← Arrêter"); quit.type = "button"; quit.addEventListener("click", function () { if (!R.res.length) { goTo(R.act); return; } stopConfirm(); });
+    top.appendChild(quit); top.appendChild(dots()); card.appendChild(top);
     var st = el("div", "stage"); card.appendChild(st);
     var msg = el("div", "msg"); msg.setAttribute("role", "status");
     if (q.type === "nombres") {
       var sp = el("button", "say", "🔊 Écouter"); sp.type = "button"; sp.setAttribute("aria-label", "Écouter le nombre"); var first = true;
       sp.addEventListener("click", function () { if (!first) R.replays++; first = false; if (!V.speak(q.say)) msg.textContent = "Ton appareil ne sait pas lire à voix haute."; });
-      st.appendChild(sp); st.appendChild(el("p", "muted", "Quel nombre as-tu entendu ?"));
+      st.appendChild(sp); st.appendChild(el("p", "exo-ask", "Quel nombre as-tu entendu ?"));
       setTimeout(function () { if (R && R.q === q && S.settings.voice !== false) { first = false; if (!V.speak(q.say)) msg.textContent = "Ton appareil ne sait pas lire à voix haute : demande à un adulte."; } }, 350);
     } else {
       st.appendChild(el("div", "eq", q.hole ? q.text.replace("?", "…") : q.text + " = …"));
       if (q.aid === "see") st.appendChild(picture(q));
-      var hb = el("button", "secondary home-small", "🧩 Je m’aide"); hb.type = "button"; hb.setAttribute("aria-expanded", "false"); var lineBox = el("div");
+      var hb = el("button", "exo-tool", "🧩 Je m’aide"); hb.type = "button"; hb.setAttribute("aria-expanded", "false"); var lineBox = el("div");
       /* 1er appui : la stratégie seulement ; le résultat n'apparaît (et n'est dit) qu'après une 2e erreur (full) */
       openHelp = function (speak, full, lead) {
         if (!helped) { helped = true; R.helps++; }
@@ -625,7 +679,7 @@
         if (lineBox.firstChild) { lineBox.removeChild(lineBox.firstChild); hb.setAttribute("aria-expanded", "false"); return; }
         openHelp(true, helpFull);
       });
-      var sq = el("button", "secondary home-small", "🔊"); sq.type = "button"; sq.setAttribute("aria-label", "Lire à voix haute"); sq.addEventListener("click", function () { V.speak(q.say); });
+      var sq = el("button", "exo-tool", "🔊 Réécouter"); sq.type = "button"; sq.setAttribute("aria-label", "Réécouter le calcul"); sq.addEventListener("click", function () { V.speak(q.say); });
       var rw = el("div", "crow"); rw.appendChild(sq); rw.appendChild(hb); st.appendChild(rw); st.appendChild(lineBox);
     }
     var cs = el("div", "choices" + (q.choices.length >= 5 ? " c6" : "")), btns = [];
