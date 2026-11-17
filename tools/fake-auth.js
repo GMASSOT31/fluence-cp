@@ -96,10 +96,10 @@
   }
   window.supabase = { createClient: function () { return {
     auth: {
-      getUser: function () { return Promise.resolve({ data: { user: /out/.test(location.search) ? null : st.user }, error: null }); },
+      getUser: function () { return Promise.resolve({ data: { user: /out/.test(location.search) && !st.signedIn ? null : st.user }, error: null }); },
       onAuthStateChange: function (f) { st.listeners.push(f); return { data: { subscription: { unsubscribe: function () {} } } }; },
       updateUser: function () { return Promise.resolve({ error: null }); }, resetPasswordForEmail: function () { return Promise.resolve({ error: null }); },
-      signInWithPassword: function () { return Promise.resolve({ error: /badpw/.test(location.search) ? { code: "invalid_credentials", message: "Invalid login credentials" } : null }); }, signOut: function () { return Promise.resolve({}); }, signUp: function () { return Promise.resolve({ data: {} }); }, resend: function () { return Promise.resolve({ error: null }); }
+      signInWithPassword: function () { if (/badpw/.test(location.search)) return Promise.resolve({ error: { code: "invalid_credentials", message: "Invalid login credentials" } }); st.signedIn = true; return Promise.resolve({ error: null }); }, signOut: function () { return Promise.resolve({}); }, signUp: function () { return Promise.resolve({ data: {} }); }, resend: function () { return Promise.resolve({ error: null }); }
     },
     from: q,
     rpc: function (name, a) {
@@ -137,6 +137,17 @@
         if (!nm || nm.length > 60) return Promise.resolve({ data: null, error: { message: "Le prénom doit faire de 1 à 60 caractères" } });
         if (st.students.some(function (x) { return x !== s1 && x.class_id === s1.class_id && x.nickname.toLowerCase() === nm.toLowerCase(); })) return Promise.resolve({ data: null, error: { message: "Un autre élève de cette classe a déjà ce prénom" } });
         s1.nickname = nm; return Promise.resolve({ data: nm, error: null }); }
+      /* invitation d'un collègue (?invite=<jeton>&out=1 : page d'inscription ; jeton « dead » / « beef » : lien déjà servi / expiré) */
+      if (name === "admin_create_invite") { var tk = "ab12cd34ef56ab12cd34ef56ab12cd34"; st.invites = [{ token: tk, created_at: "2026-11-17T10:00:00Z", expires_at: "2026-12-17T10:00:00Z", used_at: null }].concat(st.invites || []); return Promise.resolve({ data: { token: tk, expires_at: "2026-12-17T10:00:00Z" }, error: null }); }
+      if (name === "admin_list_invites") return Promise.resolve({ data: (st.invites || []).concat([{ token: "ff", created_at: "2026-11-10T10:00:00Z", expires_at: "2026-12-10T10:00:00Z", used_at: "2026-11-11T10:00:00Z", used_email: "collegue@test.invalid" }]), error: null });
+      if (name === "invite_check") return Promise.resolve({ data: a.p_token === "dead" || a.p_token === "beef" ? { ok: false, reason: a.p_token === "beef" ? "expired" : "used" } : { ok: true }, error: null });
+      if (name === "invite_signup") { st.inviteSignups = (st.inviteSignups || []).concat([a]); if (/pris@/.test(a.p_email)) return Promise.resolve({ data: { ok: false, reason: "email_taken" }, error: null });
+        st.user = { id: "t9", email: a.p_email.toLowerCase() }; st.teachers.push({ id: "t9", email: st.user.email, student_limit: 15, role: "teacher", seat_request: null, seat_request_at: null, ghosted_at: null }); return Promise.resolve({ data: { ok: true, email: st.user.email }, error: null }); }
+      if (name === "admin_move_student") { st.moves = (st.moves || []).concat([a]); if (st.teachers[0].role !== "admin") return Promise.resolve({ data: null, error: { message: "Réservé à l'administrateur" } });
+        var sm = st.students.filter(function (x) { return x.id === a.p_student; })[0], km = st.classes.filter(function (x) { return x.id === a.p_class; })[0];
+        if (!sm || !km) return Promise.resolve({ data: null, error: { message: "Élève ou classe introuvable" } });
+        if (st.students.some(function (x) { return x !== sm && x.class_id === km.id && x.nickname.toLowerCase() === sm.nickname.toLowerCase(); })) return Promise.resolve({ data: null, error: { message: "Un élève de cette classe a déjà ce prénom : renommez-le d'abord" } });
+        sm.class_id = km.id; sm.teacher_id = km.teacher_id; return Promise.resolve({ data: { ok: true, class: km.name, access_code: km.access_code }, error: null }); }
       if (name === "admin_manage_teacher") { st.manageT = (st.manageT || []).concat([a]);
         var t0 = st.teachers.filter(function (x) { return x.id === a.p_teacher; })[0];
         if (a.p_action === "ghost") t0.ghosted_at = "2026-10-21T09:00:00Z"; else if (a.p_action === "unghost") t0.ghosted_at = null;

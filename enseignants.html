@@ -358,6 +358,15 @@ body.teacher-mode .teacher-header .teacher-nav button.nav-improve.active,.teache
 .more-menu{position:relative;display:inline-block}.more-btn{min-width:46px;padding:6px 12px;font-size:1.25rem;font-weight:900;line-height:1}
 .more-pop{position:absolute;right:0;top:calc(100% + 6px);z-index:30;min-width:240px;display:flex;flex-direction:column;gap:6px;padding:8px;background:#fff;border:1px solid #dfe3ec;border-radius:14px;box-shadow:0 12px 30px rgba(20,25,40,.2)}
 .more-pop button{width:100%;text-align:left;margin:0}
+
+/* Invitation d’un collègue (admin) et page d’inscription par invitation ; « Changer de classe » */
+.invite-admin{margin:6px 0 18px;padding:14px 16px;border:2px solid #d9cff5;border-radius:16px;background:#faf8ff} .invite-admin h3{margin:0 0 4px}
+.invite-share{margin:10px 0 12px;padding:12px;border-radius:12px;background:#e6f7ec} .invite-share p{margin:0 0 6px;font-weight:700} .invite-share input{width:100%;font-size:.95rem}
+.invite-share a.button-link,.invite-share button{margin:4px 6px 4px 0}
+.invite-list{margin:4px 0 0;padding-left:18px;line-height:1.7} .invite-list .link-btn{margin-left:6px}
+.invite-form input{display:block;width:100%;margin:0 0 10px}
+#adminPanel{min-width:0;max-width:100%;overflow-wrap:anywhere} #adminPanel input,#adminPanel select{max-width:100%}
+.dlg-box select{display:block;width:100%;padding:10px;margin:6px 0 4px;border:1px solid #c9bfdf;border-radius:10px;font:inherit;background:#fff;color:#242044}
 </style></head><body><main><header class="hero">    <div class="zoo-hero">
       <div class="zoo-hero-copy">
         <span class="zoo-kicker">✦ LE GRAND JEU DE LA LECTURE ✦</span>
@@ -368,7 +377,7 @@ body.teacher-mode .teacher-header .teacher-nav button.nav-improve.active,.teache
       <div class="banner-user" id="bannerUser"><span id="adminRole" class="hidden" title="Vous êtes administrateur du Zoo de Lecture">🛡️ Admin</span><span id="who"></span><a href="eleve.html" id="toStudent" title="Espace élève"><span aria-hidden="true">🎒</span><span class="bu-label">&nbsp;Espace élève</span></a><button id="logout" class="secondary" type="button" title="Déconnexion"><span class="bu-ico" aria-hidden="true">🚪</span><span class="bu-label">Déconnexion</span></button></div>
     </div>
 </header>
-<section class="panel" id="auth"><h2 class="auth-title">🧑‍🏫 Se connecter</h2><div id="profilesBox" class="hidden"></div><form id="authForm"><label for="email" class="sr-only">Adresse e-mail</label><input id="email" type="email" autocomplete="email" required maxlength="254" placeholder="Adresse e-mail"><label for="password" class="sr-only">Mot de passe</label><input id="password" type="password" autocomplete="current-password" minlength="8" required placeholder="Mot de passe"><div class="actions auth-actions"><button id="signin" type="submit">Me connecter</button><button id="reset" type="button" class="secondary">Mot de passe oublié</button><button id="signup" type="button" class="secondary">Créer un compte</button><button id="resendConfirm" type="button" class="secondary hidden">📧 Renvoyer l’e-mail de confirmation</button><button id="toLogin" type="button" class="link-btn hidden">J’ai déjà un compte : me connecter</button><small class="signup-note">Inscription libre et gratuite. Votre compte commence avec 3 places d'élèves ; une fois connecté, vous pouvez demander votre classe entière en un clic (réponse sous 24 h maximum).</small></div></form><p class="demo-link"><a href="zoo-connecte.html?demo=1&amp;new=1">✨ Essayer la démo, sans compte</a><small>Une classe fictive : le Zoo d'un élève, puis l'espace enseignant.</small></p><p class="msg" id="authMsg" role="status"></p><p class="auth-links"><a href="./">← Accueil</a> · <a href="confidentialite.html">Confidentialité</a> · <a href="contact.html">Contact</a> · <a href="mentions-legales.html">Mentions légales</a></p>
+<section class="panel" id="auth"><h2 class="auth-title">🧑‍🏫 Se connecter</h2><div id="profilesBox" class="hidden"></div><div id="inviteBox" class="hidden"></div><form id="authForm"><label for="email" class="sr-only">Adresse e-mail</label><input id="email" type="email" autocomplete="email" required maxlength="254" placeholder="Adresse e-mail"><label for="password" class="sr-only">Mot de passe</label><input id="password" type="password" autocomplete="current-password" minlength="8" required placeholder="Mot de passe"><div class="actions auth-actions"><button id="signin" type="submit">Me connecter</button><button id="reset" type="button" class="secondary">Mot de passe oublié</button><button id="signup" type="button" class="secondary">Créer un compte</button><button id="resendConfirm" type="button" class="secondary hidden">📧 Renvoyer l’e-mail de confirmation</button><button id="toLogin" type="button" class="link-btn hidden">J’ai déjà un compte : me connecter</button><small class="signup-note">Inscription libre et gratuite. Votre compte commence avec 3 places d'élèves ; une fois connecté, vous pouvez demander votre classe entière en un clic (réponse sous 24 h maximum).</small></div></form><p class="demo-link"><a href="zoo-connecte.html?demo=1&amp;new=1">✨ Essayer la démo, sans compte</a><small>Une classe fictive : le Zoo d'un élève, puis l'espace enseignant.</small></p><p class="msg" id="authMsg" role="status"></p><p class="auth-links"><a href="./">← Accueil</a> · <a href="confidentialite.html">Confidentialité</a> · <a href="contact.html">Contact</a> · <a href="mentions-legales.html">Mentions légales</a></p>
 <p class="auth-student">🎒 Élève ? <a href="eleve.html" id="authToStudent">Entrez ici avec votre code de classe</a></p></section>
 <section class="panel hidden" id="recovery"><h2>🔒 Choisissez votre nouveau mot de passe</h2><p class="muted" id="recoveryWho">Vous êtes arrivé ici par le lien de l’e-mail « Mot de passe oublié ».</p><form id="recoveryForm"><label for="newPassword">Nouveau mot de passe (au moins 8 caractères)</label><input id="newPassword" type="password" autocomplete="new-password" minlength="8" maxlength="72" required><label for="newPassword2">Écrivez-le une deuxième fois</label><input id="newPassword2" type="password" autocomplete="new-password" minlength="8" maxlength="72" required><div class="actions"><button id="recoverySave" type="submit">Enregistrer mon nouveau mot de passe</button></div></form><p class="msg" id="recoveryMsg" role="status"></p></section>
 <section class="hidden teacher-space" id="space">
@@ -444,7 +453,7 @@ body.teacher-mode .teacher-header .teacher-nav button.nav-improve.active,.teache
   <button type="button" class="secondary" data-share-btn>🔗 Partager Zoo de Lecture</button>
   <span class="share-more" data-share-more hidden><a data-share-wa href="https://wa.me/">WhatsApp</a><a data-share-mail href="mailto:">E-mail</a><button type="button" class="secondary" data-share-copy>Copier le lien</button></span>
   <span class="share-status" data-share-status role="status" aria-live="polite"></span></div>
-<section class="panel hidden" data-section="enseignants" id="adminPanel"><h2>🛡️ Administration de Zoo de Lecture</h2><p class="muted">Comptes enseignants inscrits et quotas d'élèves. Les modifications sont enregistrées sur le serveur.</p><div id="autoSeatsBox" class="auto-seats hidden"></div><div id="adminList"></div><p id="adminMsg" class="msg" role="status"></p></section>
+<section class="panel hidden" data-section="enseignants" id="adminPanel"><h2>🛡️ Administration de Zoo de Lecture</h2><p class="muted">Comptes enseignants inscrits et quotas d'élèves. Les modifications sont enregistrées sur le serveur.</p><div id="inviteAdmin" class="invite-admin hidden"></div><div id="autoSeatsBox" class="auto-seats hidden"></div><div id="adminList"></div><p id="adminMsg" class="msg" role="status"></p></section>
 <section class="panel feature-card improve-card hidden" data-section="ameliorations" data-role="teacher" id="feedbackPanel">
  <div class="section-head"><div class="section-icon">💡</div><div><h2>Aidez-nous à améliorer Zoo de Lecture</h2><p class="muted">Un avis, une idée, un bug, une question ? Choisissez le type de message, écrivez-le et envoyez-le : l’administrateur le lira.</p></div></div>
  <p class="fb-reply hidden" id="fbReplyNote"><strong>🆕 L’administrateur vous a répondu.</strong> <a href="#fbMineTitle">Voir la réponse</a></p>
@@ -960,6 +969,41 @@ function showResend(show){$("resendConfirm").classList.toggle("hidden",!show)}
 $("resendConfirm").onclick=()=>{const email=$("email").value.trim();if(!email){msg("authMsg","Écrivez d’abord votre adresse e-mail dans la case ci-dessus.",true);return}busy2($("resendConfirm"),async()=>{const {error}=await client.auth.resend({type:"signup",email,options:{emailRedirectTo:location.origin+location.pathname}});msg("authMsg",error?errorText(error):"Nouvel e-mail envoyé à "+email+". Ouvrez le plus récent et cliquez sur son lien (regardez aussi les courriers indésirables).",!!error)})};
 $("toLogin").onclick=()=>{setAuthMode(false);history.replaceState(null,"",location.pathname+location.search);$("email").focus();};
 if(location.hash==="#inscription")setAuthMode(true);
+/* Invitation d’un collègue par l’admin : enseignants.html?invite=<jeton>. E-mail ×2, mot de passe ×2, et le compte est prêt tout de suite (15 places, aucun e-mail de confirmation) */
+let inviteToken=(arrival.get("invite")||"").replace(/[^a-f0-9]/gi,"").slice(0,64);
+function leaveInvite(){inviteToken="";history.replaceState(null,"",location.pathname);$("inviteBox").classList.add("hidden");$("inviteBox").replaceChildren();document.querySelector("#auth .demo-link").classList.remove("hidden");document.querySelector("#auth .auth-title").textContent="🧑‍🏫 Se connecter";showAuthForm()}
+async function showInvite(){
+ const box=$("inviteBox"),mk=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
+ $("authForm").classList.add("hidden");$("profilesBox").classList.add("hidden");document.querySelector("#auth .demo-link").classList.add("hidden");
+ box.classList.remove("hidden");box.replaceChildren(mk("p","muted","Vérification de votre invitation…"));msg("authMsg","");
+ document.querySelector("#auth .auth-title").textContent="🎉 Bienvenue sur Zoo de Lecture";
+ const toLogin=mk("button","link-btn","J’ai déjà un compte : me connecter");toLogin.type="button";toLogin.onclick=leaveInvite;
+ const {data:chk,error:ce}=await client.rpc("invite_check",{p_token:inviteToken});
+ if(ce||!chk||!chk.ok){const why=ce?errorText(ce):({used:"Ce lien d’invitation a déjà servi : le compte existe déjà.",expired:"Ce lien d’invitation a expiré (30 jours). Demandez-en un nouveau à la personne qui vous a invité."})[chk&&chk.reason]||"Ce lien d’invitation n’est pas valable. Vérifiez qu’il est complet.";
+  box.replaceChildren(mk("p","msg err",why));const go=mk("button",null,"Aller à la connexion");go.type="button";go.onclick=leaveInvite;box.append(go);return}
+ const f=mk("form","invite-form");f.noValidate=true;
+ const field=(id,type,ph,ac)=>{const l=mk("label","sr-only",ph);l.htmlFor=id;const i=document.createElement("input");i.id=id;i.type=type;i.placeholder=ph;i.autocomplete=ac;i.required=true;if(type==="email")i.maxLength=254;f.append(l,i);return i};
+ f.append(mk("p","muted","Créez votre compte enseignant en une minute. Tapez deux fois chaque information pour éviter les fautes de frappe. Mot de passe : 8 caractères au moins."));
+ const e1=field("invEmail","email","Votre adresse e-mail","email"),e2=field("invEmail2","email","Retapez votre adresse e-mail","email"),p1=field("invPw","password","Choisissez un mot de passe","new-password"),p2=field("invPw2","password","Retapez le mot de passe","new-password");
+ const go=mk("button",null,"Créer mon compte");go.type="submit";
+ const acts=mk("div","actions auth-actions");acts.append(go,toLogin);f.append(acts,mk("small","signup-note","Votre compte commence avec 15 places d’élèves. Aucun e-mail de confirmation : vous entrez tout de suite dans votre espace."));
+ box.replaceChildren(f);e1.focus();
+ f.onsubmit=ev=>{ev.preventDefault();
+  const email=e1.value.trim(),pw=p1.value;
+  if(!email||!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){msg("authMsg","Écrivez une adresse e-mail complète (exemple : prenom.nom@ac-academie.fr).",true);e1.focus();return}
+  if(email.toLowerCase()!==e2.value.trim().toLowerCase()){msg("authMsg","Les deux adresses e-mail ne sont pas identiques.",true);e2.focus();return}
+  if(pw.length<8){msg("authMsg","Le mot de passe doit faire au moins 8 caractères.",true);p1.focus();return}
+  if(pw!==p2.value){msg("authMsg","Les deux mots de passe ne sont pas identiques.",true);p2.focus();return}
+  busy2(go,async()=>{
+   const {data:r,error}=await client.rpc("invite_signup",{p_token:inviteToken,p_email:email,p_password:pw});
+   if(error){msg("authMsg",errorText(error),true);return}
+   if(!r||!r.ok){const why={used:"Ce lien d’invitation a déjà servi.",expired:"Ce lien d’invitation a expiré.",unknown:"Ce lien d’invitation n’est pas valable.",bad_email:"Cette adresse e-mail n’est pas valable.",bad_password:"Le mot de passe doit faire de 8 à 72 caractères.",email_taken:"Cette adresse a déjà un compte : touchez « J’ai déjà un compte : me connecter »."}[r&&r.reason]||"Le compte n’a pas pu être créé.";msg("authMsg",why,true);if(r&&r.reason==="email_taken")$("email").value=email;return}
+   msg("authMsg","✅ Compte créé ! Ouverture de votre espace…");
+   const {error:se}=await client.auth.signInWithPassword({email:r.email||email,password:pw});
+   if(se){msg("authMsg","Compte créé. Connectez-vous avec votre e-mail et votre mot de passe.",false);$("email").value=r.email||email;leaveInvite();return}
+   inviteToken="";history.replaceState(null,"",location.pathname);$("inviteBox").classList.add("hidden");document.querySelector("#auth .demo-link").classList.remove("hidden");await refresh();
+  })};
+}
 $("signup").onclick=()=>{if(!signupMode){setAuthMode(true);history.replaceState(null,"",location.pathname+location.search+"#inscription");$("email").focus();return;}doSignup();};
 const doSignup=()=>busy("signup",async()=>{
  const email=$("email").value.trim(),password=$("password").value;
@@ -991,7 +1035,7 @@ function showSignupSent(email,password){
 function busy2(b,fn){b.disabled=true;Promise.resolve().then(fn).catch(e=>msg("authMsg",errorText(e),true)).finally(()=>{b.disabled=false})}
 /* « Qui es-tu ? » : profils enseignants mémorisés sur cet appareil (e-mail seulement ; jamais le mot de passe), voir profils.js */
 function showAuthForm(){$("profilesBox").classList.add("hidden");$("authForm").classList.remove("hidden")}
-function showProfiles(){try{if(!window.ZooProfils||!ZooProfils.list("teacher").length){showAuthForm();return}$("authForm").classList.add("hidden");$("profilesBox").classList.remove("hidden");msg("authMsg","");ZooProfils.pickerUI($("profilesBox"),{group:"teacher",title:"Qui es-tu ?",onPick:showProfileSecret,onOther:showAuthForm,onChange:showProfiles})}catch(e){showAuthForm()}}
+function showProfiles(){if(inviteToken){showInvite();return}try{if(!window.ZooProfils||!ZooProfils.list("teacher").length){showAuthForm();return}$("authForm").classList.add("hidden");$("profilesBox").classList.remove("hidden");msg("authMsg","");ZooProfils.pickerUI($("profilesBox"),{group:"teacher",title:"Qui es-tu ?",onPick:showProfileSecret,onOther:showAuthForm,onChange:showProfiles})}catch(e){showAuthForm()}}
 function showProfileSecret(p){ZooProfils.secretUI($("profilesBox"),p,{kind:"password",
  submit:async pw=>{const {error}=await client.auth.signInWithPassword({email:p.login.email,password:pw});if(!error){await refresh();return {ok:true}}
   if(error.code==="email_not_confirmed"||/email not confirmed/i.test(error.message||""))return {ok:false,msg:"Votre adresse e-mail n’est pas encore validée. Touchez « Autre profil / Nouvelle connexion », puis « Renvoyer l’e-mail de confirmation ».",removable:false};
@@ -1182,8 +1226,9 @@ async function renderStudentsTab(role){
     const ren=document.createElement("button");ren.type="button";ren.className="secondary";ren.textContent="✏️ Renommer";ren.onclick=()=>renameStudent(st,[ghost,ren,del]);
     const del=document.createElement("button");del.type="button";del.className="danger";del.textContent="🗑️ Supprimer définitivement";del.onclick=()=>manageStudent(st,"delete",[ghost,ren,del]);
     /* Actions rares ou risquées rangées dans « ⋯ » ; « Réactiver » reste visible pour un élève suspendu */
-    if(st.ghosted_at){const re=document.createElement("button");re.type="button";re.textContent="✅ Réactiver";re.onclick=()=>manageStudent(st,"unghost",[re,ren,del]);actions.append(re,moreMenu("Autres actions pour "+st.nickname,[ren,del]));}
-    else actions.append(moreMenu("Autres actions pour "+st.nickname,[ren,ghost,del]));
+    const mv=[];if(admin){const b=document.createElement("button");b.type="button";b.className="secondary";b.textContent="↔️ Changer de classe";b.onclick=()=>moveStudent(st,groups);mv.push(b);}
+    if(st.ghosted_at){const re=document.createElement("button");re.type="button";re.textContent="✅ Réactiver";re.onclick=()=>manageStudent(st,"unghost",[re,ren,del]);actions.append(re,moreMenu("Autres actions pour "+st.nickname,mv.concat([ren,del])));}
+    else actions.append(moreMenu("Autres actions pour "+st.nickname,mv.concat([ren,ghost,del])));
     line.append(info,actions);cbody.append(line);
    });
    /* Seul le nom de la classe est listé ; le bouton déploie le code, les actions et les élèves */
@@ -1196,6 +1241,28 @@ async function renderStudentsTab(role){
  if(!box.children.length)box.textContent="Aucun élève pour le moment.";
 }
 /* Réorthographier un prénom : le prénom sert à se connecter ; le serveur refuse un prénom déjà pris dans la classe */
+/* Admin : changer un élève de classe (même enseignant ou un autre). Rien n’est effacé : progression, animaux, pièces et historique suivent l’élève */
+function moveStudent(st,teachers){
+ const others=allClasses.filter(c=>c.id!==st.class_id);
+ if(!others.length){msg("studentsMsg","Il n’y a pas d’autre classe où l’envoyer.",true);return}
+ const mk=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
+ const ov=mk("div","dlg-ov");ov.setAttribute("role","dialog");ov.setAttribute("aria-modal","true");const box=mk("div","dlg-box");
+ box.append(mk("p","dlg-text","Dans quelle classe mettre « "+st.nickname+" » ?"));
+ const sel=document.createElement("select");sel.setAttribute("aria-label","Nouvelle classe");sel.style.width="100%";
+ const order=teachers.slice().sort((a,b)=>(b.id===st.teacher_id)-(a.id===st.teacher_id));
+ order.forEach(t=>{const cl=others.filter(c=>c.teacher_id===t.id);if(!cl.length)return;const g=document.createElement("optgroup");g.label=(t.id===st.teacher_id?"Même enseignant · ":"")+(t.email||"Compte sans e-mail");
+  cl.forEach(c=>{const o=document.createElement("option");o.value=c.id;o.textContent=c.name+(c.ghosted_at?" (suspendue)":"");g.append(o)});sel.append(g)});
+ const info=mk("p","muted");const upd=()=>{const c=allClasses.find(x=>x.id===sel.value);info.textContent="Rien n’est effacé : sa progression, ses animaux et ses pièces le suivent."+(c&&c.access_code?" Pour se connecter, l’élève tapera le code de sa nouvelle classe : "+c.access_code+" (même prénom, même code secret).":"")};sel.onchange=upd;upd();
+ const row=mk("div","dlg-row"),ok=mk("button",null,"↔️ Changer de classe"),no=mk("button","secondary","Annuler");ok.type=no.type="button";
+ const close=()=>{document.removeEventListener("keydown",key,true);ov.remove()};const key=e=>{if(e.key==="Escape"){e.stopPropagation();close()}};
+ no.onclick=close;
+ ok.onclick=async()=>{ok.disabled=no.disabled=true;const c=allClasses.find(x=>x.id===sel.value);
+  const {data,error}=await client.rpc("admin_move_student",{p_student:st.id,p_class:sel.value});
+  if(error){ok.disabled=no.disabled=false;info.className="msg err";info.textContent=errorText(error);return}
+  close();studentsNotice="↔️ « "+st.nickname+" » est maintenant dans la classe « "+(c?c.name:"?")+" ». Rien n’a été effacé."+(data&&data.access_code?" Code de connexion de sa classe : "+data.access_code+".":"");
+  if(c)openGroups.add("lst:"+c.id);await refresh()};
+ row.append(ok,no);box.append(sel,info,row);ov.append(box);document.body.append(ov);document.addEventListener("keydown",key,true);sel.focus();
+}
 async function renameStudent(st,buttons){
  const name=await dlg("Nouvelle orthographe du prénom « "+st.nickname+" » :",{input:true,value:st.nickname,ok:"Renommer",label:"Prénom de l’élève"});
  if(name===null)return;const n=name.trim();
@@ -1262,9 +1329,43 @@ async function renderAutoSeats(){
  cb.onchange=save;num.onchange=save;
  box.append(lab,note,st);
 }
+/* Admin : inviter un collègue. Un lien à usage unique (30 jours) à envoyer par SMS, WhatsApp ou e-mail ; le compte créé a 15 places d’élèves */
+let lastInvite=null;
+const inviteUrl=t=>location.origin+location.pathname+"?invite="+t;
+const inviteText=u=>"Bonjour ! Je t’invite sur Zoo de Lecture, l’appli gratuite de lecture pour les CP. Crée ton compte en une minute avec ce lien (valable 30 jours, pour toi seulement) : "+u;
+async function copyText(t){try{await navigator.clipboard.writeText(t);return true}catch(e){const ta=document.createElement("textarea");ta.value=t;ta.style.cssText="position:fixed;opacity:0";document.body.append(ta);ta.select();let ok=false;try{ok=document.execCommand("copy")}catch(e2){}ta.remove();return ok}}
+async function renderInviteAdmin(){
+ const box=$("inviteAdmin"),mk=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
+ box.classList.remove("hidden");box.replaceChildren();
+ box.append(mk("h3",null,"✉️ Inviter un collègue"),mk("p","muted","Votre collègue reçoit un lien, tape deux fois son e-mail et deux fois son mot de passe : son compte est prêt, avec 15 places d’élèves. Un lien par collègue, valable 30 jours."));
+ const st=mk("p","msg");st.setAttribute("role","status");
+ const make=mk("button",null,"✉️ Créer un lien d’invitation");make.type="button";
+ make.onclick=()=>busy2(make,async()=>{const {data,error}=await client.rpc("admin_create_invite");if(error){st.className="msg err";st.textContent=errorText(error);return}lastInvite=data.token;await renderInviteAdmin()});
+ if(lastInvite){
+  const url=inviteUrl(lastInvite),text=inviteText(url),share=mk("div","invite-share");
+  const link=document.createElement("input");link.type="text";link.readOnly=true;link.value=url;link.setAttribute("aria-label","Lien d’invitation");link.onfocus=()=>link.select();
+  const btns=mk("div","actions");btns.style.marginTop="8px";
+  const a=(label,href)=>{const x=mk("a","button-link secondary",label);x.href=href;x.target="_blank";x.rel="noopener";return x};
+  if(navigator.share){const sh=mk("button",null,"📤 Envoyer…");sh.type="button";sh.onclick=()=>navigator.share({title:"Invitation Zoo de Lecture",text:text}).catch(()=>{});btns.append(sh)}
+  btns.append(a("💬 WhatsApp","https://wa.me/?text="+encodeURIComponent(text)),a("📱 SMS","sms:?&body="+encodeURIComponent(text)),a("✉️ E-mail","mailto:?subject="+encodeURIComponent("Invitation à Zoo de Lecture")+"&body="+encodeURIComponent(text)));
+  const cp=mk("button","secondary","📋 Copier le message");cp.type="button";cp.onclick=async()=>{cp.textContent=await copyText(text)?"✅ Copié":"Copie impossible : sélectionnez le lien";setTimeout(()=>{cp.textContent="📋 Copier le message"},1800)};btns.append(cp);
+  share.append(mk("p",null,"✅ Lien prêt. Envoyez-le à votre collègue :"),link,btns);box.append(share);
+  make.textContent="✉️ Créer un autre lien";make.className="secondary";
+ }
+ box.append(make,st);
+ const {data:list,error}=await client.rpc("admin_list_invites");
+ if(error||!Array.isArray(list)||!list.length)return;
+ const ul=mk("ul","invite-list"),now=Date.now();
+ list.slice(0,6).forEach(i=>{const li=mk("li");
+  if(i.used_at)li.textContent="✅ Compte créé par "+(i.used_email||"?")+" le "+frDate(i.used_at);
+  else if(new Date(i.expires_at).getTime()<now)li.textContent="⌛ Lien du "+frDate(i.created_at)+" expiré, jamais utilisé";
+  else{li.textContent="⏳ Lien du "+frDate(i.created_at)+" en attente (valable jusqu’au "+frDate(i.expires_at)+") ";const c=mk("button","link-btn","📋 Copier");c.type="button";c.onclick=async()=>{c.textContent=await copyText(inviteText(inviteUrl(i.token)))?"✅ Copié":"—";setTimeout(()=>{c.textContent="📋 Copier"},1800)};li.append(c)}
+  ul.append(li)});
+ box.append(mk("p","muted","Invitations récentes :"),ul);
+}
 async function renderAdmin(role){
  const panel=$("adminPanel");if(role!=="admin"){setAdminBadge(0);$("adminList").textContent="La gestion des comptes enseignants est réservée à l’administrateur.";return;}
- renderAutoSeats().catch(()=>{});
+ renderAutoSeats().catch(()=>{});renderInviteAdmin().catch(()=>{});
  const {data:teachers,error}=await client.from("teachers").select("id,email,display_name,student_limit,role,seat_request,seat_request_at,ghosted_at").order("created_at",{ascending:false});
  if(error){msg("adminMsg",errorText(error),true);return;}
  const {data:counts,error:countError}=await client.from("students").select("teacher_id");
