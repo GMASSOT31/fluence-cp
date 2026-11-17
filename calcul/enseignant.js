@@ -158,13 +158,19 @@
     return med;
   }
   function section(title, sub) { var x = el("section", "pb-sec"), h = el("h3", "pb-h", title); if (sub) h.appendChild(el("small", "", " · " + sub)); x.appendChild(h); return x; }
+  /* Retour sur la page : « Ma classe » du calcul visible et chargée il y a plus d'une minute → on recharge (sinon : bouton « Actualiser ») */
+  document.addEventListener("visibilitychange", function () {
+    var box = $("#calcProgress");
+    if (document.visibilityState !== "visible" || !box || !box.offsetParent || !view.loadedAt || Date.now() - view.loadedAt < 60000) return;
+    renderProgress();
+  });
   function renderProgress() {
     var box = $("#calcProgress"); clear(box);
     box.appendChild(head("🏫", "Ma classe · calcul", "Écouter les nombres, additions et soustractions : ce qui demande votre attention, puis chaque élève. Les résultats de lecture sont dans l’espace Lecture."));
     var msg = el("p", "msg", "Chargement…"); msg.setAttribute("role", "status"); box.appendChild(msg);
     var board = el("div", "calc-board"); box.appendChild(board);
     Promise.all([rpc("lab_teacher_settings_get").catch(function () { return {}; }), rpc("lab_teacher_results")]).then(function (r) {
-      settings = r[0] || {}; msg.textContent = ""; view.all = r[1] || []; paintBoard(board);
+      settings = r[0] || {}; msg.textContent = ""; view.all = r[1] || []; view.loadedAt = new Date(); paintBoard(board);
     }).catch(function () { msg.className = "msg err"; msg.textContent = "Impossible de charger les résultats de calcul. Réessayez dans un instant."; });
   }
   function paintBoard(board) {
@@ -183,7 +189,8 @@
       left.appendChild(el("span", "pb-lbl", "Classe")); left.appendChild(sel);
     } else left.appendChild(el("strong", "pb-cname", "📚 " + cls.name));
     left.appendChild(el("span", "pb-count", studs.length + " " + pl(studs.length, "élève", "élèves")));
-    var acts = el("div", "pb-acts"), rl = el("button", "secondary", "↻ Actualiser"); rl.type = "button"; rl.addEventListener("click", renderProgress); acts.appendChild(rl);
+    var acts = el("div", "pb-acts"), rl = el("button", "secondary", "↻ Actualiser"); rl.type = "button"; rl.title = "Recharger les derniers résultats des élèves"; rl.addEventListener("click", renderProgress); acts.appendChild(rl);
+    if (view.loadedAt) { var tm = el("span", "pb-updated", "À jour à " + view.loadedAt.getHours() + " h " + ("0" + view.loadedAt.getMinutes()).slice(-2)); tm.style.cssText = "font-size:.85em;align-self:center;color:rgba(255,255,255,.85);white-space:nowrap"; acts.appendChild(tm); }
     hd.appendChild(left); hd.appendChild(acts); board.appendChild(hd);
     var rows = studs.map(analyse), med = classify(rows); view.rows = rows;
     board.appendChild(todoCalc(rows)); board.appendChild(listCalc(rows)); board.appendChild(figuresCalc(rows, med)); board.appendChild(legend());
