@@ -353,6 +353,11 @@ body.teacher-mode .teacher-header .teacher-nav button.nav-improve.active,.teache
  #space .sub-picker.set-pick button.sp-main{flex-direction:row;padding:10px 12px;text-align:left}
  #space .sub-picker.set-pick strong{font-size:.85rem}
 }
+
+/* Menu « ⋯ » des actions risquées (Liste des élèves) */
+.more-menu{position:relative;display:inline-block}.more-btn{min-width:46px;padding:6px 12px;font-size:1.25rem;font-weight:900;line-height:1}
+.more-pop{position:absolute;right:0;top:calc(100% + 6px);z-index:30;min-width:240px;display:flex;flex-direction:column;gap:6px;padding:8px;background:#fff;border:1px solid #dfe3ec;border-radius:14px;box-shadow:0 12px 30px rgba(20,25,40,.2)}
+.more-pop button{width:100%;text-align:left;margin:0}
 </style></head><body><main><header class="hero">    <div class="zoo-hero">
       <div class="zoo-hero-copy">
         <span class="zoo-kicker">✦ LE GRAND JEU DE LA LECTURE ✦</span>
@@ -1130,10 +1135,20 @@ async function renderContactAdmin(){
 $("fbFilter").onchange=()=>renderFeedbackAdmin().catch(e=>msg("fbAdminMsg",errorText(e),true));
 $("fbAllRead").onclick=()=>busy("fbAllRead",async()=>{const {error}=await client.from("teacher_feedback").update({read_at:new Date().toISOString()}).is("read_at",null);if(error){msg("fbAdminMsg",errorText(error),true);return;}fbNotice="Tous les messages sont marqués comme lus.";await renderFeedbackAdmin();});
 let studentsNotice="";
+/* Petit menu « ⋯ » : actions rares ou risquées (renommer, suspendre, supprimer), à l’abri d’un toucher par erreur */
+function moreMenu(label,items){
+ const w=document.createElement("div");w.className="more-menu";
+ const b=document.createElement("button");b.type="button";b.className="secondary more-btn";b.textContent="⋯";b.title=label;b.setAttribute("aria-label",label);b.setAttribute("aria-haspopup","menu");b.setAttribute("aria-expanded","false");
+ const pop=document.createElement("div");pop.className="more-pop hidden";pop.setAttribute("role","menu");
+ const out=e=>{if(!w.contains(e.target))close()};
+ const close=()=>{pop.classList.add("hidden");b.setAttribute("aria-expanded","false");document.removeEventListener("click",out,true)};
+ items.forEach(it=>{it.setAttribute("role","menuitem");it.addEventListener("click",close);pop.append(it)});
+ b.onclick=()=>{const open=pop.classList.contains("hidden");document.querySelectorAll(".more-pop:not(.hidden)").forEach(p=>{if(p!==pop)p.classList.add("hidden")});if(open){pop.classList.remove("hidden");b.setAttribute("aria-expanded","true");document.addEventListener("click",out,true)}else close()};
+ w.append(b,pop);return w}
 async function renderStudentsTab(role){
  const box=$("studentsAdminList"),admin=role==="admin";box.replaceChildren();
  msg("studentsMsg",studentsNotice);studentsNotice="";
- $("studentsPanelHint").textContent=(admin?"Tous les élèves, rangés par compte enseignant puis par classe.":"Tous vos élèves, rangés par classe.")+" ⏸️ Suspendre empêche l’élève (ou toute une classe) de se connecter sans rien effacer ; « Réactiver » rend l’accès. 🗑️ Supprimer efface l’élève et toute sa progression.";
+ $("studentsPanelHint").textContent=(admin?"Tous les élèves, rangés par compte enseignant puis par classe.":"Tous vos élèves, rangés par classe.")+" Le bouton « ⋯ » d’un élève ou d’une classe permet de renommer, suspendre (plus de connexion, rien n’est effacé) ou supprimer.";
  let groups=[{id:currentUser.id,email:currentUser.email,ghosted_at:null}];
  if(admin){const {data,error}=await client.from("teachers").select("id,email,ghosted_at").order("created_at",{ascending:true});if(error){msg("studentsMsg",errorText(error),true);return;}groups=data;}
  groups.forEach(t=>{
@@ -1144,12 +1159,12 @@ async function renderStudentsTab(role){
    const top=document.createElement("div");top.className="class-head";const head=document.createElement("div");head.className="class-head";const cbody=document.createElement("div");cbody.className="class-body";
    const h=document.createElement("h4");h.className="class-tag";h.style.setProperty("--cg",classColor(allClasses.indexOf(c)));h.textContent=(c.ghosted_at?"👻 ":"📚 ")+c.name+(c.ghosted_at?" · suspendue le "+frDate(c.ghosted_at):"");
    const cact=document.createElement("div");cact.className="actions";cact.style.marginTop="0";
-   const cghost=document.createElement("button");cghost.type="button";cghost.className="secondary";cghost.textContent=c.ghosted_at?"Réactiver la classe":"⏸️ Suspendre la classe";cghost.onclick=()=>manageClass(c,c.ghosted_at?"unghost":"ghost",[cghost,cdel]);
+   const cghost=document.createElement("button");cghost.type="button";cghost.className="secondary";cghost.textContent=c.ghosted_at?"✅ Réactiver la classe":"⏸️ Suspendre la classe";cghost.onclick=()=>manageClass(c,c.ghosted_at?"unghost":"ghost",[cghost,cdel]);
    const cdel=document.createElement("button");cdel.type="button";cdel.className="danger";cdel.textContent="🗑️ Supprimer la classe";cdel.onclick=()=>manageClass(c,"delete",[cghost,cdel]);
-   if(admin||c.teacher_id===currentUser.id){const cren=document.createElement("button");cren.type="button";cren.className="secondary";cren.textContent="✏️ Renommer";cren.onclick=()=>renameClass(c,"studentsMsg");cact.append(cren);}
+   const cmore=[];if(admin||c.teacher_id===currentUser.id){const cren=document.createElement("button");cren.type="button";cren.className="secondary";cren.textContent="✏️ Renommer la classe";cren.onclick=()=>renameClass(c,"studentsMsg");cmore.push(cren);}
    if(!window.__pdfWarm){window.__pdfWarm=1;loadJsPdf().catch(()=>{});}   /* prêt avant l’appui : le partage doit suivre le clic de très près */
    if(allStudents.some(s=>s.class_id===c.id&&!s.ghosted_at)){const cpr=document.createElement("button");cpr.type="button";cpr.className="secondary";cpr.textContent="🖨️ Fiches de connexion";cpr.title="Fiches de connexion à imprimer (PDF)";cpr.onclick=()=>printLoginCards(c,"studentsMsg",cpr);cact.append(cpr);}
-   cact.append(cghost,cdel);top.append(h);
+   cmore.push(cghost,cdel);cact.append(moreMenu("Autres actions pour la classe « "+c.name+" »",cmore));top.append(h);
    /* Code de la classe (celui que les élèves tapent), avec « Copier » */
    if(c.access_code){const cc=document.createElement("span");cc.className="class-code";cc.append("🔑 Code élèves : ");const cv=document.createElement("strong");cv.textContent=c.access_code;cc.append(cv);
     const cb=document.createElement("button");cb.type="button";cb.className="secondary";cb.textContent="📋 Copier";cb.title="Copier le code de la classe";cb.onclick=async()=>{try{await navigator.clipboard.writeText(c.access_code)}catch(e){const ta=document.createElement("textarea");ta.value=c.access_code;ta.style.cssText="position:fixed;opacity:0";document.body.append(ta);ta.select();try{document.execCommand("copy")}catch(e2){}ta.remove()}cb.textContent="✅ Copié";setTimeout(()=>{cb.textContent="📋 Copier"},1800)};cc.append(cb);if(c.teacher_id===currentUser.id||currentRole==="admin"){const ch=document.createElement("button");ch.type="button";ch.className="secondary";ch.textContent="✏️ Changer";ch.title="Changer le code de la classe";ch.onclick=()=>changeClassCode(c,"studentsMsg");cc.append(ch)}head.append(cc);}
@@ -1163,10 +1178,13 @@ async function renderStudentsTab(role){
     const status=document.createElement("div");status.className="muted";status.textContent=(st.pin_hash?"Code secret choisi":"Code secret à choisir")+(st.ghosted_at?" · suspendu le "+frDate(st.ghosted_at):"")+(!st.ghosted_at&&t.ghosted_at?" · suspendu avec le compte enseignant":"")+(!st.ghosted_at&&!t.ghosted_at&&c.ghosted_at?" · suspendu avec la classe":"");
     info.append(name,status);
     const actions=document.createElement("div");actions.className="actions";actions.style.marginTop="0";
-    const ghost=document.createElement("button");ghost.type="button";ghost.className="secondary";ghost.textContent=st.ghosted_at?"Réactiver":"⏸️ Suspendre";ghost.onclick=()=>manageStudent(st,st.ghosted_at?"unghost":"ghost",[ghost,ren,del]);
+    const ghost=document.createElement("button");ghost.type="button";ghost.className="secondary";ghost.textContent=st.ghosted_at?"✅ Réactiver":"⏸️ Suspendre (ne peut plus se connecter)";ghost.onclick=()=>manageStudent(st,st.ghosted_at?"unghost":"ghost",[ghost,ren,del]);
     const ren=document.createElement("button");ren.type="button";ren.className="secondary";ren.textContent="✏️ Renommer";ren.onclick=()=>renameStudent(st,[ghost,ren,del]);
-    const del=document.createElement("button");del.type="button";del.className="danger";del.textContent="🗑️ Supprimer";del.onclick=()=>manageStudent(st,"delete",[ghost,ren,del]);
-    actions.append(ghost,ren,del);line.append(info,actions);cbody.append(line);
+    const del=document.createElement("button");del.type="button";del.className="danger";del.textContent="🗑️ Supprimer définitivement";del.onclick=()=>manageStudent(st,"delete",[ghost,ren,del]);
+    /* Actions rares ou risquées rangées dans « ⋯ » ; « Réactiver » reste visible pour un élève suspendu */
+    if(st.ghosted_at){const re=document.createElement("button");re.type="button";re.textContent="✅ Réactiver";re.onclick=()=>manageStudent(st,"unghost",[re,ren,del]);actions.append(re,moreMenu("Autres actions pour "+st.nickname,[ren,del]));}
+    else actions.append(moreMenu("Autres actions pour "+st.nickname,[ren,ghost,del]));
+    line.append(info,actions);cbody.append(line);
    });
    /* Seul le nom de la classe est listé ; le bouton déploie le code, les actions et les élèves */
    const ck="lst:"+c.id,tg=document.createElement("button");tg.type="button";tg.className="secondary cg-toggle";cbody.classList.toggle("hidden",!openGroups.has(ck));
@@ -1191,7 +1209,7 @@ async function renameStudent(st,buttons){
  await refresh();
 }
 async function manageStudent(st,action,buttons){
- if(action==="delete"&&!await dlg("Supprimer définitivement "+st.nickname+" et toute sa progression ? Cette action est irréversible.",{ok:"Supprimer",danger:true}))return;
+ if(action==="delete"&&!await dlg("Supprimer définitivement « "+st.nickname+" » ?\nToute sa progression (lectures, animaux, pièces) sera effacée. Cette action est irréversible.\nPour seulement l’empêcher de se connecter, choisissez plutôt « Suspendre ».",{ok:"Supprimer",danger:true}))return;
  buttons.forEach(b=>b.disabled=true);
  const {error}=await client.rpc("manage_student",{p_student:st.id,p_action:action});
  buttons.forEach(b=>b.disabled=false);
