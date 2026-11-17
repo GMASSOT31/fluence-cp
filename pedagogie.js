@@ -48,7 +48,7 @@
     var err = null, answers = 0, readTries = 0;
     if (cur) {
       var c = snd[cur.id] || {}, ok = 0, ko = 0;
-      ["l", "w", "p"].forEach(function (a) { if (Array.isArray(c[a])) { ok += Number(c[a][0]) || 0; ko += Number(c[a][1]) || 0; } });
+      ["l", "w", "p", "c"].forEach(function (a) { if (Array.isArray(c[a])) { ok += Number(c[a][0]) || 0; ko += Number(c[a][1]) || 0; } });
       answers = ok + ko; err = answers ? Math.round(ko * 100 / answers) : null;
       readTries = readOn[cur.id] || 0;
     }
