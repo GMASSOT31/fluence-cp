@@ -229,8 +229,8 @@
     n: [["n", "neu", "n"]], v: [["v", "veu", "v"]], j: [["Z", "jeu", "j"]], z: [["z", "zeu", "z"]], p: [["p", "peu", "p"]], t: [["t", "teu", "t"]],
     c: [["k", "keu", "c"]], b: [["b", "beu", "b"]], d: [["d", "deu", "d"]], g: [["g", "gueu", "g"]], ou: [["U", "ou", "ou"]], au: [["o", "o", "o"]],
     on: [["O", "on", "on"]], oi: [["wa", "oua", "oi"]], an: [["A", "an", "an"]], en: [["A", "an", "an"]], ai: [["E", "est", "è"]], er: [["e", "et", "é"]],
-    fr: [["fr", "freu", "fr"], ["pr", "preu", "pr"], ["tr", "treu", "tr"], ["kr", "creu", "cr"], ["gr", "greu", "gr"], ["br", "breu", "br"], ["dr", "dreu", "dr"], ["vr", "vreu", "vr"]],
-    fl: [["fl", "fleu", "fl"], ["pl", "pleu", "pl"], ["kl", "cleu", "cl"], ["gl", "gleu", "gl"], ["bl", "bleu", "bl"]],
+    fr: [["fr", "freu", "fr"], ["pr", "preu", "pr"], ["tr", "treu", "tr"], ["kr", "kreu", "cr"], ["gr", "greu", "gr"], ["br", "breu", "br"], ["dr", "dreu", "dr"], ["vr", "vreu", "vr"]],
+    fl: [["fl", "fleu", "fl"], ["pl", "pleu", "pl"], ["kl", "kleu", "cl"], ["gl", "gleu", "gl"], ["bl", "bleu", "bl"]],
     in: [["I", "hein", "in"]], ain: [["I", "hein", "in"]], un: [["I", "hein", "in"]], eu: [["2", "euh", "eu"]], k: [["k", "keu", "k"]], gn: [["N", "gneu", "gn"]],
     ph: [["f", "feu", "f"]], gj: [["Z", "jeu", "j"]], cs: [["s", "seu", "s"]], ill: [["j", "ille", "ill"]], x: [["ks", "ksse", "x"]]
   };
