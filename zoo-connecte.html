@@ -2075,6 +2075,93 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     return r;
   }
 
+  /* ---------- Mesures pour l’espace Pédagogie de l’enseignant (progress.stats, JSON libre : aucune migration) ----------
+     snd[son] = { l: [justes, ratées], w: [justes, ratées] } : réponses par son (l = écoute, w = dictée ; « ratée » = au moins une erreur)
+     conf["attendu|choisi"] = nombre : confusions (b|d, on|an…), 40 au plus, les plus fréquentes gardées
+     days["AAAA-MM-JJ"] = [secondes actives, séries d’écoute, dictées, lectures, parties] : 45 derniers jours
+     Rien n’est affiché à l’élève. */
+  var STAT_GRAPH = ["eau", "ain", "ein", "oin", "ill", "ou", "on", "an", "en", "in", "un", "am", "em", "im", "om", "ch", "ph", "gn", "qu", "gu", "oi", "au", "ai", "ei", "eu", "er", "ez"];
+  function statsClean(o) {
+    var r = { snd: {}, conf: {}, days: {} };
+    if (!o || typeof o !== "object") return r;
+    if (o.snd && typeof o.snd === "object") Object.keys(o.snd).slice(0, 120).forEach(function (k) {
+      var s = o.snd[k], c = {};
+      if (!s || typeof s !== "object") return;
+      ["l", "w"].forEach(function (a) { if (Array.isArray(s[a])) c[a] = [listenInt(s[a][0], 0, 99999, 0), listenInt(s[a][1], 0, 99999, 0)]; });
+      r.snd[k] = c;
+    });
+    if (o.conf && typeof o.conf === "object") Object.keys(o.conf).slice(0, 60).forEach(function (k) { if (k.length <= 30) r.conf[k] = listenInt(o.conf[k], 0, 99999, 0); });
+    if (o.days && typeof o.days === "object") Object.keys(o.days).forEach(function (k) {
+      var d = o.days[k];
+      if (/^\d{4}-\d\d-\d\d$/.test(k) && Array.isArray(d)) r.days[k] = [0, 1, 2, 3, 4].map(function (i) { return listenInt(d[i], 0, 86400, 0); });
+    });
+    return r;
+  }
+  function statsMine(sid) {
+    if (!data.stats) data.stats = {};
+    if (!data.stats[sid]) data.stats[sid] = statsClean(null);
+    return data.stats[sid];
+  }
+  function statToday() { var d = new Date(); return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
+  /* i : 0 secondes actives, 1 écoute, 2 dictée, 3 lecture, 4 partie */
+  function statDay(sid, i, n) {
+    if (!sid) return;
+    try {
+      var st = statsMine(sid), k = statToday(), d = st.days[k] || (st.days[k] = [0, 0, 0, 0, 0]);
+      d[i] = Math.min(86400, (d[i] || 0) + (n || 1));
+      var ks = Object.keys(st.days).sort();
+      while (ks.length > 45) delete st.days[ks.shift()];
+    } catch (e) {}
+  }
+  /* une réponse juste ou ratée sur un son (a = "l" écoute, "w" dictée) */
+  function statAns(sid, soundId, a, ok) {
+    if (!sid || !soundId) return;
+    try {
+      var st = statsMine(sid), s = st.snd[soundId] || (st.snd[soundId] = {}), c = s[a] || (s[a] = [0, 0]);
+      c[ok ? 0 : 1]++;
+    } catch (e) {}
+  }
+  /* découpe en graphèmes : « bon » → b, on ; « chat » → ch, a, t */
+  function statTok(w) {
+    var out = [], i = 0;
+    w = String(w || "").toLowerCase();
+    while (i < w.length) {
+      var g = w.charAt(i);
+      for (var n = 3; n >= 2; n--) { var p = w.substr(i, n); if (STAT_GRAPH.indexOf(p) >= 0) { g = p; break; } }
+      out.push(g); i += g.length;
+    }
+    return out;
+  }
+  /* ce qui diffère entre la bonne réponse et celle de l’élève : « ba » / « da » → b|d ; « mouton » / « manton » → ou|an */
+  function statDiff(good, got) {
+    var a = statTok(good), b = statTok(got);
+    while (a.length && b.length && a[0] === b[0]) { a.shift(); b.shift(); }
+    while (a.length && b.length && a[a.length - 1] === b[b.length - 1]) { a.pop(); b.pop(); }
+    if (!a.length && !b.length) return null;
+    var x = a.join(""), y = b.join("");
+    return x.length <= 4 && y.length <= 4 ? (x || "∅") + "|" + (y || "∅") : null;
+  }
+  function statConf(sid, goods, got) {
+    if (!sid || !got) return;
+    try {
+      var list = Array.isArray(goods) ? goods : [goods], key = null;
+      for (var i = 0; i < list.length && !key; i++) key = statDiff(list[i], got);
+      if (!key) return;
+      var st = statsMine(sid);
+      st.conf[key] = (st.conf[key] || 0) + 1;
+      var ks = Object.keys(st.conf);
+      if (ks.length > 40) { ks.sort(function (p, q2) { return st.conf[p] - st.conf[q2]; }); delete st.conf[ks[0]]; }
+    } catch (e) {}
+  }
+  /* Temps actif : toutes les 15 s, si la page est visible et que l’élève a touché l’écran dans la dernière minute */
+  var STAT_LAST = 0, STAT_TICKS = 0;
+  ["pointerdown", "touchstart", "keydown", "mousedown"].forEach(function (t) { document.addEventListener(t, function () { STAT_LAST = Date.now(); }, true); });
+  setInterval(function () {
+    if (ses.role !== "student" || !ses.sid || document.hidden || Date.now() - STAT_LAST > 60000) return;
+    statDay(ses.sid, 0, 15);
+    if (++STAT_TICKS % 8 === 0) save();   /* sauvegarde toutes les 2 minutes de travail (les fins de série sauvegardent aussi) */
+  }, 15000);
+
   var data = {
     students: [], results: [],
     thr: { s: 25, m: 20, t: 15 },
@@ -2104,6 +2191,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     listenCfg: listenCfgClean(null),
     dictee: {},
     dicteeCfg: dicteeCfgClean(null),
+    stats: {},   /* mesures pour l’espace Pédagogie (statsClean) */
     v: 3,
     sel: { sid: null, sound: null, kind: "s" }
   };
@@ -2206,6 +2294,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       reviews:data.reviews.filter(function(x){return x.sid===sid}),
       listen:data.listen[sid]||{},
       dictee:data.dictee[sid]||{},
+      stats:(data.stats&&data.stats[sid])||{},
       notes:data.notes.filter(function(x){return x.sid===sid}),
       evos:data.evos.filter(function(x){return x.sid===sid}),
       avatar:(studentById(sid)||{}).avatar||null,
@@ -3278,7 +3367,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     paintWords();
   }
   function saveTraining() {
-    data.results.push({ id: uid(), sid: S.sid, sound: S.sound, k: S.kind, n: current.n, e: current.e, t: current.t, mclm: current.mclm, ts: Date.now(), src: "train", short: current.short || undefined, fraud: current.fraud });
+    data.results.push({ id: uid(), sid: S.sid, sound: S.sound, k: S.kind, n: current.n, e: current.e, t: current.t, mclm: current.mclm, ts: Date.now(), src: "train", short: current.short || undefined, fraud: current.fraud }); statDay(S.sid, 3);
     data.sel.sid = S.sid;
     save();
   }
@@ -3307,7 +3396,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if (current.t < MIN_TRAIN_SEC && !confirm("Lecture très courte (" + current.t + " s) : le score n’est pas fiable. Enregistrer quand même ?")) return;
     var intro = $("r-msg").textContent, petEmoji = charFor(S.sound).e;
     var was = isValid(S.sid, S.sound, S.kind), petBefore = petState(S.sid, S.sound), evoSound = S.sound;
-    data.results.push({ id: uid(), sid: S.sid, sound: S.sound, k: S.kind, n: current.n, e: current.e, t: current.t, mclm: current.mclm, ts: Date.now(), fraud: current.fraud });
+    data.results.push({ id: uid(), sid: S.sid, sound: S.sound, k: S.kind, n: current.n, e: current.e, t: current.t, mclm: current.mclm, ts: Date.now(), fraud: current.fraud }); statDay(S.sid, 3);
     data.sel.sid = S.sid;
     var newly = !was && isValid(S.sid, S.sound, S.kind);
     var sid = S.sid;
@@ -3649,6 +3738,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   function settleCoins(sid, gain, obj) { if (gain > 0 && obj) { data.coins[sid] = coins(sid) - COIN_GOAL; save(); } }
   function finishScore(sid, area, id, value) {
     var obj = !!G.objCoin;
+    statDay(sid, 4);
     if (cloudMode) { finishScoreCloud(sid, area, id, value, obj); return; }
     var g = gameInfo(id), prevAbs = absRecord(id);
     var res = recordScore(sid, id, value);
@@ -4331,6 +4421,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if (q.over) return;
     q.over = true;
     var R = LS.run, ok = !q.bad && q.found.length === q.goods.length, msg = $("listen-msg");
+    statAns(R.sid, R.sound.id, "l", ok);
     if (!ok) {
       R.failed++;
       if (!q.bad) sfxBad();
@@ -4356,6 +4447,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     } else {
       b.classList.add("bad"); q.bad = true;
       sfxBad();
+      statConf(LS.run && LS.run.sid, q.goods, c.g);
       listenFinishQ(q, "Oups, ce n’est pas ça.");
     }
   }
@@ -4364,6 +4456,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     LS.phase = "end";
     var ok = R.failed <= cfg.maxErrors, wasDone = listenDone(sid, id), gained = 0, nowDone = false;
     L.tries++;
+    statDay(sid, 1);
     if (ok) dayMark(sid, "l");
     if (ok && !wasDone) {
       L.passes[id] = (L.passes[id] || 0) + 1;
@@ -4660,12 +4753,15 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       var word = Q.typed.join("");
       if (it.g.some(function (g) { return g.toLowerCase() === word; })) {
         Q.over = true; okBtn.disabled = true;
+        statAns(R.sid, R.sound.id, "w", Q.tries === 0);
         cells.forEach(function (cl) { cl.classList.add("good"); });
         sfxGood(); msg.textContent = praise() + " !";
         DS.timers.push(setTimeout(dicteeQuestion, 1000));
         return;
       }
       Q.tries++; sfxBad();
+      statConf(R.sid, it.g, word);
+      if (Q.tries >= 2) statAns(R.sid, R.sound.id, "w", false);
       cells.forEach(function (cl) { cl.classList.add("bad"); });
       if (Q.tries < 2) {   /* première erreur : on réécoute et on réessaie */
         Q.over = true; okBtn.disabled = true;
@@ -4688,6 +4784,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var R = DS.run, cfg = data.dicteeCfg, sid = R.sid, id = R.sound.id, D = dicteeMine(sid), body = $("dictee-body");
     var ok = R.failed <= cfg.maxErrors, wasDone = dicteeDone(sid, id), gained = 0, nowDone = false;
     D.tries++;
+    statDay(sid, 2);
     if (ok) dayMark(sid, "w");
     if (ok && !wasDone) {
       D.passes[id] = (D.passes[id] || 0) + 1;
@@ -6005,7 +6102,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
           streak++; laneGlow[col] = 1; ripples.push({ x: col * CW + CW / 2, y: r.y + RH / 2, life: 24, max: 24, col: "#86efac" });
           floats.push({ x: col * CW + CW / 2, y: r.y + 10, life: 40, max: 40, text: streak >= 5 && streak % 5 === 0 ? "🔥 " + streak + " !" : "+1" });
           burst(col * CW + CW / 2, r.y + RH / 2, 14, ["#4ade80", "#ffffff", "#ffd23f", "#67e8f9"]);
-        } else { streak = 0; sfxBad(); hurt(col * CW + CW / 2, r.y + RH / 2); }
+        } else { streak = 0; sfxBad(); statConf(sid, target.model, c.g); hurt(col * CW + CW / 2, r.y + RH / 2); }
         return;
       }
     }
@@ -6774,7 +6871,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       if (!blob || !blob.size) throw new Error("empty");
       var id = uid();
       return audioPut(id, blob).then(function () {
-        data.reviews.push({ id: id, sid: S.sid, sound: S.sound, kind: S.kind, ts: Date.now(), secs: secs });
+        data.reviews.push({ id: id, sid: S.sid, sound: S.sound, kind: S.kind, ts: Date.now(), secs: secs }); statDay(S.sid, 3);
         save();
         setPhase("recdone");
       });
@@ -7384,6 +7481,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       data.listen={};data.listen[st.student_id]=listenClean(p.listen);
       data.listenCfg=listenCfgClean(teacherSettings.listenCfg);
       data.dictee={};data.dictee[st.student_id]=listenClean(p.dictee);
+      data.stats={};data.stats[st.student_id]=statsClean(p.stats);
       data.dicteeCfg=dicteeCfgClean(teacherSettings.dictee);
       if(p.shop&&typeof p.shop==="object"&&Array.isArray(p.shop.rewards)&&!Array.isArray(teacherSettings.rewards))data.shop=p.shop;
       if(Array.isArray(teacherSettings.rewards))data.shop.rewards=teacherSettings.rewards;
