@@ -336,6 +336,9 @@
   .zoo-card.written { border-color: #e0a800; box-shadow: 0 0 0 3px #f5c54233; }
   .dic-actions button { min-height: 64px; font-size: 1.4rem; font-weight: 800; border-radius: 16px; padding: 10px 26px; }
   .parent-note p { margin: 4px 0; }
+  .remed-done p { margin: 0; }
+  .cp-head .home-say { min-height: 52px; min-width: 60px; }
+  body.listen-focus .ph-pic { min-height: max(96px, min(30vh, 300px)); font-size: max(3rem, min(14vh, 17vw, 9rem)); }
   .listen-stars .lstar { font-size: 3rem; line-height: 1; color: #d5d9e2; text-shadow: 0 2px 0 #b9bfcc; }
   .listen-stars .lstar.on { color: #f5c542; text-shadow: 0 2px 0 #c58e00, 0 0 14px rgba(245, 197, 66, .55); }
 @media (prefers-reduced-motion: no-preference) {

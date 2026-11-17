@@ -60,7 +60,7 @@
       .sort(function (a, b) { return (Number(b.ts) || 0) - (Number(a.ts) || 0); })[0] || null;
     return { s: s, p: p, nValid: nValid, total: order.length, cur: cur, err: err, answers: answers, readTries: readTries, blocked: blocked,
       recs: recs.length, curSent: curSent, secs: secs, series: series, idle: idle, flu: flu, conf: st.conf && typeof st.conf === "object" ? st.conf : {}, measured: Object.keys(days).length > 0,
-      allo: window.pedaAllo.indexOf(s.id) >= 0 };
+      allo: window.pedaAllo.indexOf(s.id) >= 0, asg: (window.pedaAssign || {})[s.id] || null, remed: p.remed && typeof p.remed === "object" ? p.remed : null };
   }
   function classify(rows) {
     var med = median(rows.map(function (r) { return r.nValid; }));
@@ -247,11 +247,24 @@
     else txt = "Son «\u00a0" + soundName(r.cur.id) + "\u00a0» · " + (r.blocked ? (r.err !== null && r.answers >= 6 ? "bloqué (" + r.err + " % d’erreurs)" : "bloqué (" + r.readTries + " lectures sans réussite)") : (r.curSent ? "lecture enregistrée, à écouter" : "en cours"));
     if (r.recs) txt += " · 🎧 " + plur(r.recs, "lecture à écouter", "lectures à écouter");
     prog.append(pbar, mk("small", null, r.nValid + "/" + r.total + " · " + txt));
+    if (r.asg) { var ast = asgState(r.asg, r.remed); prog.append(mk("small", "pb-asg" + (ast.ok ? " ok" : ""), "🎯 " + asgLabel(r.asg) + " · " + asgStatusText(r.asg, r.remed))); }
     var flu = mk("div", "pb-flu", r.flu ? Math.round(Number(r.flu.mclm)) + "/min" : "—");
     flu.title = r.flu ? "Dernière lecture : " + Math.round(Number(r.flu.mclm)) + " corrects par minute (" + ({ s: "syllabes", m: "mots", t: "texte" }[r.flu.k] || "lecture") + ")" : "Pas encore de lecture";
     var act = mk("button", "secondary pb-see", "Voir"); act.type = "button"; act.title = "Voir les détails de " + r.s.nickname;
     act.onclick = function () { openDetails(r.s); };
     var btns = mk("div", "pb-btns"); btns.append(act);
+    /* « + Assigner » : seulement pour ses propres élèves (le réglage est celui de l’enseignant de la classe) */
+    if (state.cls && C.currentUser && state.cls.teacher_id === C.currentUser.id) {
+      var asb = mk("button", "secondary pb-see pb-asb", r.asg && !asgState(r.asg, r.remed).ok ? "🎯 Exercice" : "+ Assigner"); asb.type = "button";
+      asb.title = "Donner un exercice à " + r.s.nickname + " (en tête de sa mission jusqu’à réussite)";
+      asb.setAttribute("aria-expanded", "false");
+      asb.onclick = function () {
+        var nx = d.nextElementSibling;
+        if (nx && nx.classList.contains("pb-assign")) { nx.remove(); asb.setAttribute("aria-expanded", "false"); return; }
+        d.parentNode.insertBefore(assignEditor(r, repaint), d.nextSibling); asb.setAttribute("aria-expanded", "true");
+      };
+      btns.append(asb);
+    }
     if (C.pdfMake) {
       var fi = mk("button", "secondary pb-see", "📄 Fiche"); fi.type = "button"; fi.title = "Fiche de suivi de " + r.s.nickname + " (PDF à imprimer)";
       fi.onclick = function () { makeFiches([r], state.cls, fi, "fiche-suivi-" + (C.pdfSlug(r.s.nickname) || "eleve")); };
@@ -423,5 +436,142 @@
     return all[0].map(function (a, i) { return a.v === null ? null : median(all.map(function (l) { return l[i].v || 0; })); });
   }
 
-  window.ZooPeda = { render: render, analyse: analyse, classify: classify, axes: axes, drawFiche: drawFiche, state: state };
+
+  /* ===== Remédiation (jalon 7) : « + Assigner » un exercice à un élève =====
+     Réglage enseignant settings.assign[élève] = { type, sons, pair, ts } (enregistré avec les autres réglages, aucune migration).
+     Le Zoo de l’élève le met en tête de sa mission jusqu’à réussite et note le résultat dans progress.remed = { ts, done, ok, tries, hist }. */
+  window.pedaAssign = window.pedaAssign || {};
+  var RT = { phono: "🖼️ J’entends", listen: "👂 J’écoute", write: "✏️ J’écris", compr: "🧩 Je comprends", tiles: "🎹 Tuiles des sons" };
+  var RT_HELP = { phono: "trouver les images où l’on entend le son", listen: "reconnaître le son entendu parmi des écritures", write: "écrire ce que dit la voix", compr: "lire des mots et trouver leur image", tiles: "toucher une écriture et éviter celle qu’il confond (20 bonnes tuiles)" };
+  var TILE_PAIRS = [["b", "d"], ["p", "q"], ["m", "n"], ["f", "v"], ["t", "d"], ["ou", "on"], ["on", "an"], ["an", "in"], ["ch", "j"], ["é", "è"]];
+  function exo() { return window.ZooExo || {}; }
+  function remedCan(type, id) {
+    var X = exo(), skip = X.LISTEN_SKIP || {};
+    if (type === "tiles" || skip[id]) return false;
+    if (type === "phono") return !!(X.phonoKey && X.phonoKey(id));
+    if (type === "compr") return !!(X.comprHas && X.comprHas(id, soundsOrder().map(function (x) { return x.id; })));
+    return true;
+  }
+  function q2(t) { return "« " + t + " »"; }
+  function asgLabel(a) {
+    if (!a) return "";
+    if (a.type === "tiles") return RT.tiles + " " + q2(a.pair[0]) + " et " + q2(a.pair[1]);
+    return RT[a.type] + " · " + (a.sons || []).map(function (id) { return q2(soundName(id)); }).join(", ");
+  }
+  /* État d’un exercice donné : réussi (date), commencé (étapes faites), pas encore */
+  function asgState(a, rm) {
+    rm = rm && typeof rm === "object" ? rm : {};
+    var same = a && Number(rm.ts) === Number(a.ts), done = same && rm.done && typeof rm.done === "object" ? Object.keys(rm.done).length : 0;
+    return { ok: same && Number(rm.ok) > 0 ? Number(rm.ok) : 0, done: done, total: a ? (a.type === "tiles" ? 1 : (a.sons || []).length) : 0, tries: same ? Number(rm.tries) || 0 : 0 };
+  }
+  function shortDate(ts) { var d = new Date(ts); return ("0" + d.getDate()).slice(-2) + "/" + ("0" + (d.getMonth() + 1)).slice(-2); }
+  function asgStatusText(a, rm) {
+    var st = asgState(a, rm);
+    if (st.ok) return "✅ réussi le " + shortDate(st.ok);
+    if (st.done) return "⏳ commencé (" + st.done + "/" + st.total + ")";
+    return st.tries ? "⏳ pas encore réussi (" + plur(st.tries, "essai", "essais") + ")" : "⏳ pas encore fait";
+  }
+  /* Proposition automatique : la confusion la plus fréquente (tuiles), sinon l’exercice où l’élève se trompe le plus sur son son en cours */
+  function propose(r) {
+    var best = null;
+    Object.keys(r.conf || {}).forEach(function (k) {
+      var p = String(k).split("|"), n = Number(r.conf[k]) || 0;
+      if (p.length !== 2 || !p[0] || !p[1] || p[0] === "∅" || p[1] === "∅" || p[0] === p[1] || p[0].length > 4 || p[1].length > 4 || n < 2) return;
+      if (!best || n > best.n) best = { n: n, pair: p };
+    });
+    if (best) return { a: { type: "tiles", pair: best.pair }, why: "confond " + q2(best.pair[0]) + " et " + q2(best.pair[1]) + " (" + plur(best.n, "fois", "fois") + ")" };
+    var order = soundsOrder(), cur = r.cur || order[order.length - 1];
+    if (!cur) return null;
+    var c = (((r.p || {}).stats || {}).snd || {})[cur.id] || {}, top = null, NM = { p: "phono", l: "listen", w: "write", c: "compr" };
+    ["p", "l", "w", "c"].forEach(function (k) {
+      var v = Array.isArray(c[k]) ? c[k] : null, n = v ? (Number(v[0]) || 0) + (Number(v[1]) || 0) : 0, e = n >= 3 ? (Number(v[1]) || 0) / n : -1;
+      if (e > 0 && remedCan(NM[k], cur.id) && (!top || e > top.e)) top = { e: e, t: NM[k] };
+    });
+    var t = top ? top.t : (remedCan("listen", cur.id) ? "listen" : null);
+    if (!t) return null;
+    return { a: { type: t, sons: [cur.id] }, why: top ? Math.round(top.e * 100) + " % d’erreurs à " + RT[t].slice(RT[t].indexOf(" ") + 1) + " sur le son " + q2(soundName(cur.id)) : "son en cours : " + q2(soundName(cur.id)) };
+  }
+  function assignEditor(r, repaint) {
+    var box = mk("div", "pb-assign"), cur = window.pedaAssign[r.s.id], prop = propose(r);
+    var pick = cur ? JSON.parse(JSON.stringify(cur)) : (prop ? JSON.parse(JSON.stringify(prop.a)) : { type: "listen", sons: [] });
+    box.append(mk("h4", null, "🎯 Exercice pour " + r.s.nickname));
+    if (prop) {
+      var tip = mk("p", "pb-as-tip"); tip.append(mk("b", null, "💡 Proposé : "), document.createTextNode(asgLabel(prop.a) + " — " + prop.why + "."));
+      box.append(tip);
+    }
+    var types = mk("div", "pb-chips"), what = mk("div", "pb-as-what"), help = mk("p", "muted pb-as-help");
+    box.append(mk("p", "pb-as-lbl", "1. L’exercice"), types, help, what);
+    Object.keys(RT).forEach(function (t) {
+      var b = mk("button", "pb-chip", RT[t]); b.type = "button"; b.dataset.t = t;
+      b.onclick = function () { if (pick.type === t) return; pick = t === "tiles" ? { type: t, pair: prop && prop.a.type === "tiles" ? prop.a.pair.slice() : ["b", "d"] } : { type: t, sons: (pick.sons || []).filter(function (id) { return remedCan(t, id); }) }; paint(); };
+      types.append(b);
+    });
+    var msg = mk("p", "pb-as-msg"); msg.setAttribute("role", "status");
+    function paint() {
+      Array.prototype.forEach.call(types.children, function (b) { var on = b.dataset.t === pick.type; b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); });
+      help.textContent = "L’élève va " + RT_HELP[pick.type] + ". L’exercice passe en tête de sa mission jusqu’à ce qu’il soit réussi.";
+      what.innerHTML = ""; msg.textContent = "";
+      var chips = mk("div", "pb-chips");
+      if (pick.type === "tiles") {
+        what.append(mk("p", "pb-as-lbl", "2. Les écritures confondues"));
+        var pairs = [];
+        Object.keys(r.conf || {}).sort(function (a, b) { return r.conf[b] - r.conf[a]; }).forEach(function (k) { var p = k.split("|"); if (p.length === 2 && p[0] && p[1] && p[0] !== "∅" && p[1] !== "∅" && p[0].length <= 4 && p[1].length <= 4 && p[0] !== p[1]) pairs.push(p); });
+        TILE_PAIRS.forEach(function (p) { pairs.push(p); });
+        var seen = {}, shown = 0;
+        pairs.forEach(function (p) {
+          var key = p.slice().sort().join("|"); if (seen[key] || shown >= 10) return; seen[key] = 1; shown++;
+          var on = pick.pair && pick.pair.slice().sort().join("|") === key;
+          var b = mk("button", "pb-chip" + (on ? " on" : ""), (on ? pick.pair : p).join(" / ")); b.type = "button"; b.setAttribute("aria-pressed", String(on));
+          b.onclick = function () { pick.pair = on ? pick.pair : p.slice(); paint(); };
+          chips.append(b);
+        });
+        what.append(chips);
+        var sw = mk("div", "pb-as-swap"), sb = mk("button", "secondary", "⇄ Inverser"); sb.type = "button";
+        sw.append(mk("span", null, "L’élève touche " + q2(pick.pair[0]) + " ; " + q2(pick.pair[1]) + " est le piège."), sb);
+        sb.onclick = function () { pick.pair = [pick.pair[1], pick.pair[0]]; paint(); };
+        what.append(sw);
+      } else {
+        what.append(mk("p", "pb-as-lbl", "2. Le ou les sons (3 au plus)"));
+        var order = soundsOrder(), ci = r.cur ? order.findIndex(function (x) { return x.id === r.cur.id; }) : order.length - 1;
+        order.forEach(function (x, i) {
+          if (!remedCan(pick.type, x.id)) return;
+          var on = (pick.sons || []).indexOf(x.id) >= 0;
+          if (i > ci + 1 && !on) return;   /* les sons déjà vus, le son en cours et le suivant */
+          var b = mk("button", "pb-chip" + (on ? " on" : "") + (r.cur && x.id === r.cur.id ? " cur" : ""), x.label || x.id); b.type = "button"; b.setAttribute("aria-pressed", String(on));
+          if (r.cur && x.id === r.cur.id) b.title = "Son en cours";
+          b.onclick = function () {
+            var l = pick.sons || (pick.sons = []), k = l.indexOf(x.id);
+            if (k >= 0) l.splice(k, 1); else if (l.length >= 3) { msg.textContent = "3 sons au plus : retirez-en un d’abord."; return; } else l.push(x.id);
+            paint();
+          };
+          chips.append(b);
+        });
+        if (!chips.children.length) what.append(mk("p", "muted", "Aucun son n’a encore cet exercice pour cet élève."));
+        else what.append(chips);
+      }
+    }
+    paint();
+    var acts = mk("div", "pb-as-acts");
+    var ok = mk("button", null, cur ? "✅ Remplacer l’exercice" : "✅ Donner l’exercice"); ok.type = "button";
+    ok.onclick = function () {
+      var a = pick.type === "tiles" ? { type: "tiles", pair: pick.pair.slice(0, 2), ts: Date.now() } : { type: pick.type, sons: (pick.sons || []).slice(0, 3), ts: Date.now() };
+      if (a.type !== "tiles" && !a.sons.length) { msg.textContent = "Choisissez au moins un son."; return; }
+      window.pedaAssign[r.s.id] = a;
+      if (C.queueSave) C.queueSave("pedaSave");
+      r.asg = a; repaint();
+      var m = $("pedaMsg"); if (m) m.textContent = "🎯 Exercice donné à " + r.s.nickname + " : " + asgLabel(a) + ". Il apparaîtra en tête de sa mission à sa prochaine connexion.";
+    };
+    var no = mk("button", "secondary", "Annuler"); no.type = "button";
+    no.onclick = function () { box.remove(); };
+    acts.append(ok, no);
+    if (cur) {
+      var rm = mk("button", "secondary pb-as-del", "Retirer l’exercice"); rm.type = "button";
+      rm.onclick = function () { delete window.pedaAssign[r.s.id]; if (C.queueSave) C.queueSave("pedaSave"); r.asg = null; repaint(); };
+      acts.append(rm);
+    }
+    box.append(msg, acts);
+    return box;
+  }
+
+  window.ZooPeda = { asgLabel: asgLabel, asgState: asgState, asgStatusText: asgStatusText, render: render, analyse: analyse, classify: classify, axes: axes, drawFiche: drawFiche, state: state };
 })();
