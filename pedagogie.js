@@ -80,6 +80,13 @@
     return own;
   }
 
+  function hhmm(d) { return d.getHours() + " h " + ("0" + d.getMinutes()).slice(-2); }
+  /* Retour sur la page (autre onglet, tablette remise en marche…) : « Ma classe » visible et chargée il y a plus d'une minute → on recharge */
+  document.addEventListener("visibilitychange", function () {
+    var box = document.getElementById("pedaBoard");
+    if (document.visibilityState !== "visible" || !box || !box.offsetParent || !state.loadedAt || Date.now() - state.loadedAt < 60000) return;
+    render().catch(function () {});
+  });
   async function render() {
     if (window.ZooPedaCtx) C = window.ZooPedaCtx();
     var box = $("pedaBoard");
@@ -114,6 +121,12 @@
       pr.onclick = function () { C.printLoginCards(cls, "pedaMsg", pr); };
       acts.append(pr);
     }
+    /* Les résultats ne se rechargent pas tout seuls pendant qu'on reste sur l'écran : bouton « Actualiser » + heure de la dernière mise à jour
+       (et rechargement automatique quand on revient sur la page, voir plus bas) */
+    var rl = mk("button", "secondary", "↻ Actualiser"); rl.type = "button"; rl.title = "Recharger les derniers résultats des élèves";
+    rl.onclick = function () { render(); };
+    var when = mk("span", "pb-updated", ""); when.setAttribute("aria-live", "polite"); when.style.cssText = "font-size:.85em;align-self:center;color:rgba(255,255,255,.85);white-space:nowrap";
+    acts.prepend(rl, when);
     head.append(acts);
     box.append(head, mk("p", "msg", null));
     box.lastChild.id = "pedaMsg"; box.lastChild.setAttribute("role", "status");
@@ -125,6 +138,7 @@
     if (seq !== state.seq) return;   /* un chargement plus récent a pris la main */
     wait.remove();
     if (q.error) { box.append(mk("p", "msg err", "Impossible de charger les résultats : " + (q.error.message || ""))); return; }
+    state.loadedAt = Date.now(); when.textContent = "À jour à " + hhmm(new Date());
     var map = {}; (q.data || []).forEach(function (r) { map[r.student_id] = r; });
     var rows = studs.map(function (s) { return analyse(s, map[s.id]); });
     var med = classify(rows);
