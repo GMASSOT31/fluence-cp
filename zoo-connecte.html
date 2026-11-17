@@ -1771,7 +1771,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   }catch(e){}
 })();
 </script>
-<script src="exo-data.js?v=4"></script>
+<script src="exo-data.js?v=5"></script>
 <script src="vendor/howler.core.min.js?v=2.2.4"></script>
 <script src="audio-lecture.js?v=1"></script>
 <script>/* Anciens iPad (iOS 12 et avant) : le navigateur ne connaît pas les événements « pointer » → les jeux au doigt (Serpent, Oiseau, Tuiles, Tour, Safari) ne réagissaient pas. On les traduit en événements tactiles (ou souris sur un vieil ordinateur). Rien ne change sur les appareils récents. */
@@ -4672,15 +4672,28 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     listenFocus(true);
     phonoQuestion();
   }
-  /* La consigne puis les 3 mots, chacun avec son image qui s’allume */
+  /* La consigne puis les 3 mots, chacun avec son image qui s’allume.
+     Le son est détaché (demandé par Gabriel le 17/11/2026) : « Où entends-tu le son … [pause] on, je répète le son … [pause] on »,
+     dit avec l’enregistrement du Zoo quand il existe (consonnes avec « eu » : feu, cheu, freu…), sinon par la voix de l’appareil. */
+  var PH_GAP = { before: 550, after: 350, words: 700, word: 250 };
+  function phonoSay(text, done) {
+    if (window.ZooAudio && ZooAudio.play(text, done)) return;
+    listenSpeak(text, done);
+  }
   function phonoSpeak(Q, from) {
-    var R = PH.run, seq = ["Où entends-tu " + Q.item.say + " ?"].concat(Q.item.opts.map(function (o) { return o[1]; }));
+    var R = PH.run, say = Q.item.say, tok = Q.tok = (Q.tok || 0) + 1;
+    /* étapes : [texte, enregistrement du Zoo ?, image allumée (-1 : aucune), pause après] */
+    var seq = [["Où entends-tu le son", false, -1, PH_GAP.before], [say, true, -1, PH_GAP.after],
+               ["Je répète le son", false, -1, PH_GAP.before], [say, true, -1, PH_GAP.words]];
+    Q.item.opts.forEach(function (o, j) { seq.push([o[1], false, j, PH_GAP.word]); });
     var i = from || 0;
     function lit(k) { Q.btns.forEach(function (b, j) { b.classList.toggle("lit", j === k); }); }
     function step() {
-      if (PH.run !== R || R.q !== Q || Q.over || i >= seq.length) { lit(-1); return; }
-      var k = i - 1; lit(k); i++;
-      listenSpeak(seq[i - 1], function () { PH.timers.push(setTimeout(step, 250)); });
+      if (PH.run !== R || R.q !== Q || Q.over || Q.tok !== tok || i >= seq.length) { if (Q.tok === tok) lit(-1); return; }
+      var st = seq[i++], fin = false;
+      lit(st[2]);
+      function next() { if (fin) return; fin = true; if (Q.tok === tok) PH.timers.push(setTimeout(step, st[3])); }
+      if (st[1]) phonoSay(st[0], next); else listenSpeak(st[0], next);
     }
     step();
   }
