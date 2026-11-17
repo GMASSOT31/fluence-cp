@@ -153,8 +153,8 @@
       text: LEO_TEXT },
     { page: "teacher", enter: function () { tab("eleves"); click('[data-sub-btn="ajout"]'); }, target: "#studentForm", title: "Ajouter vos élèves",
       text: "Un pseudo suffit : le code secret de départ est 1234. « Et maintenant ? » imprime les fiches de connexion à découper (PDF)." },
-    { page: "teacher", enter: function () { tab("general"); }, target: '.sub-picker[data-section="general"]', title: "Vos réglages",
-      text: "Les réglages du Zoo (objectifs de lecture, récompenses, parties de jeu) et, « Pour aller plus loin », les exercices à personnaliser à l'envie et l'ordre des sons étudiés (par défaut, la progression de la méthode PIANO CP)." },
+    { page: "teacher", enter: function () { tab("reglages"); }, target: '.sub-picker[data-section="reglages"]', title: "Votre pédagogie",
+      text: "« Pédagogie » : les objectifs de lecture, l'ordre des sons (par défaut, la progression de la méthode PIANO CP), la médaille et les exercices à personnaliser. Les jeux, la boutique et les mots de passe sont dans « Réglages généraux »." },
     THE_END
   ];
   function list() { return T.mode === "short" ? SHORT : STEPS; }
