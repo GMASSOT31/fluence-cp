@@ -26,6 +26,7 @@ Appli web de fluence de lecture pour des classes de CP, en ligne sur https://zoo
 - Réglages enseignant (JSON `settings`) : thr, lock, reward, sfx, **music**, **pinChange**, allowRec, evalCode, maxPlays, packPrice, wheelPrice, sounds, texts, rewards.
 
 ## 4. Règles de travail (obligatoires)
+- **Invariants de Gabriel pour tous ses projets web (17/11/2026)** : **autonomie** (tout ce qui ne demande pas son jugement — copier-coller, lancer une nouvelle session, vérifier, tester — se fait seul, sans lui demander), **fluidité de l'UX**, **simplicité maximale**, **interface intuitive**. Quand la conversation s'allonge : ouvrir soi-même une nouvelle session (`create_session`) avec un brief complet, sans le lui faire coller.
 - **Une branche `claude/<sujet>` et une PR par changement.** Mode plan (EnterPlanMode) pour les gros chantiers.
 - **Jamais de fusion sur main sans accord explicite** : demander avant chaque fusion.
 - **Jamais toucher à la base Supabase sans accord explicite**, une migration à la fois : (1) essai dans une transaction annulée (`raise exception 'DRYRUN_RESULT …'`), (2) accord, (3) `apply_migration`, (4) fichier ajouté dans `supabase/migrations/`, (5) vérification en lecture seule. **Appliquer la migration AVANT de fusionner la PR qui l'utilise.** Pour modifier une fonction : partir de sa définition en ligne (`pg_get_functiondef`).
