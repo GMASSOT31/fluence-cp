@@ -13,6 +13,24 @@
     students: [{ id: "s1", nickname: "lea", class_id: "c1", teacher_id: "t1", pin_hash: "x" }, { id: "s2", nickname: "leo", class_id: "c1", teacher_id: "t1", pin_hash: "x" }, { id: "s3", nickname: "Zoé", class_id: "c2", teacher_id: "t2", pin_hash: "x" }],
     progress: { s1: { student_id: "s1", progress: { coins: 3, dictee: { passes: { voy: 1, l: 1 }, done: { voy: true, l: true }, tries: 4 }, hi: { memory: { best: 12 }, catch: { best: 9 }, simon: { best: 5 }, order: { best: 20 } }, results: [{ src: "eval", mclm: 285, ts: 5, k: "s", sound: "l" }, { src: "eval", mclm: 200, ts: 4, k: "s", sound: "l" }, { src: "train", ts: 3 }, { src: "train", ts: 2 }, { src: "train", ts: 1 }], reviews: [], vouchers: [{ id: "v1", label: "Image surprise", icon: "🖼️", done: false }, { id: "v2", label: "Crayon magique", icon: "✏️", done: false }] }, updated_at: "2026-10-20T10:00:00Z", pending_coins: 0, given_vouchers: [] } }, gifts: []
   };
+  /* ?pedago=1 : une classe de 12 élèves avec des mesures (tableau de bord Pédagogie) */
+  if (/[?&]pedago=1/.test(location.search)) (function () {
+    var order = ["voy", "voy2", "l", "f", "ch", "s", "m", "r", "n", "v", "j", "z", "p", "t", "c", "b", "d"];
+    var now = Date.now(), DAY = 864e5;
+    function key(ts) { var d = new Date(ts); return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
+    var kids = [["Lucas", 3, 1, { f: [[6, 9]] }, { "b|d": 5, "d|b": 2 }, 18], ["Inaya", 6, 0, { m: [[8, 7]] }, { "on|an": 3, "b|d": 2 }, 32], ["Amine", 6, 1, { m: [[5, 6]] }, { "b|d": 3 }, 25],
+      ["Mostafa", 6, 0, null, { "ou|on": 2 }, 28], ["Alya", 10, 0, null, {}, 29], ["Karim", 4, 12, null, {}, 0], ["Teninke", 7, 2, null, { "d|b": 4 }, 20], ["Andrei", 7, 0, null, { "b|d": 2, "f|v": 3 }, 35],
+      ["Jade", 7, 1, null, {}, 26], ["Noah", 7, 0, null, { "f|v": 2 }, 30], ["Lina", 8, 3, null, {}, 22], ["Sacha", 11, 0, null, {}, 40]];
+    st.students = st.students.concat(kids.map(function (k, i) { return { id: "p" + i, nickname: k[0], class_id: "c1", teacher_id: "t1", pin_hash: "x" }; }));
+    kids.forEach(function (k, i) {
+      var res = [], days = {}, snd = {};
+      for (var j = 0; j < k[1]; j++) res.push({ id: "r" + i + j, sound: order[j], k: "s", src: "eval", mclm: 30 + j * 3, ts: now - (k[2] + 3 + (k[1] - j)) * DAY });
+      if (k[5]) res.push({ id: "f" + i, sound: order[k[1]], k: "s", src: "train", mclm: k[5], ts: now - k[2] * DAY });
+      if (k[3]) Object.keys(k[3]).forEach(function (s2) { snd[s2] = { l: k[3][s2][0], w: [2, 3] }; });
+      if (k[2] < 7) for (var d = k[2]; d < 7; d += 2) days[key(now - d * DAY)] = [300 + i * 60, 2, 1, 1, 2];
+      st.progress["p" + i] = { student_id: "p" + i, updated_at: new Date(now - k[2] * DAY).toISOString(), pending_coins: 0, progress: { results: res, stats: { snd: snd, conf: k[4], days: days } } };
+    });
+  })();
   function fixCode(v, isUpdate, old) {
     var c = v == null ? null : norm(v); if (c === "") c = null;
     if (c === null) return isUpdate ? old : "AB12CD34EF";
