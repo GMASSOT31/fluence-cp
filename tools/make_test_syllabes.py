@@ -29,7 +29,7 @@ button.go { background: #16a34a; color: #fff; border-color: #15803d; }
 <div class="bar"><button class="go" id="all">▶ Tout lire</button><button id="stop">⏹ Stop</button><button id="copy">📋 Copier la liste cochée</button><span id="cnt"></span></div>
 <div class="grid" id="grid"></div>
 <textarea id="res" readonly placeholder="La liste des syllabes cochées apparaît ici."></textarea>
-<script src="exo-data.js?v=3"></script>
+<script src="exo-data.js?v=4"></script>
 <script src="vendor/howler.core.min.js?v=2.2.4"></script>
 <script src="audio-lecture.js?v=1"></script>
 <script>

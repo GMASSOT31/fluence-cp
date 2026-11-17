@@ -263,10 +263,67 @@
     return out;
   }
 
+  /* ---------- Compréhension (dernière étape d’un son) : « Lis le mot, touche son image » ----------
+     Exercice de LECTURE (pas de voix) : seulement des mots de WORD_POOL que l’élève sait déjà déchiffrer (wordsFor, ordre de l’enseignant).
+     COMPR_PICS = mot → image emoji (Unicode 11 au plus, lisible sur iPad iOS 12). Un mot sans image n’est jamais proposé.
+     COMPR_APART : mots dont les images se ressemblent trop, jamais dans le même tableau. */
+  var COMPR_PICS = {
+    "rire": "😂", "mur": "🧱", "lune": "🌙", "vélo": "🚲", "vache": "🐮", "navire": "🚢", "zéro": "0️⃣", "pile": "🔋",
+    "épée": "🗡️", "tomate": "🍅", "tortue": "🐢", "patate": "🥔", "moto": "🏍️", "télé": "📺", "tarte": "🥧", "tulipe": "🌷",
+    "stylo": "🖊️", "café": "☕", "école": "🏫", "coco": "🥥", "caméra": "🎥", "robe": "👗", "bébé": "👶", "bol": "🥣",
+    "dodo": "😴", "malade": "🤒", "salade": "🥗", "dé": "🎲", "gare": "🚉", "poule": "🐔", "soupe": "🍲", "bouche": "👄",
+    "bijou": "💍", "loupe": "🔍", "route": "🛣️", "bateau": "⛵", "cadeau": "🎁", "hibou": "🦉", "mouton": "🐑", "bonbon": "🍬",
+    "savon": "🧼", "melon": "🍈", "roi": "👑", "étoile": "⭐", "voiture": "🚗", "poire": "🍐", "toile": "🕸️", "ruban": "🎀",
+    "pantalon": "👖", "lampe": "💡", "jambe": "🦵", "danse": "💃", "chanson": "🎵", "tambour": "🥁", "tente": "⛺", "balai": "🧹",
+    "reine": "👸", "fête": "🎉", "pêche": "🍑", "jouet": "🧸", "poulet": "🍗", "panier": "🧺", "nez": "👃", "frite": "🍟",
+    "crabe": "🦀", "trou": "🕳️", "livre": "📖", "arbre": "🌳", "cravate": "👔", "tigre": "🐯", "cadre": "🖼️", "clé": "🔑",
+    "blé": "🌾", "plante": "🌱", "lapin": "🐰", "sapin": "🌲", "dindon": "🦃", "pain": "🍞", "main": "✋", "bain": "🛁",
+    "train": "🚂", "chien": "🐶", "lion": "🦁", "avion": "✈️", "feu": "🔥", "jeu": "🎮", "fleur": "🌸", "cœur": "❤️",
+    "kimono": "👘", "karaté": "🥋", "quatre": "4️⃣", "bouquet": "💐", "masque": "🎭", "casque": "⛑️", "montagne": "⛰️", "champignon": "🍄",
+    "photo": "📷", "dauphin": "🐬", "téléphone": "📞", "girafe": "🦒", "page": "📄", "bougie": "🕯️", "manège": "🎠", "orage": "⛈️",
+    "nuage": "☁️", "plage": "🏖️", "fromage": "🧀", "citron": "🍋", "glace": "🍦", "police": "👮", "cinéma": "🎬", "cirque": "🎪",
+    "cycliste": "🚴", "sel": "🧂", "miel": "🍯", "chaussette": "🧦", "poubelle": "🗑️", "pomme": "🍎", "carotte": "🥕", "ballon": "⚽",
+    "balle": "🎾", "omelette": "🍳", "rose": "🌹", "vase": "🏺", "maison": "🏠", "cerise": "🍒", "valise": "🧳", "oiseau": "🐦",
+    "fraise": "🍓", "usine": "🏭", "raisin": "🍇", "église": "⛪", "fille": "👧", "feuille": "🍁", "papillon": "🦋", "grenouille": "🐸",
+    "coquille": "🐚", "chenille": "🐛", "abeille": "🐝", "bouteille": "🍾", "médaille": "🏅", "yoga": "🧘", "crayon": "✏️", "kiwi": "🥝",
+    "wagon": "🚃", "taxi": "🚕", "boxe": "🥊", "saxo": "🎷", "lunette": "👓"
+  };
+  var COMPR_APART = [["voiture", "taxi"], ["stylo", "crayon"], ["balle", "ballon"], ["vélo", "cycliste"], ["poule", "poulet"]];
+  /* Mots illustrés d’un son : own = ceux qui font lire ce son (nouveaux), prev = ceux des sons placés avant lui */
+  function comprWords(soundId, order) {
+    var ids = order && order.length ? order : DEFAULT_ORDER, k = ids.indexOf(soundId), own = [], prev = [];
+    if (k < 0) return { own: own, prev: prev };
+    ids.forEach(function (id, i) {
+      if (i > k) return;
+      wordsFor(id, ids).forEach(function (w) { if (COMPR_PICS[w]) (i === k ? own : prev).push(w); });
+    });
+    return { own: own, prev: prev };
+  }
+  /* Un son a son étape « Je comprends » s’il fait lire au moins un mot illustré et qu’on peut faire un tableau de 4 */
+  function comprHas(soundId, order) { var W = comprWords(soundId, order); return W.own.length >= 1 && W.own.length + W.prev.length >= 4; }
+  function comprApart(a, b) { return COMPR_APART.some(function (p) { return (p[0] === a && p[1] === b) || (p[0] === b && p[1] === a); }); }
+  /* boards tableaux de size mots : dans chaque tableau, jusqu’à 2 mots du son, le reste pris dans les sons d’avant ; [ [mot, image]… ] */
+  function comprBuild(soundId, order, boards, size) {
+    var W = comprWords(soundId, order), out = [], used = {}, ownQ = phonoShuffle(W.own), oi = 0;
+    if (!comprHas(soundId, order)) return out;
+    for (var b = 0; b < boards; b++) {
+      var board = [];
+      var ok = function (w) { return board.every(function (x) { return x[0] !== w && x[1] !== COMPR_PICS[w] && !comprApart(x[0], w); }); };
+      var add = function (w) { board.push([w, COMPR_PICS[w]]); used[w] = 1; };
+      for (var n = 0; n < Math.min(2, W.own.length); n++) { var w = ownQ[oi++ % ownQ.length]; if (ok(w)) add(w); }
+      var rest = phonoShuffle(W.prev.concat(W.own)), fresh = rest.filter(function (w) { return !used[w]; }), again = rest.filter(function (w) { return used[w]; });
+      fresh.concat(again).forEach(function (w) { if (board.length < size && ok(w)) add(w); });
+      if (board.length < size) return out;
+      out.push(phonoShuffle(board));
+    }
+    return out;
+  }
+
   window.ZooExo = {
     LISTEN_ITEMS: LISTEN_ITEMS, LISTEN_SKIP: LISTEN_SKIP, SYL_VOWELS: SYL_VOWELS, SYL_E_WORDS: SYL_E_WORDS, LISTEN_SYL_CONS: LISTEN_SYL_CONS,
     LISTEN_SYL_VOW: LISTEN_SYL_VOW, SYL_NO_INVERSE: SYL_NO_INVERSE, SYL_SAY_FIX: SYL_SAY_FIX, LISTEN_WORDS: LISTEN_WORDS,
     wordsFor: wordsFor, sylConsAll: sylConsAll, sylConsByG: sylConsByG, sylOK: sylOK, sylVowSay: sylVowSay, sylSay: sylSay, exoAuto: exoAuto,
-    PHONO_PICS: PHONO_PICS, PHONO_SOUNDS: PHONO_SOUNDS, phonoKey: phonoKey, phonoBuild: phonoBuild
+    PHONO_PICS: PHONO_PICS, PHONO_SOUNDS: PHONO_SOUNDS, phonoKey: phonoKey, phonoBuild: phonoBuild,
+    COMPR_PICS: COMPR_PICS, comprWords: comprWords, comprHas: comprHas, comprBuild: comprBuild
   };
 })();

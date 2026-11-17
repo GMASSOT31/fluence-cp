@@ -649,6 +649,23 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   .ph-pic:disabled { opacity: 1; }
   .ph-hear { min-height: 48px; min-width: 64px; font-size: 1.3rem; border-radius: 14px; background: var(--card); color: var(--ink); border: 2px solid var(--line); }
   .ph-son { display: inline-block; min-width: 1.6em; padding: 0 .3em; margin-left: .2em; border-radius: 10px; background: #e6f6f2; color: #0f4a40; font-size: 1.35em; }
+  /* « Je comprends » : mots à lire (en haut) et images (en bas) */
+  .cp-head { display: flex; align-items: center; justify-content: space-between; }
+  .cp-head .listen-msg { flex: 1; margin-right: 10px; }
+  .cp-head .home-say { min-height: 52px; min-width: 60px; }
+  .cp-words, .cp-pics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 12px 0; }
+  @media (min-width: 601px) { .cp-words, .cp-pics { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  .cp-word { min-height: 64px; padding: 8px 6px; font-family: Andika, "Trebuchet MS", system-ui, sans-serif; font-size: 1.7rem; font-weight: 700; border-radius: 18px; background: #fff; color: #1b2433; border: 3px solid var(--line); border-bottom-width: 6px; word-break: break-word; }
+  .cp-word.sel { border-color: #1d6fe0; background: #eef5ff; box-shadow: 0 0 0 5px #1d6fe055; -webkit-transform: scale(1.04); transform: scale(1.04); }
+  .cp-pic { position: relative; min-height: 104px; padding: 6px 0 18px; font-size: 3.6rem; line-height: 1.1; border-radius: 22px; background: #fff; color: #1b2433; border: 3px solid var(--line); border-bottom-width: 6px; }
+  .cp-word.good, .cp-pic.good { background: #e3f6ea; border-color: #2e9b5b; color: #1d5c37; }
+  .cp-word:disabled, .cp-pic:disabled { opacity: 1; }
+  .cp-word.good { text-decoration: none; opacity: .75; }
+  .cp-pic.bad { background: #fde3e3; border-color: #d94646; -webkit-animation: cp-shake .4s; animation: cp-shake .4s; }
+  .cp-word.cp-nudge { -webkit-animation: cp-shake .4s; animation: cp-shake .4s; }
+  .cp-tag { position: absolute; left: 0; right: 0; bottom: 4px; font-family: Andika, system-ui, sans-serif; font-size: 1rem; font-weight: 700; color: #1d5c37; }
+  @-webkit-keyframes cp-shake { 0%, 100% { -webkit-transform: translateX(0); } 25% { -webkit-transform: translateX(-6px); } 75% { -webkit-transform: translateX(6px); } }
+  @keyframes cp-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
   body.listen-focus .ph-pic { min-height: max(96px, min(30vh, 300px)); font-size: max(3rem, min(14vh, 17vw, 9rem)); }
   @media (max-width: 480px) { .ph-grid { gap: 8px; } .ph-pic { min-height: 96px; font-size: 3.2rem; } }
   .listen-choices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 14px 0; }
@@ -1482,6 +1499,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   <section id="v-reconnues" hidden><div id="reconnues-body"></div></section>
   <section id="v-ecrites" hidden><div id="ecrites-body"></div></section>
   <section id="v-phono" hidden><div id="phono-body"></div></section>
+  <section id="v-compr" hidden><div id="compr-body"></div></section>
 
   <!-- BOUTIQUE -->
   <section id="v-boutique" hidden><div id="boutique-body"></div></section>
@@ -1749,7 +1767,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   }catch(e){}
 })();
 </script>
-<script src="exo-data.js?v=3"></script>
+<script src="exo-data.js?v=4"></script>
 <script src="vendor/howler.core.min.js?v=2.2.4"></script>
 <script src="audio-lecture.js?v=1"></script>
 <script>/* Anciens iPad (iOS 12 et avant) : le navigateur ne connaît pas les événements « pointer » → les jeux au doigt (Serpent, Oiseau, Tuiles, Tour, Safari) ne réagissaient pas. On les traduit en événements tactiles (ou souris sur un vieil ordinateur). Rien ne change sur les appareils récents. */
@@ -2207,6 +2225,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     dictee: {},
     dicteeCfg: dicteeCfgClean(null),
     phono: {},   /* « J’entends » : { passes, done, tries } par élève, comme l’écoute et la dictée */
+    compr: {},   /* « Je comprends » : idem */
     stats: {},   /* mesures pour l’espace Pédagogie (statsClean) */
     v: 3,
     sel: { sid: null, sound: null, kind: "s" }
@@ -2263,6 +2282,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
         if (d.dictee && typeof d.dictee === "object") Object.keys(d.dictee).forEach(function (k) { data.dictee[k] = listenClean(d.dictee[k]); });
         if (d.dicteeCfg) data.dicteeCfg = dicteeCfgClean(d.dicteeCfg);
         if (d.phono && typeof d.phono === "object") Object.keys(d.phono).forEach(function (k) { data.phono[k] = listenClean(d.phono[k]); });
+        if (d.compr && typeof d.compr === "object") Object.keys(d.compr).forEach(function (k) { data.compr[k] = listenClean(d.compr[k]); });
         /* anciens jeux gagnés : repris sous forme de parties à jouer */
         if (Array.isArray(d.tickets)) d.tickets.forEach(function (t) { data.credits[t.sid] = (data.credits[t.sid] || 0) + (t.left || 0); });
         if ((d.v || 0) < 3 && !data.sounds.some(function (x) { return x.id === "voy"; })) data.sounds.unshift({ id: "voy", label: "voyelles", only: ["s"] });
@@ -2312,6 +2332,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       listen:data.listen[sid]||{},
       dictee:data.dictee[sid]||{},
       phono:data.phono[sid]||{},
+      compr:data.compr[sid]||{},
       stats:(data.stats&&data.stats[sid])||{},
       notes:data.notes.filter(function(x){return x.sid===sid}),
       evos:data.evos.filter(function(x){return x.sid===sid}),
@@ -2697,7 +2718,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   }
 
   /* ---------- Navigation ---------- */
-  var STUDENT_VIEWS = ["home", "lecture", "audition", "dictee", "phono", "cartes", "reconnues", "ecrites", "boutique", "jeux", "progres", "roue", "jeu"];
+  var STUDENT_VIEWS = ["home", "lecture", "audition", "dictee", "phono", "compr", "cartes", "reconnues", "ecrites", "boutique", "jeux", "progres", "roue", "jeu"];
   var TEACHER_VIEWS = ["eleves", "ecoute", "progression", "reglages"];
   var VIEWS = ["login"].concat(STUDENT_VIEWS, TEACHER_VIEWS);
   var GO_GROUP = { lecture: "lecture", audition: "audition", jeux: "jeux", jeu: "jeux", roue: "jeux", boutique: "boutique", cartes: "cartes", reconnues: "reconnues", ecrites: "ecrites", dictee: "dictee", progres: "progres" };
@@ -2719,6 +2740,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if (v !== "audition") { listenStop(); listenFocus(false); }
     if (v !== "dictee") dicteeStop();
     if (v !== "phono") phonoStop();
+    if (v !== "compr") comprStop();
     VIEWS.forEach(function (name) { $("v-" + name).hidden = (name !== v); });
     Array.prototype.forEach.call($("nav").querySelectorAll("button"), function (b) {
       if (b.getAttribute("data-view") === v) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
@@ -2727,7 +2749,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       if (GO_GROUP[v] === b.getAttribute("data-go")) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
     });
     if (v === "login") { resetPath(); renderLogin(); }
-    if (v === "lecture" || v === "cartes") setPath("read"); else if (v === "audition" || v === "reconnues" || v === "phono") setPath("listen"); else if (v === "dictee" || v === "ecrites") setPath("write");
+    if (v === "lecture" || v === "cartes" || v === "compr") setPath("read"); else if (v === "audition" || v === "reconnues" || v === "phono") setPath("listen"); else if (v === "dictee" || v === "ecrites") setPath("write");
     if (v === "home") renderHome();
     if (v === "lecture") { lireReset(); renderSetup(); }
     if (v === "cartes") renderCartes();
@@ -2737,6 +2759,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if (v === "dictee") renderDictee();
     if (v === "ecrites") renderEcrites();
     if (v === "phono") renderPhono();
+    if (v === "compr") renderCompr();
     if (v === "reglages") listenSettingsFill();
     if (v === "jeux") renderJeux();
     if (v === "progres") renderMyProgress();
@@ -3938,7 +3961,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     wb.hidden = !(data.reward && pw > 0);
     wb.textContent = pw > 1 ? "Lancer la roue (" + pw + ")" : "Lancer la roue";
     var pms = mission(sid);
-    $("pr-next").textContent = pms.sound ? { phono: "entendre", listen: "écouter", write: "écrire", read: "lire" }[pms.kind] + " : " + pms.sound.label : (pms.medal || evalWaiting(sid) ? "lecture à enregistrer" : "tout est validé");
+    $("pr-next").textContent = pms.sound ? { phono: "entendre", listen: "écouter", write: "écrire", read: "lire", compr: "comprendre" }[pms.kind] + " : " + pms.sound.label : (pms.medal || evalWaiting(sid) ? "lecture à enregistrer" : "tout est validé");
     $("pr-games").textContent = nb(cr, "partie", "parties");
     var minPrice = shopRewards().reduce(function (m, r) { return Math.min(m, r.price); }, data.shop.packPrice);
     $("pl-shop").textContent = cn >= minPrice ? "Tu peux acheter !" : "";
@@ -4738,7 +4761,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var follow = ok ? missionAct(sid, mission(sid)) : null;
     if (follow && follow.kind === "phono") follow = null;
     if (follow) {
-      var fb = el("button", "primary big-btn go-next " + (follow.kind === "read" ? "go-blue" : (follow.kind === "write" ? "go-yellow" : "go-green")), follow.btn); fb.type = "button";
+      var fb = el("button", "primary big-btn go-next " + (follow.kind === "read" || follow.kind === "compr" ? "go-blue" : (follow.kind === "write" ? "go-yellow" : "go-green")), follow.btn); fb.type = "button";
       fb.addEventListener("click", function () { listenStopVoice(); listenFocus(false); follow.go(); });
       row.appendChild(fb);
     } else {
@@ -4753,6 +4776,163 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     body.appendChild(card);
     if (data.sfx) listenSpeak(ok ? "Bravo ! " + (follow ? follow.say : "") : "Presque ! Écoute bien et recommence.");
   }
+  /* ---------- « Je comprends » (compréhension, dernière étape d’un son) : l’élève lit un mot puis touche son image ----------
+     C’est de la LECTURE : la voix ne lit jamais les mots (seulement la consigne). Mots déjà déchiffrables et images : exo-data.js (COMPR_PICS, comprBuild).
+     2 tableaux de 4 mots, 1 erreur permise, une série réussie suffit, 2 pièces, pas de roue. Progression dans data.compr (progress.compr = { passes, done, tries } : aucune migration).
+     L’étape s’ouvre quand les entraînements de lecture du son sont réussis ; elle ne bloque ni la médaille ni le son suivant. Un son déjà médaillé 🏅 compte comme fait. */
+  var COMPR_BOARDS = 2, COMPR_SIZE = 4, COMPR_ERR = 1, COMPR_COINS = 2;
+  var CP = { run: null, timers: [], pick: null };
+  var COMPR_SAY = "Lis chaque mot, puis touche son image.";
+  function comprOrder() { return data.sounds.map(function (s) { return s.id; }); }
+  function comprMine(sid) { if (!data.compr[sid]) data.compr[sid] = listenClean(null); return data.compr[sid]; }
+  function comprDone(sid, id) { var C = comprMine(sid); return !!C.done[id] || (C.passes[id] || 0) >= 1; }
+  function comprHas(id) { return ZooExo.comprHas(id, comprOrder()); }
+  function comprClear() { CP.timers.forEach(clearTimeout); CP.timers = []; }
+  function comprStop() { comprClear(); if (CP.run) { listenStopVoice(); CP.run = null; } }
+  function renderCompr() {
+    listenFocus(false);
+    if (ses.role !== "student") return;
+    comprStop();
+    var sid = ses.sid, pick = CP.pick;
+    CP.pick = null;
+    if (!pick) { var ms = mission(sid); if (ms.kind === "compr") pick = ms.sound.id; }
+    if (pick && soundById(pick) && comprHas(pick)) { comprStart(sid, pick); return; }
+    var body = $("compr-body"), card = el("div", "card");
+    body.innerHTML = "";
+    card.appendChild(el("h2", "", "🧩 Je comprends"));
+    card.appendChild(el("p", "instruction", "Rien à faire ici pour le moment."));
+    var hb = el("button", "primary big-btn go-next", "🎯 Ma mission"); hb.type = "button";
+    hb.addEventListener("click", function () { goTo("home"); });
+    card.appendChild(hb);
+    body.appendChild(card);
+  }
+  function comprStart(sid, soundId) {
+    var sound = soundById(soundId), boards = sound ? ZooExo.comprBuild(soundId, comprOrder(), COMPR_BOARDS, COMPR_SIZE) : [];
+    if (!sound || !boards.length) { toast("Ce son n’a pas encore d’exercice."); goTo("home"); return; }
+    comprClear();
+    CP.run = { sid: sid, sound: sound, boards: boards, n: 0, failed: 0, q: null, said: false };
+    listenFocus(true);
+    comprBoard();
+  }
+  function comprBoard() {
+    var R = CP.run, body = $("compr-body");
+    if (!R) return;
+    if (R.n >= R.boards.length) { comprEnd(); return; }
+    var pairs = R.boards[R.n], total = R.boards.length;
+    var Q = { pairs: pairs, sel: null, left: pairs.length, words: [], pics: [] };
+    R.q = Q; R.n++;
+    comprClear();
+    body.innerHTML = "";
+    var card = el("div", "card listen-card");
+    var top = el("div", "listen-top");
+    top.appendChild(el("span", "listen-count", "Tableau " + R.n + " sur " + total));
+    var quit = el("button", "secondary", "Arrêter"); quit.type = "button";
+    quit.addEventListener("click", function () { quitAsk(card, R.n > 1 || Q.left < pairs.length, function () { comprStop(); listenFocus(false); goTo("home"); }); });
+    top.appendChild(quit);
+    card.appendChild(top);
+    var bar = el("div", "listen-dots"); bar.setAttribute("aria-hidden", "true");
+    for (var i = 0; i < total; i++) bar.appendChild(el("span", i < R.n - 1 ? "done" : (i === R.n - 1 ? "now" : ""), ""));
+    card.appendChild(bar);
+    var head = el("div", "cp-head");
+    var msg = el("p", "instruction listen-msg", "1. Touche un mot et lis-le.  2. Touche son image.");
+    msg.setAttribute("role", "status");
+    var again = el("button", "secondary home-say", "🔊"); again.type = "button"; again.setAttribute("aria-label", "Écouter la consigne");
+    again.addEventListener("click", function () { listenSpeak(COMPR_SAY); });
+    head.appendChild(msg); head.appendChild(again);
+    card.appendChild(head);
+    var wg = el("div", "cp-words"), pg = el("div", "cp-pics");
+    pairs.forEach(function (p) {
+      var w = el("button", "cp-word", p[0]); w.type = "button";
+      w.addEventListener("click", function () { comprPickWord(Q, p, w, msg); });
+      Q.words.push(w); wg.appendChild(w);
+    });
+    shuffle(pairs).forEach(function (p) {
+      var b = el("button", "cp-pic", p[1]); b.type = "button"; b.setAttribute("aria-label", "Image " + (Q.pics.length + 1));
+      b.addEventListener("click", function () { comprPickPic(Q, p, b, msg); });
+      b._pair = p; Q.pics.push(b); pg.appendChild(b);
+    });
+    card.appendChild(wg); card.appendChild(pg);
+    body.appendChild(card);
+    if (window.innerWidth <= 880) card.scrollIntoView({ block: "start" });
+    if (!R.said && data.sfx) { R.said = true; CP.timers.push(setTimeout(function () { if (CP.run === R) listenSpeak(COMPR_SAY); }, 300)); }
+  }
+  function comprPickWord(Q, p, w, msg) {
+    var R = CP.run;
+    if (!R || R.q !== Q || w.disabled) return;
+    Q.sel = p;
+    Q.words.forEach(function (x) { x.classList.toggle("sel", x === w); });
+    msg.textContent = "Touche l’image de ce mot.";
+  }
+  function comprPickPic(Q, p, b, msg) {
+    var R = CP.run;
+    if (!R || R.q !== Q || b.disabled) return;
+    if (!Q.sel) {
+      msg.textContent = "Touche d’abord un mot.";
+      Q.words.forEach(function (x) { if (!x.disabled) { x.classList.remove("cp-nudge"); void x.offsetWidth; x.classList.add("cp-nudge"); } });
+      return;
+    }
+    var sel = Q.sel, wb = Q.words[Q.pairs.indexOf(sel)];
+    if (p === sel) {
+      statAns(R.sid, R.sound.id, "c", true);
+      sfxGood();
+      Q.sel = null; Q.left--;
+      [wb, b].forEach(function (x) { x.classList.remove("sel", "bad"); x.classList.add("good"); x.disabled = true; });
+      b.appendChild(el("span", "cp-tag", sel[0]));
+      if (Q.left > 0) { msg.textContent = praise() + " !"; return; }
+      msg.textContent = praise() + " ! Tu as tout trouvé.";
+      CP.timers.push(setTimeout(function () { if (CP.run === R && R.q === Q) comprBoard(); }, 1200));
+      return;
+    }
+    R.failed++;
+    statAns(R.sid, R.sound.id, "c", false);
+    sfxBad();
+    b.classList.add("bad");
+    CP.timers.push(setTimeout(function () { b.classList.remove("bad"); }, 800));
+    msg.textContent = "Ce n’est pas cette image. Relis bien le mot !";
+  }
+  function comprEnd() {
+    var R = CP.run, sid = R.sid, id = R.sound.id, C = comprMine(sid), body = $("compr-body");
+    var ok = R.failed <= COMPR_ERR, wasDone = comprDone(sid, id), gained = 0, nowDone = false;
+    var n = R.boards.reduce(function (a, b) { return a + b.length; }, 0);
+    C.tries++;
+    statDay(sid, 3);
+    if (ok && !wasDone) {
+      C.passes[id] = (C.passes[id] || 0) + 1; C.done[id] = true; nowDone = true;
+      if (data.reward && COMPR_COINS > 0) { data.coins[sid] = coins(sid) + COMPR_COINS; gained = COMPR_COINS; }
+    }
+    save(); renderPanels();
+    CP.run = null;
+    body.innerHTML = "";
+    var card = el("div", "card listen-card");
+    card.appendChild(el("h2", "", ok ? "Bravo ! 👏" : "Presque !"));
+    card.appendChild(el("p", "instruction", R.failed ? nb(R.failed, "erreur", "erreurs") + " sur " + n + " mots." : "Tu as trouvé les " + n + " images du premier coup !"));
+    if (nowDone) {
+      card.appendChild(el("p", "instruction", "Tu comprends bien les mots du son " + q(R.sound.label) + " !"));
+      if (gained) listenCoinBox(card, gained);
+      confetti(50, gained > 0);
+      if (data.sfx) [523, 659, 784, 1047].forEach(function (f, k) { tone(f, k * 0.1, 0.26, "triangle", 0.15); });
+    } else if (!ok) {
+      card.appendChild(el("p", "instruction", "Il faut presque tout trouver (" + nb(COMPR_ERR, "erreur permise", "erreurs permises") + "). Lis bien chaque mot et recommence, tu vas y arriver !"));
+    }
+    var row = el("div", "row");
+    var follow = ok ? missionAct(sid, mission(sid)) : null;
+    if (follow && follow.kind === "compr" && follow.pet === id) follow = null;
+    if (follow) {
+      var fb = el("button", "primary big-btn go-next " + (follow.kind === "read" || follow.kind === "compr" ? "go-blue" : (follow.kind === "write" ? "go-yellow" : "go-green")), follow.btn); fb.type = "button";
+      fb.addEventListener("click", function () { listenStopVoice(); listenFocus(false); follow.go(); });
+      row.appendChild(fb);
+    } else {
+      var again = el("button", "primary big-btn go-next", ok ? "Continuer" : "Recommencer"); again.type = "button";
+      again.addEventListener("click", function () { if (ok) { listenFocus(false); goTo("home"); } else comprStart(sid, id); });
+      row.appendChild(again);
+    }
+    var stopB = el("button", "secondary big-btn", "Arrêter"); stopB.type = "button";
+    stopB.addEventListener("click", function () { listenStopVoice(); listenFocus(false); goTo("home"); });
+    row.appendChild(stopB);
+    card.appendChild(row);
+    body.appendChild(card);
+    if (data.sfx) listenSpeak(ok ? "Bravo ! " + (follow ? follow.say : "") : "Presque ! Lis bien chaque mot et recommence.");
+  }
   /* ---------- Mission : un son = 4 étapes dans l'ordre (entendre, écouter, écrire, lire), puis le son suivant ----------
      La lecture d'un son reste fermée tant que le son d'avant n'a pas sa médaille 🏅 ou sa lecture enregistrée (isUnlocked, soundSent). Pour ne pas attendre l'adulte,
      l'élève peut écouter et écrire jusqu'à MISSION_AHEAD sons après le premier son sans médaille (décidé le 16/11/2026). */
@@ -4763,7 +4943,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     for (i = 0; i < av.length; i++) { if (av[i].id === id) idx = i; if (front === av.length && !soundSent(sid, av[i].id)) front = i; }
     return idx < 0 || idx <= front + MISSION_AHEAD;
   }
-  /* Renvoie { sound, kind: phono|listen|write|read, level, steps: [{k, st: done|go|wait|lock|medal|sent}], medal: premier son lu ⭐ sans médaille, capped } */
+  /* Renvoie { sound, kind: phono|listen|write|read|compr, level, steps: [{k, st: done|go|wait|lock|medal|sent}], medal: premier son lu ⭐ sans médaille, capped } */
   function mission(sid) {
     var out = { sound: null, kind: null, level: null, steps: [], medal: null, capped: false };
     for (var i = 0; i < data.sounds.length; i++) {
@@ -4772,6 +4952,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       var L = !inL || cert || listenDone(sid, s.id), W = !inL || cert || dicteeDone(sid, s.id), todo = null, hasR = false;
       var hasP = inL && phonoHas(s.id), P = !hasP || L || phonoDone(sid, s.id);   /* son déjà écouté : « J’entends » compté comme fait (élèves qui avaient commencé avant cette étape) */
       KINDS.forEach(function (k) { if (hasContent(s.id, k.k)) { hasR = true; if (!todo && !isPassed(sid, s.id, k.k)) todo = k.k; } });
+      var hasC = hasR && comprHas(s.id), C = !hasC || cert || comprDone(sid, s.id);   /* son déjà médaillé : « Je comprends » compté comme fait */
       var R = !hasR ? "none" : (todo ? (isUnlocked(sid, s.id) ? "wait" : "lock") : (cert ? "done" : (recPending(sid, s.id) ? "sent" : "medal")));
       if (R === "medal" && !out.medal) out.medal = s;
       var kind = null;
@@ -4780,11 +4961,14 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
         else out.capped = true;
       }
       if (!kind && R === "wait") kind = "read";
+      /* « Je comprends » : dès que les entraînements de lecture sont réussis, même si la médaille attend l’enseignant (ne bloque rien) */
+      if (!kind && !C && (R === "medal" || R === "sent")) kind = "compr";
       if (!kind) continue;
       out.sound = s; out.kind = kind; out.level = todo;
       if (hasP) out.steps.push({ k: "phono", st: P ? "done" : (kind === "phono" ? "go" : "wait") });
       if (inL) { out.steps.push({ k: "listen", st: L ? "done" : (kind === "listen" ? "go" : "wait") }); out.steps.push({ k: "write", st: W ? "done" : (kind === "write" ? "go" : "wait") }); }
       if (hasR) out.steps.push({ k: "read", st: kind === "read" ? "go" : R });
+      if (hasC) out.steps.push({ k: "compr", st: C ? "done" : (kind === "compr" ? "go" : "wait") });
       break;
     }
     return out;
@@ -4796,6 +4980,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if (ms.kind === "phono") return { pet: s.id, kind: "phono", cls: " listen-go", btn: "🖼️ J’entends le son " + q(s.label), say: "Tu vas trouver les images où tu entends le son " + phonoSay(s.id) + ". Touche le gros bouton pour commencer.", go: function () { setPath("listen"); PH.pick = s.id; goTo("phono"); } };
     if (ms.kind === "listen") return { pet: s.id, kind: "listen", cls: " listen-go", btn: "👂 J’écoute le son " + q(s.label), say: "Tu vas écouter et retrouver le son " + s.label + ". Touche le gros bouton pour commencer.", go: function () { setPath("listen"); LS.pick = s.id; goTo("audition"); } };
     if (ms.kind === "write") return { pet: s.id, kind: "write", cls: " write-go", btn: "✏️ J’écris le son " + q(s.label), say: "Tu vas écouter et écrire le son " + s.label + ". Touche le gros bouton pour commencer.", go: function () { setPath("write"); DS.pick = s.id; goTo("dictee"); } };
+    if (ms.kind === "compr") return { pet: s.id, kind: "compr", btn: "🧩 Je comprends les mots du son " + q(s.label), say: "Tu vas lire des mots et trouver leurs images. Touche le gros bouton pour commencer.", go: function () { setPath("read"); CP.pick = s.id; goTo("compr"); } };
     return { pet: s.id, kind: "read", btn: "📖 Je lis le son " + q(s.label), sub: "Je lis " + KW[ms.level], say: "Tu vas t’entraîner à lire " + KW[ms.level] + " du son " + s.label + ", avec un adulte ou un camarade qui t’écoute. Touche le gros bouton pour commencer.", go: function () { setPath("read"); openStep(sid, s.id, ms.level); } };
   }
   function dicteeClear() { DS.timers.forEach(clearTimeout); DS.timers = []; }
@@ -5121,7 +5306,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     /* Une mission = un son, trois étapes dans l'ordre pédagogique (écouter, écrire, lire) : un seul gros bouton, celui de l'étape à faire */
     var step = missionAct(sid, ms), act = step;
     if (wheels) act = { cls: " wheel-go", btn: "🎡 Lance ta roue !", say: (wheels > 1 ? "Des roues t’attendent." : "Une roue t’attend.") + " Touche le gros bouton pour la lancer.", go: function () { openWheel(sid); } };
-    function pathCls(a) { return a.kind === "read" ? " go-blue" : (a.kind === "listen" || a.kind === "phono" ? " go-green" : (a.kind === "write" ? " go-yellow" : "")); }
+    function pathCls(a) { return a.kind === "read" || a.kind === "compr" ? " go-blue" : (a.kind === "listen" || a.kind === "phono" ? " go-green" : (a.kind === "write" ? " go-yellow" : "")); }
     var card = el("div", "card home-hero");
     card.appendChild(el("h2", "", "Bonjour " + st.name + " !"));
     var say = act ? "Bonjour " + st.name + " ! " + act.say : (waitEval ? "Bravo " + st.name + " ! Tu as réussi tes entraînements. Va voir ton maître ou ta maîtresse pour enregistrer ta lecture et gagner ta médaille." : "Bravo " + st.name + " ! Tu as tout réussi.");
@@ -5157,7 +5342,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if (wheels) col.appendChild(bigRow(act, 0, false));
     /* La médaille d'un son déjà lu ⭐ se passe avec l'enseignant : rappel cliquable, pendant que l'élève avance seul sur la suite */
     var mb = null;
-    if (ms.medal && (!ms.sound || ms.medal.id !== ms.sound.id)) {
+    if (ms.medal && (!ms.sound || ms.medal.id !== ms.sound.id || ms.kind === "compr")) {
       mb = el("button", "ms-step ms-medal", ""); mb.type = "button";
       mb.appendChild(el("span", "ms-n", "🏅"));
       var mt = el("span", "", "Médaille du son " + q(ms.medal.label)); mt.appendChild(el("small", "", recCount(sid) >= REC_PENDING_MAX ? "⏳ ton maître(sse) doit d’abord écouter tes lectures" : "🎙 je m’enregistre avec mon maître(sse)"));
@@ -5171,7 +5356,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     }
     if (step) {
       col.appendChild(el("p", "ms-title", "Ma mission : le son " + q(ms.sound.label)));
-      var NAMES = { phono: "🖼️ J’entends", listen: "👂 J’écoute", write: "✏️ J’écris", read: "📖 Je lis" };
+      var NAMES = { phono: "🖼️ J’entends", listen: "👂 J’écoute", write: "✏️ J’écris", read: "📖 Je lis", compr: "🧩 Je comprends" };
       ms.steps.forEach(function (x, i) {
         if (x.st === "go") col.appendChild(bigRow(step, i + 1, !!wheels));
         else if (x.st === "done") col.appendChild(smallRow(" done", "✅", NAMES[x.k], ""));
@@ -7718,6 +7903,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       data.listenCfg=listenCfgClean(teacherSettings.listenCfg);
       data.dictee={};data.dictee[st.student_id]=listenClean(p.dictee);
       data.phono={};data.phono[st.student_id]=listenClean(p.phono);
+      data.compr={};data.compr[st.student_id]=listenClean(p.compr);
       data.stats={};data.stats[st.student_id]=statsClean(p.stats);
       data.dicteeCfg=dicteeCfgClean(teacherSettings.dictee);
       if(p.shop&&typeof p.shop==="object"&&Array.isArray(p.shop.rewards)&&!Array.isArray(teacherSettings.rewards))data.shop=p.shop;
