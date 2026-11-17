@@ -217,10 +217,10 @@ body.teacher-mode .teacher-header .teacher-nav button.active{background:#1b2433;
 .pb-time,.pb-flu{font-weight:700;color:#33405a;white-space:nowrap}
 .pb-prog small{display:block;margin-top:3px;color:#4a5468;line-height:1.25}
 .pb-bar{height:10px;border-radius:999px;background:#e6e9f0;overflow:hidden}.pb-bar i{display:block;height:100%;background:linear-gradient(90deg,#3f7fd0,#30a46c);border-radius:999px}
-.pb-see{padding:8px 14px}
+.pb-see{padding:8px 14px}.pb-btns{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .pb-empty{padding:18px;border-radius:14px;background:#f2f5fb;text-align:center}
 @media(max-width:880px){.pb-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:600px){.pb-row{grid-template-columns:1fr auto;grid-template-areas:"who see" "prog prog" "time flu"}.pb-who{grid-area:who}.pb-see{grid-area:see}.pb-prog{grid-area:prog}.pb-time{grid-area:time;font-size:.9rem}.pb-flu{grid-area:flu;text-align:right;font-size:.9rem}.pb-time::before{content:"⏱️ "}.pb-flu::before{content:"⚡ "}}
+@media(max-width:600px){.pb-row{grid-template-columns:1fr auto;grid-template-areas:"who see" "prog prog" "time flu"}.pb-who{grid-area:who}.pb-btns{grid-area:see}.pb-prog{grid-area:prog}.pb-time{grid-area:time;font-size:.9rem}.pb-flu{grid-area:flu;text-align:right;font-size:.9rem}.pb-time::before{content:"⏱️ "}.pb-flu::before{content:"⚡ "}}
 
 .nav-label{flex:1;min-width:0}
 .nav-badge{min-width:22px;height:22px;padding:0 7px;border-radius:999px;background:#e5484d;color:#fff;font-size:.78rem;font-weight:800;display:inline-grid;place-items:center}
@@ -425,7 +425,7 @@ body:not(.teacher-mode) main{color:#eef0f7}
  <h3 style="margin:22px 0 8px">✉️ Messages du formulaire de contact</h3><p class="muted">Écrits sans compte depuis la page Contact du site. Répondez par e-mail.</p><p class="msg" id="ctMsg" role="status"></p><div id="ctList" class="content-list"></div>
 </section>
 </div>
-</section></main><script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=23"><\/script>':'<script src="vendor/supabase.js?v=2.118.0"><\/script>');})();</script><script src="profils.js?v=1"></script><script src="exo-data.js?v=2"></script><script src="pedagogie.js?v=1"></script><script>
+</section></main><script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=23"><\/script>':'<script src="vendor/supabase.js?v=2.118.0"><\/script>');})();</script><script src="profils.js?v=1"></script><script src="exo-data.js?v=2"></script><script src="pedagogie.js?v=2"></script><script>
 (function(){
 "use strict";
 /* Retour du lien « Mot de passe oublié » : on lit l’adresse avant que la bibliothèque Supabase ne la nettoie */
@@ -472,19 +472,42 @@ function loadJsPdf(){
  return jsPdfLoading;
 }
 function pdfText(t){return String(t||"").normalize("NFC").replace(/[^\x20-\x7E\u00A0-\u00FF\u0152\u0153\u2019\u20AC]/g,"").trim();}
-async function printLoginCards(c,msgId,btn){
- const kids=allStudents.filter(s=>s.class_id===c.id&&!s.ghosted_at);
- if(!kids.length){msg(msgId,"Aucun élève actif dans « "+c.name+" ».",true);return;}
- if(!c.access_code){msg(msgId,"Cette classe n’a pas encore de code : change-le dans Réglages généraux › Mots de passe.",true);return;}
- if(btn)btn.disabled=true;
+/* Fabrique un PDF A4 (o.build(doc) le remplit) puis l’ouvre : nouvel onglet (ordinateur, Safari, Android) ou feuille de partage (Chrome/Firefox/Edge sur iPhone) */
+async function pdfMake(o){
+ if(o.btn)o.btn.disabled=true;
  /* Un seul geste : la fenêtre est ouverte tout de suite (le navigateur l’autorise pendant le clic), puis elle affiche le PDF une fois prêt */
  const ua=navigator.userAgent,iosLike=/iPhone|iPad|iPod/.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
  /* Chrome/Firefox/Edge sur iPhone se reconnaissent à leur nom dans l’identité du navigateur, ou (en « site pour ordinateur », où ils se font passer pour Safari) à leur code interne */
  const iosAlt=/CriOS|FxiOS|EdgiOS|OPiOS/.test(ua)||!!window.__gCrWeb||!!window.__firefox__;   /* Chrome, Firefox, Edge sur iPhone : ils ne savent ni ouvrir ni télécharger un fichier fabriqué par la page ; on passe par la feuille de partage de l’iPhone */
- let win=null;if(!iosAlt){try{win=window.open("","_blank");if(win)win.document.write("<p style=\"font:20px system-ui;padding:24px\">Création des fiches…</p>");}catch(e){win=null;}}
+ let win=null;if(!iosAlt){try{win=window.open("","_blank");if(win)win.document.write("<p style=\"font:20px system-ui;padding:24px\">"+(o.wait||"Création du PDF…")+"</p>");}catch(e){win=null;}}
  try{
   const JsPDF=await loadJsPdf();
   const doc=new JsPDF({unit:"mm",format:"a4",orientation:"portrait"});
+  await o.build(doc);
+  const file=o.file+".pdf",blob=doc.output("blob"),url=URL.createObjectURL(blob);
+  if(iosAlt){
+   const f=new File([blob],file,{type:"application/pdf"});
+   if(navigator.canShare&&navigator.canShare({files:[f]})){
+    try{await navigator.share({files:[f],title:o.title});msg(o.msgId,"🖨️ "+o.title+" : choisissez « Imprimer » ou « Enregistrer dans Fichiers ».");return;}
+    catch(e){if(e&&e.name==="AbortError")return;}   /* partage refusé : on ouvre le PDF dans l’onglet */
+   }
+   msg(o.msgId,"🖨️ "+o.title+" : le PDF s’ouvre dans cet onglet (revenez avec la flèche du navigateur).");
+   location.href=url;return;
+  }
+  if(win&&!win.closed)win.location.href=url;
+  else{const a=document.createElement("a");a.href=url;a.target="_blank";a.rel="noopener";a.download=file;document.body.append(a);a.click();a.remove();}   /* fenêtre refusée : téléchargement */
+  msg(o.msgId,o.ok+(iosLike?" (Safari détecté)":""));
+ }catch(e){try{if(win)win.close();}catch(x){}msg(o.msgId,e.message||"Impossible de créer le PDF.",true);}
+ finally{if(o.btn)o.btn.disabled=false;}
+}
+function pdfSlug(t){return pdfText(t).normalize("NFD").replace(/[^A-Za-z0-9]+/g,"-").replace(/^-|-$/g,"").toLowerCase()}
+async function printLoginCards(c,msgId,btn){
+ const kids=allStudents.filter(s=>s.class_id===c.id&&!s.ghosted_at);
+ if(!kids.length){msg(msgId,"Aucun élève actif dans « "+c.name+" ».",true);return;}
+ if(!c.access_code){msg(msgId,"Cette classe n’a pas encore de code : change-le dans Réglages généraux › Mots de passe.",true);return;}
+ await pdfMake({btn,msgId,wait:"Création des fiches…",title:"Fiches de « "+c.name+" »",file:"fiches-connexion-"+(pdfSlug(c.name)||"classe"),
+  ok:"🖨️ "+kids.length+" "+pl(kids.length,"fiche","fiches")+" pour « "+c.name+" » : le PDF s’ouvre (sinon, regardez dans vos téléchargements). Imprimez en A4, puis découpez les cartes.",
+  build:doc=>{
   const W=105,H=74.25,site="zoodelecture.fr";
   kids.forEach((st,i)=>{
    const k=i%8;if(i&&!k)doc.addPage();
@@ -502,22 +525,7 @@ async function printLoginCards(c,msgId,btn){
    doc.setFont("helvetica","normal");doc.setFontSize(7.5);doc.setTextColor(120);
    doc.text(pdfText("Classe : "+c.name).slice(0,60),x+9,y+H-6);doc.text("Garde cette carte !",x+W-9,y+H-6,{align:"right"});
   });
-  const file="fiches-connexion-"+(pdfText(c.name).normalize("NFD").replace(/[^A-Za-z0-9]+/g,"-").replace(/^-|-$/g,"").toLowerCase()||"classe")+".pdf";
-  const blob=doc.output("blob"),url=URL.createObjectURL(blob);
-  if(iosAlt){
-   const f=new File([blob],file,{type:"application/pdf"});
-   if(navigator.canShare&&navigator.canShare({files:[f]})){
-    try{await navigator.share({files:[f],title:"Fiches de connexion"});msg(msgId,"🖨️ Fiches de « "+c.name+" » : choisissez « Imprimer » ou « Enregistrer dans Fichiers ».");return;}
-    catch(e){if(e&&e.name==="AbortError")return;}   /* partage refusé : on ouvre le PDF dans l’onglet */
-   }
-   msg(msgId,"🖨️ Fiches de « "+c.name+" » : le PDF s’ouvre dans cet onglet (revenez avec la flèche du navigateur).");
-   location.href=url;return;
-  }
-  if(win&&!win.closed)win.location.href=url;
-  else{const a=document.createElement("a");a.href=url;a.target="_blank";a.rel="noopener";a.download=file;document.body.append(a);a.click();a.remove();}   /* fenêtre refusée : téléchargement */
-  msg(msgId,"🖨️ "+kids.length+" "+pl(kids.length,"fiche","fiches")+" pour « "+c.name+" » : le PDF s’ouvre (sinon, regardez dans vos téléchargements). Imprimez en A4, puis découpez les cartes."+(iosLike?" (Safari détecté)":""));
- }catch(e){try{if(win)win.close();}catch(x){}msg(msgId,e.message||"Impossible de créer le PDF.",true);}
- finally{if(btn)btn.disabled=false;}
+  }});
 }
 async function renameClass(c,msgId){
  const old=c.name;
@@ -691,7 +699,7 @@ $("addReward").onclick=()=>{const label=$("rewardName").value.trim(),price=Numbe
 async function loadPendingRewards(){const {data,error}=await client.from("student_progress").select("student_id,progress,given_vouchers").eq("teacher_id",currentUser.id);const box=$("pendingRewards");box.replaceChildren();if(error){box.textContent=errorText(error);return;}let count=0;(data||[]).forEach(row=>{const given=Array.isArray(row.given_vouchers)?row.given_vouchers:[];(row.progress?.vouchers||[]).filter(v=>!v.done&&!given.includes(v.id)).forEach(v=>{count++;const div=document.createElement("div");div.className="row";const name=allStudents.find(s=>s.id===row.student_id)?.nickname||"Élève";const label=document.createElement("span");label.textContent=(v.icon||"🎁")+" "+name+" : "+v.label;const done=document.createElement("button");done.type="button";done.textContent="✅ Remis";done.title="La récompense a été donnée : le bon disparaît du Zoo de l’élève";done.onclick=async()=>{done.disabled=true;const {error}=await client.rpc("teacher_give_voucher",{p_student:row.student_id,p_voucher:String(v.id)});if(error){done.disabled=false;msg("settingsMsg",errorText(error),true);return;}await loadPendingRewards();};div.append(label,done);box.append(div)})});if(!count)box.textContent="Aucune récompense à remettre.";}
 
 /* Pont vers pedagogie.js (tableau de bord) : ce script est fermé, on lui donne ce dont il a besoin */
-window.ZooPedaCtx=()=>({client,currentUser,currentRole,allStudents,allClasses,cfgSounds,voy2Fix,pl,showTab,printLoginCards,queueSave});
+window.ZooPedaCtx=()=>({client,currentUser,currentRole,allStudents,allClasses,cfgSounds,voy2Fix,pl,showTab,printLoginCards,queueSave,pdfMake,pdfText,pdfSlug,listenPasses:listenPassesCfg,dicteePasses:cfgDictee.passes});
 /* Deux espaces : « Pédagogie » (tableau de bord, suivi, lectures à écouter) et « Paramétrage » (classes, élèves, réglages) */
 const lastTabOf={peda:"pedagogie",param:"eleves"};
 function spaceOf(tab){const b=document.querySelector('.teacher-nav [data-tab="'+tab+'"]');return b&&b.dataset.space||null}
