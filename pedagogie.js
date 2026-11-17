@@ -1,14 +1,14 @@
 /* Espace « Pédagogie » de l'espace enseignant (enseignants.html) : tableau de bord d'une classe.
    Fiche élève PDF : toile d’araignée des 6 compétences (bouton « 📄 Fiche » de chaque ligne, « 📄 Fiches de suivi » pour la classe).
-   1. Points de vigilance (élèves bloqués sur un son, confusions fréquentes, inactifs)
-   2. Activité et rythme de la classe (7 derniers jours)
-   3. Tableau de suivi individuel, avec filtres
-   Lecture seule. Données : student_progress.progress (résultats, écoute, dictée, stats = mesures du Zoo, voir zoo-connecte.html statsClean).
+   Écran « Ma classe » : 1. À faire aujourd’hui (lectures à écouter, élèves bloqués, exercices donnés, confusions, absents)
+   2. Mes élèves : une ligne par élève (filtres, 🌍, + Assigner, 📄 Fiche), « Détails » ouvre ses cartes sous la ligne (studentDetail d’enseignants.html)
+   3. La classe en chiffres (7 derniers jours). Tous les chiffres d’un élève viennent d’analyse().
+   Données : student_progress.progress (résultats, écoute, dictée, stats = mesures du Zoo, voir zoo-connecte.html statsClean).
    Le grand script de enseignants.html est fermé (fonction) : il donne ce qu’il faut par window.ZooPedaCtx() (client, utilisateur, rôle, élèves, classes, sons, voy2Fix, pl, showTab, printLoginCards, queueSave). */
 (function () {
   "use strict";
   var LATE = 3, AHEAD = 3, INACTIVE_DAYS = 7, DAY = 864e5;
-  var state = { classId: null, filter: "all", rows: [] }, C = {};
+  var state = { classId: null, filter: "all", rows: [], open: {}, seq: 0, flash: null }, C = {};
   function $(id) { return document.getElementById(id); }
   window.pedaAllo = window.pedaAllo || [];   /* élèves allophones (réglage enseignant « allo ») */
 
@@ -56,9 +56,11 @@
     var recs = Array.isArray(p.reviews) ? p.reviews.filter(function (x) { return x && x.sound; }) : [];
     var curSent = !!cur && recs.some(function (x) { return x.sound === cur.id; });
     var blocked = !!cur && !curSent && ((answers >= 6 && err >= 40) || readTries >= 3);
+    /* son en cours réussi en entraînement (⭐) mais pas encore envoyé : l’élève peut s’enregistrer pour la médaille */
+    var canRec = !!cur && !curSent && res.some(function (r) { return r.sound === cur.id && r.src === "train" && !r.void && !r.short && !(Number(r.fraud) > 0) && thr[r.k] && (Number(r.mclm) || 0) >= thr[r.k]; });
     var flu = res.filter(function (r) { return !r.void && !r.short && !(Number(r.fraud) > 0) && r.src !== "adj" && Number(r.mclm) > 0; })
       .sort(function (a, b) { return (Number(b.ts) || 0) - (Number(a.ts) || 0); })[0] || null;
-    return { s: s, p: p, nValid: nValid, total: order.length, cur: cur, err: err, answers: answers, readTries: readTries, blocked: blocked,
+    return { s: s, row: row || null, canRec: canRec, p: p, nValid: nValid, total: order.length, cur: cur, err: err, answers: answers, readTries: readTries, blocked: blocked,
       recs: recs.length, curSent: curSent, secs: secs, series: series, idle: idle, flu: flu, conf: st.conf && typeof st.conf === "object" ? st.conf : {}, measured: Object.keys(days).length > 0,
       allo: window.pedaAllo.indexOf(s.id) >= 0, asg: (window.pedaAssign || {})[s.id] || null, remed: p.remed && typeof p.remed === "object" ? p.remed : null };
   }
@@ -86,7 +88,7 @@
     box.replaceChildren();
     if (!classes.length || !(C.allStudents || []).length) {
       var empty = mk("div", "pb-empty");
-      empty.append(mk("p", null, "Votre tableau de bord apparaîtra ici dès que vos élèves auront commencé à utiliser le Zoo."));
+      empty.append(mk("p", null, "Vos élèves apparaîtront ici dès que vous aurez créé votre classe et inscrit vos élèves."));
       var go = mk("button", "primary", "📚 Créer ma classe et mes élèves"); go.type = "button";
       go.onclick = function () { C.showTab("eleves"); };
       empty.append(go); box.append(empty); return;
@@ -101,7 +103,7 @@
     if (classes.length > 1) {
       var sel = mk("select", "pb-select"); sel.setAttribute("aria-label", "Classe");
       classes.forEach(function (c) { var o = mk("option", null, c.name + (c.teacher_id !== C.currentUser.id ? " (autre enseignant)" : "")); o.value = c.id; sel.append(o); });
-      sel.value = cls.id; sel.onchange = function () { state.classId = sel.value; render(); };
+      sel.value = cls.id; sel.onchange = function () { state.classId = sel.value; state.open = {}; render(); };
       left.append(mk("span", "pb-lbl", "Classe"), sel);
     } else left.append(mk("strong", "pb-cname", "📚 " + cls.name));
     left.append(mk("span", "pb-count", plur(studs.length, "élève", "élèves")));
@@ -114,11 +116,13 @@
     }
     head.append(acts);
     box.append(head, mk("p", "msg", null));
-    box.lastChild.id = "pedaMsg";
+    box.lastChild.id = "pedaMsg"; box.lastChild.setAttribute("role", "status");
 
     if (!studs.length) { box.append(mk("p", "muted", "Aucun élève dans cette classe.")); return; }
     var wait = mk("p", "muted", "Chargement…"); box.append(wait);
-    var q = await C.client.from("student_progress").select("student_id,progress,updated_at").in("student_id", studs.map(function (s) { return s.id; }));
+    var seq = ++state.seq;
+    var q = await C.client.from("student_progress").select("student_id,progress,updated_at,pending_coins").in("student_id", studs.map(function (s) { return s.id; }));
+    if (seq !== state.seq) return;   /* un chargement plus récent a pris la main */
     wait.remove();
     if (q.error) { box.append(mk("p", "msg err", "Impossible de charger les résultats : " + (q.error.message || ""))); return; }
     var map = {}; (q.data || []).forEach(function (r) { map[r.student_id] = r; });
@@ -130,74 +134,101 @@
       fa.onclick = function () { makeFiches(rows.slice().sort(function (a, b) { return String(a.s.nickname).localeCompare(b.s.nickname); }), cls, fa, "fiches-suivi-" + (C.pdfSlug(cls.name) || "classe")); };
       acts.append(fa);
     }
-    box.append(vigilance(rows), rhythm(rows, med), matrix(rows));
+    box.append(todo(rows), matrix(rows), rhythm(rows, med));
   }
 
-  /* 1. Points de vigilance */
-  function vigilance(rows) {
-    var sec = section("1", "Points de vigilance", "cette semaine");
+  /* Nom d’élève cliquable : ouvre son détail sous sa ligne */
+  function nameBtns(list) {
+    var w = mk("span", "pb-names");
+    list.forEach(function (r) {
+      var b = mk("button", "pb-name", r.s.nickname); b.type = "button"; b.title = "Voir les résultats de " + r.s.nickname;
+      b.onclick = function () { openDetail(r.s.id); };
+      w.append(b);
+    });
+    return w;
+  }
+  function openDetail(id) {
+    state.open[id] = true;
+    var r = (state.rows || []).find(function (x) { return x.s.id === id; });
+    if (r && !keep(r, state.filter)) state.filter = "all";
+    if (state.paint) state.paint();
+    var line = document.querySelector('.pb-row[data-sid="' + id + '"]');
+    if (line) line.scrollIntoView({ block: "start", behavior: "smooth" });
+  }
+
+  /* 1. À faire aujourd’hui : lectures à écouter, élèves bloqués, exercices donnés pas encore faits, confusions, inactifs */
+  function todo(rows) {
+    var sec = section("📌 À faire aujourd’hui", null);
     var grid = mk("div", "pb-alerts"), n = 0;
+    function card(cls, title, list, tip, btn) {
+      var c = mk("div", "pb-alert " + cls); c.append(mk("strong", null, title), nameBtns(list));
+      if (tip) c.append(mk("small", "pb-tip", tip));
+      if (btn) c.append(btn);
+      grid.append(c); n++;
+    }
+    /* lectures enregistrées à écouter */
+    var recs = rows.filter(function (r) { return r.recs > 0; }), nRec = recs.reduce(function (a, r) { return a + r.recs; }, 0);
+    if (nRec) {
+      var eb = mk("button", "pb-alert-btn", "🎧 Écouter maintenant"); eb.type = "button";
+      eb.onclick = function () { C.showTab("ecouter"); };
+      card("a-rec", "🎧 " + plur(nRec, "lecture à écouter", "lectures à écouter") + " pour la médaille", recs, null, eb);
+    }
     /* élèves bloqués, regroupés par son */
     var bySound = {};
     rows.filter(function (r) { return r.blocked && !r.inactive; }).forEach(function (r) { (bySound[r.cur.id] = bySound[r.cur.id] || []).push(r); });
     Object.keys(bySound).sort(function (a, b) { return bySound[b].length - bySound[a].length; }).slice(0, 4).forEach(function (id) {
       var list = bySound[id];
-      grid.append(alertCard("⚠️ " + plur(list.length, "élève bloque", "élèves bloquent") + " sur le son «\u00a0" + soundName(id) + "\u00a0»",
-        list.map(function (r) { return r.s.nickname; }).join(", "),
-        "Beaucoup d’erreurs à l’écoute ou en dictée, ou plusieurs lectures sans réussite."));
-      n++;
+      card("a-block", "⚠️ " + plur(list.length, "élève bloque", "élèves bloquent") + " sur le son « " + soundName(id) + " »", list,
+        "Beaucoup d’erreurs, ou plusieurs lectures sans réussite. Vous pouvez lui donner un exercice (« + Assigner »).");
     });
+    /* exercices donnés, pas encore réussis */
+    var asg = rows.filter(function (r) { return r.asg && !asgState(r.asg, r.remed).ok; });
+    if (asg.length) card("a-asg", "🎯 " + plur(asg.length, "exercice donné pas encore réussi", "exercices donnés pas encore réussis"), asg, null);
     /* confusions fréquentes dans la classe (écoute, dictée, tuiles) */
     var conf = {};
     rows.forEach(function (r) {
       Object.keys(r.conf).forEach(function (k) {
         var pk = pairKey(k), v = Number(r.conf[k]) || 0; if (!pk || !v) return;
         var c = conf[pk] || (conf[pk] = { total: 0, who: {} });
-        c.total += v; c.who[r.s.nickname] = (c.who[r.s.nickname] || 0) + v;
+        c.total += v; c.who[r.s.id] = (c.who[r.s.id] || 0) + v;
       });
     });
     Object.keys(conf).map(function (k) {
-      var who = Object.keys(conf[k].who).filter(function (w) { return conf[k].who[w] >= 2; });
+      var who = rows.filter(function (r) { return (conf[k].who[r.s.id] || 0) >= 2; });
       return { k: k, total: conf[k].total, who: who };
     }).filter(function (c) { return c.who.length; }).sort(function (a, b) { return b.who.length - a.who.length || b.total - a.total; }).slice(0, 3).forEach(function (c) {
-      grid.append(alertCard("🔀 Confusion fréquente : " + c.k, c.who.join(", "), "Élèves qui ont confondu ces deux écritures au moins 2 fois."));
-      n++;
+      card("a-conf", "🔀 Confondent « " + c.k.replace(" / ", " » et « ") + " »", c.who, "Au moins 2 fois. Un exercice « Tuiles des sons » peut aider (« + Assigner »).");
     });
     var idle = rows.filter(function (r) { return r.inactive; });
-    if (idle.length) { grid.append(alertCard("💤 " + plur(idle.length, "élève inactif", "élèves inactifs") + " depuis plus de " + INACTIVE_DAYS + " jours", idle.map(function (r) { return r.s.nickname; }).join(", "), null)); n++; }
-    if (!n) grid.append(mk("p", "pb-calm", "✅ Rien d’inquiétant pour l’instant."));
+    if (idle.length) card("a-idle", "💤 " + plur(idle.length, "élève n’est pas venu", "élèves ne sont pas venus") + " depuis " + INACTIVE_DAYS + " jours ou plus", idle, null);
+    if (!n) grid.append(mk("p", "pb-calm", "✅ Rien d’urgent aujourd’hui."));
     sec.append(grid);
     if (!rows.some(function (r) { return r.measured; })) sec.append(mk("p", "muted pb-note", "Les erreurs, les confusions et le temps de travail sont mesurés depuis le 17 novembre 2026 : ces informations se rempliront au fil des séances."));
     return sec;
   }
-  function alertCard(title, names, tip) {
-    var c = mk("div", "pb-alert"); c.append(mk("strong", null, title), mk("span", "pb-names", names));
-    if (tip) c.title = tip;
-    return c;
-  }
 
-  /* 2. Activité et rythme */
+  /* 3. La classe en chiffres */
   function rhythm(rows, med) {
-    var sec = section("2", "Activité et rythme de la classe", "7 derniers jours");
+    var sec = section("📊 La classe en chiffres", "7 derniers jours");
     var active = rows.filter(function (r) { return r.secs > 0; });
     var avg = active.length ? Math.round(rows.reduce(function (a, r) { return a + r.secs; }, 0) / rows.length / 60) : null;
     var series = [0, 0, 0, 0]; rows.forEach(function (r) { for (var i = 0; i < 4; i++) series[i] += r.series[i]; });
     var total = rows.length ? rows[0].total : 0;
     var tiles = mk("div", "pb-tiles");
     [["⏱️", avg === null ? "—" : avg + " min", "Temps de travail moyen par élève"],
-     ["🏅", Math.round(med) + " sur " + total, "Sons validés par un élève moyen de la classe"],
-     ["💤", String(rows.filter(function (r) { return r.inactive; }).length), "Élèves inactifs (plus de " + INACTIVE_DAYS + " jours)"],
+     ["🏅", Math.round(med) + " sur " + total, "Sons validés par l’élève du milieu de la classe"],
+     ["💤", String(rows.filter(function (r) { return r.inactive; }).length), "Élèves pas venus depuis " + INACTIVE_DAYS + " jours ou plus"],
      ["📊", String(series[0] + series[1] + series[2]), "Exercices faits : 👂 " + series[0] + " écoute · ✏️ " + series[1] + " dictée · 📖 " + series[2] + " lecture"]
     ].forEach(function (t) { var d = mk("div", "pb-tile"); d.append(mk("span", "pb-ico", t[0]), mk("b", null, t[1]), mk("small", null, t[2])); tiles.append(d); });
     sec.append(tiles);
     return sec;
   }
 
-  /* 3. Tableau de suivi individuel */
-  var FILTERS = [["all", "Tous"], ["late", "En difficulté"], ["ahead", "En avance"], ["idle", "Inactifs"], ["allo", "Apprennent le français"]];
+  /* 2. Mes élèves : une ligne par élève, le détail s’ouvre sous la ligne */
+  var FILTERS = [["all", "Tous"], ["late", "En difficulté"], ["ahead", "En avance"], ["idle", "Pas venus"], ["allo", "Apprennent le français"]];
   function keep(r, f) { return f === "all" || (f === "late" && r.color === "red") || (f === "ahead" && r.ahead && !r.inactive) || (f === "idle" && r.inactive) || (f === "allo" && r.allo); }
   function matrix(rows) {
-    var sec = section("3", "Suivi individuel", null);
+    var sec = section("🧒 Mes élèves", null);
     var bar = mk("div", "pb-filters"); bar.setAttribute("role", "group"); bar.setAttribute("aria-label", "Filtrer les élèves");
     var list = mk("div", "pb-list");
     function paint() {
@@ -206,27 +237,31 @@
       var rank = { red: 0, yellow: 1, green: 2, idle: 3 };
       shown.sort(function (a, b) { return rank[a.color] - rank[b.color] || a.nValid - b.nValid || String(a.s.nickname).localeCompare(b.s.nickname); });
       if (!shown.length) list.append(mk("p", "muted", "Aucun élève dans ce filtre."));
-      shown.forEach(function (r) { list.append(line(r, paint)); });
+      shown.forEach(function (r) { var ln = line(r, paint); list.append(ln); if (state.open[r.s.id]) list.append(detail(r)); });
       Array.prototype.forEach.call(bar.children, function (b) { var on = b.dataset.f === state.filter; b.classList.toggle("active", on); b.setAttribute("aria-pressed", String(on)); });
     }
+    state.paint = paint;
     FILTERS.forEach(function (f) {
       var n = rows.filter(function (r) { return keep(r, f[0]); }).length;
+      if (f[0] === "allo" && !n) return;   /* filtre affiché seulement s’il sert */
       var b = mk("button", "pb-filter", f[1] + " (" + n + ")"); b.type = "button"; b.dataset.f = f[0];
       b.onclick = function () { state.filter = f[0]; paint(); };
       bar.append(b);
     });
-    var legend = mk("p", "muted pb-legend", "🔴 en difficulté (bloqué, ou " + LATE + " sons de retard sur un élève moyen de la classe) · 🟡 avance normalement · 🟢 en avance de " + AHEAD + " sons ou plus · ⚪ inactif depuis " + INACTIVE_DAYS + " jours");
+    var legend = mk("p", "muted pb-legend", "🔴 en difficulté (bloqué, ou " + LATE + " sons de retard sur l’élève du milieu de la classe) · 🟡 avance normalement · 🟢 en avance de " + AHEAD + " sons ou plus · ⚪ pas venu depuis " + INACTIVE_DAYS + " jours");
     sec.append(bar, legend, list);
     paint();
     return sec;
   }
+  function whenText(r) { return r.idle === null ? "jamais venu" : r.idle <= 0 ? "aujourd’hui" : r.idle === 1 ? "hier" : "il y a " + r.idle + " jours"; }
   function line(r, repaint) {
     var dot = { red: "🔴", yellow: "🟡", green: "🟢", idle: "⚪" }[r.color];
-    var d = mk("div", "pb-row c-" + r.color);
+    var d = mk("div", "pb-row c-" + r.color); d.dataset.sid = r.s.id;
     var who = mk("div", "pb-who");
     who.append(mk("span", "pb-dot", dot), mk("strong", null, r.s.nickname));
     var al = mk("button", "pb-allo" + (r.allo ? " on" : ""), "🌍"); al.type = "button";
     al.title = r.allo ? "Élève qui apprend le français (toucher pour retirer)" : "Marquer : élève qui apprend le français";
+    al.setAttribute("aria-label", al.title);
     al.setAttribute("aria-pressed", String(r.allo));
     al.onclick = function () {
       var i = window.pedaAllo.indexOf(r.s.id);
@@ -242,16 +277,23 @@
     fill.style.width = (r.total ? Math.round(r.nValid * 100 / r.total) : 0) + "%"; pbar.append(fill);
     pbar.setAttribute("role", "img"); pbar.setAttribute("aria-label", r.nValid + " sons validés sur " + r.total);
     var txt;
-    if (r.inactive) txt = r.idle === null ? "Pas encore commencé" : "Inactif depuis " + r.idle + " jours";
+    if (r.idle === null) txt = "Pas encore commencé";
     else if (!r.cur) txt = "Tous les sons validés 🎉";
-    else txt = "Son «\u00a0" + soundName(r.cur.id) + "\u00a0» · " + (r.blocked ? (r.err !== null && r.answers >= 6 ? "bloqué (" + r.err + " % d’erreurs)" : "bloqué (" + r.readTries + " lectures sans réussite)") : (r.curSent ? "lecture enregistrée, à écouter" : "en cours"));
-    if (r.recs) txt += " · 🎧 " + plur(r.recs, "lecture à écouter", "lectures à écouter");
-    prog.append(pbar, mk("small", null, r.nValid + " " + (r.nValid > 1 ? "sons" : "son") + " sur " + r.total + " · " + txt));
-    if (r.asg) { var ast = asgState(r.asg, r.remed); prog.append(mk("small", "pb-asg" + (ast.ok ? " ok" : ""), "🎯 " + asgLabel(r.asg) + " · " + asgStatusText(r.asg, r.remed))); }
+    else txt = "Son « " + soundName(r.cur.id) + " » · " + (r.blocked ? (r.err !== null && r.answers >= 6 ? "bloqué (" + r.err + " % d’erreurs)" : "bloqué (" + r.readTries + " lectures sans réussite)") : "en cours");
+    prog.append(pbar, mk("small", null, r.nValid + " " + (r.nValid > 1 ? "sons validés" : "son validé") + " sur " + r.total + " · " + txt));
+    /* pastilles : dernière venue, lectures à écouter, peut s’enregistrer, exercice donné */
+    var chips = mk("div", "pb-tags");
+    chips.append(mk("span", "pb-tag" + (r.inactive ? " warn" : ""), "🕒 " + whenText(r)));
+    if (r.recs) chips.append(mk("span", "pb-tag alert", "🎧 " + plur(r.recs, "lecture à écouter", "lectures à écouter")));
+    else if (r.canRec) { var cr = mk("span", "pb-tag next", "🎙 Peut enregistrer sa lecture"); cr.title = "Réussi en entraînement : " + r.s.nickname + " peut s’enregistrer (« 🎙 Je m’enregistre » dans son Zoo) pour gagner sa médaille 🏅."; chips.append(cr); }
+    if (r.asg) { var ast = asgState(r.asg, r.remed); chips.append(mk("span", "pb-tag " + (ast.ok ? "ok" : "asg"), "🎯 " + asgLabel(r.asg) + " · " + asgStatusText(r.asg, r.remed))); }
+    prog.append(chips);
     var flu = mk("div", "pb-flu", r.flu ? Math.round(Number(r.flu.mclm)) + "/min" : "—");
     flu.title = r.flu ? "Dernière lecture : " + Math.round(Number(r.flu.mclm)) + " " + (r.flu.k === "s" ? "syllabes lues" : "mots lus") + " par minute (" + ({ s: "syllabes", m: "mots", t: "texte" }[r.flu.k] || "lecture") + ")" : "Pas encore de lecture";
-    var act = mk("button", "secondary pb-see", "Voir"); act.type = "button"; act.title = "Voir les détails de " + r.s.nickname;
-    act.onclick = function () { openDetails(r.s); };
+    var open = !!state.open[r.s.id];
+    var act = mk("button", "pb-see pb-detail-btn" + (open ? " on" : ""), open ? "▲ Masquer" : "▼ Détails"); act.type = "button"; act.title = "Résultats de " + r.s.nickname;
+    act.setAttribute("aria-expanded", String(open));
+    act.onclick = function () { if (state.open[r.s.id]) delete state.open[r.s.id]; else state.open[r.s.id] = true; repaint(); };
     var btns = mk("div", "pb-btns"); btns.append(act);
     /* « + Assigner » : seulement pour ses propres élèves (le réglage est celui de l’enseignant de la classe) */
     if (state.cls && C.currentUser && state.cls.teacher_id === C.currentUser.id) {
@@ -265,32 +307,30 @@
       };
       btns.append(asb);
     }
-    if (C.pdfMake) {
-      var fi = mk("button", "secondary pb-see", "📄 Fiche"); fi.type = "button"; fi.title = "Fiche de suivi de " + r.s.nickname + " (PDF à imprimer)";
-      fi.onclick = function () { makeFiches([r], state.cls, fi, "fiche-suivi-" + (C.pdfSlug(r.s.nickname) || "eleve")); };
-      btns.append(fi);
-    }
     d.append(who, time, prog, flu, btns);
     return d;
   }
-  /* « Voir » : ouvre « Suivi par élève » sur cet élève, détails dépliés */
-  function openDetails(s) {
-    C.showTab("progression");
-    var rows = document.querySelectorAll("#progressList .progress-row");
-    for (var i = 0; i < rows.length; i++) {
-      var n = rows[i].querySelector("strong");
-      if (!n || n.textContent !== s.nickname) continue;
-      var body = rows[i].closest(".cg-body");
-      if (body && body.classList.contains("hidden")) { var h = body.previousElementSibling; if (h) h.click(); }
-      var btn = Array.prototype.find.call(rows[i].querySelectorAll("button"), function (b) { return b.textContent === "Détails"; });
-      if (btn && btn.getAttribute("aria-expanded") !== "true") btn.click();
-      rows[i].scrollIntoView({ block: "start", behavior: "smooth" });
-      return;
+  /* Détail d’un élève, sous sa ligne : les cartes d’enseignants.html (studentDetail) */
+  function detail(r) {
+    var w = mk("div", "pb-detail"); w.dataset.sid = r.s.id;
+    var m = mk("p", "msg pb-dmsg"); m.setAttribute("role", "status");
+    if (state.flash && state.flash.id === r.s.id) { m.textContent = state.flash.text; m.classList.toggle("err", !!state.flash.err); state.flash = null; }
+    w.append(m);
+    if (C.pdfMake) {
+      var fi = mk("button", "secondary pb-see", "📄 Fiche de suivi (PDF)"); fi.type = "button"; fi.title = "Fiche de suivi de " + r.s.nickname + " à imprimer : toile des 6 compétences";
+      fi.onclick = function () { makeFiches([r], state.cls, fi, "fiche-suivi-" + (C.pdfSlug(r.s.nickname) || "eleve")); };
+      var fa = mk("div", "pd-actions pb-dacts"); fa.append(fi); w.append(fa);
     }
+    if (!C.studentDetail) return w;
+    w.append(C.studentDetail(r.s, r.row, function (text, err, reload) {
+      if (reload) { state.flash = { id: r.s.id, text: text, err: err }; render(); return; }
+      m.textContent = text; m.classList.toggle("err", !!err);
+    }));
+    return w;
   }
-  function section(num, title, sub) {
+  function section(title, sub) {
     var s = mk("section", "pb-sec");
-    var h = mk("h3", "pb-h"); h.append(mk("span", "pb-num", num), document.createTextNode(title));
+    var h = mk("h3", "pb-h"); h.append(document.createTextNode(title));
     if (sub) h.append(mk("small", null, " · " + sub));
     s.append(h);
     return s;
@@ -573,5 +613,5 @@
     return box;
   }
 
-  window.ZooPeda = { asgLabel: asgLabel, asgState: asgState, asgStatusText: asgStatusText, render: render, analyse: analyse, classify: classify, axes: axes, drawFiche: drawFiche, state: state };
+  window.ZooPeda = { asgLabel: asgLabel, asgState: asgState, asgStatusText: asgStatusText, render: render, openDetail: openDetail, analyse: analyse, classify: classify, axes: axes, drawFiche: drawFiche, state: state };
 })();

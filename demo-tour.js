@@ -45,17 +45,18 @@
     THE_END.primary = "Retour à mon espace";
     THE_END.run = function () { T.on = false; save(); if (window.zooDemo) window.zooDemo.exit("enseignants.html"); return new Promise(function () {}); };
   }
-  /* Suivi enseignant : on ouvre le « Détails » de Léo pour montrer les 4 cartes (sons écoutés, sons lus, courbe de fluence, jeux) */
-  function leoRow() { return Array.prototype.filter.call(document.querySelectorAll(".progress-row"), function (r) { return /Léo/.test(r.textContent); })[0] || null; }
-  function leoGrid() { var r = leoRow(), g = r && r.querySelector(".pd-grid"); return g && visible(g) ? g : null; }
+  /* « Ma classe » : on ouvre le « Détails » de Léo, sous sa ligne, pour montrer ses cartes (sons reconnus, écrits, lus, vitesse, jeux) */
+  function leoRow() { return Array.prototype.filter.call(document.querySelectorAll(".pb-row"), function (r) { return /Léo/.test(r.textContent); })[0] || null; }
+  function leoGrid() { var d = document.querySelector('.pb-detail[data-sid="' + ((leoRow() || {}).dataset || {}).sid + '"]'), g = d && d.querySelector(".pd-grid"); return g && visible(g) ? g : null; }
   async function openLeoDetails() {
-    tab("progression");
+    tab("pedagogie");
     var r = await wait(leoRow, 4000);
     if (!r || leoGrid()) return;
-    var b = Array.prototype.filter.call(r.querySelectorAll("button"), function (x) { return /Détails/.test(x.textContent); })[0];
+    var b = r.querySelector(".pb-detail-btn");
     if (b) b.click();
+    await wait(leoGrid, 3000);
   }
-  var LEO_TEXT = "Pour chaque élève, « Détails » ouvre ses cartes : sons écoutés, sons écrits, sons lus, vitesse de lecture et jeux. Chaque carte donne ses dates et ses résultats.";
+  var LEO_TEXT = "« Ma classe » montre d'abord ce qui est à faire, puis une ligne par élève. « Détails » ouvre ses cartes : sons écoutés, sons écrits, sons lus, vitesse de lecture et jeux. Chaque carte donne ses dates et ses résultats.";
   function toTeacher() { T.step++; save(); location.href = "enseignants.html?demo=1"; return new Promise(function () {}); }
 
   /* « Découvrir l'essentiel en 2 minutes » : 5 étapes */
