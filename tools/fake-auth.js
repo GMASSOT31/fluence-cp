@@ -23,12 +23,14 @@
       ["Jade", 7, 1, null, {}, 26], ["Noah", 7, 0, null, { "f|v": 2 }, 30], ["Lina", 8, 3, null, {}, 22], ["Sacha", 11, 0, null, {}, 40]];
     st.students = st.students.concat(kids.map(function (k, i) { return { id: "p" + i, nickname: k[0], class_id: "c1", teacher_id: "t1", pin_hash: "x" }; }));
     kids.forEach(function (k, i) {
-      var res = [], days = {}, snd = {};
+      var res = [], days = {}, snd = {}, lis = {}, dic = {};
+      order.slice(0, Math.min(order.length, k[1] + 2)).forEach(function (o) { lis[o] = true; });
+      order.slice(0, Math.max(0, k[1] - (i % 3))).forEach(function (o) { dic[o] = true; });
       for (var j = 0; j < k[1]; j++) res.push({ id: "r" + i + j, sound: order[j], k: "s", src: "eval", mclm: 30 + j * 3, ts: now - (k[2] + 3 + (k[1] - j)) * DAY });
       if (k[5]) res.push({ id: "f" + i, sound: order[k[1]], k: "s", src: "train", mclm: k[5], ts: now - k[2] * DAY });
       if (k[3]) Object.keys(k[3]).forEach(function (s2) { snd[s2] = { l: k[3][s2][0], w: [2, 3] }; });
       if (k[2] < 7) for (var d = k[2]; d < 7; d += 2) days[key(now - d * DAY)] = [300 + i * 60, 2, 1, 1, 2];
-      st.progress["p" + i] = { student_id: "p" + i, updated_at: new Date(now - k[2] * DAY).toISOString(), pending_coins: 0, progress: { results: res, stats: { snd: snd, conf: k[4], days: days } } };
+      st.progress["p" + i] = { student_id: "p" + i, updated_at: new Date(now - k[2] * DAY).toISOString(), pending_coins: 0, progress: { results: res, listen: { done: lis }, dictee: { done: dic }, stats: { snd: snd, conf: k[4], days: days } } };
     });
   })();
   function fixCode(v, isUpdate, old) {
