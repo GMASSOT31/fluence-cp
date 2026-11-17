@@ -44,11 +44,11 @@
     Object.keys(days).forEach(function (k) { var d = days[k]; if (Array.isArray(d) && d.some(function (v) { return Number(v) > 0; })) ts.push(Date.parse(k + "T12:00:00") || 0); });
     var last = Math.max.apply(null, ts.filter(function (x) { return x > 1e11; }).concat([0]));
     var idle = last ? Math.floor((now - last) / DAY) : null;
-    /* son en cours : taux d'erreur à l'écoute et en dictée, lectures sans réussite */
+    /* son en cours : taux d’erreur à « J’entends », à l’écoute et en dictée, lectures sans réussite */
     var err = null, answers = 0, readTries = 0;
     if (cur) {
       var c = snd[cur.id] || {}, ok = 0, ko = 0;
-      ["l", "w"].forEach(function (a) { if (Array.isArray(c[a])) { ok += Number(c[a][0]) || 0; ko += Number(c[a][1]) || 0; } });
+      ["l", "w", "p"].forEach(function (a) { if (Array.isArray(c[a])) { ok += Number(c[a][0]) || 0; ko += Number(c[a][1]) || 0; } });
       answers = ok + ko; err = answers ? Math.round(ko * 100 / answers) : null;
       readTries = readOn[cur.id] || 0;
     }
