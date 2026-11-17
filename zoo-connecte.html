@@ -1379,7 +1379,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
         <p class="hint" id="mode-hint"></p>
       </div>
       <div id="gate" hidden>
-        <p>Ton maître(sse) tape son mot de passe pour lancer l’enregistrement de ta lecture.</p>
+        <p id="gate-txt">Ton maître(sse) tape son mot de passe pour lancer l’enregistrement de ta lecture.</p>
         <div class="field">
           <label for="in-gate">Mot de passe du maître(sse)</label>
           <input type="password" id="in-gate" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" data-lpignore="true">
@@ -3032,7 +3032,11 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if (asStudent && !ses.viaTeacher && ses.goal === "eval") {
       ses.mode = "rec";
       var sup = recSupport();
-      if (sup) recBlock = "Cette tablette ne peut pas enregistrer ta lecture : " + sup + " Demande à ton maître(sse).";
+      if (sup) {   /* tablette sans micro : lecture en direct avec le maître(sse) (il tape son mot de passe, l’écoute et touche les erreurs) */
+        ses.mode = "live";
+        $("btn-open").textContent = "🏅 Je lis avec mon maître(sse)";
+        $("goal-hint").textContent = "Cette tablette ne peut pas enregistrer ta voix : ton maître(sse) tape son mot de passe, t’écoute lire une minute et touche les mots où tu te trompes. C’est ce qui te donne ta médaille 🏅.";
+      }
       else if (recCount(ses.sid) >= REC_PENDING_MAX) recBlock = "Tu as déjà " + REC_PENDING_MAX + " lectures qui attendent ton maître(sse). Il ou elle doit d’abord les écouter (bouton « 🎧 Mon maître(sse) écoute » sur ta mission).";
     }
     if (recBlock) {
@@ -3044,6 +3048,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     }
     var gated = asStudent && !ses.viaTeacher && ses.goal === "eval" && !ses.unlocked && data.evalCode !== false;
     $("gate").hidden = !gated;
+    $("gate-txt").textContent = ses.mode === "live" ? "Cette tablette ne peut pas enregistrer ta voix : ton maître(sse) tape son mot de passe, puis t’écoute lire en direct." : "Ton maître(sse) tape son mot de passe pour lancer l’enregistrement de ta lecture.";
     if (gated) { $("setup-empty").hidden = true; $("setup-form").hidden = true; return; }
     if (asStudent) data.sel.sid = ses.sid;
     var hasStudents = data.students.length > 0;
@@ -5505,7 +5510,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if (ms.medal && (!ms.sound || ms.medal.id !== ms.sound.id || ms.kind === "compr")) {
       mb = el("button", "ms-step ms-medal", ""); mb.type = "button";
       mb.appendChild(el("span", "ms-n", "🏅"));
-      var mt = el("span", "", "Médaille du son " + q(ms.medal.label)); mt.appendChild(el("small", "", recCount(sid) >= REC_PENDING_MAX ? "⏳ ton maître(sse) doit d’abord écouter tes lectures" : "🎙 je m’enregistre avec mon maître(sse)"));
+      var mt = el("span", "", "Médaille du son " + q(ms.medal.label)); mt.appendChild(el("small", "", recSupport() ? "🏅 je lis avec mon maître(sse)" : (recCount(sid) >= REC_PENDING_MAX ? "⏳ ton maître(sse) doit d’abord écouter tes lectures" : "🎙 je m’enregistre avec mon maître(sse)")));
       mb.appendChild(mt);
       mb.addEventListener("click", function () {
         var lv = null; KINDS.forEach(function (k) { if (!lv && hasContent(ms.medal.id, k.k) && !isValid(sid, ms.medal.id, k.k)) lv = k.k; });
@@ -7327,9 +7332,15 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   });
 
   /* ---------- Enregistrement de la lecture (élève seul) ---------- */
-  var REC = { stream: null, mr: null, chunks: [], mime: "" };
+  /* Deux façons d’enregistrer : MediaRecorder (appareils récents) ; sinon, sur les iPad anciens (Safari avant iOS 14.3), le son du micro
+     est capté par Web Audio et rangé dans un fichier WAV (REC.wav). Sans micro du tout (ex. appli installée sur un iPad iOS 12) : recSupport()
+     renvoie une raison et la lecture se fait EN DIRECT avec le maître(sse) (décidé par Gabriel le 17/11/2026, seulement sur ces appareils). */
+  var REC = { stream: null, mr: null, chunks: [], mime: "", wav: null, broken: false };
+  function recAC() { return window.AudioContext || window.webkitAudioContext; }
   function recSupport() {
-    if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder)) return "ce navigateur ne peut pas enregistrer la voix.";
+    if (REC.broken) return "le micro ne marche pas sur cette tablette.";
+    if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) return "ce navigateur ne peut pas enregistrer la voix.";
+    if (!window.MediaRecorder && !recAC()) return "ce navigateur ne peut pas enregistrer la voix.";
     if (!window.indexedDB) return "ce navigateur ne peut pas garder les enregistrements.";
     try {
       var pol = document.permissionsPolicy || document.featurePolicy;
@@ -7348,16 +7359,54 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     try { if (REC.stream) REC.stream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {}
     REC.stream = null;
   }
+  /* WAV : le contexte audio est créé tout de suite (dans le toucher de l’élève, sinon iOS le garde muet) */
   function startRecording() {
+    var ac = null;
+    if (!window.MediaRecorder) { try { ac = new (recAC())(); if (ac.state === "suspended" && ac.resume) ac.resume(); } catch (e) { ac = null; } }
     return navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
-      REC.stream = stream; REC.chunks = []; REC.mime = pickMime();
+      REC.stream = stream; REC.chunks = [];
+      if (!window.MediaRecorder) {
+        if (!ac) throw new Error("no audio");
+        var src = ac.createMediaStreamSource(stream), proc = (ac.createScriptProcessor || ac.createJavaScriptNode).call(ac, 4096, 1, 1);
+        var w = { ac: ac, src: src, proc: proc, bufs: [], rate: ac.sampleRate };
+        proc.onaudioprocess = function (e) { w.bufs.push(new Float32Array(e.inputBuffer.getChannelData(0))); };
+        src.connect(proc); proc.connect(ac.destination);
+        REC.wav = w;
+        return;
+      }
+      REC.mime = pickMime();
       var mr = REC.mime ? new window.MediaRecorder(stream, { mimeType: REC.mime }) : new window.MediaRecorder(stream);
       mr.ondataavailable = function (e) { if (e.data && e.data.size) REC.chunks.push(e.data); };
       REC.mr = mr;
       mr.start(1000);
     });
   }
+  /* Fin d’un enregistrement WAV : mono, 16 000 échantillons par seconde, 16 bits (1 minute ≈ 2 Mo) */
+  function wavStop() {
+    var w = REC.wav; REC.wav = null;
+    try { w.proc.onaudioprocess = null; w.src.disconnect(); w.proc.disconnect(); } catch (e) {}
+    try { if (w.ac.close) w.ac.close(); } catch (e) {}
+    cleanupStream();
+    var len = 0; w.bufs.forEach(function (b) { len += b.length; });
+    if (!len) return null;
+    var all = new Float32Array(len), o = 0; w.bufs.forEach(function (b) { all.set(b, o); o += b.length; });
+    var rate = 16000, step = w.rate / rate, n = Math.floor(len / step);
+    if (step < 1) { step = 1; rate = w.rate; n = len; }
+    var buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
+    function str(p, t) { for (var i = 0; i < t.length; i++) v.setUint8(p + i, t.charCodeAt(i)); }
+    str(0, "RIFF"); v.setUint32(4, 36 + n * 2, true); str(8, "WAVE"); str(12, "fmt "); v.setUint32(16, 16, true);
+    v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, rate, true); v.setUint32(28, rate * 2, true);
+    v.setUint16(32, 2, true); v.setUint16(34, 16, true); str(36, "data"); v.setUint32(40, n * 2, true);
+    for (var i = 0; i < n; i++) {
+      var a = Math.floor(i * step), b2 = Math.min(len, Math.floor((i + 1) * step)), sum = 0;
+      for (var j = a; j < b2; j++) sum += all[j];
+      var x = Math.max(-1, Math.min(1, sum / Math.max(1, b2 - a)));
+      v.setInt16(44 + i * 2, x < 0 ? x * 0x8000 : x * 0x7fff, true);
+    }
+    return new Blob([buf], { type: "audio/wav" });
+  }
   function stopRecording() {
+    if (REC.wav) return Promise.resolve(wavStop());
     return new Promise(function (resolve) {
       var mr = REC.mr;
       if (!mr || mr.state === "inactive") { cleanupStream(); resolve(null); return; }
@@ -7370,6 +7419,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     });
   }
   function abortRecording() {
+    if (REC.wav) { try { wavStop(); } catch (e) {} REC.wav = null; }
     try { if (REC.mr && REC.mr.state !== "inactive") { REC.mr.onstop = null; REC.mr.stop(); } } catch (e) {}
     REC.mr = null; REC.chunks = []; cleanupStream();
   }
@@ -7410,10 +7460,13 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       S.timerId = setInterval(tick, 100);
       tick();
     }, function (err) {
+      cleanupStream();
       $("btn-start").disabled = false;
-      $("instruction").textContent = (err && err.name === "NotAllowedError")
-        ? "Le micro est refusé ou bloqué. Demande au maître(sse)."
-        : "Je n’arrive pas à allumer le micro. Demande au maître(sse).";
+      if (err && err.name === "NotAllowedError") { $("instruction").textContent = "Le micro est refusé ou bloqué. Demande au maître(sse)."; return; }
+      /* Le micro ne s’allume pas sur cette tablette : la lecture se fait en direct avec le maître(sse), qui a déjà tapé son mot de passe */
+      REC.broken = true; S.rec = false; ses.mode = "live";
+      $("btn-finished").textContent = "Terminé";
+      $("instruction").textContent = "Le micro ne marche pas ici : ton maître(sse) t’écoute en direct et touche les mots où tu te trompes. Touche « Démarrer » quand tu es prêt(e).";
     });
   }
   function finishRecordedRun() {
