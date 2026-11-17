@@ -142,7 +142,6 @@ body.calc-mode #sylTestBox{display:none!important}
 #pinPart h4.class-tag{display:inline-block;margin:16px 0 6px;padding:5px 12px;border-radius:10px;border-left:5px solid var(--cg);background:color-mix(in srgb,var(--cg) 12%,white)}
 .rec-choice{display:flex;gap:10px;align-items:center;font-weight:700;margin:6px 0 8px}
 /* Progression : une carte par classe */
-#progressList{display:grid;gap:18px}
 .class-group{border:2px solid #e3e7ef;border-left:6px solid var(--cg);border-radius:16px;background:#fff;overflow:hidden}
 .class-group-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;background:color-mix(in srgb,var(--cg) 12%,white);border-bottom:1px solid color-mix(in srgb,var(--cg) 25%,white)}
 .game-rank-row{display:block}.game-rank-bar{height:8px;margin-top:6px;border-radius:99px;background:#ece8fb;overflow:hidden}.game-rank-bar i{display:block;height:100%;background:linear-gradient(90deg,#ffd23f,#ff7a1a);border-radius:99px}
@@ -209,9 +208,9 @@ body.teacher-mode .teacher-header .teacher-nav button.active{background:#1b2433;
 .pb-filter.active{background:#1b2433;color:#fff}
 .pb-legend{font-size:.85rem;margin:4px 0 10px}
 .pb-list{display:flex;flex-direction:column;gap:6px}
-.pb-row{display:grid;grid-template-columns:minmax(130px,1.2fr) 70px minmax(180px,3fr) 70px auto;align-items:center;gap:10px;padding:9px 12px;border-radius:12px;background:#fff;border:1px solid #e3e7ef;border-left:5px solid #c9d0dc}
+.pb-row{display:grid;grid-template-columns:minmax(120px,1fr) 62px minmax(220px,4fr) 64px auto;align-items:center;gap:10px;padding:9px 12px;border-radius:12px;background:#fff;border:1px solid #e3e7ef;border-left:5px solid #c9d0dc}
 .pb-row.c-red{border-left-color:#e5484d}.pb-row.c-yellow{border-left-color:#f5b82e}.pb-row.c-green{border-left-color:#30a46c}.pb-row.c-idle{border-left-color:#c9d0dc;background:#fafbfc}
-.pb-who{display:flex;align-items:center;gap:6px;min-width:0}.pb-who strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pb-who{display:flex;align-items:center;gap:6px;min-width:0}.pb-who strong{min-width:0;overflow-wrap:anywhere}
 .pb-allo{padding:2px 5px;border-radius:8px;background:transparent;border:0;font-size:.95rem;opacity:.25;filter:grayscale(1)}
 .pb-allo.on{opacity:1;filter:none;background:#e8f1ff}
 .pb-time,.pb-flu{font-weight:700;color:#33405a;white-space:nowrap}
@@ -228,6 +227,15 @@ body.teacher-mode .teacher-header .teacher-nav button.active{background:#1b2433;
 .pb-as-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.pb-as-msg{margin:6px 0 0;color:#b42318;font-weight:600;min-height:0}.pb-as-del{margin-left:auto}
 @media(max-width:600px){.pb-assign{margin-left:0}}.pb-btns{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .pb-empty{padding:18px;border-radius:14px;background:#f2f5fb;text-align:center}
+.pb-tags{display:flex;flex-wrap:wrap;gap:5px 6px;margin-top:5px}.pb-tag{display:inline-block;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;padding:2px 9px;border-radius:999px;font-size:.8rem;font-weight:700;background:#f2f5fb;color:#33405a;border:1px solid #dfe5f0}
+.pb-tag.warn{background:#fff3e0;border-color:#f0c27a;color:#8a4b00}.pb-tag.alert{background:#fdecec;border-color:#f0a3a3;color:#8f1d1d}.pb-tag.next{background:#eaf2ff;border-color:#a9c4f0;color:#1e4f9a}.pb-tag.asg{background:#fff8e0;border-color:#ecd27a;color:#7a5a00}.pb-tag.ok{background:#eef7ee;border-color:#9fd3a4;color:#1f5f25}
+.pb-names{display:flex;flex-wrap:wrap;gap:6px}.pb-name{padding:4px 11px;border-radius:999px;background:#fff;color:#1b2433;border:1px solid #e3cf9a;font-weight:700;font-size:.9rem;min-height:0;box-shadow:none}
+.pb-tip{color:#6b5a2a;line-height:1.3}.pb-alert-btn{align-self:flex-start;padding:8px 14px}
+.pb-alert.a-rec{background:#fdecec;border-color:#f0a3a3}.pb-alert.a-rec .pb-name{border-color:#f0a3a3}.pb-alert.a-idle{background:#f4f5f8;border-color:#d8dce5}.pb-alert.a-idle .pb-name{border-color:#d8dce5}
+.pb-detail{margin:-2px 0 8px 18px;padding:4px 14px 10px;border-radius:12px;background:#fff;border:1px solid #e3e7ef;border-top:0}.pb-dmsg:empty{display:none}.pb-dmsg{margin:8px 0 0}.pb-dacts{padding-top:10px}
+.pd-actions{display:flex;flex-wrap:wrap;gap:8px;padding:4px 0}.pd-gift{padding:7px 12px;font-size:.88rem}
+.pb-detail-btn.on{background:#1b2433;color:#fff}
+@media(max-width:600px){.pb-detail{margin-left:0;padding:4px 10px 10px}}
 @media(max-width:880px){.pb-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.pb-row{grid-template-columns:1fr auto;grid-template-areas:"who see" "prog prog" "time flu"}.pb-who{grid-area:who}.pb-btns{grid-area:see}.pb-prog{grid-area:prog}.pb-time{grid-area:time;font-size:.9rem}.pb-flu{grid-area:flu;text-align:right;font-size:.9rem}.pb-time::before{content:"⏱️ "}.pb-flu::before{content:"⚡ "}}
 
@@ -343,10 +351,9 @@ body:not(.teacher-mode) main{color:#eef0f7}
   <div class="side-title">🧑‍🏫 Espace enseignant</div>
   <div class="space-switch" role="group" aria-label="Choisir l’espace"><button type="button" data-space="peda" class="active" aria-pressed="true">🎓 Pédagogie</button><button type="button" data-space="param" aria-pressed="false">⚙️ Paramétrage</button></div>
   <nav class="teacher-nav" aria-label="Rubriques de l'espace enseignant">
-   <button type="button" data-tab="pedagogie" data-space="peda"><span class="nav-ico" aria-hidden="true">🧭</span><span class="nav-label">Tableau de bord</span></button>
+   <button type="button" data-tab="pedagogie" data-space="peda"><span class="nav-ico" aria-hidden="true">🏫</span><span class="nav-label">Ma classe</span></button>
    <button type="button" class="active" data-tab="eleves" data-space="param"><span class="nav-ico" aria-hidden="true">📚</span><span class="nav-label">Ajout d’élèves et création de classe</span></button>
    <button type="button" data-tab="liste" data-space="param"><span class="nav-ico" aria-hidden="true">🧒</span><span class="nav-label">Liste des élèves</span></button>
-   <button type="button" data-tab="progression" data-space="peda"><span class="nav-ico" aria-hidden="true">📈</span><span class="nav-label">Suivi par élève</span></button>
    <button type="button" data-tab="reglages" data-space="param"><span class="nav-ico" aria-hidden="true">✏️</span><span class="nav-label">Exercices</span></button>
    <button type="button" data-tab="general" data-space="param"><span class="nav-ico" aria-hidden="true">⚙️</span><span class="nav-label">Réglages généraux</span></button>
    <button type="button" data-tab="ecouter" data-space="peda"><span class="nav-ico" aria-hidden="true">🎧</span><span class="nav-label">À écouter</span><span class="nav-badge hidden" id="listenBadge"></span></button>
@@ -367,18 +374,14 @@ body:not(.teacher-mode) main{color:#eef0f7}
   <div class="section-head"><div class="section-icon">🧒</div><div><h2>Ajouter un élève</h2><p class="muted">Inscrivez un élève dans la classe de votre choix.</p></div></div>
   <p class="muted privacy-note">🔒 Préférez un pseudonyme ou un prénom abrégé plutôt qu'un nom complet.</p>
   <form id="studentForm"><div id="studentTeacherBox" class="hidden"><label for="studentTeacher">Choisir l’enseignant</label><select id="studentTeacher"></select></div><label for="classSelect">Choisir sa classe</label><select id="classSelect" required></select><label for="nickname">Pseudonyme de l'élève</label><input id="nickname" required maxlength="60" placeholder="Ex. Léa C."><p class="muted">Code secret de départ : 1234 (modifiable ensuite dans Mots de passe).</p><p class="quota-full hidden" id="quotaFull" role="status"></p><div class="actions"><button id="addStudent">+ Ajouter l'élève</button></div></form>
-  <div class="next-steps hidden" id="nextSteps"><h3>👉 Et maintenant ?</h3><ol><li><strong>Imprimez les fiches de connexion</strong> de la classe choisie ci-dessus (une petite carte par élève, à découper).<div class="actions"><button type="button" id="printCards">🖨️ Fiches de connexion (PDF)</button></div></li><li>Chaque élève va sur <strong>zoodelecture.fr</strong> et tape le <strong>code de classe</strong>, son <strong>pseudo</strong> et son <strong>code secret</strong> (1234 au départ).</li><li>Ses progrès apparaissent dans l’onglet <button type="button" class="link-btn" id="goProgress">📈 Progression</button>.</li></ol><p class="msg" id="cardsMsg" role="status"></p></div>
+  <div class="next-steps hidden" id="nextSteps"><h3>👉 Et maintenant ?</h3><ol><li><strong>Imprimez les fiches de connexion</strong> de la classe choisie ci-dessus (une petite carte par élève, à découper).<div class="actions"><button type="button" id="printCards">🖨️ Fiches de connexion (PDF)</button></div></li><li>Chaque élève va sur <strong>zoodelecture.fr</strong> et tape le <strong>code de classe</strong>, son <strong>pseudo</strong> et son <strong>code secret</strong> (1234 au départ).</li><li>Ses progrès apparaissent dans l’onglet <button type="button" class="link-btn" id="goProgress">🏫 Ma classe</button>.</li></ol><p class="msg" id="cardsMsg" role="status"></p></div>
   <div class="seat-request" id="seatRequestBox"><form id="seatRequestForm"><label for="seatCount">Combien d'élèves voulez-vous inscrire en plus ? C'est gratuit.</label><div class="seat-row"><input id="seatCount" type="number" min="1" max="500" step="1" value="22" required><span>élèves en plus</span><button id="seatSend">🎓 Activer gratuitement ma classe entière</button><button type="button" id="seatCancel" class="secondary hidden">Annuler la demande</button></div></form><p class="muted" id="seatInfo"></p><p class="msg" id="seatMsg" role="status"></p></div>
  </section>
  <section class="panel feature-card student-card" id="studentsPanel" data-section="liste">
   <div class="section-head"><div class="section-icon">🧒</div><div><h2>Élèves</h2><p class="muted" id="studentsPanelHint"></p></div></div>
   <p class="msg" id="studentsMsg" role="status"></p><div id="studentsAdminList" class="content-list"></div>
  </section>
- <section class="panel feature-card peda-board" id="pedaPanel" data-section="pedagogie"><div class="section-head"><div class="section-icon">🧭</div><div><h2>Tableau de bord de la classe</h2><p class="muted">Qui bloque sur quoi, qui avance vite, qui ne vient plus : pour organiser vos groupes de soutien.</p></div></div><div id="pedaBoard"></div></section>
- <section class="panel feature-card progress-card" id="progressSettings" data-section="progression">
-  <div class="section-head"><div class="section-icon">📊</div><div><h2>Progressions et résultats</h2><p class="muted">Lectures, exercices et jeux de chaque élève.</p></div></div>
-  <div class="actions section-actions"><button type="button" class="secondary" id="reloadProgress">↻ Actualiser les résultats</button></div>
-  <p id="progressMsg" class="msg" role="status"></p><div id="progressList" class="content-list"></div></section>
+ <section class="panel feature-card peda-board" id="pedaPanel" data-section="pedagogie"><div class="section-head"><div class="section-icon">🏫</div><div><h2>Ma classe</h2><p class="muted">Ce qui demande votre attention, puis chaque élève : touchez « Détails » pour voir ses résultats.</p></div></div><div id="pedaBoard"></div><div id="gameRankBox"></div></section>
 
 <section class="panel feature-card pin-card" id="pinSettings" data-section="eleves">
   <div class="section-head"><div class="section-icon">🔐</div><div><h2>Codes secrets des élèves</h2><p class="muted">Créez ou modifiez le code secret de chaque élève.</p></div></div>
@@ -434,7 +437,7 @@ body:not(.teacher-mode) main{color:#eef0f7}
  <h3 style="margin:22px 0 8px">✉️ Messages du formulaire de contact</h3><p class="muted">Écrits sans compte depuis la page Contact du site. Répondez par e-mail.</p><p class="msg" id="ctMsg" role="status"></p><div id="ctList" class="content-list"></div>
 </section>
 </div>
-</section></main><script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=25"><\/script>':'<script src="vendor/supabase.js?v=2.118.0"><\/script>');})();</script><script src="profils.js?v=1"></script><script src="exo-data.js?v=4"></script><script src="pedagogie.js?v=7"></script><script>
+</section></main><script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=26"><\/script>':'<script src="vendor/supabase.js?v=2.118.0"><\/script>');})();</script><script src="profils.js?v=1"></script><script src="exo-data.js?v=4"></script><script src="pedagogie.js?v=8"></script><script>
 (function(){
 "use strict";
 /* Retour du lien « Mot de passe oublié » : on lit l’adresse avant que la bibliothèque Supabase ne la nettoie */
@@ -628,7 +631,7 @@ async function refreshNow(){
    members.forEach(st=>{const line=document.createElement("div");line.className="row";const info=document.createElement("div");const strong=document.createElement("strong");strong.textContent=st.nickname;const status=document.createElement("div");status.className="muted";status.textContent=st.pin_hash?"Code secret choisi":"Code secret à choisir";info.append(strong,status);line.append(info);if(st.teacher_id!==currentUser.id){const other=document.createElement("span");other.className="muted";other.textContent="Géré par un autre enseignant";line.append(other);roster.append(line);return}const change=document.createElement("button");change.type="button";change.className="secondary";change.textContent=st.pin_hash?"Changer le code":"Choisir le code";change.onclick=async()=>{const pin=await dlg("Code secret de 4 à 8 chiffres pour "+st.nickname+" :",{input:true,ok:"Enregistrer",label:"Code secret"});if(pin===null)return;if(!/^[0-9]{4,8}$/.test(pin)){msg("pinMsg","Le code secret doit contenir 4 à 8 chiffres.",true);return;}const {error}=await client.rpc("set_student_pin",{p_student:st.id,p_pin:pin});if(error)msg("pinMsg",errorText(error),true);else{await refresh();msg("pinMsg","✅ PIN enregistré pour "+st.nickname+".");}};line.append(change);roster.append(line);});
  });
  if(!classes.data.length)roster.textContent="Aucune classe créée.";
- renderProgress(students.data,classes.data).catch(e=>msg("progressMsg","Erreur des statistiques : "+errorText(e),true));
+ renderGameRanking();
  $("students").replaceChildren();
  students.data.forEach(s=>{const c=classes.data.find(x=>x.id===s.class_id);const d=document.createElement("div");d.className="row";d.textContent="🧒 "+s.nickname+" · "+(c?c.name:"Classe inconnue")+" · "+(s.pin_hash?"Code secret choisi":"Code secret à choisir");if(s.teacher_id!==currentUser.id){d.textContent+=" · géré par un autre enseignant";$("students").append(d);return}const btn=document.createElement("button");btn.className="secondary";btn.style.marginLeft="12px";btn.textContent=s.pin_hash?"Changer le code":"Choisir le code";btn.onclick=async()=>{const pin=await dlg("Code secret de 4 à 8 chiffres pour "+s.nickname+" :",{input:true,ok:"Enregistrer",label:"Code secret"});if(pin===null)return;if(!/^[0-9]{4,8}$/.test(pin)){msg("spaceMsg","Le code secret doit contenir 4 à 8 chiffres.",true);return;}const {error}=await client.rpc("set_student_pin",{p_student:s.id,p_pin:pin});if(error)msg("spaceMsg",errorText(error),true);else{msg("spaceMsg","PIN enregistré pour "+s.nickname+".");await refresh()}};d.append(btn);$("students").append(d)});
  if(!students.data.length)$("students").textContent="Aucun élève pour le moment.";
@@ -708,7 +711,7 @@ $("addReward").onclick=()=>{const label=$("rewardName").value.trim(),price=Numbe
 async function loadPendingRewards(){const {data,error}=await client.from("student_progress").select("student_id,progress,given_vouchers").eq("teacher_id",currentUser.id);const box=$("pendingRewards");box.replaceChildren();if(error){box.textContent=errorText(error);return;}let count=0;(data||[]).forEach(row=>{const given=Array.isArray(row.given_vouchers)?row.given_vouchers:[];(row.progress?.vouchers||[]).filter(v=>!v.done&&!given.includes(v.id)).forEach(v=>{count++;const div=document.createElement("div");div.className="row";const name=allStudents.find(s=>s.id===row.student_id)?.nickname||"Élève";const label=document.createElement("span");label.textContent=(v.icon||"🎁")+" "+name+" : "+v.label;const done=document.createElement("button");done.type="button";done.textContent="✅ Remis";done.title="La récompense a été donnée : le bon disparaît du Zoo de l’élève";done.onclick=async()=>{done.disabled=true;const {error}=await client.rpc("teacher_give_voucher",{p_student:row.student_id,p_voucher:String(v.id)});if(error){done.disabled=false;msg("settingsMsg",errorText(error),true);return;}await loadPendingRewards();};div.append(label,done);box.append(div)})});if(!count)box.textContent="Aucune récompense à remettre.";}
 
 /* Pont vers pedagogie.js (tableau de bord) : ce script est fermé, on lui donne ce dont il a besoin */
-window.ZooPedaCtx=()=>({client,currentUser,currentRole,allStudents,allClasses,cfgSounds,voy2Fix,pl,showTab,printLoginCards,queueSave,pdfMake,pdfText,pdfSlug,listenPasses:listenPassesCfg,dicteePasses:cfgDictee.passes});
+window.ZooPedaCtx=()=>({studentDetail,refresh,client,currentUser,currentRole,allStudents,allClasses,cfgSounds,voy2Fix,pl,showTab,printLoginCards,queueSave,pdfMake,pdfText,pdfSlug,listenPasses:listenPassesCfg,dicteePasses:cfgDictee.passes});
 /* Deux espaces : « Pédagogie » (tableau de bord, suivi, lectures à écouter) et « Paramétrage » (classes, élèves, réglages) */
 const lastTabOf={peda:"pedagogie",param:"eleves"};
 function spaceOf(tab){const b=document.querySelector('.teacher-nav [data-tab="'+tab+'"]');return b&&b.dataset.space||null}
@@ -789,27 +792,14 @@ async function renderGameRanking(){
    info.append(name,sub,bar);row.append(info);gbody.append(row);});
   const note=document.createElement("p");note.className="muted class-group-empty";note.textContent="Parties terminées, tous enseignants confondus. Les parties abandonnées ne sont pas comptées.";gbody.append(note);
   document.querySelectorAll("#gameRanking").forEach(x=>x.remove());   /* plusieurs chargements peuvent finir en même temps : un seul tableau reste */
-  $("progressList").before(box);
+  $("gameRankBox").append(box);
  }catch(e){console.warn("Classement des jeux indisponible",e);}
 }
-async function renderProgress(students,classes){
- renderGameRanking();
- const container=$("progressList");container.replaceChildren();
- const {data:rows,error}=await client.from("student_progress").select("student_id,progress,updated_at,pending_coins").eq("teacher_id",currentUser.id);
- if(error){msg("progressMsg","Impossible de charger les progressions : "+errorText(error),true);return;}
- msg("progressMsg","");
- const progressMap=new Map((rows||[]).map(r=>[r.student_id,r]));
+/* Détail d’un élève (cartes : sons reconnus, écrits, lus, vitesse, exercices donnés, jeux) : affiché sous sa ligne dans « Ma classe » (pedagogie.js).
+   row = sa ligne student_progress ; after(texte, erreur, recharger) = message après un changement (niveau, pièces) */
+function studentDetail(s,row,after){
  const fmt=n=>Number.isFinite(Number(n))?Number(n):0;
- const grouped=classes.map(c=>({c,students:students.filter(s=>s.class_id===c.id)}));
- grouped.forEach(({c,students:group},ci)=>{
-  const card=document.createElement("div");card.className="class-group";card.style.setProperty("--cg",CLASS_COLORS[ci%CLASS_COLORS.length]);
-  const head=document.createElement("div");head.className="class-group-head";
-  const title=document.createElement("h4");title.textContent="📚 "+c.name;
-  const count=document.createElement("span");count.textContent=group.length+(group.length>1?" élèves":" élève");
-  head.append(title,count);card.append(head);container.append(card);const body=document.createElement("div");body.className="cg-body";card.append(body);foldGroup(head,body,"c:"+c.id);
-  if(!group.length){const empty=document.createElement("p");empty.className="muted class-group-empty";empty.textContent="Aucun élève dans cette classe.";body.append(empty);}
-  group.forEach(s=>{
-   const row=progressMap.get(s.id),p=voy2Fix(row&&row.progress||{},Number($("thrS").value)||25);
+   const p=voy2Fix(row&&row.progress||{},Number($("thrS").value)||25);
    const readings=Array.isArray(p.results)?p.results:[];
    const games=p.hi&&typeof p.hi==="object"?Object.entries(p.hi):[];
    const evaluations=readings.filter(r=>r&&r.src!=="train"&&r.src!=="adj"&&!r.void);
@@ -829,8 +819,6 @@ async function renderProgress(students,classes){
    const dic=p.dictee&&typeof p.dictee==="object"?p.dictee:{},dicPasses=dic.passes&&typeof dic.passes==="object"?dic.passes:{},dicDone=dic.done&&typeof dic.done==="object"?dic.done:{};
    const dicRows=lisOrder.map(x=>({x,n:Number(dicPasses[x.id])||0,ok:!!dicDone[x.id]||(Number(dicPasses[x.id])||0)>=cfgDictee.passes})).filter(r=>r.n>0||r.ok);
    const dicOk=dicRows.filter(r=>r.ok).length;
-   const wrap=document.createElement("div");wrap.className="row progress-row";
-   const info=document.createElement("div");const name=document.createElement("strong");name.textContent=s.nickname;
    const perMin=k=>k==="s"?"syllabes lues par minute":"mots lus par minute";
    const summary=document.createElement("div");summary.className="pd-chips";
    [["🏅 "+certified.length+" "+pl(certified.length,"médaille","médailles"),"Lectures validées par une médaille"],["⭐ "+trained.length+" "+pl(trained.length,"étoile","étoiles"),"Lectures réussies en entraînement"],
@@ -838,25 +826,8 @@ async function renderProgress(students,classes){
     ["🪙 "+fmt(p.coins)+" "+pl(p.coins,"pièce","pièces")+(row&&row.pending_coins>0?" (+"+row.pending_coins+" en attente)":""),null],["🎮 "+games.length+" "+pl(games.length,"jeu","jeux"),null],
     ...(fraudN?[["⚠️ "+fraudN+" "+pl(fraudN,"écarté","écartés"),"Résultat écarté : durée trop courte ou score inhabituel"]]:[])
    ].forEach(([t,tip])=>{const c=document.createElement("span");c.className="pd-chip";c.textContent=t;if(tip)c.title=tip;summary.append(c)});
-   /* Coup d’œil : dernière activité, prochaine étape, besoin de validation (les autres chiffres sont dans « Détails ») */
-   const gk=(cls,t,tip)=>{const e=document.createElement("span");e.className="pg-chip "+cls;e.textContent=t;if(tip)e.title=tip;return e};
-   const tsAll=[...readings.map(r=>Number(r&&r.ts)||0),...games.map(([,h])=>Number(h&&h.bts)||0),Date.parse(row&&row.updated_at||"")||0].filter(x=>x>0),lastTs=tsAll.length?Math.max(...tsAll):0;
-   const days=lastTs?Math.floor((Date.now()-lastTs)/864e5):null;
-   const when=days===null?"aucune activité":days<=0?"aujourd’hui":days===1?"hier":days<31?"il y a "+days+" jours":new Date(lastTs).toLocaleDateString("fr-FR");
-   const doneKeys=new Set([...certified,...alone]),KN={s:"syllabes",m:"mots",t:"texte"};
-   let nextTxt="";for(const x of cfgSounds){if(!x||!x.id||x.id==="h"||x.id==="sz")continue;const kd=["s","m","t"].find(k=>(!x.only||x.only.includes(k))&&!doneKeys.has(x.id+":"+k));if(kd){nextTxt=(x.label||x.id)+" · "+KN[kd];break}}
-   const waitingRec=Array.isArray(p.reviews)?p.reviews.length:0,toValidate=alone.length;
-   const glance=document.createElement("div");glance.className="pg-row";
-   glance.append(gk(days===null||days>=7?"warn":"ok","🕒 : "+when,"Dernière activité : "+when),gk("next","➡️ "+(nextTxt||"toutes faites 🎉"),"Prochaine étape : "+(nextTxt||"toutes faites")));
-   /* Besoin de validation : une action explicite selon ce qui existe vraiment */
-   const gb=(txt,fn)=>{const b2=document.createElement("button");b2.type="button";b2.className="pg-act";b2.textContent=txt;b2.onclick=fn;return b2};
-   const toCert=[...alone].filter(k=>!certified.includes(k)).map(k=>{const [sn,kd]=k.split(":");const x=cfgSounds.find(z=>z&&z.id===sn);return (x?(x.label||x.id):sn)+" · "+KN[kd]});
-   if(waitingRec)glance.append(gk("alert","🎧 "+waitingRec+" "+pl(waitingRec,"lecture enregistrée à écouter","lectures enregistrées à écouter")),gb("Écouter la lecture",()=>document.querySelector('[data-tab="ecouter"]').click()));
-   if(toValidate&&!waitingRec)glance.append(gk("next","🎙 Peut enregistrer sa lecture","Réussi en entraînement : "+toCert.join(", ")+". "+s.nickname+" peut maintenant s’enregistrer (« 🎙 Je m’enregistre » dans son Zoo) pour gagner sa médaille 🏅."));
-   if(!waitingRec&&!toValidate)glance.append(gk("ok","✅ Rien à écouter"));
-   info.append(name,glance);wrap.append(info);
-   const btn=document.createElement("button");btn.type="button";btn.className="secondary";btn.textContent="Détails";btn.setAttribute("aria-expanded","false");btn.title="Voir les détails de "+s.nickname;
-   const details=document.createElement("div");details.className="muted hidden";details.style.cssText="width:100%";
+   const KN={s:"syllabes",m:"mots",t:"texte"};
+   const details=document.createElement("div");details.className="pd-detail muted";
    const mk=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e};
    const dfmt=ts=>Number.isFinite(Number(ts))&&Number(ts)>0?new Date(Number(ts)).toLocaleDateString("fr-FR"):"date inconnue";
    const scoreTxt=r=>r.src==="adj"?"niveau accordé par l’enseignant":Number(r.fraud)>0?"⚠️ Résultat écarté : durée trop courte ou score inhabituel ("+fmt(r.fraud)+")":fmt(r.mclm)+" "+perMin(r.k);
@@ -874,16 +845,16 @@ async function renderProgress(students,classes){
     const run=async dir=>{
      const n=Math.min(20,Math.max(1,Math.round(Number(inp.value))||1));inp.value=String(n);
      let targets,ask;
-     if(dir>0){targets=o.steps.slice(lv,lv+n);if(!targets.length){msg("progressMsg",s.nickname+" est déjà au dernier niveau.");return}
+     if(dir>0){targets=o.steps.slice(lv,lv+n);if(!targets.length){after(s.nickname+" est déjà au dernier niveau.");return}
       ask="Faire avancer "+s.nickname+" ?\n"+o.upTxt+targets.map(o.name).join(", ")+"."}
-     else{targets=o.steps.filter(o.isOn).reverse().slice(0,n);if(!targets.length){msg("progressMsg",s.nickname+" n’a rien à retirer ici.");return}
+     else{targets=o.steps.filter(o.isOn).reverse().slice(0,n);if(!targets.length){after(s.nickname+" n’a rien à retirer ici.");return}
       ask=o.downTxt+targets.map(o.name).join(", ")+" ?\n"+o.keepTxt}
      if(!await dlg(ask,{ok:dir>0?"Faire monter":"Faire descendre"}))return;
      bm.disabled=bp.disabled=true;
      const {error}=await client.rpc("teacher_adjust_level",{p_student:s.id,p_steps:targets.map(k=>o.step(k,dir>0))});
      bm.disabled=bp.disabled=false;
-     if(error){msg("progressMsg",errorText(error),true);return}
-     await renderProgress(students,classes);msg("progressMsg","🏅 Progression de "+s.nickname+" modifiée. Il sera pris en compte dans son Zoo à sa prochaine ouverture.");
+     if(error){after(errorText(error),true);return}
+     after("🏅 Progression de "+s.nickname+" modifiée. Elle sera prise en compte dans son Zoo à sa prochaine ouverture.",false,true);
     };
     bm.onclick=()=>run(-1);bp.onclick=()=>run(1);
     box.append(mk("strong",null,"🎚️ "+o.count(o.steps.slice(0,lv))+" "+pl(o.count(o.steps.slice(0,lv)),"son","sons")+" sur "+o.count(o.steps)),inp,bm,bp);return box};
@@ -905,7 +876,7 @@ async function renderProgress(students,classes){
    /* 2. Sons lus */
    {const c=pcard("📖 Sons lus","pd-read"),tot=Math.max(1,lisOrder.length),sOf=k=>k.split(":")[0];
     const cs=new Set(certified.map(sOf)),as=new Set(alone.map(sOf).filter(x=>!cs.has(x)));
-    const big=mk("div","pd-big",String(cs.size+as.size));big.append(mk("small",null," / "+lisOrder.length+" sons"));
+    const big=mk("div","pd-big",String(cs.size));big.append(mk("small",null," / "+lisOrder.length+" sons validés 🏅"));
     c.append(big,bar([[cs.size/tot*100],[as.size/tot*100,"alone"]],"pd-read"),mk("div","pd-note","🏅 "+cs.size+" avec médaille · ⭐ "+as.size+" "+pl(as.size,"réussi","réussis")+" en entraînement"));
     more(c,readings.slice().sort((a,b)=>(Number(b.ts)||0)-(Number(a.ts)||0)).slice(0,20).filter(Boolean).map(r=>(r.src==="train"?"🟡 Entraînement":r.src==="adj"?"⚙️ Niveau ajusté":"🟢 Lecture pour la médaille")+(r.void?" (annulée)":"")+" · "+dfmt(r.ts)+" · "+soundName(r.sound)+" · "+kindOf(r.k)+" · "+scoreTxt(r)+" · "+fmt(r.e)+" "+pl(r.e,"erreur","erreurs")+(r.short?" · durée insuffisante":"")),readCtl);grid.append(c)}
    /* 3. Fluence */
@@ -936,20 +907,15 @@ async function renderProgress(students,classes){
     c.append(big,mk("div","pd-note",games.length+" "+pl(games.length,"jeu essayé","jeux essayés")));
     more(c,games.map(([g,h])=>(GAME_NAMES[g]||g)+" : "+((h&&Number(h.n))||0)+" "+pl((h&&Number(h.n))||0,"partie","parties")+" · record "+(h&&h.best!=null?h.best:"non défini")));grid.append(c)}
    details.append(grid,mk("div","pd-foot","En chiffres :"),summary,mk("div","pd-foot","Une médaille 🏅 ou une étoile ⭐ = un son lu à un niveau (syllabes, mots ou texte)."),mk("div","pd-foot",row?"Dernière sauvegarde : "+new Date(row.updated_at).toLocaleString("fr-FR"):"Aucune progression enregistrée sur le Zoo connecté."));
-   btn.onclick=()=>{details.classList.toggle("hidden");const open=!details.classList.contains("hidden");btn.textContent=open?"Masquer":"Détails";btn.setAttribute("aria-expanded",String(open))};
-   const acts=document.createElement("div");acts.className="row-actions";
-   if(s.teacher_id===currentUser.id){const gift=document.createElement("button");gift.type="button";gift.textContent="🎁 +10";gift.title="Donner 10 pièces d’or à "+s.nickname;
+   /* 🎁 +10 pièces : bouton discret, dans le détail (seulement pour ses propres élèves) */
+   if(s.teacher_id===currentUser.id){const gift=mk("button","secondary pd-gift","🎁 Donner 10 pièces d’or");gift.type="button";gift.title="Donner 10 pièces d’or à "+s.nickname;
     gift.onclick=async()=>{if(!await dlg("Donner 10 pièces d’or à "+s.nickname+" ?",{ok:"Donner"}))return;gift.disabled=true;
      const {error}=await client.rpc("teacher_give_coins",{p_student:s.id,p_amount:10});gift.disabled=false;
-     if(error){msg("progressMsg",errorText(error),true);return;}
-     await renderProgress(students,classes);msg("progressMsg","🎁 10 pièces envoyées à "+s.nickname+". Elles arriveront dans son Zoo dès sa prochaine ouverture.");};
-    acts.append(gift);}
-   acts.append(btn);wrap.append(acts,details);body.append(wrap);
-  });
- });
- if(!students.length)container.textContent="Aucun élève inscrit.";
+     if(error){after(errorText(error),true);return;}
+     after("🎁 10 pièces envoyées à "+s.nickname+". Elles arriveront dans son Zoo dès sa prochaine ouverture.",false,true);};
+    const ga=mk("div","pd-actions");ga.append(gift);details.append(ga);}
+   return details;
 }
-$("reloadProgress").onclick=()=>refresh();
 
 
 
@@ -1046,7 +1012,7 @@ $("studentTeacher").onchange=()=>fillClassSelect();
 function applyQuota(){const q=quotaState,full=q.limit>0&&q.used>=q.limit;$("addStudent").disabled=full||!q.hasClass;$("addStudent").classList.toggle("hidden",full);$("nickname").disabled=full;$("quotaFull").classList.toggle("hidden",!full);$("quotaFull").textContent=full?"🔒 Toutes vos places sont utilisées ("+q.used+"/"+q.limit+"). Pour inscrire toute votre classe, cliquez sur « Activer gratuitement ma classe entière » juste en dessous.":"";$("seatRequestBox").classList.toggle("seat-highlight",full);/* places épuisées : la demande passe juste sous le message, sinon « Et maintenant ? » vient d’abord */if(full)$("nextSteps").before($("seatRequestBox"));else $("nextSteps").after($("seatRequestBox"));}
 $("goAddStudents").onclick=()=>{const id=$("goAddStudents").dataset.classId;$("classCreated").classList.add("hidden");document.querySelector('[data-sub-btn="ajout"]').click();if(id&&[...$("classSelect").options].some(o=>o.value===id))$("classSelect").value=id;if(!$("nickname").disabled)$("nickname").focus();};
 $("printCards").onclick=()=>{const c=allClasses.find(x=>x.id===$("classSelect").value);if(!c){msg("cardsMsg","Choisissez d’abord une classe.",true);return;}printLoginCards(c,"cardsMsg",$("printCards"));};
-$("goProgress").onclick=()=>showTab("progression");
+$("goProgress").onclick=()=>showTab("pedagogie");
 /* Guide de démarrage : 3 étapes pour un nouveau compte (2 se cochent seules, 1 au clic) ; mémorisé sur cet appareil */
 function guideState(){try{return JSON.parse(localStorage.getItem("zoo_guide_"+currentUser.id)||"{}")||{}}catch(e){return{}}}
 function guideSave(st){try{localStorage.setItem("zoo_guide_"+currentUser.id,JSON.stringify(st))}catch(e){}}
