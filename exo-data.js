@@ -178,9 +178,95 @@
     return { syl: syl, words: wordsFor(soundId, order) };
   }
 
+  /* ---------- Phonologie (1re étape d’un son) : « Touche l’image où tu entends [on] » ----------
+     Exercice oral : les mots n’ont pas besoin d’être déchiffrables. Images emoji d’Unicode 11 au plus (lisibles sur iPad iOS 12).
+     [image, mot dit par la voix, sons entendus] ; codes des sons : a i o y=u U=ou e=é E=è @=e 2=eu A=an O=on I=in/un
+     j=ill (yod) w (oi = wa) Y=u de « nuage » S=ch Z=j N=gn, consonnes l f s m r n v z p t k b d g. */
+  var PHONO_PICS = [
+    ["🐱", "chat", "Sa"], ["🐶", "chien", "SjI"], ["🐭", "souris", "sUri"], ["🦊", "renard", "r@nar"], ["🐻", "ours", "Urs"],
+    ["🐼", "panda", "pAda"], ["🐷", "cochon", "koSO"], ["🐮", "vache", "vaS"], ["🐴", "cheval", "S@val"], ["🦁", "lion", "ljO"],
+    ["🐯", "tigre", "tigr"], ["🐸", "grenouille", "gr@nUj"], ["🐵", "singe", "sIZ"], ["🐔", "poule", "pUl"],
+    ["🐦", "oiseau", "wazo"], ["🦆", "canard", "kanar"], ["🦉", "hibou", "ibU"], ["🐝", "abeille", "abEj"], ["🐛", "chenille", "S@nij"],
+    ["🦋", "papillon", "papijO"], ["🐌", "escargot", "Eskargo"], ["🐞", "coccinelle", "koksinEl"], ["🐢", "tortue", "torty"], ["🐍", "serpent", "sErpA"],
+    ["🐙", "pieuvre", "pj2vr"], ["🐟", "poisson", "pwasO"], ["🐬", "dauphin", "dofI"], ["🐳", "baleine", "balEn"], ["🦀", "crabe", "krab"],
+    ["🐘", "éléphant", "elefA"], ["🦒", "girafe", "Ziraf"], ["🦓", "zèbre", "zEbr"], ["🐊", "crocodile", "krokodil"], ["🐑", "mouton", "mUtO"],
+    ["🐐", "chèvre", "SEvr"], ["🦔", "hérisson", "erisO"], ["🐺", "loup", "lU"], ["🦄", "licorne", "likorn"], ["🐲", "dragon", "dragO"],
+    ["🦖", "dinosaure", "dinozor"], ["🐓", "coq", "kok"], ["🐤", "poussin", "pUsI"], ["🦈", "requin", "r@kI"], ["🦏", "rhinocéros", "rinoseros"],
+    ["🦍", "gorille", "gorij"], ["🐫", "chameau", "Samo"], ["🐀", "rat", "ra"], ["🦐", "crevette", "kr@vEt"], ["🐚", "coquillage", "kokijaZ"],
+    ["🐜", "fourmi", "fUrmi"], ["🐿️", "écureuil", "ekyr2j"], ["🦅", "aigle", "Egl"], ["🕷️", "araignée", "areNe"],
+    ["🍎", "pomme", "pom"], ["🍐", "poire", "pwar"], ["🍊", "orange", "orAZ"], ["🍋", "citron", "sitrO"], ["🍌", "banane", "banan"],
+    ["🍉", "pastèque", "pastEk"], ["🍇", "raisin", "rEzI"], ["🍓", "fraise", "frEz"], ["🍒", "cerise", "s@riz"], ["🍑", "pêche", "pES"],
+    ["🍍", "ananas", "anana"], ["🥕", "carotte", "karot"], ["🌽", "maïs", "mais"], ["🍄", "champignon", "SApiNO"], ["🥦", "brocoli", "brokoli"],
+    ["🍅", "tomate", "tomat"], ["🥝", "kiwi", "kiwi"], ["🍞", "pain", "pI"], ["🥐", "croissant", "krwasA"], ["🧀", "fromage", "fromaZ"],
+    ["🥚", "œuf", "2f"], ["🍕", "pizza", "pidza"], ["🍟", "frites", "frit"], ["🍰", "gâteau", "gato"], ["🍫", "chocolat", "Sokola"],
+    ["🍬", "bonbon", "bObO"], ["🍭", "sucette", "sysEt"], ["🍯", "miel", "mjEl"], ["🥛", "lait", "lE"], ["🍦", "glace", "glas"],
+    ["🍪", "biscuit", "biskYi"], ["🥖", "baguette", "bagEt"], ["🍆", "aubergine", "obErZin"], ["🥒", "concombre", "kOkObr"], ["🌶️", "piment", "pimA"],
+    ["🍼", "biberon", "bib@rO"], ["🥣", "bol", "bol"], ["🍵", "thé", "te"], ["🥄", "cuillère", "kYijEr"], ["🔪", "couteau", "kUto"],
+    ["🏠", "maison", "mEzO"], ["🚗", "voiture", "vwatyr"], ["🚌", "bus", "bys"], ["🚲", "vélo", "velo"], ["✈️", "avion", "avjO"],
+    ["🚀", "fusée", "fyze"], ["⛵", "bateau", "bato"], ["🚂", "train", "trI"], ["🚁", "hélicoptère", "elikoptEr"], ["🚚", "camion", "kamjO"],
+    ["🛴", "trottinette", "trotinEt"], ["🚜", "tracteur", "trakt2r"], ["🚕", "taxi", "taksi"], ["⚽", "ballon", "balO"], ["🎁", "cadeau", "kado"],
+    ["📖", "livre", "livr"], ["✏️", "crayon", "krEjO"], ["✂️", "ciseaux", "sizo"], ["🔑", "clé", "kle"], ["📞", "téléphone", "telefon"],
+    ["⏰", "réveil", "revEj"], ["💡", "lampe", "lAp"], ["🎸", "guitare", "gitar"], ["🥁", "tambour", "tAbUr"], ["🎺", "trompette", "trOpEt"],
+    ["🎹", "piano", "pjano"], ["🎻", "violon", "vjolO"], ["🎷", "saxophone", "saksofon"], ["🎤", "micro", "mikro"], ["🔔", "cloche", "kloS"],
+    ["⌚", "montre", "mOtr"], ["🔨", "marteau", "marto"], ["🎒", "cartable", "kartabl"], ["👓", "lunettes", "lynEt"], ["👑", "couronne", "kUron"],
+    ["🎩", "chapeau", "Sapo"], ["👗", "robe", "rob"], ["👖", "pantalon", "pAtalO"], ["🧦", "chaussettes", "SosEt"], ["🧤", "gants", "gA"],
+    ["🧣", "écharpe", "eSarp"], ["🧥", "manteau", "mAto"], ["☂️", "parapluie", "paraplYi"], ["🛏️", "lit", "li"], ["🚪", "porte", "port"],
+    ["🛁", "baignoire", "bENwar"], ["🎲", "dé", "de"], ["🎀", "nœud", "n2"], ["💎", "diamant", "djamA"], ["🎯", "cible", "sibl"],
+    ["☀️", "soleil", "solEj"], ["🌙", "lune", "lyn"], ["⭐", "étoile", "etwal"], ["☁️", "nuage", "nYaZ"], ["🌧️", "pluie", "plYi"],
+    ["❄️", "neige", "nEZ"], ["🌈", "arc-en-ciel", "arkAsjEl"], ["🔥", "feu", "f2"], ["🌊", "vague", "vag"], ["🌳", "arbre", "arbr"],
+    ["🌲", "sapin", "sapI"], ["🌴", "palmier", "palmje"], ["🌵", "cactus", "kaktys"], ["🌸", "fleur", "fl2r"], ["🌹", "rose", "roz"],
+    ["🍁", "feuille", "f2j"], ["🍀", "trèfle", "trEfl"], ["💐", "bouquet", "bUkE"], ["⛰️", "montagne", "mOtaN"], ["🌋", "volcan", "volkA"],
+    ["🏖️", "plage", "plaZ"], ["⛪", "église", "egliz"], ["🏰", "château", "Sato"], ["⛺", "tente", "tAt"], ["⚓", "ancre", "Akr"],
+    ["🛷", "luge", "lyZ"], ["⛄", "bonhomme", "bonom"], ["👂", "oreille", "orEj"], ["👃", "nez", "ne"], ["👄", "bouche", "bUS"],
+    ["✋", "main", "mI"], ["👶", "bébé", "bebe"], ["👧", "fille", "fij"], ["👦", "garçon", "garsO"], ["👸", "princesse", "prIsEs"],
+    ["🤴", "prince", "prIs"], ["👻", "fantôme", "fAtom"], ["🤖", "robot", "robo"], ["🎃", "citrouille", "sitrUj"]
+  ];
+  /* Pour chaque son du programme : [code entendu, ce que dit la voix, ce qui est écrit à l’écran]. Un son absent n’a pas d’étape « J’entends ».
+     Les sons qui reprennent un son déjà entendu (en après an, ph après f…) n’en ont pas non plus : voir phonoKey dans le Zoo. */
+  var PHONO_SOUNDS = {
+    voy: [["a", "a", "a"], ["i", "i", "i"], ["o", "o", "o"], ["y", "u", "u"]], voy2: [["e", "et", "é"], ["E", "est", "è"]],
+    l: [["l", "leu", "l"]], f: [["f", "feu", "f"]], ch: [["S", "cheu", "ch"]], s: [["s", "seu", "s"]], m: [["m", "meu", "m"]], r: [["r", "reu", "r"]],
+    n: [["n", "neu", "n"]], v: [["v", "veu", "v"]], j: [["Z", "jeu", "j"]], z: [["z", "zeu", "z"]], p: [["p", "peu", "p"]], t: [["t", "teu", "t"]],
+    c: [["k", "keu", "c"]], b: [["b", "beu", "b"]], d: [["d", "deu", "d"]], g: [["g", "gueu", "g"]], ou: [["U", "ou", "ou"]], au: [["o", "o", "o"]],
+    on: [["O", "on", "on"]], oi: [["wa", "oua", "oi"]], an: [["A", "an", "an"]], en: [["A", "an", "an"]], ai: [["E", "est", "è"]], er: [["e", "et", "é"]],
+    fr: [["fr", "freu", "fr"], ["pr", "preu", "pr"], ["tr", "treu", "tr"], ["kr", "creu", "cr"], ["gr", "greu", "gr"], ["br", "breu", "br"], ["dr", "dreu", "dr"], ["vr", "vreu", "vr"]],
+    fl: [["fl", "fleu", "fl"], ["pl", "pleu", "pl"], ["kl", "cleu", "cl"], ["gl", "gleu", "gl"], ["bl", "bleu", "bl"]],
+    in: [["I", "hein", "in"]], ain: [["I", "hein", "in"]], un: [["I", "hein", "in"]], eu: [["2", "euh", "eu"]], k: [["k", "keu", "k"]], gn: [["N", "gneu", "gn"]],
+    ph: [["f", "feu", "f"]], gj: [["Z", "jeu", "j"]], cs: [["s", "seu", "s"]], ill: [["j", "ille", "ill"]], x: [["ks", "ksse", "x"]]
+  };
+  var PHONO_NEAR = { y: "Y", i: "j", U: "w", "2": "@", a: "A", o: "O" };   /* sons trop proches : jamais dans une image piège (chien pour i, oiseau pour ou…) */
+  var PHONO_SOLO = { voy: 1 };   /* voyelles : l’image piège n’exclut que la voyelle demandée */
+  function phonoKey(id) { var t = PHONO_SOUNDS[id]; return t ? t.map(function (x) { return x[0]; }).join(",") : ""; }
+  function phonoShuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  function phonoHas(p, code) { return p[2].indexOf(code) >= 0; }
+  /* n questions pour un son : { code, say, show, good: [image, mot, sons], opts: 3 images mélangées } */
+  function phonoBuild(id, n) {
+    var T = PHONO_SOUNDS[id];
+    if (!T) return [];
+    var targets = T.filter(function (t) { return PHONO_PICS.some(function (p) { return phonoHas(p, t[0]); }); });
+    if (!targets.length) return [];
+    var out = [], used = {}, lastT = null;
+    for (var q = 0; q < n; q++) {
+      var cand = targets.length > 1 ? targets.filter(function (t) { return t !== lastT; }) : targets, t = phonoShuffle(cand)[0];
+      lastT = t;
+      var goods = PHONO_PICS.filter(function (p) { return phonoHas(p, t[0]); });
+      var fresh = goods.filter(function (p) { return !used[p[1]]; });
+      if (!fresh.length) { goods.forEach(function (p) { used[p[1]] = 0; }); fresh = goods; }
+      var good = phonoShuffle(fresh)[0];
+      used[good[1]] = 1;
+      var bad = (PHONO_SOLO[id] ? [t] : T).map(function (x) { return x[0]; });
+      bad.slice().forEach(function (c) { if (PHONO_NEAR[c]) bad.push(PHONO_NEAR[c]); });
+      var traps = phonoShuffle(PHONO_PICS.filter(function (p) { return p[0] !== good[0] && !bad.some(function (c) { return phonoHas(p, c); }); })).slice(0, 2);
+      if (traps.length < 2) return out;
+      out.push({ code: t[0], say: t[1], show: t[2], good: good, opts: phonoShuffle([good].concat(traps)) });
+    }
+    return out;
+  }
+
   window.ZooExo = {
     LISTEN_ITEMS: LISTEN_ITEMS, LISTEN_SKIP: LISTEN_SKIP, SYL_VOWELS: SYL_VOWELS, SYL_E_WORDS: SYL_E_WORDS, LISTEN_SYL_CONS: LISTEN_SYL_CONS,
     LISTEN_SYL_VOW: LISTEN_SYL_VOW, SYL_NO_INVERSE: SYL_NO_INVERSE, SYL_SAY_FIX: SYL_SAY_FIX, LISTEN_WORDS: LISTEN_WORDS,
-    wordsFor: wordsFor, sylConsAll: sylConsAll, sylConsByG: sylConsByG, sylOK: sylOK, sylVowSay: sylVowSay, sylSay: sylSay, exoAuto: exoAuto
+    wordsFor: wordsFor, sylConsAll: sylConsAll, sylConsByG: sylConsByG, sylOK: sylOK, sylVowSay: sylVowSay, sylSay: sylSay, exoAuto: exoAuto,
+    PHONO_PICS: PHONO_PICS, PHONO_SOUNDS: PHONO_SOUNDS, phonoKey: phonoKey, phonoBuild: phonoBuild
   };
 })();
