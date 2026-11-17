@@ -176,7 +176,7 @@
   function paintBoard(board) {
     clear(board);
     var all = view.all || [];
-    if (!all.length) { board.appendChild(el("p", "muted", "Aucun élève pour l’instant : créez votre classe dans « Mes élèves »." )); return; }
+    if (!all.length) { board.appendChild(el("p", "muted", "Aucun élève pour l’instant : créez votre classe dans « Mes classes »." )); return; }
     var classes = [], seen = {}; all.forEach(function (x) { if (!seen[x.class_id]) { seen[x.class_id] = 1; classes.push({ id: x.class_id, name: x.class_name }); } });
     if (!seen[view.classId]) view.classId = classes[0].id;
     var studs = all.filter(function (x) { return x.class_id === view.classId; }), cls = classes.filter(function (c) { return c.id === view.classId; })[0];
