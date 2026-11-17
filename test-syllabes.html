@@ -12,22 +12,26 @@ button.go { background: #16a34a; color: #fff; border-color: #15803d; }
 .s.now { border-color: #16a34a; background: #effcf3; } .s.bad { border-color: #d6486b; background: #ffe9ee; }
 .s b { font-size: 1.2rem; min-width: 3.2rem; } .s small { color: #5b6577; flex: 1; } .s input { width: 22px; height: 22px; }
 .s button { padding: 4px 9px; }
+.seg button[aria-pressed="true"] { background: #1b2433; color: #fff; }
 #res { width: 100%; min-height: 90px; margin-top: 10px; font: inherit; }
 </style></head><body>
 <h1>Test des syllabes</h1>
 <p>Touchez <b>▶ Tout lire</b> et écoutez. Quand une syllabe est <b>épelée</b> (lettre par lettre) ou mal dite, cochez sa case (ou touchez-la après coup pour la relire).</p>
+<p><b>Voix du Zoo</b> = les sons enregistrés, joués dans les exercices (les mêmes sur toutes les tablettes). <b>Voix de l'appareil</b> = la voix de cette tablette, qui sert encore pour les consignes et les mots.</p>
+<div class="bar"><span class="seg"><button type="button" id="vz" aria-pressed="true">🎙 Voix du Zoo</button><button type="button" id="vd" aria-pressed="false">📱 Voix de l'appareil</button></span></div>
 <div class="bar"><button class="go" id="all">▶ Tout lire</button><button id="stop">⏹ Stop</button><button id="copy">📋 Copier la liste cochée</button><span id="cnt"></span></div>
 <div class="grid" id="grid"></div>
 <textarea id="res" readonly placeholder="La liste des syllabes cochées apparaît ici."></textarea>
 <script src="exo-data.js?v=2"></script>
+<script src="vendor/howler.core.min.js?v=2.2.4"></script>
+<script src="audio-lecture.js?v=1"></script>
 <script>
 (function () {
   function $(i) { return document.getElementById(i); }
   /* ===== règles des syllabes : exo-data.js ===== */
   var SYL_VOWELS = ZooExo.SYL_VOWELS, LISTEN_SYL_VOW = ZooExo.LISTEN_SYL_VOW, sylConsAll = ZooExo.sylConsAll, sylOK = ZooExo.sylOK, sylSay = ZooExo.sylSay;
 
-  var voices = [];
-  function speak(text) {
+  function device(text) {
     try {
       var u = new SpeechSynthesisUtterance(text); u.lang = "fr-FR"; u.rate = 0.8;
       var frs = (speechSynthesis.getVoices() || []).filter(function (v) { return /^fr/i.test(v.lang); }), frFR = frs.filter(function (v) { return /^fr[-_]FR/i.test(v.lang); });
@@ -36,33 +40,55 @@ button.go { background: #16a34a; color: #fff; border-color: #15803d; }
     } catch (e) { return null; }
   }
   /* toutes les syllabes de l'exercice : consonne + voyelle simple, puis consonne + voyelle-son (an, on, ou…) */
-  var items = [], seen = {};
-  function add(cg, v) { var w = cg + v; if (seen[w] || !sylOK(cg, v)) return; seen[w] = 1; items.push({ w: w, say: sylSay(cg, v) }); }
+  var devItems = [], seen = {};
+  function add(cg, v) { var w = cg + v; if (seen[w] || !sylOK(cg, v)) return; seen[w] = 1; devItems.push({ w: w, say: sylSay(cg, v) }); }
   sylConsAll().forEach(function (c) { Object.keys(SYL_VOWELS).forEach(function (v) { add(c.g, v); }); });
   sylConsAll().forEach(function (c) { Object.keys(LISTEN_SYL_VOW).forEach(function (id) { LISTEN_SYL_VOW[id].forEach(function (e) { add(c.g, e[0]); }); }); });
-  var grid = $("grid"), cur = -1, playing = false, rows = [];
-  items.forEach(function (it, i) {
-    var r = document.createElement("div"); r.className = "s";
-    r.innerHTML = '<input type="checkbox" aria-label="mal dite"><b></b><small></small><button type="button">▶</button>';
-    r.querySelector("b").textContent = it.w; r.querySelector("small").textContent = it.say === it.w ? "" : "dit « " + it.say + " »";
-    r.querySelector("input").addEventListener("change", function () { r.classList.toggle("bad", this.checked); count(); });
-    r.querySelector("button").addEventListener("click", function () { playing = false; speak(it.say); });
-    grid.appendChild(r); rows.push(r);
-  });
-  function count() {
-    var bad = items.filter(function (x, i) { return rows[i].querySelector("input").checked; });
-    $("cnt").textContent = items.length + " syllabes · " + bad.length + " cochée" + (bad.length > 1 ? "s" : "");
-    $("res").value = bad.map(function (x) { return x.w + " (dit « " + x.say + " »)"; }).join("\n");
+  /* Voix du Zoo : un élément par son enregistré, avec toutes les écritures qui le jouent */
+  function zooItems() {
+    var m = window.ZooAudio && ZooAudio.map(), by = {}, out = [];
+    if (!m) return [];
+    Object.keys(m.keys).forEach(function (k) { var c = m.keys[k]; var w = k.replace(/^.*:/, ""); by[c] = by[c] || []; if (by[c].indexOf(w) < 0) by[c].push(w); });
+    Object.keys(by).sort().forEach(function (c) { out.push({ w: by[c].slice(0, 4).join(" · "), say: c, clip: c }); });
+    return out;
   }
-  count();
+  var mode = "zoo", items = [], grid = $("grid"), cur = -1, playing = false, rows = [];
+  function say(it, fin) {
+    if (mode === "zoo") { if (!ZooAudio.play(it.clip, fin)) setTimeout(fin, 600); return; }
+    var u = device(it.say); if (u) { u.onend = fin; u.onerror = fin; } else setTimeout(fin, 1800);
+  }
+  function stopAll() { playing = false; try { speechSynthesis.cancel(); } catch (e) {} if (window.ZooAudio) ZooAudio.stop(); }
+  function build() {
+    stopAll(); grid.innerHTML = ""; rows = [];
+    items = mode === "zoo" ? zooItems() : devItems;
+    if (mode === "zoo" && !items.length) { grid.textContent = "Chargement des sons…"; setTimeout(build, 500); return; }
+    items.forEach(function (it) {
+      var r = document.createElement("div"); r.className = "s";
+      r.innerHTML = '<input type="checkbox" aria-label="mal dite"><b></b><small></small><button type="button">▶</button>';
+      r.querySelector("b").textContent = it.w; r.querySelector("small").textContent = it.say === it.w ? "" : "dit « " + it.say + " »";
+      r.querySelector("input").addEventListener("change", function () { r.classList.toggle("bad", this.checked); count(); });
+      r.querySelector("button").addEventListener("click", function () { stopAll(); say(it, function () {}); });
+      grid.appendChild(r); rows.push(r);
+    });
+    count();
+  }
+  function count() {
+    var bad = items.filter(function (x, i) { return rows[i] && rows[i].querySelector("input").checked; });
+    $("cnt").textContent = items.length + " sons · " + bad.length + " coché" + (bad.length > 1 ? "s" : "");
+    $("res").value = (bad.length ? (mode === "zoo" ? "Voix du Zoo :\n" : "Voix de l'appareil :\n") : "") + bad.map(function (x) { return x.w + " (dit « " + x.say + " »)"; }).join("\n");
+  }
   function next() {
     if (!playing) return; cur++; rows.forEach(function (r) { r.classList.remove("now"); });
     if (cur >= items.length) { playing = false; return; }
     rows[cur].classList.add("now"); rows[cur].scrollIntoView({ block: "center" });
-    var u = speak(items[cur].say); if (u) u.onend = function () { setTimeout(next, 900); }; else setTimeout(next, 1800);
+    say(items[cur], function () { setTimeout(next, mode === "zoo" ? 700 : 900); });
   }
-  $("all").addEventListener("click", function () { playing = true; cur = -1; next(); });
-  $("stop").addEventListener("click", function () { playing = false; speechSynthesis.cancel(); });
+  function setMode(m) { mode = m; $("vz").setAttribute("aria-pressed", m === "zoo"); $("vd").setAttribute("aria-pressed", m !== "zoo"); build(); }
+  $("vz").addEventListener("click", function () { setMode("zoo"); });
+  $("vd").addEventListener("click", function () { setMode("device"); });
+  $("all").addEventListener("click", function () { stopAll(); playing = true; cur = -1; next(); });
+  $("stop").addEventListener("click", stopAll);
   $("copy").addEventListener("click", function () { $("res").select(); try { document.execCommand("copy"); } catch (e) {} });
+  build();
 })();
 </script></body></html>

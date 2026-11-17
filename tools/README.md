@@ -34,3 +34,8 @@ Puis ouvrir dans le navigateur :
 - Vérifier aussi l'affichage téléphone (375 × 667).
 - Quand on modifie `demo.js` ou `demo-tour.js`, augmenter leur numéro de version (`demo.js?v=…` dans les deux pages, `demo-tour.js?v=…` dans `demo.js`) pour contourner le cache des navigateurs.
 - Migrations Supabase : d'abord un essai dans une transaction annulée (`raise exception 'DRYRUN_RESULT …'`), puis application seulement avec l'accord explicite de la personne responsable du projet, et ajout du fichier dans `supabase/migrations/`.
+
+## Sons enregistrés des syllabes (`audio/syllabes.mp3` + `.json`)
+- `python3 -m venv /tmp/zoo-venv && /tmp/zoo-venv/bin/pip install edge-tts` (une fois), puis depuis la racine : `/tmp/zoo-venv/bin/python -I tools/build_audio_sprite.py`.
+- Il faut `node`, `ffmpeg` et l'accès à `speech.platform.bing.com`. Le script lit la liste dans `exo-data.js` (`tools/audio_liste.js`) et dans `SONS_CP`, contrôle chaque son (durée + nombre de syllabes entendues), refait les sons suspects avec `HOMOPHONES`, puis écrit le fichier unique et sa carte.
+- Écouter le résultat : `test-syllabes.html` (« 🎙 Voix du Zoo »). Corriger un son : `DENISE_FIX` dans le script, relancer, augmenter `?v=` de `audio-lecture.js` dans zoo-connecte.html et test-syllabes (via `tools/make_test_syllabes.py`).

@@ -31,7 +31,7 @@ FLAP_HOOK = ("window.__flap={bird:bird,pipes:pipes,state:function(){return{t:t,d
              "setT:function(v){t=v;bi=FLAP_BANNERS.filter(function(x){return x<=v}).length}};")
 TILES_HOOK = ("window.__tiles={rows:function(){return rows},state:function(){return{t:t,lives:lives,score:score,dead:dead,ended:ended,started:started,model:target.model}},setT:function(v){t=v}};")
 HOOK_AT = 'if(!cloudMode){setMode();show("login");'
-HOOK = ("window.__t={mission:mission,aheadOK:aheadOK,ses:ses,nextStep:nextStep,dicteeNext:dicteeNext,dicteeStart:dicteeStart,dicteeEnd:dicteeEnd,enterStudent:enterStudent,data:data,LS:LS,G:G,finishScore:finishScore,winCoin:winCoin,coins:coins,listenEnd:listenEnd,listenStart:listenStart,show:show,listenPick:listenPick,"
+HOOK = ("window.__t={listenStopVoice:listenStopVoice,mission:mission,aheadOK:aheadOK,ses:ses,nextStep:nextStep,dicteeNext:dicteeNext,dicteeStart:dicteeStart,dicteeEnd:dicteeEnd,enterStudent:enterStudent,data:data,LS:LS,G:G,finishScore:finishScore,winCoin:winCoin,coins:coins,listenEnd:listenEnd,listenStart:listenStart,show:show,listenPick:listenPick,"
         "listenMine:listenMine,listenNeed:listenNeed,pendingWheels:pendingWheels,renderHome:renderHome,renderJeux:renderJeux,"
         "LISTEN_ITEMS:LISTEN_ITEMS,LISTEN_WORDS:LISTEN_WORDS,LISTEN_SYL_CONS:LISTEN_SYL_CONS,LISTEN_SYL_VOW:LISTEN_SYL_VOW,SYL_VOWELS:SYL_VOWELS,SYL_E_WORDS:SYL_E_WORDS,SYL_SAY_FIX:SYL_SAY_FIX,SYL_NO_INVERSE:SYL_NO_INVERSE,LISTEN_SKIP:LISTEN_SKIP,sylOK:sylOK,sylSay:sylSay,sylConsAll:sylConsAll,sylVowSay:sylVowSay,"
         "listenSpeak:listenSpeak,listenSay:listenSay,DS:DS,dicteeNext:dicteeNext,dicteeMine:dicteeMine,openWheel:openWheel,showEvolution:showEvolution,charFor:charFor,uid:uid,saveReview:saveReview,petState:petState,isValid:isValid,confetti:confetti};")
@@ -75,6 +75,10 @@ def main():
     shutil.copytree(os.path.join(ROOT, "img"), os.path.join(OUT, "img"), dirs_exist_ok=True)
     os.makedirs(os.path.join(OUT, "vendor"), exist_ok=True)   # client de secours pour anciens appareils (sans la vraie bibliothèque Supabase, remplacée par les faux serveurs)
     shutil.copy(os.path.join(ROOT, "vendor", "supabase-lite.js"), os.path.join(OUT, "vendor", "supabase-lite.js"))
+    shutil.copy(os.path.join(ROOT, "vendor", "howler.core.min.js"), os.path.join(OUT, "vendor", "howler.core.min.js"))   # sons enregistrés du Zoo
+    shutil.copytree(os.path.join(ROOT, "audio"), os.path.join(OUT, "audio"), dirs_exist_ok=True)
+    for name in ["audio-lecture.js", "test-syllabes.html"]:
+        shutil.copy(os.path.join(ROOT, name), os.path.join(OUT, name))
     shutil.copytree(os.path.join(ROOT, "guides"), os.path.join(OUT, "guides"), dirs_exist_ok=True)
     for name in ["fake-supabase.js", "fake-auth.js", "fake-labo.js", "fake-labo-fetch.js"]:
         shutil.copy(os.path.join(ROOT, "tools", name), os.path.join(OUT, name))

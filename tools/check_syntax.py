@@ -17,7 +17,7 @@ import sys
 import tempfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DEFAULT = ["zoo-connecte.html", "enseignants.html", "eleve.html", "index.html", "demo.js", "demo-tour.js", "install.js"]
+DEFAULT = ["zoo-connecte.html", "enseignants.html", "eleve.html", "index.html", "demo.js", "demo-tour.js", "install.js", "audio-lecture.js"]
 
 
 def source_of(path):

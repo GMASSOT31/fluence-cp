@@ -1736,6 +1736,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
 })();
 </script>
 <script src="exo-data.js?v=2"></script>
+<script src="vendor/howler.core.min.js?v=2.2.4"></script>
+<script src="audio-lecture.js?v=1"></script>
 <script>/* Anciens iPad (iOS 12 et avant) : le navigateur ne connaît pas les événements « pointer » → les jeux au doigt (Serpent, Oiseau, Tuiles, Tour, Safari) ne réagissaient pas. On les traduit en événements tactiles (ou souris sur un vieil ordinateur). Rien ne change sur les appareils récents. */
 (function () {
   if (window.PointerEvent || !window.EventTarget) return;
@@ -3845,7 +3847,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   }
 
   /* ---------- Écouter : progression, questions, voix ---------- */
-  var LS = { phase: "menu", sound: null, timers: [], audio: null, files: {} };
+  var LS = { phase: "menu", sound: null, timers: [] };
   function listenMine(sid) { if (!data.listen[sid]) data.listen[sid] = listenClean(null); return data.listen[sid]; }
   /* Mêmes sons, même ordre que « Lire » ; on ne garde que ceux qui s’entendent */
   function listenSounds() { return data.sounds.filter(function (s) { return !LISTEN_SKIP[s.id]; }); }
@@ -4102,7 +4104,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     return need > data.listenCfg.passes && !!(wordsOf(id).length || (mine && mine.words.length)) && !listenDone(sid, id) && (listenMine(sid).passes[id] || 0) === need - 1;
   }
 
-  /* Voix : fichier sons/<clé>.mp3 s’il existe, sinon synthèse vocale en français (texte réglable) */
+  /* Voix : syllabes et sons = enregistrements du Zoo (audio/syllabes.mp3, audio-lecture.js : même voix partout, jamais épelée) ;
+     consignes, mots et textes changés par l'enseignant = synthèse vocale de l'appareil, en français */
   /* Voix : sur les anciens iPad (Safari 12), parler juste après un cancel() est souvent perdu ou rejoue la phrase d’avant (« fo » au lieu de « fu »).
      On laisse donc un court délai après l’arrêt ; LS_SEQ garantit que seule la dernière demande est dite. */
   var LS_SEQ = 0;
@@ -4124,10 +4127,11 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   function listenStopVoice() {
     LS_SEQ++;
     try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}
-    if (LS.audio) { try { LS.audio.pause(); } catch (e) {} LS.audio = null; }
+    if (window.ZooAudio) ZooAudio.stop();
   }
   function listenSpeak(text, onEnd) {
     try {
+      if (window.ZooAudio) ZooAudio.stop();
       if (!window.speechSynthesis || !window.SpeechSynthesisUtterance) { if (onEnd) onEnd(); return; }
       var u = new window.SpeechSynthesisUtterance(text);
       u.lang = "fr-FR"; u.rate = 0.8; u.pitch = 1; u.volume = 1;
@@ -4180,16 +4184,9 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   }
   function listenSay(item) {
     listenStopVoice();
-    var url = "sons/" + item.key.replace(/[^a-z0-9:éèêàùôîû-]/gi, "").replace(":", "-") + ".mp3";
-    if (LS.files[url] === false) { listenSpeak(item.say); return; }
-    try {
-      var a = new Audio(url);
-      LS.audio = a;
-      var fallback = function () { if (LS.audio === a) { LS.files[url] = false; LS.audio = null; listenSpeak(item.say); } };
-      a.addEventListener("error", fallback);
-      var pr = a.play();
-      if (pr && pr.then) pr.then(function () { LS.files[url] = true; }, function (err) { if (!err || err.name !== "NotAllowedError") fallback(); });
-    } catch (e) { listenSpeak(item.say); }
+    /* Le texte n'a pas été changé par l'enseignant : on joue l'enregistrement du Zoo s'il existe (écriture « ba », « ch », « voy:a », puis texte dit) */
+    if (window.ZooAudio && item.say === item.dsay && (ZooAudio.play(item.key.replace(/^(syl|mot):/, "")) || ZooAudio.play(item.say))) return;
+    listenSpeak(item.say);
   }
   function listenClear() { LS.timers.forEach(clearTimeout); LS.timers = []; }
   /* Pendant une série d’écoute : l’écran entier est consacré à l’exercice (comme les jeux) */
