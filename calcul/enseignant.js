@@ -1,6 +1,6 @@
 /* Zoo de Calcul — espace enseignant INTÉGRÉ à enseignants.html (laboratoire privé).
    Chargé à la demande par labo-switch.js, seulement pour un compte autorisé (lab_my_access). N'ajoute rien aux autres comptes.
-   * Bascule « 📖 Lecture | ➕ Calcul » en haut du menu. En mode Calcul, les rubriques « Progression » et « Réglages péda » montrent le calcul
+   * Bascule « 📖 Lecture | ➕ Calcul » en haut du menu. En mode Calcul, les rubriques « Ma classe » et « Pédagogie » montrent le calcul
      (mêmes composants et mêmes classes que la lecture) ; les rubriques communes (classes, élèves, réglages généraux…) ne changent pas.
    * On n'a pas accès au code interne de la page : on réutilise ses boutons de menu (data-tab) et sa propre fonction d'affichage des panneaux
      (data-section), sans rien modifier de la lecture. Retour en « Lecture » = menu et panneaux exactement comme avant.
@@ -58,7 +58,7 @@
   var nav, bProg, bReg, bEcou, content;
   function build() {
     nav = $("nav.teacher-nav"); content = $(".teacher-content"); if (!nav || !content) return false;
-    bProg = $('[data-tab="pedagogie"]', nav); bReg = $('[data-tab="general"]', nav); bEcou = $('[data-tab="ecouter"]', nav);
+    bProg = $('[data-tab="pedagogie"]', nav); bReg = $('[data-tab="reglages"]', nav); bEcou = $('[data-tab="ecouter"]', nav);
     if (!bProg || !bReg) return false;
     /* bascule */
     var sw = el("div", "calc-switch"), bl = el("button", "", "📖 Lecture"), bc = el("button", "", "➕ Calcul"); bl.type = bc.type = "button";
@@ -90,9 +90,9 @@
     if (m === "calcul") {
       bProg.dataset.tab = "calc-progression"; bReg.dataset.tab = "calc-reglages"; if (bEcou) bEcou.classList.add("hidden");
       skin(true, banner);
-      if (cur === "pedagogie" || cur === "ecouter") bProg.click(); else if (cur === "general" || cur === "reglages") bReg.click();
+      if (cur === "pedagogie" || cur === "ecouter") bProg.click(); else if (cur === "reglages") bReg.click();
     } else {
-      bProg.dataset.tab = "pedagogie"; bReg.dataset.tab = "general"; if (bEcou) bEcou.classList.remove("hidden");
+      bProg.dataset.tab = "pedagogie"; bReg.dataset.tab = "reglages"; if (bEcou) bEcou.classList.remove("hidden");
       skin(false, banner);
       if (cur === "calc-progression") bProg.click(); else if (cur === "calc-reglages") bReg.click();
     }
@@ -308,7 +308,7 @@
   /* ===== Réglages péda du calcul (enregistrement automatique, comme en lecture) ===== */
   function renderSettings() {
     var box = $("#calcSettings"); clear(box);
-    box.appendChild(head("✏️", "Réglages péda du calcul", "Ces réglages ne concernent que le calcul : ils n’ont aucun effet sur la lecture."));
+    box.appendChild(head("🎓", "Pédagogie du calcul", "Ces réglages ne concernent que le calcul : ils n’ont aucun effet sur la lecture."));
     var st = el("span", "save-state", ""); st.id = "calcSave"; st.setAttribute("role", "status"); box.appendChild(st);
     var f = el("div", "calc-fields"); box.appendChild(f);
     rpc("lab_teacher_settings_get").then(function (s) {
