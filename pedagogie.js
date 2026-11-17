@@ -52,11 +52,14 @@
       answers = ok + ko; err = answers ? Math.round(ko * 100 / answers) : null;
       readTries = readOn[cur.id] || 0;
     }
-    var blocked = !!cur && ((answers >= 6 && err >= 40) || readTries >= 3);
+    /* lectures enregistrées pour la médaille, en attente d'écoute (jalon 4) : le son en cours n'est pas « bloqué » s'il attend l'écoute */
+    var recs = Array.isArray(p.reviews) ? p.reviews.filter(function (x) { return x && x.sound; }) : [];
+    var curSent = !!cur && recs.some(function (x) { return x.sound === cur.id; });
+    var blocked = !!cur && !curSent && ((answers >= 6 && err >= 40) || readTries >= 3);
     var flu = res.filter(function (r) { return !r.void && !r.short && !(Number(r.fraud) > 0) && r.src !== "adj" && Number(r.mclm) > 0; })
       .sort(function (a, b) { return (Number(b.ts) || 0) - (Number(a.ts) || 0); })[0] || null;
     return { s: s, p: p, nValid: nValid, total: order.length, cur: cur, err: err, answers: answers, readTries: readTries, blocked: blocked,
-      secs: secs, series: series, idle: idle, flu: flu, conf: st.conf && typeof st.conf === "object" ? st.conf : {}, measured: Object.keys(days).length > 0,
+      recs: recs.length, curSent: curSent, secs: secs, series: series, idle: idle, flu: flu, conf: st.conf && typeof st.conf === "object" ? st.conf : {}, measured: Object.keys(days).length > 0,
       allo: window.pedaAllo.indexOf(s.id) >= 0 };
   }
   function classify(rows) {
@@ -241,7 +244,8 @@
     var txt;
     if (r.inactive) txt = r.idle === null ? "Pas encore commencé" : "Inactif depuis " + r.idle + " jours";
     else if (!r.cur) txt = "Tous les sons validés 🎉";
-    else txt = "Son «\u00a0" + soundName(r.cur.id) + "\u00a0» · " + (r.blocked ? (r.err !== null && r.answers >= 6 ? "bloqué (" + r.err + " % d’erreurs)" : "bloqué (" + r.readTries + " lectures sans réussite)") : "en cours");
+    else txt = "Son «\u00a0" + soundName(r.cur.id) + "\u00a0» · " + (r.blocked ? (r.err !== null && r.answers >= 6 ? "bloqué (" + r.err + " % d’erreurs)" : "bloqué (" + r.readTries + " lectures sans réussite)") : (r.curSent ? "lecture enregistrée, à écouter" : "en cours"));
+    if (r.recs) txt += " · 🎧 " + plur(r.recs, "lecture à écouter", "lectures à écouter");
     prog.append(pbar, mk("small", null, r.nValid + "/" + r.total + " · " + txt));
     var flu = mk("div", "pb-flu", r.flu ? Math.round(Number(r.flu.mclm)) + "/min" : "—");
     flu.title = r.flu ? "Dernière lecture : " + Math.round(Number(r.flu.mclm)) + " corrects par minute (" + ({ s: "syllabes", m: "mots", t: "texte" }[r.flu.k] || "lecture") + ")" : "Pas encore de lecture";

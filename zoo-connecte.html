@@ -1345,7 +1345,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
         <p class="hint" id="mode-hint"></p>
       </div>
       <div id="gate" hidden>
-        <p>La lecture se fait avec le maître(sse). Il ou elle entre son mot de passe pour commencer.</p>
+        <p>Ton maître(sse) tape son mot de passe pour lancer l’enregistrement de ta lecture.</p>
         <div class="field">
           <label for="in-gate">Mot de passe du maître(sse)</label>
           <input type="password" id="in-gate" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" data-lpignore="true">
@@ -1422,7 +1422,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
         </div>
         <div class="row" style="justify-content:center">
           <button type="button" class="primary" id="btn-save">Enregistrer</button>
-          <button type="button" class="primary" id="btn-ask-eval" hidden>Je demande mon évaluation</button>
+          <button type="button" class="primary" id="btn-ask-eval" hidden>🎙 Je m’enregistre pour ma médaille</button>
           <button type="button" class="secondary" id="btn-discard">Ne pas enregistrer</button>
         </div>
       </div>
@@ -2173,7 +2173,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     pinChange: true,   /* l’élève peut changer son code secret : réglage du maître(sse), lu à la connexion */
     music: true,   /* musique de la salle de jeux : réglage du maître(sse), lu à la connexion */
     allowRec: false,  /* décochée par défaut ; le maître(sse) peut l’activer (réglages péda) */
-    evalCode: true,   /* mot de passe du maître(sse) demandé pour une évaluation en direct (réglages péda) */
+    evalCode: true,   /* mot de passe du maître(sse) demandé pour lancer un enregistrement et pour l’écouter (réglages péda) */
     credits: {},
     coins: {},
     wheels: [],
@@ -2511,6 +2511,12 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   function soundCertified(sid, sound) {
     return KINDS.some(function (k) { return hasContent(sound, k.k) && isValid(sid, sound, k.k); });
   }
+  /* Médaille = lecture ENREGISTRÉE avec le code du maître(sse), puis écoutée par lui (décidé le 17/11/2026, jalon 4).
+     Une lecture envoyée (en attente d'écoute) suffit pour avancer ; au plus REC_PENDING_MAX lectures en attente par élève. */
+  var REC_PENDING_MAX = 4;
+  function recCount(sid) { return data.reviews.filter(function (r) { return r.sid === sid; }).length; }
+  function recPending(sid, sound) { return data.reviews.some(function (r) { return r.sid === sid && r.sound === sound; }); }
+  function soundSent(sid, sound) { return soundCertified(sid, sound) || recPending(sid, sound); }
   /* un son où l'élève a déjà un résultat (entraînement ou évaluation) reste ouvert : personne n'est re-bloqué en cours de route */
   function hasAnyResult(sid, sound) {
     return data.results.some(function (r) { return r.sid === sid && r.sound === sound; });
@@ -2520,12 +2526,12 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     av.forEach(function (s, i) { if (s.id === sound) idx = i; });
     return idx > 0 ? av[idx - 1] : null;
   }
-  /* Un son se débloque quand au moins une étape du son précédent est CERTIFIÉE en évaluation (les entraînements seuls ne suffisent pas) */
+  /* Un son se débloque quand au moins une étape du son précédent est CERTIFIÉE 🏅 ou ENREGISTRÉE pour la médaille (les entraînements seuls ne suffisent pas) */
   function isUnlocked(sid, sound) {
     if (!data.lock) return true;
     var prev = prevAvail(sound);
     if (!prev) return true;
-    return soundCertified(sid, prev.id) || hasAnyResult(sid, sound);
+    return soundSent(sid, prev.id) || hasAnyResult(sid, sound);
   }
   function nextStep(sid) {
     var st = stepsList();
@@ -2683,7 +2689,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   function resetPath() { PATH = "listen"; pathChosen = false; document.body.classList.remove("path-read", "path-write"); }
   function show(v) {
     if (STUDENT_VIEWS.indexOf(v) >= 0 && ses.role !== "student") v = "login";
-    if (TEACHER_VIEWS.indexOf(v) >= 0 && ses.role !== "teacher") v = "login";
+    if (TEACHER_VIEWS.indexOf(v) >= 0 && ses.role !== "teacher" && !(v === "ecoute" && ses.role === "student")) v = "login";
+    if (v !== "ecoute") ses.ear = false;
     if (v !== "jeu") { stopGame(); gameFullscreen(false); }
     closeGameResult();
     Music.sync(v);
@@ -2892,8 +2899,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       tr.appendChild(el("small", "", "Autant que tu veux"));
       tr.addEventListener("click", function () { LR.goal = "train"; renderSetup(); });
       var va = el("button", "lire-big lire-eval", ""); va.type = "button";
-      va.appendChild(el("span", "lb-ico", "🏅")); va.appendChild(el("span", "lb-txt", "Valider un son"));
-      va.appendChild(el("small", "", "Avec ton maître(sse)"));
+      va.appendChild(el("span", "lb-ico", "🎙")); va.appendChild(el("span", "lb-txt", "Je m’enregistre"));
+      va.appendChild(el("small", "", "Pour ma médaille 🏅"));
       va.addEventListener("click", function () { LR.goal = "eval"; renderSetup(); });
       /* le choix conseillé est en vert : s'entraîner s'il reste une étape à travailler, sinon valider avec l'enseignant */
       (!nextStep(sid) && evalWaiting(sid) ? va : tr).classList.add("suggested");
@@ -2945,7 +2952,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var asStudent = ses.role === "student";
     $("fld-student").hidden = asStudent;
     $("setup-title").textContent = asStudent ? "Ma lecture" : "Qui lit ?";
-    $("btn-open").textContent = ses.goal === "eval" ? "Passer l’évaluation" : "Préparer la lecture";
+    $("btn-open").textContent = ses.goal === "eval" ? (asStudent ? "🎙 Je m’enregistre" : "Passer l’évaluation") : "Préparer la lecture";
     $("btn-back").textContent = asStudent ? "Changer d’étape" : "Changer d’élève ou d’étape";
     var picker = asStudent && !ses.viaTeacher;
     var lm = $("lire-menu");
@@ -2964,21 +2971,27 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if (picker) {
       setPressed($("seg-goal"), "data-goal", ses.goal);
       $("goal-hint").textContent = ses.goal === "train"
-        ? "Entraîne-toi autant que tu veux, seul(e), avec un camarade ou avec tes parents : celui qui t’écoute touche les mots où tu te trompes. Si tu atteins l’objectif et que tu enregistres, l’étape gagne une étoile ⭐. Pour ouvrir le son suivant, il faut réussir une évaluation avec ton enseignant."
-        : "Quand tu te sens prêt(e), passe l’évaluation avec ton maître(sse) : c’est elle qui certifie l’étape 🏅, te donne ta roue et fait monter ton niveau.";
+        ? "Entraîne-toi autant que tu veux, seul(e), avec un camarade ou avec tes parents : celui qui t’écoute touche les mots où tu te trompes. Si tu atteins l’objectif et que tu enregistres, l’étape gagne une étoile ⭐. Pour ouvrir le son suivant, enregistre ta lecture avec ton maître(sse) 🎙."
+        : "Quand tu te sens prêt(e), ton maître(sse) tape son mot de passe et tu enregistres ta minute de lecture 🎙. Il ou elle l’écoutera ensuite : c’est ce qui te donne ta médaille 🏅 et ta roue.";
     }
-    if (data.allowRec === false) ses.mode = "live";   /* lecture enregistrée désactivée par le maître(sse) */
-    $("fld-mode").hidden = !(picker && ses.goal === "eval") || data.allowRec === false;
-    if (asStudent && !ses.viaTeacher) {
+    /* Évaluation de l'élève = lecture ENREGISTRÉE sur la tablette, lancée avec le mot de passe du maître(sse), écoutée ensuite par lui
+       (jalon 4, décidé le 17/11/2026 : plus d'évaluation en direct). Bloquée si la tablette n'enregistre pas ou si 4 lectures attendent déjà. */
+    $("fld-mode").hidden = true;
+    var recBlock = "";
+    if (asStudent && !ses.viaTeacher && ses.goal === "eval") {
+      ses.mode = "rec";
       var sup = recSupport();
-      if (ses.mode === "rec" && sup) ses.mode = "live";
-      setPressed($("seg-mode"), "data-mode", ses.mode);
-      Array.prototype.forEach.call($("seg-mode").querySelectorAll("button"), function (b) { if (b.getAttribute("data-mode") === "rec") b.disabled = !!sup; });
-      $("mode-hint").textContent = ses.mode === "rec"
-        ? "Le micro enregistre ta minute de lecture. Le maître(sse) l’écoutera plus tard : tu auras ton score quand il ou elle l’aura écoutée."
-        : (sup ? "Pour lire seul(e) avec l’enregistrement : " + sup : "Le maître(sse) est avec toi et note ta lecture tout de suite.");
+      if (sup) recBlock = "Cette tablette ne peut pas enregistrer ta lecture : " + sup + " Demande à ton maître(sse).";
+      else if (recCount(ses.sid) >= REC_PENDING_MAX) recBlock = "Tu as déjà " + REC_PENDING_MAX + " lectures qui attendent ton maître(sse). Il ou elle doit d’abord les écouter (bouton « 🎧 Mon maître(sse) écoute » sur ta mission).";
     }
-    var gated = asStudent && ses.goal === "eval" && ses.mode === "live" && !ses.unlocked && data.evalCode !== false;
+    if (recBlock) {
+      $("gate").hidden = true; $("setup-form").hidden = true; $("setup-empty").hidden = false;
+      $("setup-empty-msg").textContent = recBlock;
+      $("go-students").textContent = "🎯 Ma mission";
+      $("go-students").onclick = function () { show("home"); };
+      return;
+    }
+    var gated = asStudent && !ses.viaTeacher && ses.goal === "eval" && !ses.unlocked && data.evalCode !== false;
     $("gate").hidden = !gated;
     if (gated) { $("setup-empty").hidden = true; $("setup-form").hidden = true; return; }
     if (asStudent) data.sel.sid = ses.sid;
@@ -3301,7 +3314,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       h0.appendChild(buildPet(st0, charFor(S.sound)));
       var thr0 = data.thr[S.kind], stars0 = ok ? 3 : (mclm >= thr0 * 0.75 ? 2 : 1);
       soundStars(S.sid, S.sound, S.kind, ok, false);
-      $("r-msg").textContent = ok ? "Bravo, tu atteins l’objectif ! Enregistre ton entraînement : l’étape gagnera une étoile ⭐. Pour la faire certifier 🏅, gagner la roue et ouvrir le son suivant, demande ton évaluation."
+      $("r-msg").textContent = ok ? "Bravo, tu atteins l’objectif ! Enregistre ton entraînement : l’étape gagnera une étoile ⭐. Pour gagner ta médaille 🏅, ta roue et ouvrir le son suivant, enregistre ta lecture avec ton maître(sse) 🎙."
         : (mclm >= thr0 * 0.75 ? "Presque ! Encore un entraînement et tu y es." : "Bien joué ! Chaque entraînement te fait progresser.");
       return;
     }
@@ -3376,7 +3389,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     saveTraining();
     ses.evalTarget = { sid: S.sid, sound: S.sound, kind: S.kind };
     ses.goal = "eval";
-    toast("Entraînement enregistré. Choisis comment passer l’évaluation.");
+    toast("Entraînement enregistré. Ton maître(sse) tape son mot de passe pour lancer l’enregistrement.");
     leaveSession(false);
     renderPanels();
   });
@@ -3387,7 +3400,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       saveTraining();
       var nowPassed = !wasPassed && isTrained(S.sid, S.sound, S.kind);
       if (nowPassed) { data.sel.sid = S.sid; applySuggestion(); save(); }
-      toast(nowPassed ? (evalWaiting(S.sid) ? "Réussi en entraînement ⭐ : prépare ton évaluation avec ton enseignant pour ouvrir la suite !" : "Réussi en entraînement ⭐ : tu passes à la suite !") : "Entraînement enregistré");
+      toast(nowPassed ? (evalWaiting(S.sid) ? "Réussi en entraînement ⭐ : enregistre ta lecture avec ton maître(sse) pour ouvrir la suite 🎙 !" : "Réussi en entraînement ⭐ : tu passes à la suite !") : "Entraînement enregistré");
       leaveSession(false);
       renderPanels();
       homeIfStudent();
@@ -3905,7 +3918,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     wb.hidden = !(data.reward && pw > 0);
     wb.textContent = pw > 1 ? "Lancer la roue (" + pw + ")" : "Lancer la roue";
     var pms = mission(sid);
-    $("pr-next").textContent = pms.sound ? { listen: "écouter", write: "écrire", read: "lire" }[pms.kind] + " : " + pms.sound.label : (pms.medal || evalWaiting(sid) ? "médaille à passer" : "tout est validé");
+    $("pr-next").textContent = pms.sound ? { listen: "écouter", write: "écrire", read: "lire" }[pms.kind] + " : " + pms.sound.label : (pms.medal || evalWaiting(sid) ? "lecture à enregistrer" : "tout est validé");
     $("pr-games").textContent = nb(cr, "partie", "parties");
     var minPrice = shopRewards().reduce(function (m, r) { return Math.min(m, r.price); }, data.shop.packPrice);
     $("pl-shop").textContent = cn >= minPrice ? "Tu peux acheter !" : "";
@@ -4560,16 +4573,16 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     return null;
   }
   /* ---------- Mission : un son = 3 étapes dans l'ordre (écouter, écrire, lire), puis le son suivant ----------
-     La lecture d'un son reste fermée tant que le son d'avant n'a pas sa médaille 🏅 (isUnlocked). Pour ne pas attendre l'adulte,
+     La lecture d'un son reste fermée tant que le son d'avant n'a pas sa médaille 🏅 ou sa lecture enregistrée (isUnlocked, soundSent). Pour ne pas attendre l'adulte,
      l'élève peut écouter et écrire jusqu'à MISSION_AHEAD sons après le premier son sans médaille (décidé le 16/11/2026). */
   var MISSION_AHEAD = 2;
   function aheadOK(sid, id) {
     if (!data.lock) return true;
     var av = availSounds(), idx = -1, front = av.length, i;
-    for (i = 0; i < av.length; i++) { if (av[i].id === id) idx = i; if (front === av.length && !soundCertified(sid, av[i].id)) front = i; }
+    for (i = 0; i < av.length; i++) { if (av[i].id === id) idx = i; if (front === av.length && !soundSent(sid, av[i].id)) front = i; }
     return idx < 0 || idx <= front + MISSION_AHEAD;
   }
-  /* Renvoie { sound, kind: listen|write|read, level, steps: [{k, st: done|go|wait|lock|medal}], medal: premier son lu ⭐ sans médaille, capped } */
+  /* Renvoie { sound, kind: listen|write|read, level, steps: [{k, st: done|go|wait|lock|medal|sent}], medal: premier son lu ⭐ sans médaille, capped } */
   function mission(sid) {
     var out = { sound: null, kind: null, level: null, steps: [], medal: null, capped: false };
     for (var i = 0; i < data.sounds.length; i++) {
@@ -4577,7 +4590,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       var cert = soundCertified(sid, s.id);   /* son déjà médaillé 🏅 en lecture : écoute et dictée comptées comme faites (pas de rattrapage imposé) */
       var L = !inL || cert || listenDone(sid, s.id), W = !inL || cert || dicteeDone(sid, s.id), todo = null, hasR = false;
       KINDS.forEach(function (k) { if (hasContent(s.id, k.k)) { hasR = true; if (!todo && !isPassed(sid, s.id, k.k)) todo = k.k; } });
-      var R = !hasR ? "none" : (todo ? (isUnlocked(sid, s.id) ? "wait" : "lock") : (cert ? "done" : "medal"));
+      var R = !hasR ? "none" : (todo ? (isUnlocked(sid, s.id) ? "wait" : "lock") : (cert ? "done" : (recPending(sid, s.id) ? "sent" : "medal")));
       if (R === "medal" && !out.medal) out.medal = s;
       var kind = null;
       if (!L || !W) {
@@ -4927,7 +4940,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     function pathCls(a) { return a.kind === "read" ? " go-blue" : (a.kind === "listen" ? " go-green" : (a.kind === "write" ? " go-yellow" : "")); }
     var card = el("div", "card home-hero");
     card.appendChild(el("h2", "", "Bonjour " + st.name + " !"));
-    var say = act ? "Bonjour " + st.name + " ! " + act.say : (waitEval ? "Bravo " + st.name + " ! Tu as réussi tes entraînements. Va voir ton maître ou ta maîtresse pour passer ta médaille." : "Bravo " + st.name + " ! Tu as tout réussi.");
+    var say = act ? "Bonjour " + st.name + " ! " + act.say : (waitEval ? "Bravo " + st.name + " ! Tu as réussi tes entraînements. Va voir ton maître ou ta maîtresse pour enregistrer ta lecture et gagner ta médaille." : "Bravo " + st.name + " ! Tu as tout réussi.");
     var row = el("div", "home-step");
     var petWrap = el("button", "home-pet"); petWrap.type = "button"; petWrap.setAttribute("aria-label", "Écouter la consigne");
     var pid = step ? step.pet : (nx ? nx.sound : null);
@@ -4963,7 +4976,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if (ms.medal && (!ms.sound || ms.medal.id !== ms.sound.id)) {
       mb = el("button", "ms-step ms-medal", ""); mb.type = "button";
       mb.appendChild(el("span", "ms-n", "🏅"));
-      var mt = el("span", "", "Médaille du son " + q(ms.medal.label)); mt.appendChild(el("small", "", "🙋 à passer avec ton maître(sse)"));
+      var mt = el("span", "", "Médaille du son " + q(ms.medal.label)); mt.appendChild(el("small", "", recCount(sid) >= REC_PENDING_MAX ? "⏳ ton maître(sse) doit d’abord écouter tes lectures" : "🎙 je m’enregistre avec mon maître(sse)"));
       mb.appendChild(mt);
       mb.addEventListener("click", function () {
         var lv = null; KINDS.forEach(function (k) { if (!lv && hasContent(ms.medal.id, k.k) && !isValid(sid, ms.medal.id, k.k)) lv = k.k; });
@@ -4978,12 +4991,13 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       ms.steps.forEach(function (x, i) {
         if (x.st === "go") col.appendChild(bigRow(step, i + 1, !!wheels));
         else if (x.st === "done") col.appendChild(smallRow(" done", "✅", NAMES[x.k], ""));
-        else if (x.st === "medal") col.appendChild(smallRow(" done", "⭐", NAMES[x.k], "🏅 médaille à passer avec ton maître(sse)"));
-        else col.appendChild(smallRow("", String(i + 1), NAMES[x.k], x.st === "lock" ? "🔒 après ta médaille du son d’avant" : ""));
+        else if (x.st === "medal") col.appendChild(smallRow(" done", "⭐", NAMES[x.k], "🎙 enregistre ta lecture pour ta médaille"));
+        else if (x.st === "sent") col.appendChild(smallRow(" done", "⏳", NAMES[x.k], "ta lecture attend ton maître(sse)"));
+        else col.appendChild(smallRow("", String(i + 1), NAMES[x.k], x.st === "lock" ? "🔒 après l’enregistrement du son d’avant" : ""));
       });
     } else if (!wheels) {
       var doneRow = el("div", "home-act-row");
-      doneRow.appendChild(el("p", "home-done", waitEval ? "Bravo ! Va voir ton maître(sse) pour passer ta médaille. 🏅" : "Tu as tout réussi. Bravo ! 🎉"));
+      doneRow.appendChild(el("p", "home-done", waitEval ? "Bravo ! Va voir ton maître(sse) pour enregistrer ta lecture. 🏅" : "Tu as tout réussi. Bravo ! 🎉"));
       doneRow.appendChild(sayBtn(say, "Écouter"));
       col.appendChild(doneRow);
     }
@@ -4997,7 +5011,10 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var waiting = data.reviews.filter(function (r) { return r.sid === sid; }).length;
     if (waiting) {
       var wcard = el("div", "card");
-      wcard.appendChild(el("p", "", waiting > 1 ? waiting + " lectures attendent que le maître(sse) les écoute." : "1 lecture attend que le maître(sse) l’écoute."));
+      wcard.appendChild(el("p", "", waiting > 1 ? "⏳ " + waiting + " lectures attendent que ton maître(sse) les écoute." : "⏳ 1 lecture attend que ton maître(sse) l’écoute."));
+      var ear = el("button", "secondary", "🎧 Mon maître(sse) écoute"); ear.type = "button";
+      ear.addEventListener("click", function () { ses.ear = false; RV.id = null; show("ecoute"); });
+      wcard.appendChild(ear);
       body.appendChild(wcard);
     }
   }
@@ -6872,6 +6889,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       var id = uid();
       return audioPut(id, blob).then(function () {
         data.reviews.push({ id: id, sid: S.sid, sound: S.sound, kind: S.kind, ts: Date.now(), secs: secs }); statDay(S.sid, 3);
+        ses.unlocked = false;   /* un mot de passe = un enregistrement */
         save();
         setPhase("recdone");
       });
@@ -6904,16 +6922,50 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var snd = soundById(rv.sound);
     return kindInfo(rv.kind).name + ", son " + q(snd ? snd.label : "supprimé");
   }
+  /* Élève connecté : le maître(sse) écoute sur la tablette de l'élève, après son mot de passe (jalon 4) */
+  function earBack() {
+    var b = el("button", "secondary", "← Retour à ma mission"); b.type = "button";
+    b.addEventListener("click", function () { ses.ear = false; closeReviewMedia(); show("home"); });
+    return b;
+  }
+  function earGate(body) {
+    var st = studentById(ses.sid), card = el("div", "card");
+    card.appendChild(el("h2", "", "🎧 Les lectures de " + (st ? st.name : "l’élève")));
+    card.appendChild(el("p", "hint", "Réservé au maître(sse) : tapez le mot de passe de votre espace enseignant pour écouter et noter."));
+    var f = el("div", "field"), lb = el("label", "", "Mot de passe du maître(sse)"), inp = document.createElement("input");
+    inp.type = "password"; inp.id = "in-ear"; inp.autocomplete = "off"; inp.setAttribute("autocapitalize", "none"); inp.spellcheck = false; inp.setAttribute("data-lpignore", "true");
+    lb.htmlFor = "in-ear"; f.appendChild(lb); f.appendChild(inp); card.appendChild(f);
+    var m = el("p", "hint", ""); m.setAttribute("role", "status");
+    var ok = el("button", "primary", "Écouter les lectures"); ok.type = "button";
+    function go() {
+      var code = inp.value; if (!code) { m.textContent = "Saisissez votre mot de passe."; return; }
+      inp.value = ""; m.textContent = "Vérification du mot de passe…"; ok.disabled = true;
+      Promise.resolve(cloudClient.rpc("verify_evaluation_code", { p_token: cloudToken, p_code: code })).then(function (r) {
+        ok.disabled = false;
+        if (r.error) { m.textContent = /Trop d/.test(r.error.message || "") ? r.error.message : "Vérification impossible. Réessayez lorsque la connexion fonctionne."; return; }
+        if (r.data) { ses.ear = true; renderEcoute(); } else m.textContent = "Mot de passe incorrect.";
+      }, function () { ok.disabled = false; m.textContent = "Vérification impossible. Réessayez lorsque la connexion fonctionne."; });
+    }
+    ok.addEventListener("click", go);
+    inp.addEventListener("keydown", function (ev) { if (ev.key === "Enter") go(); });
+    var row = el("div", "row"); row.appendChild(ok); row.appendChild(earBack());
+    card.appendChild(row); card.appendChild(m);
+    body.appendChild(card);
+    setTimeout(function () { try { inp.focus(); } catch (e) {} }, 50);
+  }
   function renderEcoute() {
     var body = $("ecoute-body");
     body.innerHTML = "";
     updateRecBadge();
+    var kid = ses.role === "student";
+    if (kid && !ses.ear) { if (data.evalCode === false) ses.ear = true; else { earGate(body); return; } }
     if (RV.id) { renderReview(body); return; }
     var card = el("div", "card");
     card.appendChild(el("h2", "", "Lectures à écouter"));
-    var list = data.reviews.slice().sort(function (a, b) { return a.ts - b.ts; });
+    var list = data.reviews.filter(function (r) { return !kid || r.sid === ses.sid; }).sort(function (a, b) { return a.ts - b.ts; });
+    if (kid) card.appendChild(earBack());
     if (!list.length) {
-      card.appendChild(el("p", "empty", "Aucune lecture en attente. Quand un élève lit seul avec l’enregistrement, elle apparaît ici."));
+      card.appendChild(el("p", "empty", kid ? "Toutes les lectures ont été écoutées. Merci !" : "Aucune lecture en attente. Quand un élève lit seul avec l’enregistrement, elle apparaît ici."));
       body.appendChild(card);
       return;
     }
@@ -6941,7 +6993,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if (!rv) return;
     var items = parseItems(contentOf(rv.sound, rv.kind));
     audioGet(id).then(function (blob) {
-      if (!blob) { toast("Cet enregistrement est introuvable. Tu peux supprimer la ligne."); return; }
+      if (!blob) { toast("Cette lecture n’est pas sur cette tablette : elle a été enregistrée sur une autre. Écoutez-la sur celle-ci, ou supprimez la ligne."); return; }
       closeReviewMedia();
       RV = { id: id, words: items.words, breaks: items.breaks, errs: {}, endIdx: -1, mode: "err", url: URL.createObjectURL(blob), rate: 1, result: null };
       renderEcoute();
@@ -7210,7 +7262,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
             var btn = el("button", "cell " + (ok ? "ok" : (pass ? "pass" : (b !== null || bt !== null ? "try" : ""))));
             btn.type = "button";
             btn.textContent = (pass || ok) ? (pass ? "⭐ " + bt : "") + (pass && ok ? " " : "") + (ok ? "🏅 " + b : "") : (b !== null ? String(b) : (bt !== null ? String(bt) : "–"));
-            if (pass && !ok) btn.title = "Réussi en entraînement : demande ton évaluation avec l’enseignant pour le faire certifier 🏅";
+            if (pass && !ok) btn.title = "Réussi en entraînement : enregistre ta lecture avec ton maître(sse) pour gagner ta médaille 🏅";
             btn.setAttribute("aria-label", k.name + ", son " + s.label + " : " + ((pass || ok) ? (pass ? "réussi en entraînement ⭐, meilleur score " + bt : "") + (pass && ok ? " ; " : "") + (ok ? "certifié par l’enseignant 🏅, meilleur score " + b : "") : (b !== null || bt !== null ? "à travailler, meilleur score " + (b !== null ? b : bt) : "à travailler, pas encore lu")));
             btn.disabled = !hasContent(s.id, k.k) || !unl;
             if (!unl) btn.setAttribute("aria-label", k.name + ", son " + s.label + " : verrouillé");
