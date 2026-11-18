@@ -325,7 +325,7 @@
     P.drawWeb(doc, T, ax.list, ref, W / 2, 108);
     doc.setLineWidth(0.7); doc.setDrawColor(91, 33, 182); doc.line(M, 66, M + 8, 66);
     doc.setFontSize(8.5); doc.setTextColor(70); doc.text(T(r.s.nickname), M + 10, 67);
-    if (ref) { doc.setLineWidth(0.4); doc.setDrawColor(150); doc.setLineDashPattern([1.2, 1.2], 0); doc.line(M, 71, M + 8, 71); doc.setLineDashPattern([], 0); doc.text(T("Élève moyen de la classe"), M + 10, 72); }
+    if (ref) { doc.setLineWidth(0.4); doc.setDrawColor(150); doc.setLineDashPattern([1.2, 1.2], 0); doc.line(M, 71, M + 8, 71); doc.setLineDashPattern([], 0); doc.text(T("Élève moyen (sans absents ni extrêmes)"), M + 10, 72); }
     doc.setLineWidth(0.7); doc.setDrawColor(46, 155, 100); doc.line(M, 76, M + 8, 76); doc.text(T("Attendu à cette date (semaine " + Math.round(ax.wk) + " sur " + P.YEAR_WEEKS + ")"), M + 10, 77);
     y = 170; doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.setTextColor(30); doc.text(T("Les 6 compétences"), M, y); y += 2;
     ax.list.forEach(function (a, i) {
@@ -354,7 +354,7 @@
   function makeFiches(list, clsName, btn, file) {
     var C2 = ctx(); if (!C2.pdfMake || !list.length) return;
     var ref = null;
-    if (view.rows.length >= 3) { var all = view.rows.map(function (r) { return calcAxes(r).list; }); ref = all[0].map(function (a, i) { var v = all.map(function (l) { return l[i].v; }).filter(function (x) { return x !== null; }); return v.length ? median(v) : null; }); }
+    ref = window.ZooPeda.refOf(view.rows.filter(function (r) { return !r.inactive; }).map(function (r) { return calcAxes(r).list; }));   /* sans les absents ni les extrêmes */
     C2.pdfMake({ btn: btn, msgId: "calcMsg", wait: "Création de la fiche…", file: file,
       title: list.length > 1 ? "Fiches de calcul de « " + clsName + " »" : "Fiche de calcul de " + list[0].s.nickname,
       ok: "📄 " + (list.length > 1 ? list.length + " fiches de suivi pour « " + clsName + " »" : "Fiche de suivi de " + list[0].s.nickname) + " : le PDF s’ouvre (sinon, regardez dans vos téléchargements).",
