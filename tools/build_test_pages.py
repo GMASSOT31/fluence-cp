@@ -76,6 +76,7 @@ def main():
     os.makedirs(os.path.join(OUT, "vendor"), exist_ok=True)   # client de secours pour anciens appareils (sans la vraie bibliothèque Supabase, remplacée par les faux serveurs)
     shutil.copy(os.path.join(ROOT, "vendor", "supabase-lite.js"), os.path.join(OUT, "vendor", "supabase-lite.js"))
     shutil.copy(os.path.join(ROOT, "vendor", "howler.core.min.js"), os.path.join(OUT, "vendor", "howler.core.min.js"))   # sons enregistrés du Zoo
+    shutil.copy(os.path.join(ROOT, "vendor", "qrcode.js"), os.path.join(OUT, "vendor", "qrcode.js"))   # QR codes des fiches de connexion
     shutil.copytree(os.path.join(ROOT, "audio"), os.path.join(OUT, "audio"), dirs_exist_ok=True)
     for name in ["audio-lecture.js", "test-syllabes.html"]:
         shutil.copy(os.path.join(ROOT, name), os.path.join(OUT, name))

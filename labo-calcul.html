@@ -367,7 +367,7 @@
   function boot() {
     if (!CFG.enabled) { gate("Cette page n’est pas disponible."); return; }
     try { token = sessionStorage.getItem("zoo_student_token"); } catch (e) {}
-    if (!token || token === "demo") { gate("Connecte-toi d’abord pour retrouver ton zoo.", { href: "eleve.html", label: "Me connecter" }); return; }
+    if (!token || token === "demo") { gate("Connecte-toi d’abord pour retrouver ton zoo.", { href: "eleve.html?vers=calcul", label: "Me connecter" }); return; }
     client = window.supabase.createClient(CFG.url, CFG.key);
     rpc("lab_my_access", { p_token: token }).then(function (a) {
       if (!a || !a.allowed) { gate("Cette page n’est pas disponible."); return; }
