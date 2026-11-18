@@ -57,6 +57,15 @@ def swap_backend(text, fake, token=False):
     raise SystemExit("Balise Supabase introuvable : la page a changé, adapter tools/build_test_pages.py")
 
 
+def make_test_voice(path):
+    """WAV mono 16 kHz de 0,4 s (bip à 660 Hz) : « voix de l'admin » des tests"""
+    import math, struct, wave
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with wave.open(path, "wb") as w:
+        w.setnchannels(1); w.setsampwidth(2); w.setframerate(16000)
+        w.writeframes(b"".join(struct.pack("<h", int(12000 * math.sin(2 * math.pi * 660 * i / 16000))) for i in range(6400)))
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
     zoo = swap_backend(read("zoo-connecte.html"), "fake-supabase.js", token=True)
@@ -64,6 +73,8 @@ def main():
         zoo = zoo.replace(HOOK_AT, HOOK + HOOK_AT, 1)
     zoo = zoo.replace("/*TEST_HOOK_FLAP*/", FLAP_HOOK, 1)   # accès à l'oiseau pour les tests (uniquement ici)
     zoo = zoo.replace("/*TEST_HOOK_TILES*/", TILES_HOOK, 1)
+    # « Mes sons » : ?voix=1 = une voix d'admin pour « on » (fichier de test fabriqué plus bas), sans appel au vrai serveur
+    zoo = zoo.replace('<script src="audio-lecture.js', '<script>window.ZOO_VOICES={map:/[?&]voix=1/.test(location.search)?{"on":"on-test.wav"}:{},base:"audio/test-voix/"};</script><script src="audio-lecture.js', 1)
     write("zoo-test.html", zoo)
     ens = swap_backend(read("enseignants.html"), "fake-auth.js")
     # le calcul intégré à l'espace enseignant : les appels lab_* de la page sont servis par l'API factice (sans remplacer le faux client de la page)
@@ -78,6 +89,7 @@ def main():
     shutil.copy(os.path.join(ROOT, "vendor", "howler.core.min.js"), os.path.join(OUT, "vendor", "howler.core.min.js"))   # sons enregistrés du Zoo
     shutil.copy(os.path.join(ROOT, "vendor", "qrcode.js"), os.path.join(OUT, "vendor", "qrcode.js"))   # QR codes des fiches de connexion
     shutil.copytree(os.path.join(ROOT, "audio"), os.path.join(OUT, "audio"), dirs_exist_ok=True)
+    make_test_voice(os.path.join(OUT, "audio", "test-voix", "on-test.wav"))
     for name in ["audio-lecture.js", "test-syllabes.html"]:
         shutil.copy(os.path.join(ROOT, name), os.path.join(OUT, name))
     shutil.copytree(os.path.join(ROOT, "guides"), os.path.join(OUT, "guides"), dirs_exist_ok=True)
