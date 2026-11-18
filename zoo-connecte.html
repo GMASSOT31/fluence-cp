@@ -4704,7 +4704,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     phonoQuestion();
   }
   /* La consigne puis les 3 mots, chacun avec son image qui s’allume.
-     Le son est détaché (demandé par Gabriel le 17/11/2026) : « Où entends-tu le son … [pause] on, je répète le son … [pause] on »,
+     Le son est détaché (demandé par Gabriel le 17/11/2026) : « Écoute bien … [pause] on. Touche l’image où tu entends … [pause] on »,
      dit avec l’enregistrement du Zoo quand il existe (consonnes avec « eu » : feu, cheu, freu…), sinon par la voix de l’appareil. */
   var PH_GAP = { before: 550, after: 350, words: 700, word: 250 };
   function phonoSay(text, done) {
@@ -4714,8 +4714,9 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   function phonoSpeak(Q, from) {
     var R = PH.run, say = Q.item.say, tok = Q.tok = (Q.tok || 0) + 1;
     /* étapes : [texte, enregistrement du Zoo ?, image allumée (-1 : aucune), pause après] */
-    var seq = [["Où entends-tu le son", false, -1, PH_GAP.before], [say, true, -1, PH_GAP.after],
-               ["Je répète le son", false, -1, PH_GAP.before], [say, true, -1, PH_GAP.words]];
+    /* consigne choisie par Gabriel le 18/11/2026 : « Écoute bien : an. Touche l’image où tu entends an. » */
+    var seq = [["Écoute bien", false, -1, PH_GAP.before], [say, true, -1, PH_GAP.after],
+               ["Touche l’image où tu entends", false, -1, PH_GAP.before], [say, true, -1, PH_GAP.words]];
     Q.item.opts.forEach(function (o, j) { seq.push([o[1], false, j, PH_GAP.word]); });
     var i = from || 0;
     function lit(k) { Q.btns.forEach(function (b, j) { b.classList.toggle("lit", j === k); }); }
