@@ -169,7 +169,7 @@
   function renderProgress() {
     var box = $("#calcProgress"); clear(box);
     box.appendChild(head("🏫", "Ma classe · calcul", "Écouter les nombres, additions et soustractions : ce qui demande votre attention, puis chaque élève. Les résultats de lecture sont dans l’espace Lecture."));
-    var msg = el("p", "msg", "Chargement…"); msg.setAttribute("role", "status"); box.appendChild(msg);
+    var msg = el("p", "msg", "Chargement…"); msg.id = "calcMsg"; msg.setAttribute("role", "status"); box.appendChild(msg);
     var board = el("div", "calc-board"); box.appendChild(board);
     Promise.all([rpc("lab_teacher_settings_get").catch(function () { return {}; }), rpc("lab_teacher_results")]).then(function (r) {
       settings = r[0] || {}; msg.textContent = ""; view.all = r[1] || []; view.loadedAt = new Date(); paintBoard(board);
@@ -192,6 +192,7 @@
     } else left.appendChild(el("strong", "pb-cname", "📚 " + cls.name));
     left.appendChild(el("span", "pb-count", studs.length + " " + pl(studs.length, "élève", "élèves")));
     var acts = el("div", "pb-acts"), rl = el("button", "secondary", "↻ Actualiser"); rl.type = "button"; rl.title = "Recharger les derniers résultats des élèves"; rl.addEventListener("click", renderProgress); acts.appendChild(rl);
+    if (ficheOK()) { var fa = el("button", "secondary", "📄 Fiches de suivi (PDF)"); fa.type = "button"; fa.title = "Une fiche par élève, avec sa toile des 6 compétences"; fa.addEventListener("click", function () { makeFiches(view.rows.slice().sort(function (a, b) { return String(a.s.nickname).localeCompare(b.s.nickname); }), cls.name, fa, "fiches-calcul-" + (ctx().pdfSlug(cls.name) || "classe")); }); acts.appendChild(fa); }
     if (view.loadedAt) { var tm = el("span", "pb-updated", "À jour à " + view.loadedAt.getHours() + " h " + ("0" + view.loadedAt.getMinutes()).slice(-2)); tm.style.cssText = "font-size:.85em;align-self:center;color:rgba(255,255,255,.85);white-space:nowrap"; acts.appendChild(tm); }
     hd.appendChild(left); hd.appendChild(acts); board.appendChild(hd);
     var rows = studs.map(analyse), med = classify(rows); view.rows = rows;
@@ -235,7 +236,7 @@
       var rank = { red: 0, yellow: 1, green: 2, idle: 3 }, shown = rows.filter(function (r) { return keepRow(r, view.filter); });
       shown.sort(function (a, b) { return rank[a.color] - rank[b.color] || a.done - b.done || String(a.s.nickname).localeCompare(b.s.nickname); });
       if (!shown.length) list.appendChild(el("p", "muted", "Aucun élève dans ce filtre."));
-      shown.forEach(function (r) { list.appendChild(lineCalc(r, tot, paint)); if (view.open[r.s.student_id]) { var d = el("div", "pb-detail calc-detail"); d.appendChild(detailGrid(r.lv)); d.appendChild(chiffres(r)); list.appendChild(d); } });
+      shown.forEach(function (r) { list.appendChild(lineCalc(r, tot, paint)); if (view.open[r.s.student_id]) { var d = el("div", "pb-detail calc-detail"); d.appendChild(detailGrid(r.lv)); d.appendChild(chiffres(r)); if (ficheOK()) { var fi = el("button", "secondary pb-see", "📄 Fiche de suivi (PDF)"); fi.type = "button"; fi.style.marginTop = "10px"; fi.title = "Fiche de suivi de " + r.s.nickname + " à imprimer : toile des 6 compétences"; (function (r, fi) { fi.addEventListener("click", function () { var c = view.all.filter(function (x) { return x.class_id === view.classId; })[0]; makeFiches([r], c ? c.class_name : "", fi, "fiche-calcul-" + (ctx().pdfSlug(r.s.nickname) || "eleve")); }); })(r, fi); d.appendChild(fi); } list.appendChild(d); } });
       Array.prototype.forEach.call(bar.children, function (b) { var on = b.getAttribute("data-f") === view.filter; b.classList.toggle("active", on); b.setAttribute("aria-pressed", String(on)); });
     }
     view.paint = paint;
@@ -288,6 +289,74 @@
      ["💤", String(rows.filter(function (r) { return r.inactive; }).length), "Élèves pas venus depuis " + IDLE_DAYS + " jours ou plus"]
     ].forEach(function (t) { var d = el("div", "pb-tile"); d.appendChild(el("span", "pb-ico", t[0])); d.appendChild(el("b", "", t[1])); d.appendChild(el("small", "", t[2])); tiles.appendChild(d); });
     sec.appendChild(tiles); return sec;
+  }
+  /* ===== Fiche de suivi PDF du calcul : même toile que la lecture (ZooPeda.drawWeb), 100 % = attendu à cette date =====
+     Écouter / Addition / Soustraction : étapes réussies ÷ (étapes proposées × semaines d’école / 36).
+     Du premier coup : bonnes réponses du premier coup, objectif 80 %. Rapidité : temps médian par réponse, objectif 5 s. Sans aide : réponses sans « Je m’aide » ni réécoute, objectif 90 %. */
+  var GOAL = { first: 80, ms: 5000, alone: 90 };
+  function ctx() { return window.ZooPedaCtx ? window.ZooPedaCtx() : {}; }
+  function ficheOK() { return !!(window.ZooPeda && window.ZooPeda.drawWeb && ctx().pdfMake); }
+  function calcAxes(r) {
+    var P = window.ZooPeda, wk = P.schoolWeeks(), lv = r.lv, q = 0, c = 0, h = 0, ms = [], list = [];
+    Object.keys(ACT).forEach(function (a) {
+      var ids = enabled(a), done = ids.filter(function (id) { return (lv[a + ":" + id] || {}).ok >= 1; }).length, exp = Math.max(1, Math.round(ids.length * wk / P.YEAR_WEEKS));
+      ids.forEach(function (id) { var e = lv[a + ":" + id]; if (!e || !e.q) return; q += e.q; c += e.c || 0; h += (e.h || 0) + (e.rp || 0); if (e.ms > 0) ms.push(e.ms); });
+      list.push({ name: ACT[a].title, v: Math.round(done * 100 / exp), txt: done + " " + pl(done, "étape", "étapes") + " · " + exp + " " + pl(exp, "attendue", "attendues"), tip: ids.length + " étapes dans l’année" });
+    });
+    var first = q ? Math.round(c * 100 / q) : null, alone = q ? Math.max(0, 100 - Math.round(h * 100 / q)) : null, med = ms.length ? median(ms) : null;
+    list.push({ name: "Du premier coup", v: first === null ? null : Math.round(first * 100 / GOAL.first), txt: first === null ? "pas encore mesuré" : first + " % des réponses", tip: "Objectif : " + GOAL.first + " % de bonnes réponses du premier coup" });
+    list.push({ name: "Rapidité", v: med === null ? null : Math.round(GOAL.ms * 100 / med), txt: med === null ? "pas encore mesuré" : String(Math.round(med / 100) / 10).replace(".", ",") + " s par réponse", tip: "Objectif : " + GOAL.ms / 1000 + " s par réponse ou moins" });
+    list.push({ name: "Sans aide", v: alone === null ? null : Math.round(alone * 100 / GOAL.alone), txt: alone === null ? "pas encore mesuré" : alone + " % sans aide", tip: "Sans « Je m’aide » ni réécoute ; objectif " + GOAL.alone + " %" });
+    return { list: list, wk: wk };
+  }
+  function ascii(t) { var T = ctx().pdfText; return T ? T(t) : String(t); }
+  function drawCalcFiche(doc, r, clsName, ref) {
+    var P = window.ZooPeda, ax = calcAxes(r), W = 210, M = 16, T = ascii, now = new Date(), y;
+    var dd = ("0" + now.getDate()).slice(-2) + "/" + ("0" + (now.getMonth() + 1)).slice(-2) + "/" + now.getFullYear();
+    doc.setFillColor(7, 95, 93); doc.roundedRect(M, 12, W - 2 * M, 14, 3, 3, "F");
+    doc.setTextColor(255); doc.setFont("helvetica", "bold"); doc.setFontSize(15); doc.text("Zoo de Calcul", M + 5, 21.4);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.text(T("Fiche de suivi · " + dd), W - M - 5, 21.2, { align: "right" });
+    doc.setTextColor(20); doc.setFont("helvetica", "bold"); doc.setFontSize(22); doc.text(T(r.s.nickname) || "?", M, 40);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10.5); doc.setTextColor(80);
+    doc.text(T("Classe : " + clsName).slice(0, 70), M, 47);
+    doc.text(T(r.done + " " + pl(r.done, "étape réussie", "étapes réussies") + " sur " + totalSteps() + " · prochaine étape : " + nextStep(r.lv)), M, 53);
+    P.drawWeb(doc, T, ax.list, ref, W / 2, 108);
+    doc.setLineWidth(0.7); doc.setDrawColor(91, 33, 182); doc.line(M, 66, M + 8, 66);
+    doc.setFontSize(8.5); doc.setTextColor(70); doc.text(T(r.s.nickname), M + 10, 67);
+    if (ref) { doc.setLineWidth(0.4); doc.setDrawColor(150); doc.setLineDashPattern([1.2, 1.2], 0); doc.line(M, 71, M + 8, 71); doc.setLineDashPattern([], 0); doc.text(T("Élève moyen de la classe"), M + 10, 72); }
+    doc.setLineWidth(0.7); doc.setDrawColor(46, 155, 100); doc.line(M, 76, M + 8, 76); doc.text(T("Attendu à cette date (semaine " + Math.round(ax.wk) + " sur " + P.YEAR_WEEKS + ")"), M + 10, 77);
+    y = 170; doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.setTextColor(30); doc.text(T("Les 6 compétences"), M, y); y += 2;
+    ax.list.forEach(function (a, i) {
+      y += 7; if (i % 2 === 0) { doc.setFillColor(226, 246, 242); doc.rect(M, y - 4.6, W - 2 * M, 7, "F"); }
+      doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(a.v === null ? 150 : 30); doc.text(T(a.name), M + 2, y);
+      doc.setFont("helvetica", "normal"); doc.text(T(a.txt), M + 40, y); doc.setTextColor(120); doc.setFontSize(8.5); doc.text(T(a.tip), M + 92, y);
+    });
+    y += 12; var colW = (W - 2 * M - 6) / 2, y0 = y;
+    function box(x, title, lines) {
+      var hh = 9 + lines.length * 5.6 + 2; doc.setDrawColor(220); doc.setLineWidth(0.3); doc.roundedRect(x, y0 - 5, colW, hh, 2.5, 2.5, "S");
+      doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(7, 95, 93); doc.text(T(title), x + 4, y0 + 1);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(9.5); doc.setTextColor(50);
+      lines.forEach(function (t, j) { doc.text(doc.splitTextToSize(T(t), colW - 8)[0], x + 4, y0 + 7.5 + j * 5.6); }); return hh;
+    }
+    var work = [];
+    if (r.stuck) work.push("Bloqué : " + ACT[r.stuck.act].title + " · " + ((E.levelInfo(r.stuck.act, r.stuck.id) || {}).label || r.stuck.id) + " (" + r.stuck.r + " séries sans réussite)");
+    ax.list.slice(3).forEach(function (a) { if (a.v !== null && a.v < 100) work.push(a.name + " : " + a.txt); });
+    if (!work.length) work.push("Rien de particulier.");
+    var act = ["Séries : " + r.series + " (Écouter " + r.week.nombres + " · Addition " + r.week.addition + " · Soustraction " + r.week.soustraction + ")",
+      r.nums + " " + pl(r.nums, "nombre reconnu", "nombres reconnus") + " · " + r.calcs + " " + pl(r.calcs, "calcul gagné", "calculs gagnés"),
+      r.idle === null ? "Pas encore d'activité" : "Dernière activité : " + whenTxt(r)];
+    box(M, "À travailler", work.slice(0, 4)); box(M + colW + 6, "Activité (7 derniers jours)", act);
+    doc.setFontSize(7.5); doc.setTextColor(140);
+    doc.text(T("zoodelecture.fr · 100 % = attendu à cette date (semaine " + Math.round(ax.wk) + " sur " + P.YEAR_WEEKS + ") ou objectif indiqué. Bord de la toile : 150 %."), M, 290);
+  }
+  function makeFiches(list, clsName, btn, file) {
+    var C2 = ctx(); if (!C2.pdfMake || !list.length) return;
+    var ref = null;
+    if (view.rows.length >= 3) { var all = view.rows.map(function (r) { return calcAxes(r).list; }); ref = all[0].map(function (a, i) { var v = all.map(function (l) { return l[i].v; }).filter(function (x) { return x !== null; }); return v.length ? median(v) : null; }); }
+    C2.pdfMake({ btn: btn, msgId: "calcMsg", wait: "Création de la fiche…", file: file,
+      title: list.length > 1 ? "Fiches de calcul de « " + clsName + " »" : "Fiche de calcul de " + list[0].s.nickname,
+      ok: "📄 " + (list.length > 1 ? list.length + " fiches de suivi pour « " + clsName + " »" : "Fiche de suivi de " + list[0].s.nickname) + " : le PDF s’ouvre (sinon, regardez dans vos téléchargements).",
+      build: function (doc) { list.forEach(function (r, i) { if (i) doc.addPage(); drawCalcFiche(doc, r, clsName, ref); }); } });
   }
   function statusTxt(e) { var s = E.status(e); return s === "mastered" ? "⭐ maîtrisé" : s === "done" ? "✓ réussi" : s === "todo" ? "🕒 à travailler" : "pas encore commencé"; }
   function detailGrid(lv) {
@@ -437,6 +506,7 @@
   }
 
   window.CalcTeacher = {
+    _fiche: { draw: function (d, r, n, f) { drawCalcFiche(d, r, n, f); }, view: view },
     init: function (a) {
       if (document.getElementById("calc-teacher-css") || !E || !C.url) return;
       role = a && a.role === "admin" ? "admin" : "teacher"; css();
