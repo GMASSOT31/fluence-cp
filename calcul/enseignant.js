@@ -123,7 +123,9 @@
     if (!ts) return "aucune activité"; var d = Math.floor((Date.now() - ts) / 864e5);
     return d <= 0 ? "aujourd’hui" : d === 1 ? "hier" : d < 31 ? "il y a " + d + " jours" : new Date(ts).toLocaleDateString("fr-FR");
   }
-  function lastTs(p) { var h = Array.isArray(p.hist) && p.hist.length ? p.hist[p.hist.length - 1] : null, t = h && Date.parse(h.t); return t || 0; }
+  /* le serveur écrit l’heure « 2026-11-18T10:00:00+00 » : sans « :00 » à la fin, les navigateurs ne savent pas la lire (élèves vus « jamais venus ») */
+  function tsOf(v) { var t = Date.parse(v); if (!t && typeof v === "string") t = Date.parse(v.replace(/([+-]\d\d)$/, "$1:00")); return t || 0; }
+  function lastTs(p) { var h = Array.isArray(p.hist) && p.hist.length ? p.hist[p.hist.length - 1] : null; return h ? tsOf(h.t) : 0; }
   function nextStep(levels) {
     var best = null;
     Object.keys(ACT).forEach(function (a) {
@@ -144,7 +146,7 @@
     Object.keys(ACT).forEach(function (a) {
       enabled(a).forEach(function (id) { var e = lv[a + ":" + id] || {}; if (e.ok >= 1) done++; else if ((e.r || 0) >= 3 && !stuck) stuck = { act: a, id: id, r: e.r }; });
     });
-    (Array.isArray(p.hist) ? p.hist : []).forEach(function (h) { var t = Date.parse(h && h.t), a = String(h && h.k || "").split(":")[0]; if (t && now - t < 7 * DAY && week[a] != null) week[a]++; });
+    (Array.isArray(p.hist) ? p.hist : []).forEach(function (h) { var t = tsOf(h && h.t), a = String(h && h.k || "").split(":")[0]; if (t && now - t < 7 * DAY && week[a] != null) week[a]++; });
     var ts = lastTs(p), idle = ts ? Math.floor((now - ts) / DAY) : null;
     return { s: s, lv: lv, done: done, stuck: stuck, week: week, series: week.nombres + week.addition + week.soustraction, idle: idle, ts: ts,
              nums: Object.keys(p.nums || {}).length, calcs: Object.keys(p.calcs || {}).length };
@@ -259,7 +261,13 @@
     prog.appendChild(tags);
     var nums = el("div", "pb-flu", "🔢 " + r.nums); nums.title = r.nums + " " + pl(r.nums, "nombre reconnu", "nombres reconnus") + " du premier coup";
     var open = !!view.open[r.s.student_id], btn = el("button", "pb-see pb-detail-btn" + (open ? " on" : ""), open ? "▲ Masquer" : "▼ Détails"); btn.type = "button"; btn.setAttribute("aria-expanded", String(open));
-    btn.addEventListener("click", function () { if (view.open[r.s.student_id]) delete view.open[r.s.student_id]; else view.open[r.s.student_id] = true; repaint(); });
+    btn.addEventListener("click", function () {
+      /* la liste est redessinée : on garde la ligne de l’élève au même endroit de l’écran (avant : la page remontait) */
+      var sid = r.s.student_id, top = d.getBoundingClientRect().top;
+      if (view.open[sid]) delete view.open[sid]; else view.open[sid] = true; repaint();
+      var nl = document.querySelector('#calcProgress .pb-row[data-sid="' + sid + '"]');
+      if (nl) { window.scrollBy(0, nl.getBoundingClientRect().top - top); var nb = nl.querySelector(".pb-detail-btn"); if (nb) try { nb.focus({ preventScroll: true }); } catch (e) {} }
+    });
     var btns = el("div", "pb-btns"); btns.appendChild(btn);
     [who, time, prog, nums, btns].forEach(function (x) { d.appendChild(x); }); return d;
   }

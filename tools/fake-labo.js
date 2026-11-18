@@ -107,13 +107,15 @@
       lab.settings = v; return v;
     },
     lab_teacher_results: function () {
+      /* même format d’heure que le vrai serveur (to_char … OF) : « 2026-11-18T10:00:00+00 » */
+      function pgTs(ms) { return new Date(ms).toISOString().slice(0, 19) + "+00"; }
       needTeacher();
       var rich = { levels: { "nombres:n1": { r: 3, q: 30, c: 27, rp: 4, h: 0, ms: 1800, ok: 2, best: 100, last: "2026-11-12T10:00:00+01:00" }, "nombres:n2": { r: 1, q: 10, c: 5, rp: 2, h: 0, ms: 2500, ok: 0, best: 50, last: "2026-11-12T10:00:00+01:00" },
                               "addition:a1": { r: 1, q: 10, c: 9, rp: 0, h: 1, ms: 2000, ok: 1, best: 90, last: "2026-11-12T10:00:00+01:00" } },
-                   hist: [{ t: new Date(Date.now() - 2 * 864e5).toISOString(), k: "nombres:n1", c: 9, n: 10, ok: true }], nums: { "3": 2, "7": 1, "10": 1 }, calcs: { "2+3": 1, "4+1": 2 } };
+                   hist: [{ t: pgTs(Date.now() - 2 * 864e5), k: "nombres:n1", c: 9, n: 10, ok: true }, { t: pgTs(Date.now() - 3600e3), k: "addition:a1", c: 9, n: 10, ok: true }], nums: { "3": 2, "7": 1, "10": 1 }, calcs: { "2+3": 1, "4+1": 2 } };
       return [{ student_id: "s1", nickname: "lea", class_id: "c1", class_name: "CP-A", progress: lab.me.hist.length ? { levels: lab.me.levels, hist: lab.me.hist, nums: lab.me.nums, calcs: lab.me.calcs } : rich },
               { student_id: "s2", nickname: "leo", class_id: "c1", class_name: "CP-A", progress: {} },
-              { student_id: "s3", nickname: "zoe", class_id: "c2", class_name: "CP-B", progress: {} }];
+              { student_id: "s3", nickname: "zoe", class_id: "c2", class_name: "CP-B", progress: {} }].concat(["naim","aya","naelle","amelie","nour","imran","adem","asva","ziyed","ines","sami","lina"].map(function (n, i) { return { student_id: "x" + i, nickname: n, class_id: "c1", class_name: "CP-A", progress: rich }; }));
     },
     lab_request_access: function () { if (role === "out") throw err("Accès refusé"); if (!lab.enabled) throw { message: "Laboratoire fermé" }; lab.myRequested = true; return { requested: true, allowed: false }; },
     lab_admin_decline: function (a) { needAdmin(); lab.requests = lab.requests.filter(function (r) { return r.teacher_id !== a.p_teacher; }); return null; },
