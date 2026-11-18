@@ -37,7 +37,7 @@
       "body.calc-mode .teacher-nav button.active{background:#075f5d}" +
       /* fond vert d’eau : on voit tout de suite qu’on est dans l’espace Calcul (la lecture garde son fond gris-violet) */
       "body.calc-mode{background:#dff3ec}body.calc-mode .teacher-content>.panel{background:#f4fcf9;border-color:#9fdcc8}" +
-      "body.calc-mode #calcProgress .pb-head{background:#075f5d}body.calc-mode #calcProgress .pb-detail-btn{background:#0b7f7d;border-color:#0b7f7d;color:#fff}body.calc-mode #calcProgress .pb-filter.active{background:#075f5d;border-color:#075f5d;color:#fff}" +
+      "body.calc-mode #calcProgress .pb-scope{border-color:#9fdcc8}body.calc-mode #calcProgress .pb-head{background:#e2f6f2;border-color:#9fdcc8}body.calc-mode #calcProgress .pb-lbl{color:#0b7f7d}body.calc-mode #calcProgress .pb-select{border-color:#7fd3bb}body.calc-mode #calcProgress .pb-count,body.calc-mode #calcProgress .pb-acts .secondary{border-color:#9fdcc8;color:#075f5d}body.calc-mode #calcProgress .pb-detail-btn{background:#0b7f7d;border-color:#0b7f7d;color:#fff}body.calc-mode #calcProgress .pb-filter.active{background:#075f5d;border-color:#075f5d;color:#fff}" +
       "body.calc-mode .calc-card{--accent:#0b7f7d;--soft:#e2f6f2}" +
       "body.calc-mode .calc-card .section-icon{background:#e2f6f2}" +
       "body.calc-mode header .zoo-hero{border-color:#7ff0c6;background:radial-gradient(circle at 83% 18%,rgba(255,196,69,.42),transparent 32%),radial-gradient(circle at 22% 120%,rgba(60,230,170,.42),transparent 45%),linear-gradient(125deg,#053b36 0%,#0a6a5c 57%,#06353a 100%);box-shadow:0 7px 0 #04302b,0 15px 30px rgba(5,60,50,.22)}" +
@@ -170,7 +170,7 @@
     var box = $("#calcProgress"); clear(box);
     box.appendChild(head("🏫", "Ma classe · calcul", "Écouter les nombres, additions et soustractions : ce qui demande votre attention, puis chaque élève. Les résultats de lecture sont dans l’espace Lecture."));
     var msg = el("p", "msg", "Chargement…"); msg.id = "calcMsg"; msg.setAttribute("role", "status"); box.appendChild(msg);
-    var board = el("div", "calc-board"); box.appendChild(board);
+    var board = el("div", "calc-board pb-scope"); box.appendChild(board);
     Promise.all([rpc("lab_teacher_settings_get").catch(function () { return {}; }), rpc("lab_teacher_results")]).then(function (r) {
       settings = r[0] || {}; msg.textContent = ""; view.all = r[1] || []; view.loadedAt = new Date(); paintBoard(board);
     }).catch(function () { msg.className = "msg err"; msg.textContent = "Impossible de charger les résultats de calcul. Réessayez dans un instant."; });
@@ -189,13 +189,13 @@
       classes.forEach(function (c) { var o = el("option", "", c.name); o.value = c.id; sel.appendChild(o); });
       sel.value = cls.id; sel.addEventListener("change", function () { view.classId = sel.value; view.open = {}; view.filter = "all"; paintBoard(board); });
       left.appendChild(el("span", "pb-lbl", "Classe")); left.appendChild(sel);
-    } else left.appendChild(el("strong", "pb-cname", "📚 " + cls.name));
+    } else { left.appendChild(el("span", "pb-lbl", "Classe")); left.appendChild(el("strong", "pb-cname", "📚 " + cls.name)); }
     left.appendChild(el("span", "pb-count", studs.length + " " + pl(studs.length, "élève", "élèves")));
     var acts = el("div", "pb-acts"), rl = el("button", "secondary", "↻ Actualiser"); rl.type = "button"; rl.title = "Recharger les derniers résultats des élèves"; rl.addEventListener("click", renderProgress); acts.appendChild(rl);
     var pc = ctx().allClasses && ctx().printLoginCards ? ctx().allClasses.filter(function (x) { return x.id === cls.id; })[0] : null;
     if (pc) { var cm = el("button", "secondary", "🖨️ Codes pour la maison"); cm.type = "button"; cm.title = "Fiches de connexion au Zoo de Calcul (adresse zoodelecture.fr/calcul et QR code), à donner aux familles"; cm.addEventListener("click", function () { ctx().printLoginCards(pc, "calcMsg", cm, true); }); acts.appendChild(cm); }
     if (ficheOK()) { var fa = el("button", "secondary", "📄 Fiches de suivi (PDF)"); fa.type = "button"; fa.title = "Une fiche par élève, avec sa toile des 6 compétences"; fa.addEventListener("click", function () { makeFiches(view.rows.slice().sort(function (a, b) { return String(a.s.nickname).localeCompare(b.s.nickname); }), cls.name, fa, "fiches-calcul-" + (ctx().pdfSlug(cls.name) || "classe")); }); acts.appendChild(fa); }
-    if (view.loadedAt) { var tm = el("span", "pb-updated", "À jour à " + view.loadedAt.getHours() + " h " + ("0" + view.loadedAt.getMinutes()).slice(-2)); tm.style.cssText = "font-size:.85em;align-self:center;color:rgba(255,255,255,.85);white-space:nowrap"; acts.appendChild(tm); }
+    if (view.loadedAt) { var tm = el("span", "pb-updated", "À jour à " + view.loadedAt.getHours() + " h " + ("0" + view.loadedAt.getMinutes()).slice(-2)); tm.style.cssText = "font-size:.85em;align-self:center;white-space:nowrap"; acts.appendChild(tm); }
     hd.appendChild(left); hd.appendChild(acts); board.appendChild(hd);
     var rows = studs.map(analyse), med = classify(rows); view.rows = rows;
     board.appendChild(todoCalc(rows)); board.appendChild(listCalc(rows)); board.appendChild(figuresCalc(rows, med)); board.appendChild(legend());

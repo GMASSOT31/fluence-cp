@@ -184,11 +184,16 @@ body.teacher-mode .teacher-header .teacher-nav button.active{background:#1b2433;
 .teacher-nav button.active .nav-ico{background:rgba(255,255,255,.14)}
 /* Deux espaces : Pédagogie / Paramétrage */
 /* Tableau de bord Pédagogie */
-.pb-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;background:#1b2433;color:#fff;border-radius:14px}
-.pb-class{display:flex;flex-wrap:wrap;align-items:center;gap:10px}.pb-cname{font-size:1.1rem}.pb-lbl{font-weight:700;opacity:.8}
-.pb-select{padding:8px 10px;border-radius:10px;border:0;font:inherit;font-weight:700;max-width:60vw}
-.pb-count{padding:3px 10px;border-radius:999px;background:rgba(255,255,255,.15);font-weight:700;font-size:.9rem}
-.pb-acts .secondary{background:#fff;color:#1b2433}
+/* Bloc de la classe (18/11/2026) : un cadre clair entoure toute la page ; en haut, comme l’onglet d’un classeur, le nom de la classe en grand */
+.pb-scope{border:2px solid #d9cff8;border-radius:18px;padding:0 14px 16px;background:#fff}
+.pb-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;background:#f2eefe;color:#1b2433;border-radius:14px}
+.pb-scope>.pb-head{margin:0 -14px 6px;border-radius:16px 16px 0 0;border-bottom:2px solid #d9cff8}
+.pb-class{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px}.pb-cname{font:800 1.45rem Fredoka,Figtree,sans-serif}
+.pb-lbl{width:100%;font-weight:800;font-size:.75rem;letter-spacing:.06em;text-transform:uppercase;color:#6b4fd0}
+.pb-head .pb-select{width:auto!important;min-height:0;font-size:1.45rem!important;font-family:Fredoka,Figtree,sans-serif!important;font-weight:800!important;line-height:1.2;padding:5px 34px 5px 12px;border-radius:12px;border:2px solid #c9bbf3;background-color:#fff;font:800 1.45rem Fredoka,Figtree,sans-serif;color:#1b2433;max-width:70vw;cursor:pointer}
+.pb-count{padding:3px 10px;border-radius:999px;background:#fff;border:1px solid #d9cff8;color:#4a3a8a;font-weight:700;font-size:.9rem}
+.pb-acts{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.pb-acts .secondary{background:#fff;color:#1b2433;border:1px solid #d9cff8}.pb-updated{color:#6b7385}
+@media (max-width:600px){.pb-scope{padding:0 10px 12px}.pb-scope>.pb-head{margin:0 -10px 6px}.pb-cname,.pb-head .pb-select{font-size:1.2rem!important}}
 .pb-sec{margin-top:22px}.pb-h{display:flex;align-items:center;gap:9px;margin:0 0 10px;font-size:1.08rem}.pb-h small{font-weight:600;color:#6b7385}
 .pb-num{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#1b2433;color:#fff;font-size:.9rem}
 .pb-alerts{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
@@ -464,7 +469,7 @@ body.teacher-mode .teacher-header .teacher-nav button.nav-improve.active,.teache
  <h3 style="margin:22px 0 8px">✉️ Messages du formulaire de contact</h3><p class="muted">Écrits sans compte depuis la page Contact du site. Répondez par e-mail.</p><p class="msg" id="ctMsg" role="status"></p><div id="ctList" class="content-list"></div>
 </section>
 </div>
-</section></main><script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=28"><\/script>':'<script src="vendor/supabase.js?v=2.118.0"><\/script>');})();</script><script src="profils.js?v=1"></script><script src="exo-data.js?v=5"></script><script src="vendor/qrcode.js?v=1.4.4"></script><script src="pedagogie.js?v=15"></script><script>
+</section></main><script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=28"><\/script>':'<script src="vendor/supabase.js?v=2.118.0"><\/script>');})();</script><script src="profils.js?v=1"></script><script src="exo-data.js?v=5"></script><script src="vendor/qrcode.js?v=1.4.4"></script><script src="pedagogie.js?v=16"></script><script>
 (function(){
 "use strict";
 /* Retour du lien « Mot de passe oublié » : on lit l’adresse avant que la bibliothèque Supabase ne la nettoie */
@@ -1455,5 +1460,5 @@ refresh();
 <script src="share.js" defer></script>
 <script src="install.js?v=1" defer></script>
 <script src="labo-config.js?v=1" defer></script>
-<script src="labo-switch.js?v=16" defer></script>
+<script src="labo-switch.js?v=17" defer></script>
 </body></html>
