@@ -424,6 +424,10 @@
     doc.setLineWidth(0.2); doc.setDrawColor(200);
     [50, 150].forEach(function (v) { var ps = []; for (var i = 0; i < n; i++) ps.push(pt(i, v / WEB_MAX)); poly(ps, "S"); });
     for (var i = 0; i < n; i++) { var e = pt(i, 1); doc.line(cx, cy, e[0], e[1]); }
+    /* surface de l’élève d’abord, en transparence : le cercle vert et les pointillés restent visibles par-dessus */
+    var vals = []; list.forEach(function (a, i) { vals.push(pt(i, F(a.v))); });
+    var gs = doc.GState ? function (o) { try { doc.setGState(new doc.GState({ opacity: o, "stroke-opacity": 1 })); } catch (e) {} } : function () {};
+    gs(0.55); doc.setFillColor(190, 170, 245); poly(vals, "F"); gs(1);
     var att = []; for (var j = 0; j < n; j++) att.push(pt(j, 100 / WEB_MAX));
     doc.setDrawColor(46, 155, 100); doc.setLineWidth(0.7); poly(att, "S");
     doc.setFontSize(7); doc.setTextColor(150); doc.text("50", cx + 1, cy - R / 3 - 0.8); doc.text("150 %", cx + 1, cy - R - 0.8);
@@ -432,8 +436,7 @@
       var rp = []; ref.forEach(function (v, i) { rp.push(pt(i, F(v))); });
       doc.setDrawColor(150); doc.setLineWidth(0.4); doc.setLineDashPattern([1.2, 1.2], 0); poly(rp, "S"); doc.setLineDashPattern([], 0);
     }
-    var vals = []; list.forEach(function (a, i) { vals.push(pt(i, F(a.v))); });
-    doc.setFillColor(214, 200, 250); doc.setDrawColor(91, 33, 182); doc.setLineWidth(0.7); poly(vals, "FD");
+    doc.setDrawColor(91, 33, 182); doc.setLineWidth(0.7); poly(vals, "S");
     list.forEach(function (a, i) {
       var p = vals[i]; if (a.v !== null) { doc.setFillColor(91, 33, 182); doc.circle(p[0], p[1], 1.1, "F"); }
       var l = pt(i, 1.17), al = Math.abs(l[0] - cx) < 2 ? "center" : (l[0] > cx ? "left" : "right");
@@ -462,7 +465,7 @@
     /* légende */
     doc.setLineWidth(0.7); doc.setDrawColor(91, 33, 182); doc.line(M, 66, M + 8, 66);
     doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(70); doc.text(T(r.s.nickname), M + 10, 67);
-    if (ref) { doc.setLineWidth(0.4); doc.setDrawColor(150); doc.setLineDashPattern([1.2, 1.2], 0); doc.line(M, 71, M + 8, 71); doc.setLineDashPattern([], 0); doc.text("Élève moyen de la classe", M + 10, 72); }
+    if (ref) { doc.setLineWidth(0.4); doc.setDrawColor(150); doc.setLineDashPattern([1.2, 1.2], 0); doc.line(M, 71, M + 8, 71); doc.setLineDashPattern([], 0); doc.text(T("Élève moyen (sans absents ni extrêmes)"), M + 10, 72); }
     doc.setLineWidth(0.7); doc.setDrawColor(46, 155, 100); doc.line(M, 76, M + 8, 76); doc.setTextColor(70); doc.text(T("Attendu à cette date (semaine " + Math.round(schoolWeeks()) + " sur " + YEAR_WEEKS + ")"), M + 10, 77);
 
     /* Tableau des 6 axes */
@@ -519,11 +522,19 @@
       ok: "📄 " + (list.length > 1 ? list.length + " fiches de suivi pour « " + cls.name + " »" : "Fiche de suivi de " + list[0].s.nickname) + " : le PDF s’ouvre (sinon, regardez dans vos téléchargements).",
       build: function (doc) { var ref = classRef(); list.forEach(function (r, i) { if (i) doc.addPage(); drawFiche(doc, r, cls, ref); }); } });
   }
-  /* valeur médiane de chaque axe dans la classe (au moins 3 élèves) */
+  /* Élève moyen de la classe (demandé par Gabriel le 18/11/2026) : sans les absents (pas venus depuis 7 jours ou jamais), puis, pour chaque axe,
+     sans les 2 plus faibles ni les 2 plus forts (1 et 1 de 5 à 7 élèves) ; moyenne du reste. Au moins 3 élèves présents. Sert aussi au calcul. */
+  function trimMean(v) {
+    v = v.filter(function (x) { return x !== null && x !== undefined; }).sort(function (a, b) { return a - b; });
+    if (!v.length) return null; var k = v.length >= 8 ? 2 : v.length >= 5 ? 1 : 0, w = v.slice(k, v.length - k);
+    return Math.round(w.reduce(function (a, x) { return a + x; }, 0) / w.length);
+  }
+  function refOf(lists) {
+    if (lists.length < 3) return null;
+    return lists[0].map(function (a, i) { return trimMean(lists.map(function (l) { return l[i].v; })); });
+  }
   function classRef() {
-    var rows = state.rows || []; if (rows.length < 3) return null;
-    var all = rows.map(function (r) { return axes(r).list; });
-    return all[0].map(function (a, i) { return a.v === null ? null : median(all.map(function (l) { return l[i].v || 0; })); });
+    return refOf((state.rows || []).filter(function (r) { return !r.inactive; }).map(function (r) { return axes(r).list; }));
   }
 
 
@@ -665,5 +676,5 @@
 
   /* « Mes classes » › « Voir mes élèves » : ouvrir Ma classe sur cette classe */
   function pick(id) { if (id && id !== state.classId) { state.classId = id; state.open = {}; state.filter = "all"; } }
-  window.ZooPeda = { pick: pick, asgLabel: asgLabel, asgState: asgState, asgStatusText: asgStatusText, render: render, openDetail: openDetail, analyse: analyse, classify: classify, axes: axes, drawFiche: drawFiche, drawWeb: drawWeb, schoolWeeks: schoolWeeks, YEAR_WEEKS: YEAR_WEEKS, state: state };
+  window.ZooPeda = { pick: pick, asgLabel: asgLabel, asgState: asgState, asgStatusText: asgStatusText, render: render, openDetail: openDetail, analyse: analyse, classify: classify, axes: axes, drawFiche: drawFiche, drawWeb: drawWeb, refOf: refOf, schoolWeeks: schoolWeeks, YEAR_WEEKS: YEAR_WEEKS, state: state };
 })();
