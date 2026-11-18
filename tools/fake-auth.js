@@ -30,7 +30,7 @@
       if (k[5]) res.push({ id: "f" + i, sound: order[k[1]], k: "s", src: "train", mclm: k[5], ts: now - k[2] * DAY });
       if (k[3]) Object.keys(k[3]).forEach(function (s2) { snd[s2] = { l: k[3][s2][0], w: [2, 3] }; });
       if (k[2] < 7) for (var d = k[2]; d < 7; d += 2) days[key(now - d * DAY)] = [300 + i * 60, 2, 1, 1, 2];
-      st.progress["p" + i] = { student_id: "p" + i, updated_at: new Date(now - k[2] * DAY).toISOString(), pending_coins: 0, progress: { results: res, reviews: i === 1 ? [{ id: "rv1", sid: "p1", sound: order[k[1]], kind: "s", ts: now - DAY, secs: 60 }] : [], listen: { done: lis }, dictee: { done: dic }, stats: { snd: snd, conf: k[4], days: days } } };
+      st.progress["p" + i] = { student_id: "p" + i, updated_at: new Date(now - k[2] * DAY).toISOString(), pending_coins: 0, progress: { results: res, reviews: i === 1 ? [{ id: "rv1", sid: "p1", sound: order[k[1]], kind: "s", ts: now - DAY, secs: 60, tab: 3 }] : [], listen: { done: lis }, dictee: { done: dic }, stats: { snd: snd, conf: k[4], days: days } } };
     });
     /* remédiation : Lucas a réussi « Tuiles b / d », Inaya a un exercice d’écoute pas encore fait */
     var T = now - 3 * DAY;

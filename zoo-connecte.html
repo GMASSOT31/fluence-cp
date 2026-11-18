@@ -304,6 +304,13 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   .ms-medal { width: 100%; margin: 0; text-align: left; cursor: pointer; background: #fff7e0; border: 2px dashed #e0a500; color: #6b4700; font-family: inherit; box-shadow: none; }
   .ms-medal .ms-n { border-color: #e0a500; }
   .home-next .ms-n { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; margin-right: 10px; border-radius: 50%; background: #fff; color: #333; font-size: .95rem; text-shadow: none; vertical-align: middle; }
+  .tab-ask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 9000; background: rgba(20,30,40,.55); display: flex; align-items: center; justify-content: center; padding: 12px; }
+  .tab-box { background: #fff; border-radius: 18px; padding: 16px; max-width: 560px; width: 100%; max-height: 94vh; overflow-y: auto; -webkit-overflow-scrolling: touch; text-align: center; }
+  .tab-box h2 { margin: 0 0 6px; }
+  .tab-grid { display: flex; flex-wrap: wrap; justify-content: center; margin: 10px 0; }
+  .tab-grid button { width: 52px; min-height: 48px; margin: 3px; padding: 0; font-size: 1.15rem; font-weight: 800; }
+  .tab-line { margin: 4px 0 10px; }
+  .tab-line button { margin-left: 6px; }
   .quit-ask { background: #fff4e0; border: 3px solid #f0a82e; border-radius: 16px; padding: 12px 14px; margin: 0 0 12px; text-align: center; }
   .quit-ask .quit-msg { font-weight: 800; font-size: 1.15rem; margin: 0 0 8px; color: #5a3a00; }
   .quit-ask .big-btn { margin: 6px 0; width: 100%; }
@@ -2894,7 +2901,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     try {
       var result=await cloudClient.rpc("verify_evaluation_code",{p_token:cloudToken,p_code:code});
       if(result.error){if(/Trop d/.test(result.error.message||"")){message.textContent=result.error.message;return;}throw result.error;}
-      if(result.data){ses.unlocked=true;message.textContent="";afterUnlock();}
+      if(result.data){ses.unlocked=true;message.textContent="";if(!tabNum()&&!recSupport())tabAsk(afterUnlock);else afterUnlock();}
       else{message.textContent="Mot de passe incorrect.";}
     } catch(err){message.textContent="Vérification impossible. Réessaie lorsque la connexion fonctionne.";}
   }
@@ -7514,7 +7521,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       if (!blob || !blob.size) throw new Error("empty");
       var id = uid();
       return audioPut(id, blob).then(function () {
-        data.reviews.push({ id: id, sid: S.sid, sound: S.sound, kind: S.kind, ts: Date.now(), secs: secs }); statDay(S.sid, 3);
+        data.reviews.push({ id: id, sid: S.sid, sound: S.sound, kind: S.kind, ts: Date.now(), secs: secs, tab: tabNum() || undefined }); statDay(S.sid, 3);
         ses.unlocked = false;   /* un mot de passe = un enregistrement */
         save();
         setPhase("recdone");
@@ -7526,6 +7533,32 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     });
   }
   $("btn-rec-back").addEventListener("click", function () { leaveSession(false); renderPanels(); homeIfStudent(); });   /* l’accueil montre l’étape suivante de la mission */
+
+  /* Numéro de la tablette (1 à 50, gardé sur l’appareil, demandé au maître(sse) au 1er enregistrement) : l’espace enseignant dit sur quelle tablette écouter */
+  var TAB_KEY = "zoo_tablette";
+  function tabNum() { try { var n = parseInt(localStorage.getItem(TAB_KEY), 10); return n >= 1 && n <= 50 ? n : 0; } catch (e) { return 0; } }
+  function tabAsk(done) {
+    var cur = tabNum(), ov = el("div", "tab-ask"), box = el("div", "tab-box"), grid = el("div", "tab-grid");
+    ov.setAttribute("role", "dialog"); ov.setAttribute("aria-label", "Numéro de cette tablette");
+    function close() { if (ov.parentNode) ov.parentNode.removeChild(ov); if (done) done(); }
+    box.appendChild(el("h2", "", "📱 Numéro de cette tablette"));
+    box.appendChild(el("p", "hint", "Pour le maître(sse) : touchez le numéro de cette tablette (écrivez-le au dos). Vous saurez où aller écouter les lectures. Demandé une seule fois."));
+    for (var i = 1; i <= 50; i++) (function (n) {
+      var b = el("button", n === cur ? "primary" : "secondary", String(n)); b.type = "button";
+      b.addEventListener("click", function () { try { localStorage.setItem(TAB_KEY, String(n)); } catch (e) {} close(); });
+      grid.appendChild(b);
+    })(i);
+    box.appendChild(grid);
+    var later = el("button", "secondary small", cur ? "Annuler" : "Plus tard"); later.type = "button";
+    later.addEventListener("click", close);
+    box.appendChild(later); ov.appendChild(box); document.body.appendChild(ov);
+  }
+  function tabLine() {
+    var n = tabNum(), p = el("p", "hint tab-line", n ? "📱 Cette tablette : n° " + n : "📱 Cette tablette n’a pas de numéro.");
+    var b = el("button", "secondary small", n ? "Changer" : "Lui donner un numéro"); b.type = "button";
+    b.addEventListener("click", function () { tabAsk(renderEcoute); });
+    p.appendChild(b); return p;
+  }
 
   /* ---------- Côté maître(sse) : écouter, noter, valider ---------- */
   var RV = { id: null, words: [], breaks: {}, errs: {}, endIdx: -1, mode: "err", url: null, rate: 1, result: null };
@@ -7588,6 +7621,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if (RV.id) { renderReview(body); return; }
     var card = el("div", "card");
     card.appendChild(el("h2", "", "Lectures à écouter"));
+    card.appendChild(tabLine());
     var list = data.reviews.filter(function (r) { return !kid || r.sid === ses.sid; }).sort(function (a, b) { return a.ts - b.ts; });
     if (kid) card.appendChild(earBack());
     if (!list.length) {
