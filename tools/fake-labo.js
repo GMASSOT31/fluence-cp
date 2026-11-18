@@ -25,7 +25,7 @@
     lab.settings = { levels: { nombres: ["n3", "n1", "n2", "n4"], addition: ["a1", "a2"], soustraction: ["s1"] } };
   }
   if (/[?&]egg=([a-z]+:[a-z0-9]+)/.test(q)) delete lab.me.levels[RegExp.$1];   /* ?all=1&egg=addition:a7 : toutes réussies sauf celle-ci (œuf à faire éclore) */
-  function earnedWheels() { var n = 0; for (var k in lab.me.levels) if ((lab.me.levels[k].ok || 0) >= 2) n++; return n; }
+  function earnedWheels() { var n = 0; for (var k in lab.me.levels) { var o = lab.me.levels[k].ok || 0; n += o >= 2 ? 2 : o >= 1 ? 1 : 0; } return n; }   /* une roue à la 1re étoile, une à la 2e (migration 20261129) */
   function wheelsLeft() { return Math.max(0, earnedWheels() - lab.wheelsUsed); }
   lab.wheelsUsed = earnedWheels() - (/[?&]wheel=1/.test(q) ? 1 : 0);   /* roues déjà gagnées au chargement = considérées comme utilisées (comme la migration) ; ?wheel=1 : une roue à tourner */
   if (/[?&]slice=(\d)/.test(q)) lab.nextSlice = +RegExp.$1;
