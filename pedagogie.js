@@ -368,6 +368,19 @@
      Chaque axe va de 0 à 100 %. Phonologie et compréhension : null tant que ces exercices n'existent pas dans le Zoo
      (progress.phono.done / progress.compr.done, mêmes clés que l'écoute et la dictée, seront lues automatiquement). */
   var KN = { s: "syllabes", m: "mots", t: "texte" };
+  /* Semaines d’école depuis la rentrée (1er septembre), sur 36 : vacances approchées (Toussaint, Noël, hiver, printemps ; l’écart entre zones est d’une semaine au plus).
+     La toile compare l’élève à ce qui est attendu à cette date (demandé par Gabriel le 18/11/2026) : 100 % = programme suivi au rythme de l’année. */
+  var YEAR_WEEKS = 36, WEB_MAX = 150;
+  function schoolWeeks(now) {
+    var d = new Date(now || Date.now()), y = d.getMonth() >= 7 ? d.getFullYear() : d.getFullYear() - 1, n = 0;
+    var off = [[new Date(y, 9, 17), new Date(y, 10, 2)], [new Date(y, 11, 19), new Date(y + 1, 0, 4)], [new Date(y + 1, 1, 13), new Date(y + 1, 2, 1)], [new Date(y + 1, 3, 10), new Date(y + 1, 3, 26)]];
+    for (var t = new Date(y, 8, 1); t <= d; t.setDate(t.getDate() + 1)) {
+      var wd = t.getDay(); if (wd === 0 || wd === 6) continue;
+      if (off.some(function (o) { return t >= o[0] && t < o[1]; })) continue; n++;
+    }
+    return Math.max(1, Math.min(YEAR_WEEKS, n / 5));
+  }
+  function expected(total) { return Math.max(1, Math.round(total * schoolWeeks() / YEAR_WEEKS)); }
   function doneCount(o, need) {
     o = o && typeof o === "object" ? o : {};
     var done = o.done && typeof o.done === "object" ? o.done : {}, passes = o.passes && typeof o.passes === "object" ? o.passes : {};
@@ -384,9 +397,9 @@
     var flu = (Array.isArray(p.results) ? p.results : []).filter(function (x) { return x && !x.void && !x.short && !(Number(x.fraud) > 0) && x.src !== "adj" && Number(x.mclm) > 0 && thr[x.k]; })
       .sort(function (a, b) { return (Number(b.ts) || 0) - (Number(a.ts) || 0); });
     var last3 = flu.slice(0, 3), sp = last3.length ? Math.round(last3.reduce(function (a, x) { return a + Math.min(1, Number(x.mclm) / thr[x.k]); }, 0) * 100 / last3.length) : null;
-    var pct = function (n) { return n === null ? null : Math.round(n * 100 / tot); };
-    var sons = function (n) { return n === null ? "pas encore mesuré" : n + " / " + r.total + " sons"; };
-    return { flu: flu, list: [
+    var exp = expected(tot), pct = function (n) { return n === null ? null : Math.round(n * 100 / exp); };
+    var sons = function (n) { return n === null ? "pas encore mesuré" : n + " " + (n > 1 ? "sons" : "son") + " · " + exp + " attendus"; };
+    return { flu: flu, exp: exp, list: [
       { k: "phono", name: "Phonologie", v: pct(nP), txt: sons(nP), tip: "Entendre un son dans un mot" },
       { k: "ecoute", name: "Écoute", v: pct(nL), txt: sons(nL), tip: "Reconnaître l'écriture d'un son entendu" },
       { k: "dictee", name: "Dictée", v: pct(nD), txt: sons(nD), tip: "Écrire un son, une syllabe, un mot entendus" },
@@ -402,6 +415,34 @@
   }
   function frDate(ts) { var d = new Date(ts); return ("0" + d.getDate()).slice(-2) + "/" + ("0" + (d.getMonth() + 1)).slice(-2) + "/" + d.getFullYear(); }
 
+  /* Toile d’araignée (partagée avec la fiche du calcul) : list = [{ name, v }] avec v en % de l’attendu ; bord = 150 %, cercle vert = 100 % (attendu) */
+  function drawWeb(doc, T, list, ref, cx, cy) {
+    var R = 39, n = list.length, F = function (v) { return Math.max(0.03, Math.min(WEB_MAX, v || 0) / WEB_MAX); };
+    function pt(i, f) { var a = -Math.PI / 2 + i * 2 * Math.PI / n; return [cx + Math.cos(a) * R * f, cy + Math.sin(a) * R * f]; }
+    function poly(pts, style) { var d = []; for (var i = 1; i < pts.length; i++) d.push([pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]]); doc.lines(d, pts[0][0], pts[0][1], [1, 1], style, true); }
+    doc.setLineWidth(0.2); doc.setDrawColor(200);
+    [50, 150].forEach(function (v) { var ps = []; for (var i = 0; i < n; i++) ps.push(pt(i, v / WEB_MAX)); poly(ps, "S"); });
+    for (var i = 0; i < n; i++) { var e = pt(i, 1); doc.line(cx, cy, e[0], e[1]); }
+    var att = []; for (var j = 0; j < n; j++) att.push(pt(j, 100 / WEB_MAX));
+    doc.setDrawColor(46, 155, 100); doc.setLineWidth(0.7); poly(att, "S");
+    doc.setFontSize(7); doc.setTextColor(150); doc.text("50", cx + 1, cy - R / 3 - 0.8); doc.text("150 %", cx + 1, cy - R - 0.8);
+    doc.setTextColor(46, 125, 80); doc.text("attendu", cx + 1, cy - R * 2 / 3 - 0.8);
+    if (ref) {
+      var rp = []; ref.forEach(function (v, i) { rp.push(pt(i, F(v))); });
+      doc.setDrawColor(150); doc.setLineWidth(0.4); doc.setLineDashPattern([1.2, 1.2], 0); poly(rp, "S"); doc.setLineDashPattern([], 0);
+    }
+    var vals = []; list.forEach(function (a, i) { vals.push(pt(i, F(a.v))); });
+    doc.setFillColor(214, 200, 250); doc.setDrawColor(91, 33, 182); doc.setLineWidth(0.7); poly(vals, "FD");
+    list.forEach(function (a, i) {
+      var p = vals[i]; if (a.v !== null) { doc.setFillColor(91, 33, 182); doc.circle(p[0], p[1], 1.1, "F"); }
+      var l = pt(i, 1.17), al = Math.abs(l[0] - cx) < 2 ? "center" : (l[0] > cx ? "left" : "right");
+      doc.setFont("helvetica", "bold"); doc.setFontSize(10.5); doc.setTextColor(a.v === null ? 160 : 30);
+      doc.text(T(a.name), l[0], l[1] + (l[1] < cy - 5 ? -2 : (l[1] > cy + 5 ? 4 : 1)), { align: al });
+      doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(a.v === null ? 160 : 90);
+      doc.text(a.v === null ? "(bientôt)" : a.v + " %", l[0], l[1] + (l[1] < cy - 5 ? 2.2 : (l[1] > cy + 5 ? 8.2 : 5.2)), { align: al });
+    });
+  }
+
   /* Dessine une fiche (une page A4) */
   function drawFiche(doc, r, cls, ref) {
     var T = C.pdfText, ax = axes(r), W = 210, M = 16;
@@ -415,33 +456,13 @@
     doc.text(T(r.nValid + " " + (r.nValid > 1 ? "sons validés" : "son validé") + " en lecture sur " + r.total + " · " + cur), M, 53);
 
     /* Toile d'araignée */
-    var cx = W / 2, cy = 108, R = 39, n = ax.list.length;
-    function pt(i, f) { var a = -Math.PI / 2 + i * 2 * Math.PI / n; return [cx + Math.cos(a) * R * f, cy + Math.sin(a) * R * f]; }
-    function poly(pts, style) { var d = []; for (var i = 1; i < pts.length; i++) d.push([pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]]); doc.lines(d, pts[0][0], pts[0][1], [1, 1], style, true); }
-    doc.setLineWidth(0.2); doc.setDrawColor(200);
-    [0.25, 0.5, 0.75, 1].forEach(function (f) { var ps = []; for (var i = 0; i < n; i++) ps.push(pt(i, f)); poly(ps, "S"); });
-    for (var i = 0; i < n; i++) { var e = pt(i, 1); doc.line(cx, cy, e[0], e[1]); }
-    doc.setFontSize(7); doc.setTextColor(150); ["25", "50", "75", "100 %"].forEach(function (t, j) { doc.text(t, cx + 1, cy - R * (j + 1) / 4 - 0.8); });
-    /* repère : l'élève du milieu de la classe, en pointillés */
-    if (ref) {
-      var rp = []; ref.forEach(function (v, i) { rp.push(pt(i, Math.max(0.03, (v || 0) / 100))); });
-      doc.setDrawColor(150); doc.setLineWidth(0.4); doc.setLineDashPattern([1.2, 1.2], 0); poly(rp, "S"); doc.setLineDashPattern([], 0);
-    }
-    var vals = []; ax.list.forEach(function (a, i) { vals.push(pt(i, Math.max(0.03, (a.v || 0) / 100))); });
-    doc.setFillColor(214, 200, 250); doc.setDrawColor(91, 33, 182); doc.setLineWidth(0.7); poly(vals, "FD");
-    ax.list.forEach(function (a, i) {
-      var p = vals[i]; if (a.v !== null) { doc.setFillColor(91, 33, 182); doc.circle(p[0], p[1], 1.1, "F"); }
-      var l = pt(i, 1.17), al = Math.abs(l[0] - cx) < 2 ? "center" : (l[0] > cx ? "left" : "right");
-      doc.setFont("helvetica", "bold"); doc.setFontSize(10.5); doc.setTextColor(a.v === null ? 160 : 30);
-      doc.text(T(a.name), l[0], l[1] + (l[1] < cy - 5 ? -2 : (l[1] > cy + 5 ? 4 : 1)), { align: al });
-      doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(a.v === null ? 160 : 90);
-      doc.text(a.v === null ? "(bientôt)" : a.v + " %", l[0], l[1] + (l[1] < cy - 5 ? 2.2 : (l[1] > cy + 5 ? 8.2 : 5.2)), { align: al });
-    });
+    drawWeb(doc, T, ax.list, ref, W / 2, 108);
 
     /* légende */
     doc.setLineWidth(0.7); doc.setDrawColor(91, 33, 182); doc.line(M, 66, M + 8, 66);
     doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(70); doc.text(T(r.s.nickname), M + 10, 67);
     if (ref) { doc.setLineWidth(0.4); doc.setDrawColor(150); doc.setLineDashPattern([1.2, 1.2], 0); doc.line(M, 71, M + 8, 71); doc.setLineDashPattern([], 0); doc.text("Élève moyen de la classe", M + 10, 72); }
+    doc.setLineWidth(0.7); doc.setDrawColor(46, 155, 100); doc.line(M, 76, M + 8, 76); doc.setTextColor(70); doc.text(T("Attendu à cette date (semaine " + Math.round(schoolWeeks()) + " sur " + YEAR_WEEKS + ")"), M + 10, 77);
 
     /* Tableau des 6 axes */
     var y = 170;
@@ -488,7 +509,7 @@
       });
     }
     doc.setFontSize(7.5); doc.setTextColor(140);
-    doc.text(T("zoodelecture.fr · Phonologie, écoute, dictée, lecture, compréhension : part des " + r.total + " sons du programme de la classe. Vitesse : 3 dernières lectures."), M, 290);
+    doc.text(T("zoodelecture.fr · 100 % = attendu à cette date : " + ax.exp + " sons sur les " + r.total + " de l’année (semaine " + Math.round(schoolWeeks()) + " sur " + YEAR_WEEKS + "). Vitesse : 3 dernières lectures / seuil."), M, 290);
   }
   function makeFiches(list, cls, btn, file) {
     if (!C.pdfMake) return;
@@ -643,5 +664,5 @@
 
   /* « Mes classes » › « Voir mes élèves » : ouvrir Ma classe sur cette classe */
   function pick(id) { if (id && id !== state.classId) { state.classId = id; state.open = {}; state.filter = "all"; } }
-  window.ZooPeda = { pick: pick, asgLabel: asgLabel, asgState: asgState, asgStatusText: asgStatusText, render: render, openDetail: openDetail, analyse: analyse, classify: classify, axes: axes, drawFiche: drawFiche, state: state };
+  window.ZooPeda = { pick: pick, asgLabel: asgLabel, asgState: asgState, asgStatusText: asgStatusText, render: render, openDetail: openDetail, analyse: analyse, classify: classify, axes: axes, drawFiche: drawFiche, drawWeb: drawWeb, schoolWeeks: schoolWeeks, YEAR_WEEKS: YEAR_WEEKS, state: state };
 })();
