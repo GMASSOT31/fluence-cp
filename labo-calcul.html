@@ -129,7 +129,7 @@
   }
   @media (max-width: 340px) { body.mode-student #zoo-top-stats .zoo-top-stat:nth-child(2) { display: none; } }   /* très petit écran (320 px) : on garde pièces et niveaux, les parties sont dans la salle de jeux */
   @media (max-width: 350px) { body.mode-student header .zoo-hero h1 { font-size: 1rem; } body.mode-student .zoo-top-stats { right: 3px; gap: 2px; } }   /* petit téléphone : la place revient aux 5 pastilles */
-  /* roue de la 2e étoile */
+  /* roue de chaque étoile (1re et 2e) */
   .wheel-go { background: linear-gradient(135deg, #f5a623, #e2572c) !important; color: #fff !important; border-color: #e2572c !important; }
   .cwheel-wrap { --size: min(78vw, 300px, 42vh); position: relative; width: var(--size); margin: 30px auto 18px; }
   .cwheel { width: 100%; aspect-ratio: 1; border-radius: 50%; box-shadow: 0 0 0 6px var(--ink); will-change: transform; } .cwheel svg { display: block; width: 100%; height: 100%; }
@@ -834,9 +834,9 @@
         b("Accueil", "secondary big-btn", function () { goTo("home"); });
         renderPanels();
       }
-      var mastered = res.success && res.inserted && after >= 2 && before < 2;   /* 2e étoile : une roue à tourner */
-      if (mastered) S.wheels++;
-      if (res.success && Math.min(after, 2) > Math.min(before, 2)) showEvolution({ act: act, lv: info2, from: { got: Math.min(before, 2), total: 2 }, to: { got: Math.min(after, 2), total: 2 }, onClose: function () { if (mastered) wheelScreen(bilan); else bilan(); } });
+      var star = res.success && res.inserted && Math.min(after, 2) > Math.min(before, 2);   /* chaque étoile gagnée (œuf éclos, puis animal qui grandit) : une roue à tourner (migration 20261129) */
+      if (star) S.wheels++;
+      if (res.success && Math.min(after, 2) > Math.min(before, 2)) showEvolution({ act: act, lv: info2, from: { got: Math.min(before, 2), total: 2 }, to: { got: Math.min(after, 2), total: 2 }, onClose: function () { if (star) wheelScreen(bilan); else bilan(); } });
       else bilan();
     }
     function send() {
@@ -969,7 +969,7 @@
     box.appendChild(card);
   }
 
-  /* ===== La roue (2e étoile d'une étape) : le lot est tiré par le serveur, la roue ne fait que l'afficher ===== */
+  /* ===== La roue (à chaque étoile d’une étape : réussie puis maîtrisée) : le lot est tiré par le serveur, la roue ne fait que l'afficher ===== */
   /* Les 8 cases sont celles de la roue du Zoo de Lecture (SLICES / SLICE_COLORS de zoo-connecte.html) et du serveur : t = « plays » (parties de jeu) ou « coins » (pièces d'or) */
   var WHEEL = [{ t: "plays", n: 1, label: "1 jeu", c: "#9fd6b0" }, { t: "coins", n: 5, label: "5 pièces", c: "#f5c542" }, { t: "plays", n: 2, label: "2 jeux", c: "#b98be6" }, { t: "plays", n: 1, label: "1 jeu", c: "#f0904a" },
                { t: "coins", n: 10, label: "10 pièces", c: "#f5c542" }, { t: "plays", n: 3, label: "3 jeux", c: "#8fc1f0" }, { t: "plays", n: 1, label: "1 jeu", c: "#e47fd0" }, { t: "plays", n: 2, label: "2 jeux", c: "#b98be6" }];
