@@ -43,9 +43,22 @@
     } catch (e) { failed = true; }
   }
   function stop() { try { if (howl) howl.stop(); } catch (e) {} cur = null; }
+  /* Le son de la tablette peut être « endormi » (iPad : après la voix de l'appareil, un appel, l'écran verrouillé…) : Howler joue alors
+     sans rien faire entendre. On le réveille d'abord ; s'il ne se réveille pas vite, la voix de l'appareil dit le texte (constaté le 18/11/2026 : « on » muet dans J'entends). */
+  function ctxState() { try { return window.Howler && Howler.ctx ? Howler.ctx.state : "running"; } catch (e) { return "running"; } }
   function play(t, fin) {
     var c = clipOf(t);
     if (!c || !loaded || failed || !howl) return false;
+    if (ctxState() !== "running") {
+      var ok = false, gone = false;
+      stop();
+      try { Howler.ctx.resume().then(function () { if (gone) return; ok = true; start(c, fin); }, function () {}); } catch (e) {}
+      setTimeout(function () { if (!ok) { gone = true; device(t, fin); } }, 400);
+      return true;
+    }
+    return start(c, fin);
+  }
+  function start(c, fin) {
     try {
       stop();
       var id = howl.play(c);

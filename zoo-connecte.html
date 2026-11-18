@@ -1784,7 +1784,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
 </script>
 <script src="exo-data.js?v=5"></script>
 <script src="vendor/howler.core.min.js?v=2.2.4"></script>
-<script src="audio-lecture.js?v=1"></script>
+<script src="audio-lecture.js?v=2"></script>
 <script>/* Anciens iPad (iOS 12 et avant) : le navigateur ne connaît pas les événements « pointer » → les jeux au doigt (Serpent, Oiseau, Tuiles, Tour, Safari) ne réagissaient pas. On les traduit en événements tactiles (ou souris sur un vieil ordinateur). Rien ne change sur les appareils récents. */
 (function () {
   if (window.PointerEvent || !window.EventTarget) return;
@@ -4674,7 +4674,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     for (var i = 0; i < data.sounds.length; i++) { if (data.sounds[i].id === id) return true; if (phonoKey(data.sounds[i].id) === k) return false; }
     return true;
   }
-  function phonoSay(id) { var t = (ZooExo.PHONO_SOUNDS || {})[id]; return t ? t.map(function (x) { return x[1]; }).join(", ") : id; }
+  /* ce que la voix dit du son (« on », « feu »…) — nom distinct de phonoSay plus bas (deux fonctions du même nom : la 2e écrasait la 1re, d’où « le son undefined ») */
+  function phonoName(id) { var t = (ZooExo.PHONO_SOUNDS || {})[id]; return t ? t.map(function (x) { return x[1]; }).join(", ") : id; }
   function phonoClear() { PH.timers.forEach(clearTimeout); PH.timers = []; }
   function phonoStop() { phonoClear(); if (PH.run) { listenStopVoice(); PH.run = null; } }
   function renderPhono() {
@@ -5183,7 +5184,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if (!ms || !ms.sound) return null;
     var s = ms.sound, KW = { s: "les syllabes", m: "les mots", t: "le texte" };
     if (ms.kind === "remed") { var rm = ms.remed; return { pet: rm.a.type === "tiles" ? (s ? s.id : null) : rm.next, kind: "remed", rk: rm.a.type, btn: remedLabel(rm.a, rm.next), say: "Ton maître ou ta maîtresse t’a donné un exercice. Touche le gros bouton pour commencer.", go: function () { remedGo(sid, rm.a, rm.next); } }; }
-    if (ms.kind === "phono") return { pet: s.id, kind: "phono", cls: " listen-go", btn: "🖼️ J’entends le son " + q(s.label), say: "Tu vas trouver les images où tu entends le son " + phonoSay(s.id) + ". Touche le gros bouton pour commencer.", go: function () { setPath("listen"); PH.pick = s.id; goTo("phono"); } };
+    if (ms.kind === "phono") return { pet: s.id, kind: "phono", cls: " listen-go", btn: "🖼️ J’entends le son " + q(s.label), say: "Tu vas trouver les images où tu entends le son " + phonoName(s.id) + ". Touche le gros bouton pour commencer.", go: function () { setPath("listen"); PH.pick = s.id; goTo("phono"); } };
     if (ms.kind === "listen") return { pet: s.id, kind: "listen", cls: " listen-go", btn: "👂 J’écoute le son " + q(s.label), say: "Tu vas écouter et retrouver le son " + s.label + ". Touche le gros bouton pour commencer.", go: function () { setPath("listen"); LS.pick = s.id; goTo("audition"); } };
     if (ms.kind === "write") return { pet: s.id, kind: "write", cls: " write-go", btn: "✏️ J’écris le son " + q(s.label), say: "Tu vas écouter et écrire le son " + s.label + ". Touche le gros bouton pour commencer.", go: function () { setPath("write"); DS.pick = s.id; goTo("dictee"); } };
     if (ms.kind === "compr") return { pet: s.id, kind: "compr", btn: "🧩 Je comprends les mots du son " + q(s.label), say: "Tu vas lire des mots et trouver leurs images. Touche le gros bouton pour commencer.", go: function () { setPath("read"); CP.pick = s.id; goTo("compr"); } };
