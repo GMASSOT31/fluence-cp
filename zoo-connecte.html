@@ -921,7 +921,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   body.reading-focus #cloud-status, body.reading-focus #bottom-nav { display: none !important; }
   body.reading-focus main { padding-bottom: 12px !important; }
   body.reading-focus .layout { grid-template-columns: minmax(0, 1fr) !important; }
-  body.reading-focus #session > .card:first-child { display: grid; grid-template-columns: minmax(110px, auto) minmax(0, 1fr) auto; grid-template-areas: "who trail timer" "inst inst ctrl"; align-items: center; gap: 2px 18px; padding: 10px 18px; margin-bottom: 10px; }
+  body.reading-focus #session > .card:first-child { display: grid; grid-template-columns: minmax(110px, auto) minmax(0, 1fr) auto; grid-template-areas: "who trail timer" "inst inst inst" "ctrl ctrl ctrl"; align-items: center; gap: 2px 18px; padding: 10px 18px; margin-bottom: 10px; }
   body.reading-focus #session .timer-row { display: contents; }
   body.reading-focus #session .timer-row > div:first-child { grid-area: who; min-width: 0; }
   body.reading-focus #session .timer-row .who { font-size: .95rem; }
@@ -933,13 +933,16 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   body.reading-focus #session .walker { bottom: 8px; font-size: 1.6rem; }
   body.reading-focus #session .goal { bottom: 8px; font-size: 1.3rem; }
   body.reading-focus #session .instruction { grid-area: inst; font-size: .9rem; margin: 0; min-height: 0; }
-  body.reading-focus #session #controls { grid-area: ctrl; justify-content: flex-end; flex-wrap: nowrap; gap: 8px; margin: 0; }
+  body.reading-focus #session #controls { grid-area: ctrl; flex-direction: column; align-items: center; justify-content: center; gap: 8px; margin: 6px 0 0; }
+  /* Démarrer / J’ai fini : le gros bouton au centre, bien visible (demandé par Gabriel le 18/11/2026) */
+  body.reading-focus #session #controls #btn-start, body.reading-focus #session #controls #btn-finished { font-size: 1.35rem; padding: 14px 40px; min-width: 240px; }
   body.reading-focus #session #controls button { padding: 9px 16px; }
   body.reading-focus #text-card { padding-top: 8px; padding-bottom: 8px; overflow-y: auto; }
   body.reading-focus #text-card .text { margin-top: 0; }
   @media (max-width: 700px) {
     body.reading-focus #session > .card:first-child { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "who timer" "trail trail" "inst inst" "ctrl ctrl"; }
-    body.reading-focus #session #controls { justify-content: flex-start; flex-wrap: wrap; }
+    body.reading-focus #session #controls { justify-content: center; flex-wrap: wrap; }
+    body.reading-focus #session #controls #btn-start, body.reading-focus #session #controls #btn-finished { min-width: 0; width: 100%; max-width: 340px; }
   }
   @media (max-width: 880px) {
     #cloud-status { bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !important; left: 8px !important; font-size: 11px !important; padding: 5px 9px !important; border-radius: 10px !important; opacity: .92; }
@@ -1457,6 +1460,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
         <div class="row" style="justify-content:center">
           <button type="button" class="primary" id="btn-save">Enregistrer</button>
           <button type="button" class="primary" id="btn-ask-eval" hidden>🎙 Je m’enregistre pour ma médaille</button>
+          <button type="button" class="primary go-next" id="btn-again" hidden>🔁 Je recommence</button>
           <button type="button" class="secondary" id="btn-discard">Ne pas enregistrer</button>
         </div>
       </div>
@@ -1464,7 +1468,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
         <div class="big-emoji" aria-hidden="true">🎧</div>
         <p class="msg">Bravo ! Ta lecture est enregistrée.</p>
         <p class="muted">Le maître(sse) va l’écouter. Tu auras ton score dès qu’il ou elle l’aura fait.</p>
-        <button type="button" class="primary" id="btn-rec-back">Retour</button>
+        <button type="button" class="primary go-next" id="btn-rec-back">Continuer ➜</button>
       </div>
     </div>
   </section>
@@ -3276,7 +3280,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     S.errs = {}; S.endIdx = -1; S.elapsed = 0; S.mode = "end";
     S.rec = ses.role === "student" && ses.goal === "eval" && ses.mode === "rec" && !ses.viaTeacher;
     S.train = ses.role === "student" && ses.goal === "train" && !ses.viaTeacher;
-    $("btn-finished").textContent = S.rec ? "J’ai fini" : "Terminé";
+    $("btn-finished").textContent = S.rec || ses.role === "student" ? "✅ J’ai fini" : "Terminé";
     $("btn-start").disabled = false;
     setPressed($("seg"), "data-mode", "end");
     $("who").textContent = studentById(sid).name;
@@ -3430,7 +3434,24 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     badge.className = "badge" + (ok ? " ok" : "");
     $("btn-save").textContent = S.train ? "Enregistrer mon entraînement" : "Enregistrer";
     $("btn-ask-eval").hidden = !(S.train && ok);
+    $("btn-save").hidden = false; $("btn-again").hidden = true; $("btn-discard").hidden = false; $("btn-discard").textContent = "Ne pas enregistrer";
+    $("btn-ask-eval").classList.remove("go-next");
     renderResultPet(mclm, ok);
+    /* Élève qui s’entraîne (18/11/2026, parcours simplifié avec Gabriel) : l’entraînement est gardé tout seul, puis UN seul gros bouton :
+       réussi et médaille à gagner → « 🎙 Je m’enregistre pour ma médaille » (petit : Plus tard) ; réussi, médaille déjà là ou lecture envoyée → « Continuer ➜ » ;
+       pas réussi → « 🔁 Je recommence » (petit : Accueil). */
+    if (S.train && ses.role === "student" && !ses.viaTeacher) {
+      var wasPassed = isTrained(S.sid, S.sound, S.kind);
+      saveTraining(); current.saved = true;
+      if (!wasPassed && isTrained(S.sid, S.sound, S.kind)) { applySuggestion(); save(); }
+      var medal = ok && !soundSent(S.sid, S.sound);
+      $("btn-ask-eval").hidden = !medal; $("btn-ask-eval").classList.toggle("go-next", medal);
+      $("btn-save").hidden = !(ok && !medal); $("btn-save").textContent = "Continuer ➜";
+      $("btn-again").hidden = ok;
+      $("btn-discard").hidden = ok && !medal; $("btn-discard").textContent = medal ? "Plus tard" : "🏠 Accueil";
+      if (ok) $("r-msg").textContent = medal ? "Bravo, tu as gagné une étoile ⭐ ! Pour ta médaille 🏅, enregistre ta lecture avec ton maître(sse) 🎙." : "Bravo, tu as gagné une étoile ⭐ !";
+      renderPanels();
+    }
     $("seg").hidden = true; $("btn-validate").hidden = true;
     setPhase("result");
     paintWords();
@@ -3442,15 +3463,16 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   }
   $("btn-ask-eval").addEventListener("click", function () {
     if (!current || !S.train) return;
-    saveTraining();
+    if (!current.saved) saveTraining();
     ses.evalTarget = { sid: S.sid, sound: S.sound, kind: S.kind };
     ses.goal = "eval";
-    toast("Entraînement enregistré. Ton maître(sse) tape son mot de passe pour lancer l’enregistrement.");
+    toast(current.saved ? "Ton maître(sse) tape son mot de passe pour lancer l’enregistrement." : "Entraînement enregistré. Ton maître(sse) tape son mot de passe pour lancer l’enregistrement.");
     leaveSession(false);
     renderPanels();
   });
   $("btn-save").addEventListener("click", function () {
     if (!current) return;
+    if (S.train && current.saved) { leaveSession(false); renderPanels(); homeIfStudent(); return; }   /* déjà gardé : « Continuer ➜ » */
     if (S.train) {
       var wasPassed = isTrained(S.sid, S.sound, S.kind);
       saveTraining();
@@ -3495,6 +3517,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     }
   });
   $("btn-discard").addEventListener("click", function () { leaveSession(false); homeIfStudent(); });
+  $("btn-again").addEventListener("click", function () { var snd = S.sound, k = S.kind; leaveSession(false); lireLaunch("train", snd, k); });
   /* Après une lecture, l'élève revient à l'accueil : il y retrouve l'unique gros bouton vert « étape suivante » (pas besoin de rechoisir dans les menus) */
   function homeIfStudent() { if (ses.role === "student" && !ses.viaTeacher && cloudToken) show("home"); }
   function leaveSession(suggest) {
@@ -7502,7 +7525,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       $("instruction").textContent = "L’enregistrement n’a pas pu être gardé. Recommence, ou demande au maître(sse).";
     });
   }
-  $("btn-rec-back").addEventListener("click", function () { leaveSession(false); });
+  $("btn-rec-back").addEventListener("click", function () { leaveSession(false); renderPanels(); homeIfStudent(); });   /* l’accueil montre l’étape suivante de la mission */
 
   /* ---------- Côté maître(sse) : écouter, noter, valider ---------- */
   var RV = { id: null, words: [], breaks: {}, errs: {}, endIdx: -1, mode: "err", url: null, rate: 1, result: null };
