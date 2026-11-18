@@ -192,6 +192,8 @@
     } else left.appendChild(el("strong", "pb-cname", "📚 " + cls.name));
     left.appendChild(el("span", "pb-count", studs.length + " " + pl(studs.length, "élève", "élèves")));
     var acts = el("div", "pb-acts"), rl = el("button", "secondary", "↻ Actualiser"); rl.type = "button"; rl.title = "Recharger les derniers résultats des élèves"; rl.addEventListener("click", renderProgress); acts.appendChild(rl);
+    var pc = ctx().allClasses && ctx().printLoginCards ? ctx().allClasses.filter(function (x) { return x.id === cls.id; })[0] : null;
+    if (pc) { var cm = el("button", "secondary", "🖨️ Codes pour la maison"); cm.type = "button"; cm.title = "Fiches de connexion au Zoo de Calcul (adresse zoodelecture.fr/calcul et QR code), à donner aux familles"; cm.addEventListener("click", function () { ctx().printLoginCards(pc, "calcMsg", cm, true); }); acts.appendChild(cm); }
     if (ficheOK()) { var fa = el("button", "secondary", "📄 Fiches de suivi (PDF)"); fa.type = "button"; fa.title = "Une fiche par élève, avec sa toile des 6 compétences"; fa.addEventListener("click", function () { makeFiches(view.rows.slice().sort(function (a, b) { return String(a.s.nickname).localeCompare(b.s.nickname); }), cls.name, fa, "fiches-calcul-" + (ctx().pdfSlug(cls.name) || "classe")); }); acts.appendChild(fa); }
     if (view.loadedAt) { var tm = el("span", "pb-updated", "À jour à " + view.loadedAt.getHours() + " h " + ("0" + view.loadedAt.getMinutes()).slice(-2)); tm.style.cssText = "font-size:.85em;align-self:center;color:rgba(255,255,255,.85);white-space:nowrap"; acts.appendChild(tm); }
     hd.appendChild(left); hd.appendChild(acts); board.appendChild(hd);
