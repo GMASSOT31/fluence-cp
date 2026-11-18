@@ -61,7 +61,7 @@
     var flu = res.filter(function (r) { return !r.void && !r.short && !(Number(r.fraud) > 0) && r.src !== "adj" && Number(r.mclm) > 0; })
       .sort(function (a, b) { return (Number(b.ts) || 0) - (Number(a.ts) || 0); })[0] || null;
     return { s: s, row: row || null, canRec: canRec, p: p, nValid: nValid, total: order.length, cur: cur, err: err, answers: answers, readTries: readTries, blocked: blocked,
-      recs: recs.length, curSent: curSent, secs: secs, series: series, idle: idle, flu: flu, conf: st.conf && typeof st.conf === "object" ? st.conf : {}, measured: Object.keys(days).length > 0,
+      recs: recs.length, recTabs: recs.map(function (x) { return Number(x.tab) || 0; }).filter(function (n, i, a) { return n && a.indexOf(n) === i; }).sort(function (a, b) { return a - b; }), curSent: curSent, secs: secs, series: series, idle: idle, flu: flu, conf: st.conf && typeof st.conf === "object" ? st.conf : {}, measured: Object.keys(days).length > 0,
       allo: window.pedaAllo.indexOf(s.id) >= 0, asg: (window.pedaAssign || {})[s.id] || null, remed: p.remed && typeof p.remed === "object" ? p.remed : null };
   }
   function classify(rows) {
@@ -186,7 +186,8 @@
     if (nRec) {
       var eb = mk("button", "pb-alert-btn", "🎧 Écouter maintenant"); eb.type = "button";
       eb.onclick = function () { C.showTab("ecouter"); };
-      card("a-rec", "🎧 " + plur(nRec, "lecture à écouter", "lectures à écouter") + " pour la médaille", recs, null, eb);
+      var where = recs.map(function (r) { return r.s.nickname + " : " + (r.recTabs.length ? "📱 tablette " + r.recTabs.join(", ") : "tablette sans numéro"); }).join(" · ");
+      card("a-rec", "🎧 " + plur(nRec, "lecture à écouter", "lectures à écouter") + " pour la médaille", recs, where, eb);
     }
     /* élèves bloqués, regroupés par son */
     var bySound = {};
@@ -299,7 +300,7 @@
     /* pastilles : dernière venue, lectures à écouter, peut s’enregistrer, exercice donné */
     var chips = mk("div", "pb-tags");
     chips.append(mk("span", "pb-tag" + (r.inactive ? " warn" : ""), "🕒 " + whenText(r)));
-    if (r.recs) chips.append(mk("span", "pb-tag alert", "🎧 " + plur(r.recs, "lecture à écouter", "lectures à écouter")));
+    if (r.recs) chips.append(mk("span", "pb-tag alert", "🎧 " + plur(r.recs, "lecture à écouter", "lectures à écouter") + (r.recTabs.length ? " · 📱 " + r.recTabs.join(", ") : "")));
     else if (r.canRec) { var cr = mk("span", "pb-tag next", "🎙 Peut enregistrer sa lecture"); cr.title = "Réussi en entraînement : " + r.s.nickname + " peut s’enregistrer (« 🎙 Je m’enregistre » dans son Zoo) pour gagner sa médaille 🏅."; chips.append(cr); }
     if (r.asg) { var ast = asgState(r.asg, r.remed); chips.append(mk("span", "pb-tag " + (ast.ok ? "ok" : "asg"), "🎯 " + asgLabel(r.asg) + " · " + asgStatusText(r.asg, r.remed))); }
     prog.append(chips);
