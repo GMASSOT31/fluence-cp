@@ -93,6 +93,7 @@
     if (!box || !C.currentUser) return;
     var classes = myClasses();
     box.replaceChildren();
+    box.classList.remove("pb-scope");
     if (!classes.length || !(C.allStudents || []).length) {
       var empty = mk("div", "pb-empty");
       empty.append(mk("p", null, "Vos élèves apparaîtront ici dès que vous aurez créé votre classe et inscrit vos élèves."));
@@ -105,14 +106,14 @@
     var studs = C.allStudents.filter(function (s) { return s.class_id === cls.id && !s.ghosted_at; });
 
     /* En-tête : classe + actions */
-    var head = mk("div", "pb-head");
+    var head = mk("div", "pb-head"); box.classList.add("pb-scope");
     var left = mk("div", "pb-class");
     if (classes.length > 1) {
       var sel = mk("select", "pb-select"); sel.setAttribute("aria-label", "Classe");
       classes.forEach(function (c) { var o = mk("option", null, c.name + (c.teacher_id !== C.currentUser.id ? " (autre enseignant)" : "")); o.value = c.id; sel.append(o); });
       sel.value = cls.id; sel.onchange = function () { state.classId = sel.value; state.open = {}; render(); };
       left.append(mk("span", "pb-lbl", "Classe"), sel);
-    } else left.append(mk("strong", "pb-cname", "📚 " + cls.name));
+    } else left.append(mk("span", "pb-lbl", "Classe"), mk("strong", "pb-cname", "📚 " + cls.name));
     left.append(mk("span", "pb-count", plur(studs.length, "élève", "élèves")));
     head.append(left);
     var acts = mk("div", "pb-acts");
@@ -125,7 +126,7 @@
        (et rechargement automatique quand on revient sur la page, voir plus bas) */
     var rl = mk("button", "secondary", "↻ Actualiser"); rl.type = "button"; rl.title = "Recharger les derniers résultats des élèves";
     rl.onclick = function () { render(); };
-    var when = mk("span", "pb-updated", ""); when.setAttribute("aria-live", "polite"); when.style.cssText = "font-size:.85em;align-self:center;color:rgba(255,255,255,.85);white-space:nowrap";
+    var when = mk("span", "pb-updated", ""); when.setAttribute("aria-live", "polite"); when.style.cssText = "font-size:.85em;align-self:center;white-space:nowrap";
     acts.prepend(rl, when);
     head.append(acts);
     box.append(head, mk("p", "msg", null));
