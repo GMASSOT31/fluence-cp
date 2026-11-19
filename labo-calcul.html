@@ -522,14 +522,25 @@
     return null;
   }
   /* Deux mains (images « Count on fingers » de dkdlv, Openclipart, domaine public : img/mains/main-0 à main-5.svg ; le poing main-0 est la main « 1 » sans le pouce) :
-     `up` doigts levés, pouce puis index, majeur… sur la 1re main, puis la 2e ; pouces vers l'extérieur (la main de gauche est retournée) */
-  function handsSvg(up) {
-    var a = Math.min(up, 5), b = Math.max(0, up - 5);
-    return '<div class="hands" role="img" aria-label="' + up + (up > 1 ? " doigts levés" : " doigt levé") + ' sur deux mains"><img class="flip" src="img/mains/main-' + a + '.svg" alt=""><img src="img/mains/main-' + b + '.svg" alt=""></div>';
+     Chaque main montre son nombre de doigts ; les pouces pointent vers l’extérieur. */
+  function hands(a, b, label) {
+    var pair = el("div", "hands");
+    pair.setAttribute("role", "img");
+    pair.setAttribute("aria-label", label);
+    [a, b].forEach(function (count, i) {
+      var img = el("img", i === 0 ? "flip" : "");
+      img.src = "img/mains/main-" + count + ".svg";
+      img.alt = "";
+      pair.appendChild(img);
+    });
+    return pair;
   }
   function aidVisual(q, full) {
     var sp = split(q);
-    if (sp && sp.kind === "gap" && q.hole) { var d = el("div"); d.innerHTML = handsSvg(q.a); return d.firstChild; }   /* « pour arriver à 10 » : les doigts, pas la file de nombres */
+    if (q.level === "a0") return hands(q.a, q.b, q.a + " sur une main et " + q.b + " sur l’autre");
+    if (sp && sp.kind === "gap" && q.hole) {
+      return hands(Math.min(q.a, 5), Math.max(0, q.a - 5), q.a + (q.a > 1 ? " doigts levés" : " doigt levé") + " sur deux mains");
+    }
     return numberLine(q, full);
   }
   function numberLine(q, full) {
@@ -557,6 +568,13 @@
     var sp = split(q), h = el("p", "hint"), W = E.words, say; if (!sp) return { node: null, say: "" };
     function out(t, v) { h.textContent = t; return { node: h, say: v || t }; }
     function eqSpan(t) { h.appendChild(el("span", "h1", t)); }
+    if (q.level === "a0") {
+      function prompt(a, b) {
+        var first = q.a === 0 ? "Ferme une main." : "Lève " + a + (q.a === 1 ? " doigt" : " doigts") + " sur une main.";
+        return first + " Lève " + b + (q.b === 1 ? " doigt" : " doigts") + " sur l’autre. Compte tes doigts levés.";
+      }
+      return out(prompt(q.a, q.b), prompt(W(q.a), W(q.b)));
+    }
     if (sp.kind === "gap" && q.hole) {   /* complément à 10 : les doigts levés et baissés des deux mains */
       var up = q.a, dn = q.total - q.a, ask = up ? "si tu lèves seulement " + up + (up > 1 ? " doigts" : " doigt") : "si tu ne lèves aucun doigt",
           askW = up ? "si tu lèves seulement " + W(up) + (up > 1 ? " doigts" : " doigt") : "si tu ne lèves aucun doigt";
