@@ -25,7 +25,7 @@
     return fetch(C.url + "/rest/v1/rpc/" + name, { method: "POST", headers: { "Content-Type": "application/json", apikey: C.key, Authorization: "Bearer " + (token() || C.key) }, body: JSON.stringify(args || {}) })
       .then(function (r) { return r.text().then(function (txt) { var j = null; try { j = txt ? JSON.parse(txt) : null; } catch (e) {} if (!r.ok) throw new Error((j && j.message) || ("HTTP " + r.status)); return j; }); });
   }
-  function enabled(act) { return E.levelsOf(act, settings.levels && settings.levels[act]); }
+  function enabled(act) { return E.missionLevels(act, settings.levels && settings.levels[act]); }
 
   /* ===== Style : accent vert du calcul (la lecture reste violette) ===== */
   function css() {
@@ -127,13 +127,8 @@
   function tsOf(v) { var t = Date.parse(v); if (!t && typeof v === "string") t = Date.parse(v.replace(/([+-]\d\d)$/, "$1:00")); return t || 0; }
   function lastTs(p) { var h = Array.isArray(p.hist) && p.hist.length ? p.hist[p.hist.length - 1] : null; return h ? tsOf(h.t) : 0; }
   function nextStep(levels) {
-    var best = null;
-    Object.keys(ACT).forEach(function (a) {
-      var ids = enabled(a), id = E.suggestLevel(a, ids, levels), e = levels[a + ":" + id] || {};
-      if (!id || (e.ok >= 1 && ids.indexOf(id) === ids.length - 1)) return;
-      var score = (e.ok || 0) * 100 + (e.r || 0); if (!best || score < best.score) best = { act: a, id: id, score: score };
-    });
-    if (!best) return "toutes faites 🎉";
+    var route = E.mission(settings.levels, levels), best = route.next;
+    if (!best) return route.blocked ? "Reconnaissance des nombres à compléter" : "toutes faites 🎉";
     var lv = E.levelInfo(best.act, best.id); return ACT[best.act].icon + " " + lv.label;
   }
   /* ===== Ma classe (calcul) : même écran que la lecture — choix de la classe, À faire aujourd’hui, Mes élèves (Tous / En difficulté / En avance / Pas venus), La classe en chiffres ===== */
@@ -368,8 +363,8 @@
       var c = el("div", "pd-card"); c.appendChild(el("h5", "", ACT[a].icon + " " + ACT[a].title));
       var big = el("div", "pd-big", String(done.length)); big.appendChild(el("small", "", " / " + ids.length + " " + pl(ids.length, "étape réussie", "étapes réussies"))); c.appendChild(big);
       var bar = el("div", "pd-bar"), fill = el("i"); fill.style.width = Math.round(done.length * 100 / tot) + "%"; fill.style.background = "#2e9b91"; bar.appendChild(fill); c.appendChild(bar);
-      var fast = null; done.forEach(function (id) { var an = E.animalOf(a, id); if (!fast || an.kmh > fast.kmh) fast = an; });
-      c.appendChild(el("div", "pd-note", fast ? "🐾 Animal le plus rapide : " + fast.e + " " + fast.nom + " (environ " + String(fast.kmh).replace(".", ",") + " km/h)" : "Aucun animal éclos pour l’instant"));
+      var fast = null; done.forEach(function (id) { var an = E.animalOf(a, id); if (an.kmh != null && (!fast || an.kmh > fast.kmh)) fast = an; });
+      c.appendChild(el("div", "pd-note", fast ? "🐾 Animal le plus rapide : " + fast.e + " " + fast.nom + " (environ " + String(fast.kmh).replace(".", ",") + " km/h)" : done.length ? "" : "Aucun animal éclos pour l’instant"));
       var ul = el("ul", "pd-list hidden");
       ids.forEach(function (id) {
         var e = lv[a + ":" + id], l = E.levelInfo(a, id), t = (e && e.ok ? l.animal.e : "🥚") + " " + l.label + " : " + statusTxt(e);
@@ -404,27 +399,23 @@
       var lq = el("label", "", "Nombre de questions par série (5 à 20)"); lq.setAttribute("for", "calcQ"); qd.appendChild(lq); qd.appendChild(q); f.appendChild(qd);
       var lp = el("label", "", "Une série est réussie à partir de … % de bonnes réponses du premier coup (50 à 100)"); lp.setAttribute("for", "calcP"); pd.appendChild(lp); pd.appendChild(p); f.appendChild(pd);
       var lv = el("label", "", ""); lv.style.display = "flex"; lv.style.gap = "8px"; lv.style.alignItems = "center"; v.style.width = v.style.height = "20px"; lv.appendChild(v); lv.appendChild(document.createTextNode("Lire automatiquement le nombre à voix haute (ÉCOUTER)")); vd.appendChild(lv); f.appendChild(vd);
-      var boxes = {}, orders = {}, lists = {};
-      /* Une colonne par domaine : étapes numérotées dans l'ordre où les élèves les verront, avec ▲ / ▼ ; ordre = étapes cochées d'abord (dans l'ordre enregistré), les autres ensuite */
+      var boxes = {}, orders = {};
+      /* Les choix s’insèrent dans l’ordre commun de la mission. */
       Object.keys(ACT).forEach(function (a) {
-        var fs = el("fieldset"), lg = el("legend", "", ACT[a].icon + " " + ACT[a].title + " — étapes proposées aux élèves, dans l’ordre"), list = el("ol", "calc-order"), on = enabled(a);
+        var fs = el("fieldset"), lg = el("legend", "", ACT[a].icon + " " + ACT[a].title + " — étapes proposées"), list = el("ol", "calc-order"), on = enabled(a);
         fs.style.border = "0"; fs.style.padding = "0"; fs.style.margin = "0"; lg.style.fontWeight = "800"; fs.appendChild(lg);
-        orders[a] = on.concat(E.LEVELS[a].map(function (l) { return l.id; }).filter(function (id) { return on.indexOf(id) < 0; })); boxes[a] = {}; lists[a] = list;
+        orders[a] = E.missionLevels(a); boxes[a] = {};
         orders[a].forEach(function (id) { boxes[a][id] = on.indexOf(id) >= 0; });
-        fs.appendChild(list); f.appendChild(fs); paint(a);
-      });
-      function paint(a) {
-        var list = lists[a], ord = orders[a]; clear(list);
-        ord.forEach(function (id, i) {
-          var lv2 = E.levelInfo(a, id), li = el("li", "calc-step"), cb = el("input"), lab = el("label"), up = el("button", "secondary mv", "▲"), dn = el("button", "secondary mv", "▼");
-          cb.type = "checkbox"; cb.value = id; cb.checked = !!boxes[a][id]; cb.addEventListener("change", function () { boxes[a][id] = cb.checked; });
-          lab.appendChild(el("span", "n", (i + 1) + ".")); lab.appendChild(cb); lab.appendChild(document.createTextNode(" " + lv2.animal.e + " " + lv2.label));
-          up.type = dn.type = "button"; up.setAttribute("aria-label", "Monter l’étape " + lv2.label); dn.setAttribute("aria-label", "Descendre l’étape " + lv2.label); up.disabled = i === 0; dn.disabled = i === ord.length - 1;
-          up.addEventListener("click", function () { ord.splice(i, 1); ord.splice(i - 1, 0, id); paint(a); queue(); }); dn.addEventListener("click", function () { ord.splice(i, 1); ord.splice(i + 1, 0, id); paint(a); queue(); });
-          li.appendChild(lab); li.appendChild(up); li.appendChild(dn); list.appendChild(li);
+        fs.appendChild(list); f.appendChild(fs);
+        orders[a].forEach(function (id) {
+          var lv2 = E.levelInfo(a, id), li = el("li", "calc-step"), cb = el("input"), lab = el("label");
+          cb.type = "checkbox"; cb.value = id; cb.checked = !!boxes[a][id]; cb.disabled = E.isRequired(id); cb.addEventListener("change", function () { boxes[a][id] = cb.checked; });
+          lab.appendChild(cb);
+          lab.appendChild(document.createTextNode(" " + lv2.animal.e + " " + lv2.label + (cb.disabled ? " (obligatoire)" : "")));
+          li.appendChild(lab); list.appendChild(li);
         });
-      }
-      f.appendChild(el("p", "muted", "L’élève ne voit que les étapes déjà réussies et la suivante : l’ordre des étapes est celui de cette liste (cochez celles que vous proposez)."));
+      });
+      f.appendChild(el("p", "muted", "La mission alterne reconnaissance des nombres et calcul. Une première étoile ouvre la suite. Les paliers jusqu’à 5 et jusqu’à 10 font partie du parcours de tous les élèves. Si vous décochez une étape de reconnaissance, les calculs qui en dépendent attendront que les mêmes nombres soient validés dans une autre étape."));
       function collect() {
         var levels = {}; Object.keys(orders).forEach(function (a) { levels[a] = orders[a].filter(function (id) { return boxes[a][id]; }); if (levels[a].length) levels[a] = levels[a].concat(E.marks(a)); });
         return { questions: +q.value, pass: +p.value, voice: v.checked, levels: levels };
