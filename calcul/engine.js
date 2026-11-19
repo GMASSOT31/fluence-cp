@@ -109,7 +109,7 @@
   function nbSum(a, b) { return { a: a, b: b, answer: a + b }; }
   var ADDITION = [
     { id: "a1", label: "+1 et +2 (jusqu’à 10)", emoji: "🐣", aid: "see", cap: 10, gen: function (r) { var b = between(1, 2, r), a = between(0, 10 - b, r); return nbSum(a, b); } },
-    { id: "a2", label: "Additions jusqu’à 10", emoji: "🐥", aid: "see", cap: 10, gen: function (r) { var a = between(1, 8, r), b = between(1, 10 - a, r); return nbSum(a, b); } },
+    { id: "a2", label: "Additions jusqu’à 10", emoji: "🐥", aid: "see", cap: 10, gen: function (r) { var total = between(6, 10, r), a = between(1, total - 1, r); return nbSum(a, total - a); } },
     { id: "a3", label: "Jusqu’à 10 dans ma tête", emoji: "🧠", aid: "mental", cap: 10, gen: function (r) { var a = between(0, 9, r), b = between(0, 10 - a, r); return nbSum(a, b); } },
     { id: "a4", label: "Pour arriver à 10", emoji: "🎯", aid: "see", cap: 10, hole: true, gen: function (r) { var a = between(0, 9, r); return { a: a, b: 10 - a, answer: 10 - a, total: 10 }; } },
     { id: "a5", label: "Les doubles", emoji: "👯", aid: "see", cap: 20, gen: function (r) { var a = between(1, 10, r); return nbSum(a, a); } },
@@ -124,7 +124,7 @@
   function nbSub(a, b) { return { a: a, b: b, answer: a - b }; }
   var SOUSTRACTION = [
     { id: "s1", label: "−1 et −2 (jusqu’à 10)", emoji: "🐾", aid: "see", cap: 10, gen: function (r) { var b = between(1, 2, r), a = between(b, 10, r); return nbSub(a, b); } },
-    { id: "s2", label: "Soustractions jusqu’à 10", emoji: "🦒", aid: "see", cap: 10, gen: function (r) { var a = between(3, 10, r), b = between(1, a - 1, r); return nbSub(a, b); } },
+    { id: "s2", label: "Soustractions jusqu’à 10", emoji: "🦒", aid: "see", cap: 10, gen: function (r) { var a = between(6, 10, r), b = between(1, a - 1, r); return nbSub(a, b); } },
     { id: "s3", label: "Jusqu’à 20, sans passer la dizaine", emoji: "🪜", aid: "mental", cap: 20, gen: function (r) { var a = between(11, 19, r), b = between(1, a % 10, r); return nbSub(a, b); } },
     { id: "s4", label: "Passer la dizaine", emoji: "🌉", aid: "mental", cap: 20, gen: function (r) { var a = between(11, 18, r), b = between(a % 10 + 1, 9, r); return nbSub(a, b); } },
     { id: "s5", label: "Combien d’écart ?", emoji: "↔️", aid: "see", cap: 20, gen: function (r) { var d = between(1, 5, r), b = between(5, 15, r); return nbSub(b + d, b); } }
@@ -148,6 +148,85 @@
   Object.keys(LEVELS).forEach(function (act) {
     LEVELS[act].forEach(function (lv, i) { var a = ANIMAUX[act][i]; lv.animal = { e: a[0], nom: a[1], kmh: a[2] }; });
   });
+  /* Les identifiants historiques gardent leurs animaux et leurs résultats. */
+  var smallNumbers = { id: "n0", label: "Nombres de 0 à 5", pool: range(0, 5), allowed: range(0, 5), choices: 6,
+    animal: { e: "🐞", nom: "la coccinelle" } };
+  var smallAddition = { id: "a0", label: "Additions jusqu’à 5", aid: "see", cap: 5,
+    gen: function (r) { var a = between(0, 4, r); return nbSum(a, between(1, 5 - a, r)); },
+    animal: { e: "🐛", nom: "la chenille" } };
+  var smallSubtraction = { id: "s0", label: "Soustractions jusqu’à 5", aid: "see", cap: 5,
+    gen: function (r) { var a = between(1, 5, r); return nbSub(a, between(1, a, r)); },
+    animal: { e: "🐸", nom: "la grenouille" } };
+  var earlyDoubles = { id: "ad10", label: "Les doubles jusqu’à 10", aid: "see", cap: 10,
+    gen: function (r) { var a = between(1, 5, r); return nbSum(a, a); },
+    animal: { e: "🦋", nom: "le papillon" } };
+  NOMBRES.unshift(smallNumbers); ADDITION.unshift(smallAddition); ADDITION.push(earlyDoubles); SOUSTRACTION.unshift(smallSubtraction);
+
+  var MISSION = ["n0", "a0", "s0", "n1", "a1", "s1", "a2", "s2", "ad10", "a3", "a4",
+    "n2", "n3", "a6", "s3", "a5", "a7", "s4", "s5"];
+  var decades = ["d20", "d30", "d40", "d50", "n6", "n7", "n8", "n9"];
+  var sumAnimals = ["🐝", "🦆", "🦢", "🦙", "🦍", "🦧", "🦫", "🦅"];
+  var subAnimals = ["🐟", "🐠", "🐙", "🦀", "🦭", "🐬", "🐋", "🦈"];
+  decades.forEach(function (id, i) {
+    var lo = 20 + i * 10, hi = lo + 9, aid = "ap" + lo, sid = "sp" + lo;
+    if (i === 4) MISSION.push("n4", "n5");
+    MISSION.push(id, aid, sid);
+    ADDITION.push({ id: aid, label: "Ajouter de " + lo + " à " + hi + ", sans changer de dizaine", aid: "mental", cap: hi, minChoice: lo,
+      gen: function (r) { var a = between(lo, hi - 1, r); return nbSum(a, between(1, hi - a, r)); },
+      animal: { e: sumAnimals[i], nom: ["l’abeille", "le canard", "le cygne", "le lama", "le gorille", "l’orang-outan", "le léopard", "l’aigle"][i] } });
+    SOUSTRACTION.push({ id: sid, label: "Enlever de " + lo + " à " + hi + ", sans changer de dizaine", aid: "mental", cap: hi, minChoice: lo,
+      gen: function (r) { var a = between(lo + 1, hi, r); return nbSub(a, between(1, a - lo, r)); },
+      animal: { e: subAnimals[i], nom: ["le poisson", "le poisson tropical", "la pieuvre", "le crabe", "le phoque", "le dauphin", "la baleine", "le requin"][i] } });
+  });
+  MISSION.splice(MISSION.indexOf("sp30") + 1, 0, "ac30", "sc30");
+  ADDITION.push({ id: "ac30", label: "Passer de 20 à 30 en ajoutant", aid: "mental", cap: 39, minChoice: 20,
+    gen: function (r) { var a = between(22, 29, r); return nbSum(a, between(31 - a, 9, r)); },
+    animal: { e: "🦉", nom: "le hibou" } });
+  SOUSTRACTION.push({ id: "sc30", label: "Repasser sous 30 en enlevant", aid: "mental", cap: 39, minChoice: 20,
+    gen: function (r) { var a = between(31, 38, r); return nbSub(a, between(a - 29, 9, r)); },
+    animal: { e: "🐧", nom: "le manchot" } });
+  MISSION.push("n10", "n11", "a8");
+
+  var REQUIRED = ["n0", "a0", "s0", "n1", "a2", "s2"];
+  var MISSION_STEPS = MISSION.map(function (id) {
+    var act = { n: "nombres", d: "nombres", a: "addition", s: "soustraction" }[id.charAt(0)];
+    return { act: act, id: id };
+  });
+
+  function missionLevels(activity, enabled) {
+    var configured = Array.isArray(enabled) && enabled.length > 0;
+    var selected = configured ? levelsOf(activity, enabled) : null;
+    return MISSION_STEPS.filter(function (step) {
+      return step.act === activity && (!selected || selected.indexOf(step.id) >= 0 || isRequired(step.id));
+    }).map(function (step) { return step.id; });
+  }
+  function isRequired(id) { return REQUIRED.indexOf(id) >= 0; }
+  function mission(settings, progress) {
+    settings = settings || {}; progress = progress || {};
+    var offered = {};
+    Object.keys(LEVELS).forEach(function (act) { offered[act] = missionLevels(act, settings[act]); });
+    var known = {};
+    NOMBRES.forEach(function (level) {
+      if ((progress["nombres:" + level.id] || {}).ok >= 1) level.allowed.forEach(function (n) { known[n] = true; });
+    });
+    function ready(step) {
+      if (step.act === "nombres") return true;
+      var level = levelInfo(step.act, step.id), low = level.minChoice || 0;
+      var needed = range(low, level.cap);
+      if (low) needed = range(0, 9).concat(needed);
+      return needed.every(function (n) { return known[n]; });
+    }
+    var steps = MISSION_STEPS.filter(function (step) { return offered[step.act].indexOf(step.id) >= 0; });
+    var next = null, blocked = false, replay = [];
+    steps.forEach(function (step) {
+      var done = (progress[step.act + ":" + step.id] || {}).ok >= 1;
+      if (!ready(step)) { blocked = true; return; }
+      if (done) replay.push(step);
+      else if (!next) next = step;
+    });
+    return { next: next, replay: replay, blocked: blocked };
+  }
+
   function animalOf(activity, id) { var l = levelInfo(activity, id); return l ? l.animal : null; }
   /* Étapes visibles pour l'élève : celles déjà réussies + la suivante (jamais les autres). enabled = ordre choisi par l'enseignant. */
   function visibleLevels(activity, enabled, levels) {
@@ -163,13 +242,13 @@
   function topAnimal(levels) {
     var best = null;
     Object.keys(LEVELS).forEach(function (act) {
-      LEVELS[act].forEach(function (lv) { if (((levels || {})[act + ":" + lv.id] || {}).ok >= 1 && (!best || lv.animal.kmh > best.kmh)) best = lv.animal; });
+      LEVELS[act].forEach(function (lv) { if (((levels || {})[act + ":" + lv.id] || {}).ok >= 1 && lv.animal.kmh != null && (!best || lv.animal.kmh > best.kmh)) best = lv.animal; });
     });
     return best;
   }
   /* Niveaux ouverts par défaut (l'enseignant les règle) : tout pour les nombres, le début de l'addition et de la soustraction */
   var DEFAULT_LEVELS = {
-    nombres: NOMBRES.map(function (l) { return l.id; }),
+    nombres: NOMBRES.slice(1).map(function (l) { return l.id; }),
     addition: ["a1", "a2", "a3", "a4"],
     soustraction: ["s1", "s2"]
   };
@@ -199,14 +278,17 @@
   }
 
   /* Propositions d'un calcul : confusions fréquentes (mauvaise opération, ±1, un des deux nombres, ±10) */
-  function calcDistractors(op, q, cap, k, rng) {
+  function calcDistractors(op, q, cap, k, rng, min) {
+    min = min || 0;
     var g1 = [], g2 = [], g3 = [], g4 = [], g5 = [], ans = q.answer, i;
     if (op === "addition") { add(g1, Math.abs(q.a - q.b), cap, ans); } else { add(g1, q.a + q.b, cap, ans); }
     add(g2, ans - 1, cap, ans); add(g2, ans + 1, cap, ans);
     add(g3, q.a, cap, ans); add(g3, q.b, cap, ans);
     add(g4, ans - 2, cap, ans); add(g4, ans + 2, cap, ans); add(g4, ans - 10, cap, ans); add(g4, ans + 10, cap, ans);
-    for (i = 0; i <= cap; i++) add(g5, i, cap, ans);
-    var groups = [shuffle(g1, rng), shuffle(g2, rng), shuffle(g3, rng), shuffle(g4, rng), shuffle(g5, rng)];
+    for (i = min; i <= cap; i++) add(g5, i, cap, ans);
+    var groups = [g1, g2, g3, g4, g5].map(function (g) {
+      return shuffle(g.filter(function (n) { return n >= min; }), rng);
+    });
     var order = [1, 0, 2, 1, 3, 4], out = [], guard = 0;
     while (out.length < k && guard++ < 500) {
       var g = groups[order[guard % order.length]];
@@ -232,7 +314,7 @@
     } else {
       text = q.a + " " + sign + " " + q.b; say = words(q.a) + " " + sayOp + " " + words(q.b) + " ?";
     }
-    var choices = shuffle([q.answer].concat(calcDistractors(op, q, level.cap, 3, rng)), rng);
+    var choices = shuffle([q.answer].concat(calcDistractors(op, q, level.cap, 3, rng, level.minChoice)), rng);
     return { type: op, level: level.id, a: q.a, b: q.b, total: q.total || null, hole: !!level.hole, answer: q.answer, choices: choices, text: text, say: say,
              aid: level.aid, key: key(q) };
   }
@@ -261,6 +343,7 @@
 
   root.CalcEngine = {
     words: words, seeded: seeded, shuffle: shuffle, numberDistractors: numberDistractors, calcDistractors: calcDistractors,
+    mission: mission, missionLevels: missionLevels, isRequired: isRequired,
     LEVELS: LEVELS, DEFAULT_LEVELS: DEFAULT_LEVELS, levelInfo: levelInfo, levelsOf: levelsOf, marks: marks, animalOf: animalOf, visibleLevels: visibleLevels, topAnimal: topAnimal, makeRound: makeRound, suggestLevel: suggestLevel, status: status
   };
   if (typeof module !== "undefined" && module.exports) module.exports = root.CalcEngine;

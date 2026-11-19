@@ -21,8 +21,15 @@ les fichiers du labo sont publics sur GitHub Pages, seules les **données et les
 
 La migration crée l'interrupteur **désactivé** : après application, l'admin l'active depuis l'espace enseignant (onglet « Enseignants » › Accès au laboratoire de calcul).
 
-## Animaux et progression (comme le Zoo de Lecture)
-Chaque étape a son animal, du plus lent au plus rapide : plus l'étape validée est haute, plus l'animal court vite (nombres : 🐌 escargot → 🐆 guépard ; addition : 🐜 fourmi → 🦁 lion ; soustraction : 🐊 crocodile → 🦌 cerf ; vitesses « environ » dans `calcul/engine.js`). Un œuf 🥚 éclot quand l'étape est réussie, l'animal grandit (✨) quand elle est maîtrisée. Les menus « ÉCOUTER », « ADDITION » et « SOUSTRACTION » ne montrent que les étapes **réussies + la suivante** (l'ordre et le choix des étapes restent réglables par l'enseignant). « Mes nombres lus » et « Mes calculs gagnés » montrent les animaux (❓ tant que l'étape n'est pas atteinte).
+## Ma mission et progression
+
+L’accueil propose une activité à la fois, avec une consigne réécoutable. Une première étoile ouvre la suite ; la deuxième se gagne en rejouant depuis le bilan, les cartes ou « Ma progression ». Les cartes sont jouables après réussite ou quand elles correspondent à la mission du moment, si les nombres nécessaires sont validés.
+
+Les six paliers obligatoires sont la reconnaissance, l’addition et la soustraction jusqu’à 5, puis les trois mêmes jusqu’à 10. Les termes, le résultat et les propositions restent tous dans la limite du palier. Des étapes intermédiaires introduisent les petits ajouts et retraits, les doubles jusqu’à 10 puis 20, les compléments et les passages par 10. Après les vingtaines, chaque dizaine introduit l’addition et la soustraction dans cette dizaine. Le passage entre 20 et 30 attend que les deux dizaines soient reconnues.
+
+`CalcEngine.mission` combine l’ordre commun avec les étapes facultatives choisies par l’enseignant. La première étoile en reconnaissance valide les nombres ciblés par l’étape. Les calculs attendent que leurs nombres soient couverts, réponses proposées comprises. Si une étape d’écoute facultative est décochée, les calculs qui en dépendent attendent une autre étape couvrant les mêmes nombres. Les réglages existants conservent les étapes facultatives sélectionnées et reçoivent les paliers obligatoires. Les nouvelles étapes facultatives sont proposées par défaut en l’absence de réglage. Les anciens identifiants et les étoiles déjà gagnées sont conservés.
+
+Un œuf éclot à la première étoile ; l’animal grandit à la deuxième. Voir `node tools/test_calcul_engine.js` pour les vérifications du parcours et `labo-calcul-test.html` pour l’essai local.
 
 ## Bandeau et scène d'évolution
 Les trois animaux du bandeau sont ceux de la première étape (🐌), de l'étape du milieu (🐕) et de la dernière (🐆) de « ÉCOUTER » ; ils flottent doucement (désactivé si l'appareil demande moins d'animations). Quand une étape est réussie (l'œuf éclot) puis maîtrisée (l'animal grandit), la **même scène d'évolution que le Zoo de Lecture** s'affiche : œuf qui bouge, éclair, rayons, feu d'artifice, sons et voix, deux étoiles. Le style (`calcul/zoo-skin.css`) et les effets (`calcul/zoo-effects.js` : sons, feu d'artifice) sont **générés** à partir de `zoo-connecte.html` par `python3 tools/extract_zoo_skin.py` ; les réglages de sons de l'enseignant (`sfx`) sont respectés.

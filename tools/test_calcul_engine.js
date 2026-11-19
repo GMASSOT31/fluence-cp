@@ -64,8 +64,8 @@ var seenE = {};
 Object.keys(E.LEVELS).forEach(function (act) {
   var prev = -1;
   E.LEVELS[act].forEach(function (lv) {
-    ok(lv.animal && lv.animal.e && lv.animal.nom && lv.animal.kmh > prev, act + ":" + lv.id + " animal absent ou pas plus rapide que le précédent");
-    ok(!seenE[lv.animal.e], "animal en double : " + lv.animal.e); seenE[lv.animal.e] = 1; prev = lv.animal.kmh;
+    ok(lv.animal && lv.animal.e && lv.animal.nom && (lv.animal.kmh == null || lv.animal.kmh > prev), act + ":" + lv.id + " animal absent ou pas plus rapide que le précédent");
+    ok(!seenE[lv.animal.e], "animal en double : " + lv.animal.e); seenE[lv.animal.e] = 1; if (lv.animal.kmh != null) prev = lv.animal.kmh;
   });
 });
 ok(E.animalOf("nombres", "n1").nom === "l’escargot" && E.animalOf("nombres", "n11").nom === "le guépard", "du plus lent (n1) au plus rapide (n11)");
@@ -94,5 +94,36 @@ ok(E.levelsOf("addition", ["a1", "a2"]).join() === "a1,a2" && E.marks("nombres")
 ok(E.animalOf("nombres", "n4").e === "🐕", "« 20 à 59 » garde le chien (animal du milieu du bandeau)");
 var seen20 = {}; for (var s20 = 0; s20 < 300; s20++) E.makeRound("nombres", "d20", 10, E.seeded(s20)).forEach(function (q) { seen20[q.answer] = 1; q.choices.forEach(function (c) { ok(c >= 20 && c <= 29, "d20 : proposition hors 20–29 : " + c); }); });
 ok(Object.keys(seen20).length === 10, "d20 : les 10 nombres sont demandés");
+/* Une seule prochaine étape ; une première étoile suffit et aucun calcul ne propose un nombre inconnu. */
+var missionProgress = {}, knownNumbers = {}, missionOrder = [];
+for (var step = E.mission(null, missionProgress).next; step; step = E.mission(null, missionProgress).next) {
+  var stepKey = step.act + ":" + step.id, stepInfo = E.levelInfo(step.act, step.id);
+  if (missionProgress[stepKey]) { ok(false, "étape répétée dans la mission"); break; }
+  missionOrder.push(step.id);
+  missionProgress[stepKey] = { ok: 0, r: 1 };
+  ok(E.mission(null, missionProgress).next.id === step.id, "un échec ne débloque pas la suite : " + step.id);
+  if (step.act === "nombres") stepInfo.allowed.forEach(function (n) { knownNumbers[n] = true; });
+  else {
+    for (var trial = 0; trial < 20; trial++) E.makeRound(step.act, step.id, 10, E.seeded(trial)).forEach(function (q) {
+      var usedNumbers = q.choices.concat([q.a, q.b, q.answer]);
+      if (q.hole) usedNumbers.push(q.total);
+      ok(usedNumbers.every(function (n) { return knownNumbers[n]; }), "nombres déjà reconnus : " + q.key);
+      if (q.level === "a2") ok(q.answer > 5, "palier addition deux mains : le total dépasse 5");
+      if (q.level === "s2") ok(q.a > 5, "palier soustraction deux mains : le départ dépasse 5");
+      var limit = /^(a0|s0)$/.test(q.level) ? 5 : /^(a2|s2)$/.test(q.level) ? 10 : 100;
+      ok(usedNumbers.every(function (n) { return n <= limit; }), "termes, résultat et choix bornés à " + limit + " : " + q.key);
+    });
+  }
+  missionProgress[stepKey].ok = 1;
+}
+ok(missionOrder.slice(0, 8).join() === "n0,a0,s0,n1,a1,s1,a2,s2", "paliers obligatoires dans l’ordre");
+ok(missionOrder.indexOf("ap20") > missionOrder.indexOf("d20") && missionOrder.indexOf("ac30") > missionOrder.indexOf("d30"), "calculs déverrouillés après reconnaissance de la dizaine");
+ok(!E.mission(null, missionProgress).blocked, "tout le parcours par défaut est accessible");
+ok(E.missionLevels("addition", ["a8"]).join() === "a0,a2,a8", "anciens réglages : les paliers obligatoires restent proposés");
+var partial = E.mission({ nombres: ["n1", "v2"], addition: ["a8"], soustraction: ["s2"] }, missionProgressWithoutHigherNumbers());
+ok(!partial.next && partial.blocked && !partial.replay.some(function (s) { return s.id === "a8"; }), "un calcul dont les nombres sont inconnus reste fermé même s’il a déjà été réussi");
+function missionProgressWithoutHigherNumbers() {
+  return Object.fromEntries(["nombres:n0", "nombres:n1", "addition:a0", "addition:a2", "addition:a8", "soustraction:s0", "soustraction:s2"].map(function (key) { return [key, { ok: 1 }]; }));
+}
 console.log(fails ? fails + " ÉCHEC(S) sur " + checks + " contrôles" : "TOUS LES CONTRÔLES PASSENT (" + checks + ")");
 process.exit(fails ? 1 : 0);
