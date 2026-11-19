@@ -2791,6 +2791,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   }
   /* Sur les écrans « à côté » (cartes, boutique, jeux, progression), un gros bouton vert ramène toujours à l'étape suivante (l'accueil) */
   function addNextBar(v) {
+    if (document.documentElement.classList.contains("embed")) return;  /* le Zoo de Calcul affiche son propre bouton de mission */
     var id = { cartes: "cartes-body", reconnues: "reconnues-body", ecrites: "ecrites-body", boutique: "boutique-body", jeux: "jeux-body", progres: "progres-body" }[v];
     var host = id && $(id);
     if (!host || ses.viaTeacher || !cloudToken) return;
