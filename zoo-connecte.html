@@ -5514,17 +5514,34 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if (myNotes.length) { data.notes = data.notes.filter(function (n) { return n.sid !== sid; }); save(); }
     playPendingEvos(sid);
     /* Une seule prochaine action, bien visible, avec sa consigne lue à voix haute (🔊) pour les CP */
-    var ms = mission(sid), nx = nextStep(sid), wheels = data.reward ? pendingWheels(sid).length : 0, waitEval = !!ms.medal || evalWaiting(sid);
-    /* Une mission = un son, trois étapes dans l'ordre pédagogique (écouter, écrire, lire) : un seul gros bouton, celui de l'étape à faire */
-    var step = missionAct(sid, ms), act = step;
+    var ms = mission(sid), nx = nextStep(sid), wheels = data.reward ? pendingWheels(sid).length : 0;
+    var waiting = recCount(sid), step = missionAct(sid, ms), act = step;
+    function openListening() { ses.ear = false; RV.id = null; show("ecoute"); }
+    function recordStep(sound, kind) { show("lecture"); lireLaunch("eval", sound, kind); }
+    /* Même sur un son déjà médaillé, il peut rester un niveau entraîné à certifier. */
+    if (!step) {
+      var candidates = stepsList().filter(function (x) {
+        return !isValid(sid, x.sound, x.kind) && isTrained(sid, x.sound, x.kind) && !recPending(sid, x.sound);
+      });
+      var target = candidates.find(function (x) { return ms.medal && x.sound === ms.medal.id; }) || candidates[0];
+      var live = !!recSupport();
+      if (waiting && (!target || (!live && waiting >= REC_PENDING_MAX))) {
+        act = { btn: "🎧 Mon maître(sse) écoute", say: "Tes lectures attendent. Demande à ton maître ou ta maîtresse de les écouter.", go: openListening };
+      } else if (target) {
+        act = { pet: target.sound, kind: "read", btn: live ? "🏅 Je lis avec mon maître(sse)" : "🎙 Je m’enregistre avec mon maître(sse)",
+          sub: kindInfo(target.kind).name + " · " + soundById(target.sound).label,
+          say: live ? "Demande à ton maître ou ta maîtresse de t’écouter lire. Puis touche le gros bouton." : "Demande à ton maître ou ta maîtresse de venir. Puis touche le gros bouton pour enregistrer ta lecture.",
+          go: function () { recordStep(target.sound, target.kind); } };
+      }
+    }
     if (wheels) act = { cls: " wheel-go", btn: "🎡 Lance ta roue !", say: (wheels > 1 ? "Des roues t’attendent." : "Une roue t’attend.") + " Touche le gros bouton pour la lancer.", go: function () { openWheel(sid); } };
     function pathCls(a) { return a.kind ? " " + actCls(a) : ""; }
     var card = el("div", "card home-hero");
     card.appendChild(el("h2", "", "Bonjour " + st.name + " !"));
-    var say = act ? "Bonjour " + st.name + " ! " + act.say : (waitEval ? "Bravo " + st.name + " ! Tu as réussi tes entraînements. Va voir ton maître ou ta maîtresse pour enregistrer ta lecture et gagner ta médaille." : "Bravo " + st.name + " ! Tu as tout réussi.");
+    var say = act ? "Bonjour " + st.name + " ! " + act.say : "Bravo " + st.name + " ! Tu as tout réussi.";
     var row = el("div", "home-step");
     var petWrap = el("button", "home-pet"); petWrap.type = "button"; petWrap.setAttribute("aria-label", "Écouter la consigne");
-    var pid = step ? step.pet : (nx ? nx.sound : null);
+    var pid = act && act.pet ? act.pet : (nx ? nx.sound : null);
     if (pid) petWrap.appendChild(buildPet(petState(sid, pid), charFor(pid))); else petWrap.appendChild(el("span", "home-pet-emoji", "🏆"));
     petWrap.addEventListener("click", function () { listenSpeak(say); });
     row.appendChild(petWrap);
@@ -5554,7 +5571,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if (wheels) col.appendChild(bigRow(act, 0, false));
     /* La médaille d'un son déjà lu ⭐ se passe avec l'enseignant : rappel cliquable, pendant que l'élève avance seul sur la suite */
     var mb = null;
-    if (ms.medal && (!ms.sound || ms.medal.id !== ms.sound.id || ms.kind === "compr")) {
+    if (ms.medal && (wheels || (step && (ms.medal.id !== ms.sound.id || ms.kind === "compr")))) {
       mb = el("button", "ms-step ms-medal", ""); mb.type = "button";
       mb.appendChild(el("span", "ms-n", "🏅"));
       var mt = el("span", "", "Médaille du son " + q(ms.medal.label)); mt.appendChild(el("small", "", recSupport() ? "🏅 je lis avec mon maître(sse)" : (recCount(sid) >= REC_PENDING_MAX ? "⏳ ton maître(sse) doit d’abord écouter tes lectures" : "🎙 je m’enregistre avec mon maître(sse)")));
@@ -5576,9 +5593,11 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
         else if (x.st === "sent") col.appendChild(smallRow(" done", "⏳", NAMES[x.k], "ta lecture attend ton maître(sse)"));
         else col.appendChild(smallRow("", String(i + 1), x.label || NAMES[x.k], x.st === "lock" ? "🔒 après l’enregistrement du son d’avant" : ""));
       });
+    } else if (act && !wheels) {
+      col.appendChild(bigRow(act, 0, false));
     } else if (!wheels) {
       var doneRow = el("div", "home-act-row");
-      doneRow.appendChild(el("p", "home-done", waitEval ? "Bravo ! Va voir ton maître(sse) pour enregistrer ta lecture. 🏅" : "Tu as tout réussi. Bravo ! 🎉"));
+      doneRow.appendChild(el("p", "home-done", "Tu as tout réussi. Bravo ! 🎉"));
       doneRow.appendChild(sayBtn(say, "Écouter"));
       col.appendChild(doneRow);
     }
@@ -5589,12 +5608,11 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     /* La consigne est lue à voix haute une seule fois à l'arrivée (un CP ne sait pas encore tout lire) ; le gros 🔊 permet de la réécouter. Rien si les bruitages sont coupés. */
     if (data.sfx && !homeSaid[sid]) { homeSaid[sid] = 1; setTimeout(function () { if (!$("v-home").hidden) listenSpeak(say); }, 700); }
     var qc = el("div", "card quote-card"); qc.appendChild(el("blockquote", "", "«\u00a0" + sessionQuote + "\u00a0»")); body.appendChild(qc);
-    var waiting = data.reviews.filter(function (r) { return r.sid === sid; }).length;
-    if (waiting) {
+    if (waiting && (!act || act.go !== openListening)) {
       var wcard = el("div", "card");
       wcard.appendChild(el("p", "", waiting > 1 ? "⏳ " + waiting + " lectures attendent que ton maître(sse) les écoute." : "⏳ 1 lecture attend que ton maître(sse) l’écoute."));
       var ear = el("button", "secondary", "🎧 Mon maître(sse) écoute"); ear.type = "button";
-      ear.addEventListener("click", function () { ses.ear = false; RV.id = null; show("ecoute"); });
+      ear.addEventListener("click", openListening);
       wcard.appendChild(ear);
       body.appendChild(wcard);
     }
