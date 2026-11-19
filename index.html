@@ -95,13 +95,32 @@ h2{font-size:clamp(1.7rem,4vw,2.4rem);text-align:center;color:#fff;letter-spacin
 .step:nth-child(3) .ico{background:linear-gradient(145deg,#ffc5f0,#ffb96a)}
 .step h3{font-size:1.35rem;color:var(--yellow);margin-bottom:8px}
 .step p{margin:0;color:#d5d9ea}
-.teach{display:grid;grid-template-columns:1.2fr .8fr;gap:26px;align-items:center;margin-top:28px}
-.shot{margin:0;border:3px solid var(--line);border-radius:20px;overflow:hidden;background:#fff;box-shadow:0 10px 0 #0c0d12}
-.shot img{display:block;width:100%}
-.shot figcaption{padding:8px 12px;background:var(--card);color:var(--muted);font-size:.85rem}
-.benefits{list-style:none;margin:0;padding:0;display:grid;gap:12px}
-.benefits li{display:flex;gap:12px;align-items:flex-start;background:var(--card);border:2px solid var(--line);border-radius:16px;padding:14px 16px;font-weight:600}
-.benefits b{flex:0 0 auto;font-size:1.5rem;line-height:1.2}
+.class-demo{margin-top:28px;background:#f7f5ff;color:#24183f;border:1px solid #c9b9f1;border-radius:24px;overflow:hidden;box-shadow:0 8px 0 #0c0d12}
+.class-demo h3,.class-demo h4,.class-demo p{margin:0}
+.class-demo-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 18px;padding:18px 22px;background:#eae2ff;border-bottom:1px solid #d6c8f0}
+.class-demo-head h3{font:700 1.5rem Fredoka,Figtree,sans-serif}
+.class-demo-head p,.class-hint,.class-legend{color:#574b6d;font-size:.9rem}
+.class-demo-grid{display:grid;grid-template-columns:minmax(0,1.38fr) minmax(0,1fr)}
+.class-table-panel,.class-profile{min-width:0;padding:20px}
+.class-table{width:100%;border-collapse:collapse;text-align:left;font-size:.94rem}
+.class-table th,.class-table td{padding:12px 7px;border-bottom:1px solid #e6dff4;vertical-align:middle}
+.class-table thead th{color:#574b6d;font-weight:800}
+.class-table tbody tr:has(button[aria-pressed="true"]){background:#eee7fc}
+.class-row-status{display:block;font-weight:700}
+.class-row-status small{display:block;color:#574b6d;font-weight:600;margin-top:2px}
+.class-table button{min-height:44px;padding:6px 10px;border:1px solid #c5b2ef;border-radius:10px;background:#fff;color:#452484;font:800 .9rem Figtree,system-ui,sans-serif;cursor:pointer;white-space:nowrap}
+.class-table button:hover,.class-table button[aria-pressed="true"]{background:#5834a0;color:#fff;border-color:#5834a0}
+.class-demo :focus-visible{outline-color:#5834a0}
+.class-table-panel .class-hint{margin-top:12px}
+.class-profile{background:#fff;border-left:1px solid #e6dff4;scroll-margin-top:92px}
+.class-profile h4{font:700 1.35rem Fredoka,Figtree,sans-serif}
+.class-profile canvas{display:block;width:100%;height:auto;max-width:420px;margin:5px auto}
+.class-legend{display:flex;flex-wrap:wrap;gap:4px 14px;margin:0;padding:0;list-style:none}
+.class-legend li::before{content:"";display:inline-block;width:16px;margin-right:5px;vertical-align:middle;border-top:3px solid #6942b7}
+.class-legend li+li::before{border-color:#217453;border-top-style:dashed}
+.class-profile .class-priority{margin-top:12px;padding:9px 11px;background:#f2ebff;border-radius:10px;font-size:.9rem}
+@media(max-width:760px){.class-demo-grid{grid-template-columns:1fr}.class-profile{border-left:0;border-top:1px solid #e6dff4}}
+@media(max-width:420px){.class-demo-head,.class-table-panel,.class-profile{padding:13px}.class-table{font-size:.86rem}.class-table th,.class-table td{padding:9px 4px}.class-table button{padding:5px 7px}}
 .center{text-align:center;margin-top:24px}
 .maker{display:flex;gap:22px;align-items:center;background:var(--card);border:2px solid var(--line);border-radius:24px;padding:26px;margin-top:26px}
 .maker .face{flex:0 0 auto;display:grid;place-items:center;width:96px;height:96px;border-radius:28px;font-size:3.4rem;background:linear-gradient(145deg,#bafaff,#a1a2ff);box-shadow:0 6px 0 rgba(15,8,65,.65)}
@@ -128,7 +147,6 @@ footer p{margin:14px 0 0;text-align:center}
   .hero .lead{margin-left:auto;margin-right:auto}.ctas{justify-content:center}
   .stage{width:min(230px,60vw)}
   .steps{grid-template-columns:1fr}
-  .teach{grid-template-columns:1fr}
   .maker{flex-direction:column;text-align:center}
   .chips{justify-content:center}
 }
@@ -227,19 +245,32 @@ footer p{margin:14px 0 0;text-align:center}
   </section>
 
   <section aria-labelledby="t-ens">
-    <h2 id="t-ens">Un suivi simple pour l’enseignant</h2>
-    <p class="sub">Le tableau de progression montre où en est chaque élève, d’un coup d’œil : dernière activité, prochaine étape, barres de progression et courbe de fluence.</p>
-    <div class="teach">
-      <figure class="shot">
-        <img src="img/tableau-enseignant-v2.jpg" width="1000" height="703" loading="lazy" alt="Suivi de la classe fictive « CP des Tigres » dans l’espace enseignant : pour chaque élève, la dernière activité, la prochaine étape et ce qui reste à valider ; le détail de Léo avec une barre de sons écoutés, une barre de sons lus (réussis et certifiés), la courbe de progrès de sa fluence et son nombre de parties de jeu.">
-        <figcaption>Exemple avec une classe fictive.</figcaption>
-      </figure>
-      <ul class="benefits">
-        <li><b aria-hidden="true">🎛️</b><span>Adapter les contenus et l’ordre des sons.</span></li>
-        <li><b aria-hidden="true">📈</b><span>Suivre les résultats de chaque élève.</span></li>
-        <li><b aria-hidden="true">🎧</b><span>Évaluer en direct ou utiliser les lectures enregistrées localement.</span></li>
-        <li><b aria-hidden="true">🖨️</b><span>Préparer les connexions grâce aux fiches imprimables.</span></li>
-      </ul>
+    <h2 id="t-ens">Voyez où en est votre classe</h2>
+    <p class="sub">Repérez les lectures à écouter dans « Ma classe » et ouvrez la fiche de suivi d’un élève en un clic.</p>
+    <div class="class-demo" id="classDemo">
+      <div class="class-demo-head">
+        <h3><span aria-hidden="true">🐯</span> CP des Tigres</h3>
+        <p>Classe fictive · 3 élèves</p>
+      </div>
+      <div class="class-demo-grid">
+        <div class="class-table-panel">
+          <table class="class-table" aria-label="Suivi des élèves du CP des Tigres">
+            <thead><tr><th scope="col">Élève</th><th scope="col">Sons validés</th><th scope="col">À suivre</th><th scope="col">Fiche</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">Léo</th><td>12</td><td><span class="class-row-status">À écouter<small>Son « ou »</small></span></td><td><button type="button" data-pupil="leo" aria-label="Voir la fiche de Léo" aria-pressed="true" aria-controls="classProfile">Voir</button></td></tr>
+              <tr><th scope="row">Inaya</th><td>9</td><td><span class="class-row-status">À retravailler<small>Sons « b » et « d »</small></span></td><td><button type="button" data-pupil="inaya" aria-label="Voir la fiche d’Inaya" aria-pressed="false" aria-controls="classProfile">Voir</button></td></tr>
+              <tr><th scope="row">Jules</th><td>15</td><td><span class="class-row-status">En avance<small>Son « ch »</small></span></td><td><button type="button" data-pupil="jules" aria-label="Voir la fiche de Jules" aria-pressed="false" aria-controls="classProfile">Voir</button></td></tr>
+            </tbody>
+          </table>
+          <p class="class-hint">Essayez « Voir » pour comparer les fiches. Dans votre espace enseignant, elles sont aussi disponibles en PDF.</p>
+        </div>
+        <div class="class-profile" id="classProfile" tabindex="-1" aria-labelledby="classProfileTitle" role="region">
+          <h4 id="classProfileTitle">Fiche de suivi · Léo</h4>
+          <canvas width="840" height="540" id="classRadar" role="img" aria-label="Progression sur six compétences par rapport à l’attendu"></canvas>
+          <ul class="class-legend"><li>Progression de l’élève</li><li>Attendu · 100 %</li></ul>
+          <p class="class-priority" id="classPriority" aria-live="polite"><strong>Léo</strong> · Écouter sa lecture du son « ou ».</p>
+        </div>
+      </div>
     </div>
     <p class="center"><a class="btn btn-eleve btn-big" href="enseignants.html#inscription">🧑‍🏫 Créer ma classe gratuitement</a></p>
   </section>
@@ -313,6 +344,77 @@ footer p{margin:14px 0 0;text-align:center}
 <script src="share.js" defer></script>
 <script src="install.js?v=1" defer></script>
 <script>
+/* Aperçu public : toutes les données sont fictives et restent sur cette page. */
+(function(){
+  var demo=document.getElementById("classDemo"), canvas=document.getElementById("classRadar"), ctx=canvas.getContext("2d");
+  var title=document.getElementById("classProfileTitle"), priority=document.getElementById("classPriority");
+  var labels=["Phonologie","Écoute","Dictée","Lecture","Compréhension","Vitesse"];
+  var pupils={
+    leo:{name:"Léo",scores:[117,108,92,100,83,96],action:"Écouter sa lecture du son « ou »."},
+    inaya:{name:"Inaya",scores:[100,83,58,75,92,78],action:"Revoir la différence entre « b » et « d »."},
+    jules:{name:"Jules",scores:[133,125,117,125,108,100],action:"Poursuivre avec le son « ch »."}
+  };
+  var buttons=demo.querySelectorAll("button[data-pupil]");
+  function point(i,value){
+    var angle=i*Math.PI/3-Math.PI/2, radius=103*value/150;
+    return [210+Math.cos(angle)*radius,134+Math.sin(angle)*radius];
+  }
+  function polygon(values){
+    ctx.beginPath();
+    values.forEach(function(value,i){
+      var pos=point(i,value);
+      if(i)ctx.lineTo(pos[0],pos[1]);else ctx.moveTo(pos[0],pos[1]);
+    });
+    ctx.closePath();
+  }
+  function draw(scores){
+    if(!ctx)return;
+    ctx.setTransform(2,0,0,2,0,0);
+    ctx.clearRect(0,0,420,270);
+    ctx.strokeStyle="#ddd3ef";
+    ctx.lineWidth=1;
+    [50,100,150].forEach(function(level){polygon(labels.map(function(){return level;}));ctx.stroke();});
+    labels.forEach(function(_,i){
+      var p=point(i,150);
+      ctx.beginPath();ctx.moveTo(210,134);ctx.lineTo(p[0],p[1]);ctx.stroke();
+    });
+    polygon(scores);
+    ctx.fillStyle="rgba(105,66,183,.22)";ctx.fill();
+    polygon(labels.map(function(){return 100;}));
+    ctx.setLineDash([5,4]);ctx.strokeStyle="#217453";ctx.lineWidth=2;ctx.stroke();
+    ctx.setLineDash([]);
+    polygon(scores);ctx.strokeStyle="#6942b7";ctx.lineWidth=2.6;ctx.stroke();
+    scores.forEach(function(score,i){
+      var p=point(i,score);
+      ctx.beginPath();ctx.arc(p[0],p[1],3.5,0,Math.PI*2);ctx.fillStyle="#6942b7";ctx.fill();
+    });
+    ctx.fillStyle="#392b50";ctx.textAlign="center";ctx.font="700 16px Figtree, system-ui, sans-serif";
+    var positions=[[210,19],[329,71],[329,198],[210,260],[74,198],[84,71]];
+    labels.forEach(function(label,i){ctx.fillText(label,positions[i][0],positions[i][1]);});
+  }
+  function select(key){
+    var pupil=pupils[key];
+    title.textContent="Fiche de suivi · "+pupil.name;
+    priority.querySelector("strong").textContent=pupil.name;
+    priority.lastChild.textContent=" · "+pupil.action;
+    canvas.setAttribute("aria-label",pupil.name+" — "+labels.map(function(label,i){return label+" "+pupil.scores[i]+" %";}).join(", ")+" de l’attendu.");
+    draw(pupil.scores);
+    Array.prototype.forEach.call(buttons,function(button){
+      button.setAttribute("aria-pressed",String(button.getAttribute("data-pupil")===key));
+    });
+  }
+  Array.prototype.forEach.call(buttons,function(button){
+    button.addEventListener("click",function(){
+      select(button.getAttribute("data-pupil"));
+      if(window.matchMedia("(max-width:760px)").matches)document.getElementById("classProfile").focus();
+    });
+  });
+  select("leo");
+  if(document.fonts)document.fonts.ready.then(function(){
+    var active=demo.querySelector('[aria-pressed="true"]');
+    draw(pupils[active.getAttribute("data-pupil")].scores);
+  });
+})();
 /* Vidéo de présentation : lecture au clic seulement (avec le son), jamais de démarrage automatique */
 (function(){
   var v=document.getElementById("presVideo"),b=document.getElementById("presPlay");
