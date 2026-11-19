@@ -20,4 +20,4 @@ Chaque modification sur la branche `main` est ensuite publiée automatiquement.
 - `enseignants.html` : espace enseignant et administration.
 - `zoo-local.html` : ancienne version du Zoo, sans serveur (données dans le navigateur). Plus utilisée, gardée pour mémoire.
 
-**Important :** les données des élèves sont conservées dans le stockage local du navigateur, propre à chaque adresse. Elles ne seront pas transférées automatiquement depuis Netlify. Garder l'ancien site accessible si ces données doivent être récupérées.
+Documentation technique complète (hébergement, base Supabase, parcours, tests, règles de travail) : `CLAUDE.md` ; consignes pour les agents : `AGENTS.md`.
