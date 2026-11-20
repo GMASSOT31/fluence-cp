@@ -162,8 +162,8 @@
     animal: { e: "🦋", nom: "le papillon" } };
   NOMBRES.unshift(smallNumbers); ADDITION.unshift(smallAddition); ADDITION.push(earlyDoubles); SOUSTRACTION.unshift(smallSubtraction);
 
-  var MISSION = ["n0", "a0", "s0", "n1", "a1", "s1", "a2", "s2", "ad10", "a3", "a4",
-    "n2", "n3", "a6", "s3", "a5", "a7", "s4", "s5"];
+  var MISSION = ["n0", "a0", "n1", "a1", "a2", "ad10", "a3", "a4",
+    "n2", "s0", "s1", "s2", "n3", "a6", "s3", "a5", "a7", "s4", "s5"];
   var decades = ["d20", "d30", "d40", "d50", "n6", "n7", "n8", "n9"];
   var sumAnimals = ["🐝", "🦆", "🦢", "🦙", "🦍", "🦧", "🦫", "🦅"];
   var subAnimals = ["🐟", "🐠", "🐙", "🦀", "🦭", "🐬", "🐋", "🦈"];
@@ -187,7 +187,7 @@
     animal: { e: "🐧", nom: "le manchot" } });
   MISSION.push("n10", "n11", "a8");
 
-  var REQUIRED = ["n0", "a0", "s0", "n1", "a2", "s2"];
+  var REQUIRED = ["n0", "n2", "a0", "s0", "n1", "a2", "s2"];
   var MISSION_STEPS = MISSION.map(function (id) {
     var act = { n: "nombres", d: "nombres", a: "addition", s: "soustraction" }[id.charAt(0)];
     return { act: act, id: id };
@@ -209,8 +209,10 @@
     NOMBRES.forEach(function (level) {
       if ((progress["nombres:" + level.id] || {}).ok >= 1) level.allowed.forEach(function (n) { known[n] = true; });
     });
+    var knowsTo16 = range(0, 16).every(function (n) { return known[n]; });
     function ready(step) {
       if (step.act === "nombres") return true;
+      if (step.act === "soustraction" && !knowsTo16) return false;
       var level = levelInfo(step.act, step.id), low = level.minChoice || 0;
       var needed = range(low, level.cap);
       if (low) needed = range(0, 9).concat(needed);
