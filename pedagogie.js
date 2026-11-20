@@ -58,7 +58,7 @@
     var blocked = !!cur && !curSent && ((answers >= 6 && err >= 40) || readTries >= 3);
     /* son en cours réussi en entraînement (⭐) mais pas encore envoyé : l’élève peut s’enregistrer pour la médaille */
     var canRec = !!cur && !curSent && res.some(function (r) { return r.sound === cur.id && r.src === "train" && !r.void && !r.short && !(Number(r.fraud) > 0) && thr[r.k] && (Number(r.mclm) || 0) >= thr[r.k]; });
-    var flu = res.filter(function (r) { return !r.void && !r.short && !(Number(r.fraud) > 0) && r.src !== "adj" && Number(r.mclm) > 0; })
+    var flu = res.filter(function (r) { return !r.void && !r.short && !(Number(r.fraud) > 0) && r.src !== "adj" && r.src !== "train" && Number(r.mclm) > 0; })
       .sort(function (a, b) { return (Number(b.ts) || 0) - (Number(a.ts) || 0); })[0] || null;
     return { s: s, row: row || null, canRec: canRec, p: p, nValid: nValid, total: order.length, cur: cur, err: err, answers: answers, readTries: readTries, blocked: blocked,
       recs: recs.length, recTabs: recs.map(function (x) { return Number(x.tab) || 0; }).filter(function (n, i, a) { return n && a.indexOf(n) === i; }).sort(function (a, b) { return a - b; }), curSent: curSent, secs: secs, series: series, idle: idle, flu: flu, conf: st.conf && typeof st.conf === "object" ? st.conf : {}, measured: Object.keys(days).length > 0,
@@ -306,7 +306,7 @@
     if (r.asg) { var ast = asgState(r.asg, r.remed); chips.append(mk("span", "pb-tag " + (ast.ok ? "ok" : "asg"), "🎯 " + asgLabel(r.asg) + " · " + asgStatusText(r.asg, r.remed))); }
     prog.append(chips);
     var flu = mk("div", "pb-flu", r.flu ? Math.round(Number(r.flu.mclm)) + "/min" : "—");
-    flu.title = r.flu ? "Dernière lecture : " + Math.round(Number(r.flu.mclm)) + " " + (r.flu.k === "s" ? "syllabes lues" : "mots lus") + " par minute (" + ({ s: "syllabes", m: "mots", t: "texte" }[r.flu.k] || "lecture") + ")" : "Pas encore de lecture";
+    flu.title = r.flu ? "Dernière lecture validée : " + Math.round(Number(r.flu.mclm)) + " " + (r.flu.k === "s" ? "syllabes lues" : "mots lus") + " par minute (" + ({ s: "syllabes", m: "mots", t: "texte" }[r.flu.k] || "lecture") + ")" : "Aucune lecture validée pour l’instant";
     var open = !!state.open[r.s.id];
     var act = mk("button", "pb-see pb-detail-btn" + (open ? " on" : ""), open ? "▲ Masquer" : "▼ Détails"); act.type = "button"; act.title = "Résultats de " + r.s.nickname;
     act.setAttribute("aria-expanded", String(open));
@@ -395,7 +395,7 @@
     var nD = doneCount(p.dictee, function () { return dp; });
     var opt = function (o) { return o && typeof o === "object" && o.done && typeof o.done === "object" ? doneCount(o, null) : null; };
     var nP = opt(p.phono), nC = opt(p.compr);
-    var flu = (Array.isArray(p.results) ? p.results : []).filter(function (x) { return x && !x.void && !x.short && !(Number(x.fraud) > 0) && x.src !== "adj" && Number(x.mclm) > 0 && thr[x.k]; })
+    var flu = (Array.isArray(p.results) ? p.results : []).filter(function (x) { return x && !x.void && !x.short && !(Number(x.fraud) > 0) && x.src !== "adj" && x.src !== "train" && Number(x.mclm) > 0 && thr[x.k]; })
       .sort(function (a, b) { return (Number(b.ts) || 0) - (Number(a.ts) || 0); });
     var last3 = flu.slice(0, 3), sp = last3.length ? Math.round(last3.reduce(function (a, x) { return a + Math.min(1, Number(x.mclm) / thr[x.k]); }, 0) * 100 / last3.length) : null;
     var exp = expected(tot), pct = function (n) { return n === null ? null : Math.round(n * 100 / exp); };
@@ -508,7 +508,7 @@
       doc.setFont("helvetica", "normal"); doc.setFontSize(9.5); doc.setTextColor(60);
       ax.flu.slice(0, 5).forEach(function (x) {
         if (y > 280) return; y += 5.4;
-        doc.text(T(frDate(Number(x.ts) || Date.now()) + "   Son « " + soundName(x.sound) + " » · " + (KN[x.k] || "lecture") + (x.src === "train" ? " (entraînement)" : "")), M + 2, y);
+        doc.text(T(frDate(Number(x.ts) || Date.now()) + "   Son « " + soundName(x.sound) + " » · " + (KN[x.k] || "lecture")), M + 2, y);
         doc.text(Math.round(Number(x.mclm)) + (x.k === "s" ? " syllabes / min" : " mots / min"), W - M - 2, y, { align: "right" });
       });
     }
