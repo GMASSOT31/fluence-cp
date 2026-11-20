@@ -7806,7 +7806,10 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       resultBox.appendChild(el("p", "muted", r.n + " lus, " + nb(r.e, "erreur", "erreurs") + ", sur " + r.t + " secondes. Objectif : " + thr + ". " + (ok ? "Atteint : l’étape sera certifiée 🏅." : "Pas atteint.")));
       var row = el("div", "row");
       var okb = el("button", "primary", "Valider et enregistrer"); okb.type = "button";
-      okb.addEventListener("click", function () { saveReview(rv, r); });
+      okb.addEventListener("click", async function () {
+        okb.disabled = redo.disabled = true;
+        await saveReview(rv, r);
+      });
       var redo = el("button", "secondary", "Demander de relire"); redo.type = "button";
       redo.addEventListener("click", function () { redoReview(rv); });
       row.appendChild(okb); row.appendChild(redo);
@@ -7817,9 +7820,9 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     body.appendChild(card);
     paint();
   }
-  function saveReview(rv, r) {
+  async function saveReview(rv, r) {
     var was = isValid(rv.sid, rv.sound, rv.kind), petBefore = petState(rv.sid, rv.sound);
-    data.results.push({ id: uid(), sid: rv.sid, sound: rv.sound, k: rv.kind, n: r.n, e: r.e, t: Math.round(r.t), mclm: r.mclm, ts: rv.ts, reviewedAt: Date.now(), src: "rec", fraud: r.fraud });
+    data.results.push({ id: uid(), sid: rv.sid, sound: rv.sound, k: rv.kind, n: r.n, e: r.e, t: Math.round(r.t), mclm: r.mclm, ts: rv.ts, reviewId: rv.id, reviewedAt: Date.now(), src: "rec", fraud: r.fraud });
     var newly = !was && isValid(rv.sid, rv.sound, rv.kind);
     var thr = data.thr[rv.kind];
     var note = "Le maître(sse) a écouté ta lecture : " + r.mclm + " " + kindInfo(rv.kind).unit + " par minute.";
@@ -7839,8 +7842,10 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     data.notes.push({ sid: rv.sid, text: note });
     removeReview(rv.id);
     closeReviewMedia();
-    toast(newly ? "Résultat enregistré : certifié par l’enseignant 🏅" : "Résultat enregistré");
-    renderEcoute();
+    var saved = !cloudMode || await cloudSettle();
+    toast(saved ? (newly ? "Lecture validée et étape certifiée 🏅" : "Lecture validée")
+      : "Validation en attente de synchronisation. Garde cette page ouverte.");
+    if (ses.ear || ses.role === "teacher") renderEcoute();
   }
   function redoReview(rv) {
     data.notes.push({ sid: rv.sid, text: "Le maître(sse) te demande de relire cette étape : " + reviewTitle(rv).toLowerCase() + ". Tu peux t’enregistrer à nouveau." });

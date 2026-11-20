@@ -139,3 +139,5 @@ Appli web de fluence de lecture pour des classes de CP, en ligne sur https://zoo
 - Pas de moyen sûr de modifier les réglages d'authentification Supabase (« Confirm email ») depuis ici : aucun jeton ; à faire à la main dans le tableau de bord (ou jeton dans `SUPABASE_ACCESS_TOKEN`).
 - Retours de l'auditeur UX encore à traiter si Gabriel les redonne ; mesure d'audience volontairement non ajoutée ; témoignages de collègues sur la landing.
 - Ligne illisible d'un retour sur la démo : **abandonnée par l'utilisateur, ne plus en parler.**
+
+- L’onglet « À écouter » s’actualise quand il est visible. Une validation est liée à l’identifiant de l’enregistrement et apparaît dans « Lectures validées récemment » après synchronisation.

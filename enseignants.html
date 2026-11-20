@@ -422,7 +422,7 @@ body.teacher-mode .teacher-header .teacher-nav button.nav-improve.active,.teache
   <p class="muted privacy-note">Choisissez 4 à 8 chiffres et transmettez le code individuellement à l'élève ou à sa famille.</p>
   <div id="students" class="content-list"></div>
  </section>
- <section class="panel feature-card progress-card" id="listenSettings" data-section="ecouter"><h2>À écouter</h2><p class="muted">Lectures enregistrées par les élèves pour leur médaille 🏅. Le son reste sur la tablette où l’élève a lu (son numéro 📱 est indiqué) : sur cette tablette, élève connecté, touchez « 🎧 Mon maître(sse) écoute » sur sa mission, tapez votre mot de passe, puis écoutez et notez.</p><div id="recordingsList"></div></section>
+ <section class="panel feature-card progress-card" id="listenSettings" data-section="ecouter"><h2>À écouter</h2><p class="muted">Lectures enregistrées par les élèves pour leur médaille 🏅. Le son reste sur la tablette où l’élève a lu (son numéro 📱 est indiqué) : sur cette tablette, élève connecté, touchez « 🎧 Mon maître(sse) écoute » sur sa mission, tapez votre mot de passe, puis écoutez et notez.</p><div id="recordingsList"></div><h3>Lectures validées récemment</h3><div id="validatedRecordings"></div></section>
 <div class="sub-picker set-pick" data-section="reglages" role="group" aria-label="Choisir un réglage pédagogique"><button type="button" data-sub-btn="obj"><span class="sp-ico">🎯</span><strong>Objectifs de lecture</strong><small>Vitesse à atteindre, passage au son suivant</small></button><button type="button" data-sub-btn="sons"><span class="sp-ico">🔤</span><strong>Ordre des sons</strong><small>L’ordre de la progression</small></button><button type="button" data-sub-btn="eval"><span class="sp-ico">🏅</span><strong>Médaille</strong><small>Lecture enregistrée par l’élève</small></button><button type="button" data-sub-btn="exoecoute"><span class="sp-ico">👂</span><strong>Exercice d’écoute</strong><small>Syllabes et mots à écouter</small></button><button type="button" data-sub-btn="dictee"><span class="sp-ico">✏️</span><strong>Exercice de dictée</strong><small>Syllabes et mots à écrire</small></button><button type="button" data-sub-btn="exo"><span class="sp-ico">📖</span><strong>Exercice de lecture</strong><small>Syllabes, mots et textes</small></button><button type="button" data-sub-btn="comprehension" data-role="admin" hidden><span class="sp-ico">🧩</span><strong>Je comprends</strong><small>Mots à lire et images à associer</small></button></div>
 <section class="panel feature-card zoo-card" id="objSettings" data-section="reglages" data-sub="obj"><div class="section-head"><div class="section-icon">🎯</div><div><h2>Objectifs de lecture</h2><p class="muted">Ce que l’élève doit atteindre en 1 minute de lecture. Enregistrement automatique.</p></div></div><p class="save-state" id="objSave" role="status"></p><div class="zoo-form">
  <h3>Vitesse pour réussir une étape</h3><div class="eval-grid"><label>Syllabes par minute<input id="thrS" type="number" min="1" max="300" required value="25"></label><label>Mots par minute<input id="thrM" type="number" min="1" max="300" required value="20"></label><label>Texte : mots par minute<input id="thrT" type="number" min="1" max="300" required value="15"></label></div>
@@ -805,17 +805,57 @@ window.addEventListener("beforeunload",e=>{if(savePending){flushSave();e.prevent
  if(id==="unlimitedPlays")$("maxPlays").disabled=i.checked;
  queueSave(st);})}));
 function setListenBadge(n){const b=$("listenBadge");if(!b)return;b.textContent=n>99?"99+":String(n);b.classList.toggle("hidden",!n);b.setAttribute("aria-label",n+" "+pl(n,"lecture à écouter","lectures à écouter"))}
-async function refreshListenBadge(){const {data,error}=await client.from("student_progress").select("progress");if(error)return;setListenBadge((data||[]).reduce((n,row)=>n+(Array.isArray(row.progress?.reviews)?row.progress.reviews.length:0),0))}
+function validatedRecordings(progress){
+ return (Array.isArray(progress?.results)?progress.results:[]).filter(result=>result?.src==="rec");
+}
+function pendingRecordings(progress){
+ const validated=validatedRecordings(progress);
+ return (Array.isArray(progress?.reviews)?progress.reviews:[]).filter(review=>review&&!validated.some(result=>
+  result.reviewId ? result.reviewId===review.id :
+   result.sid===review.sid&&result.ts===review.ts&&result.sound===review.sound&&result.k===review.kind));
+}
+async function refreshListenBadge(){
+ const {data,error}=await client.from("student_progress").select("progress");
+ if(error||activeTab==="ecouter")return;
+ setListenBadge((data||[]).reduce((n,row)=>n+pendingRecordings(row.progress).length,0));
+}
 async function renderRecordings(){
- const list=$("recordingsList");list.textContent="Chargement…";
+ const list=$("recordingsList"), history=$("validatedRecordings");
  const {data,error}=await client.from("student_progress").select("student_id,progress");
  if(error){list.textContent=errorText(error);return;}
- const recordings=[];
- (data||[]).forEach(row=>{const student=allStudents.find(s=>s.id===row.student_id);const p=row.progress||{};(Array.isArray(p.reviews)?p.reviews:[]).forEach(review=>recordings.push({student:student?.nickname||"Élève",review}))});
- list.replaceChildren();setListenBadge(recordings.length);recordings.sort((a,b)=>(Number(a.review.tab)||99)-(Number(b.review.tab)||99)||(a.review.ts||0)-(b.review.ts||0));
- if(!recordings.length){list.textContent="Aucune lecture à écouter enregistrée sur le serveur.";return;}
- recordings.forEach(({student,review})=>{const line=document.createElement("div");line.className="row";const tb=document.createElement("strong");tb.textContent=review.tab?"📱 Tablette "+review.tab:"📱 Tablette sans numéro";line.append(tb," · "+student+" · "+({s:"syllabes",m:"mots",t:"texte"}[review.kind]||"lecture")+" du son « "+(review.sound||"?")+" »"+(review.secs?" · "+review.secs+" s":"")+" · "+(review.ts?new Date(review.ts).toLocaleDateString("fr-FR"):""));list.append(line)});
+ const pending=[], validated=[];
+ (data||[]).forEach(row=>{
+  const student=allStudents.find(s=>s.id===row.student_id)?.nickname||"Élève";
+  pendingRecordings(row.progress).forEach(review=>pending.push({student,review}));
+  validatedRecordings(row.progress).forEach(result=>validated.push({student,result}));
+ });
+ list.replaceChildren();history.replaceChildren();setListenBadge(pending.length);
+ pending.sort((a,b)=>(Number(a.review.tab)||99)-(Number(b.review.tab)||99)||(a.review.ts||0)-(b.review.ts||0));
+ const label=(kind,sound)=>({s:"syllabes",m:"mots",t:"texte"}[kind]||"lecture")+" du son « "+(sound||"?")+" »";
+ const date=ts=>ts?new Date(ts).toLocaleDateString("fr-FR"):"";
+ if(!pending.length)list.textContent="Aucune lecture à écouter.";
+ pending.forEach(({student,review})=>{
+  const line=document.createElement("div");line.className="row";
+  const tablet=document.createElement("strong");tablet.textContent=review.tab?"📱 Tablette "+review.tab:"📱 Tablette sans numéro";
+  line.append(tablet," · "+student+" · "+label(review.kind,review.sound)+(review.secs?" · "+review.secs+" s":"")+" · "+date(review.ts));
+  list.append(line);
+ });
+ const reviewedOn=result=>Number(result.reviewedAt||result.ts)||0;
+ validated.sort((a,b)=>reviewedOn(b.result)-reviewedOn(a.result));
+ if(!validated.length)history.textContent="Aucune lecture validée.";
+ validated.slice(0,30).forEach(({student,result})=>{
+  const line=document.createElement("div");line.className="row";
+  const status=document.createElement("strong");status.textContent="✅ Validée";
+  line.append(status," · "+student+" · "+label(result.k,result.sound)+" · "+date(reviewedOn(result)));
+  history.append(line);
+ });
 }
+function refreshVisibleRecordings(){
+ if(currentUser&&activeTab==="ecouter"&&!document.hidden)renderRecordings();
+}
+window.addEventListener("focus",refreshVisibleRecordings);
+document.addEventListener("visibilitychange",refreshVisibleRecordings);
+setInterval(refreshVisibleRecordings,15000);
 
 /* Administrateur : jeux classés par nombre de parties terminées (tous les enseignants), sans aucun nom d’élève */
 const GAME_NAMES={memory:"🃏 Memory des animaux",snake:"🐍 Le serpent",flap:"🐤 L’oiseau volant",order:"⏱️ Dans l’ordre",simon:"🧠 Répète les animaux",safari:"🦁 Safari des animaux",stack:"🦒 Tour d’animaux",tiles:"🎹 Tuiles des sons",count:"🔢 Compte les animaux (ancien jeu)",catch:"🎯 Attrape-les (ancien jeu)"};
