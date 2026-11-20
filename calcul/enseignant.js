@@ -450,6 +450,7 @@
   /* ===== Accès au laboratoire (administrateur) ===== */
   function renderAccess() {
     var box = $("#calcAccess"); clear(box);
+    box.appendChild(el("span", "admin-scope-label", "Administration"));
     box.appendChild(head("🔐", "Accès au laboratoire de calcul", "Réservé à l’administrateur : qui voit le Zoo de Calcul."));
     var holder = el("div"); box.appendChild(holder); holder.appendChild(el("p", "muted", "Chargement…"));
     function load() { rpc("lab_admin_state").then(paint).catch(function () { clear(holder); holder.appendChild(el("p", "msg err", "Impossible de charger les accès.")); }); }
