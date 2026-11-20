@@ -116,12 +116,16 @@ for (var step = E.mission(null, missionProgress).next; step; step = E.mission(nu
   }
   missionProgress[stepKey].ok = 1;
 }
-ok(missionOrder.slice(0, 8).join() === "n0,a0,s0,n1,a1,s1,a2,s2", "paliers obligatoires dans l’ordre");
+ok(missionOrder.slice(0, 12).join() === "n0,a0,n1,a1,a2,ad10,a3,a4,n2,s0,s1,s2", "paliers obligatoires dans l’ordre");
 ok(missionOrder.indexOf("ap20") > missionOrder.indexOf("d20") && missionOrder.indexOf("ac30") > missionOrder.indexOf("d30"), "calculs déverrouillés après reconnaissance de la dizaine");
 ok(!E.mission(null, missionProgress).blocked, "tout le parcours par défaut est accessible");
 ok(E.missionLevels("addition", ["a8"]).join() === "a0,a2,a8", "anciens réglages : les paliers obligatoires restent proposés");
 var partial = E.mission({ nombres: ["n1", "v2"], addition: ["a8"], soustraction: ["s2"] }, missionProgressWithoutHigherNumbers());
-ok(!partial.next && partial.blocked && !partial.replay.some(function (s) { return s.id === "a8"; }), "un calcul dont les nombres sont inconnus reste fermé même s’il a déjà été réussi");
+ok(partial.next && partial.next.id === "n2" && partial.blocked && !partial.replay.some(function (s) { return s.id === "a8" || s.act === "soustraction"; }), "11–16 est proposé avec les anciens réglages et les calculs restent fermés avant leurs prérequis, même déjà réussis");
+var after16 = missionProgressWithoutHigherNumbers();
+after16["nombres:n2"] = { ok: 1 };
+var unlocked = E.mission({ nombres: ["n1", "v2"], addition: ["a8"], soustraction: ["s2"] }, after16);
+ok(unlocked.replay.some(function (s) { return s.id === "s0"; }) && unlocked.replay.some(function (s) { return s.id === "s2"; }), "les anciennes soustractions réapparaissent après une étoile de reconnaissance jusqu’à 16");
 function missionProgressWithoutHigherNumbers() {
   return Object.fromEntries(["nombres:n0", "nombres:n1", "addition:a0", "addition:a2", "addition:a8", "soustraction:s0", "soustraction:s2"].map(function (key) { return [key, { ok: 1 }]; }));
 }
