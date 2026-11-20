@@ -96,6 +96,7 @@
         prevAbs: absolute ? { value: abs.value, nickname: abs.nickname, avatar: abs.avatar, mine: abs.mine } : null };
     }
   };
+  api.get_comprehension_exercises = function () { return srv.comprehension || {}; };
   window.supabase = { createClient: function () { return { rpc: function (name, args) {
     srv.calls.push(name);
     return new Promise(function (res) { setTimeout(function () {
