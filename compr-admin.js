@@ -46,14 +46,41 @@
     });
   }
 
+  function openDrafts(userId) {
+    return new Promise(function (resolve, reject) {
+      var request = indexedDB.open("zoo-comprehension-drafts", 1);
+      request.onupgradeneeded = function () { request.result.createObjectStore("drafts"); };
+      request.onerror = function () { reject(request.error); };
+      request.onsuccess = function () {
+        var db = request.result;
+        var read = db.transaction("drafts", "readonly").objectStore("drafts").get(userId);
+        read.onerror = function () { db.close(); reject(read.error); };
+        read.onsuccess = function () {
+          resolve({ state: read.result, write: function (state) {
+            return new Promise(function (done, failed) {
+              var tx = db.transaction("drafts", "readwrite");
+              tx.oncomplete = done;
+              tx.onabort = function () { failed(tx.error); };
+              tx.objectStore("drafts").put(state, userId);
+            });
+          } });
+        };
+      };
+    });
+  }
+
   function open(client, host, sounds, userId) {
     if (!host || host.dataset.editorUser === userId) return;
     host.dataset.editorUser = userId;
     host.textContent = "Chargement des exercices…";
-    client.rpc("get_comprehension_exercises").then(function (result) {
+    Promise.all([
+      client.rpc("get_comprehension_exercises"),
+      openDrafts(userId).catch(function () { return null; })
+    ]).then(function (responses) {
+      var result = responses[0];
       if (host.dataset.editorUser !== userId) return;
       if (result.error) throw result.error;
-      render(client, host, sounds, result.data || {});
+      render(client, host, sounds, result.data || {}, responses[1]);
     }).catch(function () {
       if (host.dataset.editorUser !== userId) return;
       host.textContent = "Les exercices n’ont pas pu être chargés. ";
@@ -63,10 +90,17 @@
     });
   }
 
-  function render(client, host, sounds, saved) {
+  function render(client, host, sounds, saved, local) {
     host.textContent = "";
     var files = client.storage.from(bucket), drafts = Object.create(null);
     var order = sounds.map(function (sound) { return sound.id; });
+    var state = local && local.state || { sound: "", edits: {} };
+    Object.keys(state.edits).forEach(function (id) {
+      drafts[id] = state.edits[id].entries.map(function (entry) { return Object.assign({}, entry); });
+      drafts[id].forEach(function (entry) {
+        if (entry.file) entry.preview = URL.createObjectURL(entry.file);
+      });
+    });
     var label = element("label", "Son à compléter");
     var select = element("select");
     select.id = "comprEditSound";
@@ -75,20 +109,60 @@
       var option = element("option", sound.label);
       option.value = sound.id; select.appendChild(option);
     });
+    if (order.indexOf(state.sound) >= 0) select.value = state.sound;
     var existing = element("div"), rows = element("div"), guide = element("p"), add = button("Ajouter un mot"), save = button("Enregistrer ce son");
     save.className = "primary";
     var status = element("p"); status.setAttribute("role", "status");
-    [label, select, guide, existing, rows, add, save, status].forEach(function (node) { host.appendChild(node); });
+    [label, select, guide, status, existing, rows, add, save].forEach(function (node) { host.appendChild(node); });
 
     function draft(id) {
       if (!drafts[id]) drafts[id] = (saved[id] || []).map(function (row) { return { word: row.word, path: row.path }; });
       return drafts[id];
+    }
+    function persist() {
+      state.sound = select.value;
+      if (!local) {
+        if (state.edits[select.value]) status.textContent += " Gardez la page ouverte jusqu’à l’enregistrement.";
+        return;
+      }
+      local.write(state).catch(function () {
+        status.textContent = "Le brouillon ne peut pas être gardé sur cet appareil. Laissez cette page ouverte jusqu’à l’enregistrement.";
+      });
+    }
+    function updateControls() {
+      var dirty = Object.keys(state.edits);
+      Array.prototype.forEach.call(select.options, function (option, index) {
+        option.textContent = sounds[index].label + (dirty.indexOf(option.value) >= 0 ? " · à enregistrer" : "");
+      });
+      save.disabled = !state.edits[select.value];
+    }
+    function edited() {
+      var id = select.value, previous = state.edits[id];
+      var baseline = previous ? previous.previous : saved[id] || [];
+      var entries = draft(id);
+      if (!entries.length && !baseline.length) {
+        delete state.edits[id];
+        status.textContent = "";
+        updateControls();
+        persist();
+        return;
+      }
+      state.edits[id] = {
+        previous: baseline,
+        entries: entries.map(function (entry) {
+          return { word: entry.word, path: entry.path, file: entry.file, pendingPath: entry.pendingPath };
+        })
+      };
+      status.textContent = "Modifications à enregistrer pour « " + sounds[select.selectedIndex].label + " ».";
+      updateControls();
+      persist();
     }
     function attach(entry, file) {
       entry.file = file;
       delete entry.pendingPath;
       if (entry.preview) URL.revokeObjectURL(entry.preview);
       entry.preview = URL.createObjectURL(file);
+      edited();
       paint();
     }
     function fileInput(row, labelText, onFile) {
@@ -148,13 +222,13 @@
         word.type = "text"; word.maxLength = 40; word.value = entry.word;
         word.placeholder = "Mot à comprendre";
         word.setAttribute("aria-label", "Mot " + (index + 1));
-        word.oninput = function () { entry.word = word.value; };
+        word.oninput = function () { entry.word = word.value; edited(); };
         var pick = fileInput(row, "Image du mot " + (index + 1), function (file) { attach(entry, file); });
         var remove = button("Retirer");
         remove.setAttribute("aria-label", "Retirer le mot " + (index + 1));
         remove.onclick = function () {
           if (entry.preview) URL.revokeObjectURL(entry.preview);
-          entries.splice(index, 1); paint();
+          entries.splice(index, 1); edited(); paint();
         };
         row.appendChild(word);
         if (entry.preview || entry.path) {
@@ -168,12 +242,18 @@
         rows.appendChild(row);
       });
       add.disabled = entries.length >= limit;
+      updateControls();
     }
 
-    select.onchange = function () { status.textContent = ""; paint(); };
-    add.onclick = function () { draft(select.value).push({ word: "", path: null }); paint(); rows.lastChild.firstChild.focus(); };
+    select.onchange = function () {
+      status.textContent = state.edits[select.value] ? "Ce son a des modifications à enregistrer." : "";
+      persist(); paint();
+    };
+    add.onclick = function () { draft(select.value).push({ word: "", path: null }); edited(); paint(); rows.lastChild.firstChild.focus(); };
     save.onclick = async function () {
       var id = select.value, entries = draft(id), words = new Set();
+      var edit = state.edits[id];
+      if (!edit) return;
       var valid = entries.every(function (entry) {
         entry.word = entry.word.trim().normalize("NFC").toLocaleLowerCase("fr");
         if (!/^[a-zàâäçéèêëîïôöùûüÿœæ]+(?:[’'-][a-zàâäçéèêëîïôöùûüÿœæ]+)*$/.test(entry.word)
@@ -181,7 +261,11 @@
         words.add(entry.word);
         return true;
       });
-      if (!valid) { status.textContent = "Vérifiez que chaque ligne contient un mot différent et une image."; return; }
+      if (!valid) {
+        status.textContent = "Vérifiez que chaque ligne contient un mot différent et une image.";
+        status.scrollIntoView({ block: "nearest" });
+        return;
+      }
       host.querySelectorAll("button, input, select").forEach(function (node) { node.disabled = true; });
       status.textContent = "Enregistrement…";
       try {
@@ -193,21 +277,29 @@
             var upload = await files.upload(path, blob, { contentType: "image/jpeg", cacheControl: "3600" });
             if (upload.error) throw new Error("L’image de « " + entry.word + " » n’a pas pu être envoyée.");
             entry.pendingPath = path;
+            edit.entries[entries.indexOf(entry)].pendingPath = path;
+            persist();
           }
           next.push({ word: entry.word, path: entry.pendingPath || entry.path });
         }
-        var result = await client.rpc("admin_save_comprehension_exercise", { p_sound: id, p_entries: next, p_previous: saved[id] || [] });
+        var result = await client.rpc("admin_save_comprehension_exercise", { p_sound: id, p_entries: next, p_previous: edit.previous });
         if (result.error) throw new Error(result.error.message || "Enregistrement impossible.");
         saved[id] = next;
         entries.forEach(function (entry) { if (entry.preview) URL.revokeObjectURL(entry.preview); });
         delete drafts[id];
-        status.textContent = "Exercice enregistré.";
-      } catch (error) { status.textContent = error.message || "Enregistrement impossible. Réessayez."; }
+        delete state.edits[id];
+        persist();
+        status.textContent = next.length ? "Exercice enregistré." : "Ajouts retirés pour ce son.";
+      } catch (error) {
+        status.textContent = error.message || "Enregistrement impossible. Réessayez.";
+        status.scrollIntoView({ block: "nearest" });
+      }
       finally {
         select.disabled = save.disabled = false;
         paint();
       }
     };
+    if (state.edits[select.value]) status.textContent = "Brouillon retrouvé. Enregistrez ce son pour envoyer les modifications.";
     paint();
   }
   window.ZooComprAdmin = { open: open };
