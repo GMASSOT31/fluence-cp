@@ -255,14 +255,14 @@
       var edit = state.edits[id];
       if (!edit) return;
       var valid = entries.every(function (entry) {
-        entry.word = entry.word.trim().normalize("NFC").toLocaleLowerCase("fr");
-        if (!/^[a-zàâäçéèêëîïôöùûüÿœæ]+(?:[’'-][a-zàâäçéèêëîïôöùûüÿœæ]+)*$/.test(entry.word)
+        entry.word = entry.word.trim().replace(/\s+/g, " ").normalize("NFC").toLocaleLowerCase("fr");
+        if (!/^[a-zàâäçéèêëîïôöùûüÿœæ]+(?:[ ’'-][a-zàâäçéèêëîïôöùûüÿœæ]+)*$/.test(entry.word)
             || words.has(entry.word) || !(entry.path || entry.file)) return false;
         words.add(entry.word);
         return true;
       });
       if (!valid) {
-        status.textContent = "Vérifiez que chaque ligne contient un mot différent et une image.";
+        status.textContent = "Chaque ligne doit contenir un mot ou une courte expression différente et une image.";
         status.scrollIntoView({ block: "nearest" });
         return;
       }
