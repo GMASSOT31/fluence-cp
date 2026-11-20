@@ -669,21 +669,25 @@
           if (window.ZooFx) { ZooFx.tone(784, 0, 0.09, "triangle", 0.07); ZooFx.tone(1175, 0.08, 0.14, "triangle", 0.07); }
           setTimeout(function () { if (!R || R.q !== q) return; R.i++; if (R.i < R.qs.length) question(); else finish(); }, clean ? 450 : 700);
         } else {
-          var feedback = q.type === "nombres" ? "Non, ça, c’est le nombre " + E.words(c) + "." : "Pas tout à fait.";
+          var isNumber = q.type === "nombres";
           mistakes++; firstTry = false; b.classList.add("bad"); b.disabled = true; msg.className = "msg bad";
           /* 1re erreur : encouragement ; 2e : l'aide complète (avec le résultat) ; 3e : la bonne réponse est colorée */
           if (mistakes === 2) {
-            if (q.type === "nombres") { var n10 = q.answer >= 10 && q.answer < 100 ? " → " + (q.answer - q.answer % 10) + (q.answer % 10 ? " + " + q.answer % 10 : "") : ""; msg.textContent = "Écoute encore : « " + q.say + " »" + n10; R.replays++; tell(feedback + " Écoute encore. " + q.say + ".", null); }
+            if (isNumber) { var n10 = q.answer >= 10 && q.answer < 100 ? " → " + (q.answer - q.answer % 10) + (q.answer % 10 ? " + " + q.answer % 10 : "") : ""; msg.textContent = "Écoute encore : « " + q.say + " »" + n10; R.replays++; }
             else if (openHelp && split(q)) { msg.textContent = "Regarde l’aide, elle te montre comment faire 🧩"; openHelp(true, true, "Pas tout à fait. Regarde l’aide, elle te montre comment faire. "); }
             else { msg.textContent = "Pas tout à fait. Essaie encore 💪"; tell("Pas tout à fait. Essaie encore.", null); }
           } else if (mistakes >= 3) {
             msg.textContent = "Regarde bien, la bonne réponse est colorée.";
             btns.forEach(function (x) { if (x.textContent === String(q.answer)) x.style.borderColor = "#17794f"; });
-            tell(feedback + " Regarde bien, la bonne réponse est colorée.", null);
+            if (!isNumber) tell("Pas tout à fait. Regarde bien, la bonne réponse est colorée.", null);
           } else {
             msg.textContent = "Pas tout à fait. Essaie encore 💪";
-            if (q.type === "nombres") R.replays++;
-            tell(feedback + " Essaie encore." + (q.type === "nombres" ? " " + q.say + "." : ""), null);
+            if (isNumber) R.replays++;
+            else tell("Pas tout à fait. Essaie encore.", null);
+          }
+          if (isNumber) {
+            var chosen = E.words(c);
+            tell(chosen + " ? Non, pas " + chosen + ". Trouve le " + q.say + ".", null);
           }
         }
       });
