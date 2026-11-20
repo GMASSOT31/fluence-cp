@@ -88,11 +88,14 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 
   /* Chemin : l’animal avance pendant la minute */
-  .trail { position: relative; height: 64px; margin: 6px 0; --lvl: var(--k-s); }
+  .trail { position: relative; overflow: hidden; height: 64px; margin: 6px 0; --lvl: var(--k-s); }
   .trail .dots { position: absolute; left: 1.4rem; right: 1.4rem; bottom: 6px; display: flex; justify-content: space-between; }
   .trail .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--line); transition: background 0.25s; }
   .trail .dot.on { background: var(--lvl); }
-  .walker { position: absolute; bottom: 14px; left: 0; font-size: 2.4rem; line-height: 1; transition: left 0.1s linear; }
+  .walker-track { position: absolute; left: 0; right: 5rem; bottom: 14px; line-height: 1; }
+  .walker { font-size: 2.4rem; }
+  body.reading-focus .walker-track.is-running { transition: transform 0.1s linear; }
+  @media (prefers-reduced-motion: reduce) { body.reading-focus .walker-track.is-running { transition: none; } }
   .goal { position: absolute; right: 0; bottom: 14px; font-size: 2rem; line-height: 1; }
   .timer { font-size: max(3rem, min(12vw, 4.6rem)); font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -0.03em; }
   .pin-form { display: grid; gap: 12px; text-align: left; }
@@ -937,7 +940,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   body.reading-focus #session .trail { grid-area: trail; height: 38px; margin: 0; }
   body.reading-focus #session .trail .dots { bottom: 4px; }
   body.reading-focus #session .trail .dot { width: 9px; height: 9px; }
-  body.reading-focus #session .walker { bottom: 8px; font-size: 1.6rem; }
+  body.reading-focus #session .walker-track { right: 3.5rem; bottom: 8px; }
+  body.reading-focus #session .walker { font-size: 1.6rem; }
   body.reading-focus #session .goal { bottom: 8px; font-size: 1.3rem; }
   body.reading-focus #session .instruction { grid-area: inst; font-size: .9rem; margin: 0; min-height: 0; }
   body.reading-focus #session #controls { grid-area: ctrl; flex-direction: column; align-items: center; justify-content: center; gap: 8px; margin: 6px 0 0; }
@@ -1433,7 +1437,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
         </div>
         <div class="trail" id="trail" aria-hidden="true">
           <div class="dots" id="dots"></div>
-          <span class="walker" id="walker"></span>
+          <div class="walker-track" id="walker-track"><span class="walker" id="walker"></span></div>
           <span class="goal">🏁</span>
         </div>
         <p class="instruction" id="instruction" role="status"></p>
@@ -3160,7 +3164,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     Array.prototype.forEach.call(dots, function (el, i) { el.classList.toggle("on", i < n); });
   }
   function setWalker(p) {
-    $("walker").style.left = "calc(" + Math.max(0, Math.min(1, p)) + " * (100% - 2.8rem))";
+    /* Le pourcentage suit la largeur de la piste sans recalcul de mise en page à chaque pas. */
+    $("walker-track").style.transform = "translateX(" + (100 * Math.max(0, Math.min(1, p))) + "%)";
   }
 
   function fmtTime(s) {
@@ -3263,6 +3268,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   var fitTimer = null; window.addEventListener("resize", function () { clearTimeout(fitTimer); fitTimer = setTimeout(fitReadingText, 120); });
   function setPhase(p) {
     S.phase = p;
+    $("walker-track").classList.toggle("is-running", p === "running");
     $("btn-start").hidden = p !== "ready";
     $("btn-finished").hidden = p !== "running";
     $("btn-stop").hidden = p !== "running" || !!S.rec;
@@ -3331,13 +3337,15 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       setPhase("ending");
       return;
     }
-    $("timer").textContent = fmtTime(DURATION - el);
+    var timer = $("timer"), remaining = fmtTime(DURATION - el);
+    if (timer.textContent !== remaining) timer.textContent = remaining;
     lightKeys(Math.floor(el / (DURATION / KEYS)));
     setWalker(el / DURATION);
   }
   function stopTimer() {
     if (S.timerId) { clearInterval(S.timerId); S.timerId = null; }
     S.elapsed = Math.min(DURATION, (Date.now() - S.startTs) / 1000);
+    setWalker(S.elapsed / DURATION);
   }
   $("btn-stop").addEventListener("click", function () {
     stopTimer();
