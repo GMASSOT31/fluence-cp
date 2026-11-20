@@ -1469,7 +1469,6 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
         </div>
         <div class="row" style="justify-content:center">
           <button type="button" class="primary" id="btn-save">Enregistrer</button>
-          <button type="button" class="primary" id="btn-ask-eval" hidden>🎙 Je m’enregistre pour ma médaille</button>
           <button type="button" class="primary go-next" id="btn-again" hidden>🔁 Je recommence</button>
           <button type="button" class="secondary" id="btn-discard">Ne pas enregistrer</button>
         </div>
@@ -3295,7 +3294,9 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     S.errs = {}; S.endIdx = -1; S.elapsed = 0; S.mode = "end";
     S.rec = ses.role === "student" && ses.goal === "eval" && ses.mode === "rec" && !ses.viaTeacher;
     S.train = ses.role === "student" && ses.goal === "train" && !ses.viaTeacher;
-    $("btn-finished").textContent = S.rec || ses.role === "student" ? "✅ J’ai fini" : "Terminé";
+    $("btn-finished").textContent = S.train ? "✅ J’ai tout lu" : S.rec || ses.role === "student" ? "✅ J’ai fini" : "Terminé";
+    $("btn-stop").textContent = S.train ? "Je n’ai pas tout lu" : "Arrêter";
+    $("btn-back").textContent = S.train ? "← Ma mission" : ses.role === "student" ? "Changer d’étape" : "Changer d’élève ou d’étape";
     $("btn-start").disabled = false;
     setPressed($("seg"), "data-mode", "end");
     $("who").textContent = studentById(sid).name;
@@ -3360,7 +3361,10 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     showResult();
   });
   $("btn-validate").addEventListener("click", function () { if (S.endIdx >= 0) showResult(); });
-  $("btn-back").addEventListener("click", function () { leaveSession(false); });
+  $("btn-back").addEventListener("click", function () {
+    if (S.train) { leaveSession(false); show("home"); }
+    else leaveSession(false);
+  });
 
   var current = null;
   /* Où en est le son : une étoile par niveau (syllabes, mots, texte), en or quand il est validé, grise sinon ;
@@ -3450,23 +3454,17 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       : (ok ? "🏅 Certifié par l’enseignant" : "Objectif : " + thr + " par minute") + (t < MIN_EVAL_WARN_SEC ? " · ⏱️ lecture très courte, à vérifier" : "");
     badge.className = "badge" + (ok ? " ok" : "");
     $("btn-save").textContent = S.train ? "Enregistrer mon entraînement" : "Enregistrer";
-    $("btn-ask-eval").hidden = !(S.train && ok);
     $("btn-save").hidden = false; $("btn-again").hidden = true; $("btn-discard").hidden = false; $("btn-discard").textContent = "Ne pas enregistrer";
-    $("btn-ask-eval").classList.remove("go-next");
     renderResultPet(mclm, ok);
-    /* Élève qui s’entraîne (18/11/2026, parcours simplifié avec Gabriel) : l’entraînement est gardé tout seul, puis UN seul gros bouton :
-       réussi et médaille à gagner → « 🎙 Je m’enregistre pour ma médaille » (petit : Plus tard) ; réussi, médaille déjà là ou lecture envoyée → « Continuer ➜ » ;
-       pas réussi → « 🔁 Je recommence » (petit : Accueil). */
+    /* L’entraînement est sauvegardé ; la mission décide de la suite, y compris pour la médaille. */
     if (S.train && ses.role === "student" && !ses.viaTeacher) {
       var wasPassed = isTrained(S.sid, S.sound, S.kind);
       saveTraining(); current.saved = true;
       if (!wasPassed && isTrained(S.sid, S.sound, S.kind)) { applySuggestion(); save(); }
-      var medal = ok && !soundSent(S.sid, S.sound);
-      $("btn-ask-eval").hidden = !medal; $("btn-ask-eval").classList.toggle("go-next", medal);
-      $("btn-save").hidden = !(ok && !medal); $("btn-save").textContent = "Continuer ➜";
+      $("btn-save").hidden = !ok; $("btn-save").textContent = "Continuer ➜";
       $("btn-again").hidden = ok;
-      $("btn-discard").hidden = ok && !medal; $("btn-discard").textContent = medal ? "Plus tard" : "🏠 Accueil";
-      if (ok) $("r-msg").textContent = medal ? "Bravo, tu as gagné une étoile ⭐ ! Pour ta médaille 🏅, enregistre ta lecture avec ton maître(sse) 🎙." : "Bravo, tu as gagné une étoile ⭐ !";
+      $("btn-discard").hidden = ok; $("btn-discard").textContent = "← Ma mission";
+      if (ok) $("r-msg").textContent = wasPassed ? "Bravo pour ta lecture !" : "Bravo, tu as gagné une étoile ⭐ !";
       renderPanels();
     }
     $("seg").hidden = true; $("btn-validate").hidden = true;
@@ -3478,18 +3476,15 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     data.sel.sid = S.sid;
     save();
   }
-  $("btn-ask-eval").addEventListener("click", function () {
-    if (!current || !S.train) return;
-    if (!current.saved) saveTraining();
-    ses.evalTarget = { sid: S.sid, sound: S.sound, kind: S.kind };
-    ses.goal = "eval";
-    toast(current.saved ? "Ton maître(sse) tape son mot de passe pour lancer l’enregistrement." : "Entraînement enregistré. Ton maître(sse) tape son mot de passe pour lancer l’enregistrement.");
-    leaveSession(false);
-    renderPanels();
-  });
   $("btn-save").addEventListener("click", function () {
     if (!current) return;
-    if (S.train && current.saved) { leaveSession(false); renderPanels(); homeIfStudent(); return; }   /* déjà gardé : « Continuer ➜ » */
+    if (S.train && current.saved) {
+      var next = mission(S.sid), sameSound = next.kind === "read" && next.sound.id === S.sound;
+      leaveSession(false);
+      if (sameSound) openStep(S.sid, next.sound.id, next.level);
+      else { renderPanels(); show("home"); }
+      return;
+    }
     if (S.train) {
       var wasPassed = isTrained(S.sid, S.sound, S.kind);
       saveTraining();
@@ -3533,7 +3528,10 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       showEvolution({ ch: charFor(evoSound), from: petBefore, to: petState(sid, evoSound), sid: sid, zoo: "cartes" }, afterWheel);
     }
   });
-  $("btn-discard").addEventListener("click", function () { leaveSession(false); homeIfStudent(); });
+  $("btn-discard").addEventListener("click", function () {
+    leaveSession(false);
+    if (S.train) show("home"); else homeIfStudent();
+  });
   $("btn-again").addEventListener("click", function () { var snd = S.sound, k = S.kind; leaveSession(false); lireLaunch("train", snd, k); });
   /* Après une lecture, l'élève revient à l'accueil : il y retrouve l'unique gros bouton vert « étape suivante » (pas besoin de rechoisir dans les menus) */
   function homeIfStudent() { if (ses.role === "student" && !ses.viaTeacher && cloudToken) show("home"); }
