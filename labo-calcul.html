@@ -576,11 +576,10 @@
       return out(prompt(q.a, q.b), prompt(W(q.a), W(q.b)));
     }
     if (sp.kind === "gap" && q.hole) {   /* complément à 10 : les doigts levés et baissés des deux mains */
-      var up = q.a, dn = q.total - q.a, ask = up ? "si tu lèves seulement " + up + (up > 1 ? " doigts" : " doigt") : "si tu ne lèves aucun doigt",
-          askW = up ? "si tu lèves seulement " + W(up) + (up > 1 ? " doigts" : " doigt") : "si tu ne lèves aucun doigt";
+      var up = q.a, dn = q.total - q.a, prompt = " avec tes doigts, et regarde combien de doigts sont pliés.";
       return full ? out(up + (up > 1 ? " doigts levés" : " doigt levé") + " + " + dn + (dn > 1 ? " doigts baissés" : " doigt baissé") + " = 10 doigts : " + up + " + " + dn + " = 10.",
                         (up ? W(up) + (up > 1 ? " doigts levés" : " doigt levé") : "Aucun doigt levé") + ", " + W(dn) + (dn > 1 ? " doigts baissés" : " doigt baissé") + ". " + W(up) + " plus " + W(dn) + ", dix.")
-                  : out("Combien de tes doigts sont baissés " + ask + " ?", "Combien de tes doigts sont baissés " + askW + " ?");
+                  : out("Fais " + up + prompt, "Fais " + W(up) + prompt);
     }
     if (sp.kind === "gap") {
       var g = q.hole ? q.total - q.a : q.a - q.b;
