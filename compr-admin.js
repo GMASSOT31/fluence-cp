@@ -66,6 +66,7 @@
   function render(client, host, sounds, saved) {
     host.textContent = "";
     var files = client.storage.from(bucket), drafts = Object.create(null);
+    var order = sounds.map(function (sound) { return sound.id; });
     var label = element("label", "Son à compléter");
     var select = element("select");
     select.id = "comprEditSound";
@@ -74,20 +75,73 @@
       var option = element("option", sound.label);
       option.value = sound.id; select.appendChild(option);
     });
-    var rows = element("div"), guide = element("p"), add = button("Ajouter un mot"), save = button("Enregistrer ce son");
+    var existing = element("div"), rows = element("div"), guide = element("p"), add = button("Ajouter un mot"), save = button("Enregistrer ce son");
     save.className = "primary";
     var status = element("p"); status.setAttribute("role", "status");
-    [label, select, guide, rows, add, save, status].forEach(function (node) { host.appendChild(node); });
+    [label, select, guide, existing, rows, add, save, status].forEach(function (node) { host.appendChild(node); });
 
     function draft(id) {
       if (!drafts[id]) drafts[id] = (saved[id] || []).map(function (row) { return { word: row.word, path: row.path }; });
       return drafts[id];
     }
+    function attach(entry, file) {
+      entry.file = file;
+      delete entry.pendingPath;
+      if (entry.preview) URL.revokeObjectURL(entry.preview);
+      entry.preview = URL.createObjectURL(file);
+      paint();
+    }
+    function fileInput(row, labelText, onFile) {
+      var pick = element("input");
+      pick.type = "file"; pick.accept = "image/jpeg,image/png,image/webp,image/gif,image/avif";
+      pick.setAttribute("aria-label", labelText);
+      pick.onchange = function () { if (pick.files[0]) onFile(pick.files[0]); };
+      row.ondragover = function (event) { event.preventDefault(); };
+      row.ondrop = function (event) {
+        event.preventDefault();
+        if (!select.disabled && !pick.disabled && event.dataTransfer.files[0]) onFile(event.dataTransfer.files[0]);
+      };
+      return pick;
+    }
     function paint() {
       rows.textContent = "";
+      existing.textContent = "";
       var id = select.value, entries = draft(id);
-      var automatic = ZooExo.comprWords(id, sounds.map(function (s) { return s.id; })).own;
-      guide.textContent = automatic.length ? "Mots déjà illustrés par le Zoo : " + automatic.join(", ") + "." : "Le Zoo n’a pas encore de mot illustré pour ce son.";
+      var automatic = ZooExo.comprWords(id, order).own;
+      var current = ZooExo.comprWords(id, order, saved);
+      var missing = Math.max(0, 4 - current.own.length - current.prev.length, current.own.length ? 0 : 1);
+      var counts = current.own.length + " pour ce son · " + current.prev.length + " des sons précédents";
+      guide.textContent = missing
+        ? "À compléter : " + missing + (missing === 1 ? " mot illustré à ajouter" : " mots illustrés à ajouter") + " (" + counts + ")."
+        : "Assez de mots illustrés (" + counts + ").";
+      existing.appendChild(element("h3", "Mots et illustrations du Zoo"));
+      if (!automatic.length) existing.appendChild(element("p", "Aucun mot illustré par défaut pour ce son."));
+      automatic.forEach(function (word) {
+        var row = element("div"); row.className = "compr-edit-row compr-default";
+        var icon = element("span", ZooExo.COMPR_PICS[word]);
+        icon.setAttribute("aria-hidden", "true");
+        row.appendChild(icon);
+        row.appendChild(element("strong", word));
+        if (entries.some(function (entry) { return entry.word === word; })) {
+          row.appendChild(element("small", "Image personnalisée dans vos ajouts ci-dessous"));
+        } else {
+          var pick = fileInput(row, "Ajouter une image pour « " + word + " »", function (file) {
+            var entry = { word: word, path: null };
+            entries.push(entry);
+            attach(entry, file);
+          });
+          pick.disabled = entries.length >= limit;
+          row.appendChild(pick);
+        }
+        existing.appendChild(row);
+      });
+      if (current.prev.length) {
+        var previous = element("details");
+        previous.appendChild(element("summary", "Mots disponibles des sons précédents"));
+        previous.appendChild(element("p", current.prev.join(", ")));
+        existing.appendChild(previous);
+      }
+      if (entries.length) rows.appendChild(element("h3", "Vos ajouts"));
       entries.forEach(function (entry, index) {
         var row = element("div"); row.className = "compr-edit-row";
         var word = element("input");
@@ -95,23 +149,7 @@
         word.placeholder = "Mot à comprendre";
         word.setAttribute("aria-label", "Mot " + (index + 1));
         word.oninput = function () { entry.word = word.value; };
-        var pick = element("input");
-        pick.type = "file"; pick.accept = "image/jpeg,image/png,image/webp,image/gif,image/avif";
-        pick.setAttribute("aria-label", "Image du mot " + (index + 1));
-        function attach(file) {
-          if (!file || select.disabled) return;
-          entry.file = file;
-          delete entry.pendingPath;
-          if (entry.preview) URL.revokeObjectURL(entry.preview);
-          entry.preview = URL.createObjectURL(entry.file);
-          paint();
-        }
-        pick.onchange = function () { attach(pick.files[0]); };
-        row.ondragover = function (event) { event.preventDefault(); };
-        row.ondrop = function (event) {
-          event.preventDefault();
-          attach(event.dataTransfer.files[0]);
-        };
+        var pick = fileInput(row, "Image du mot " + (index + 1), function (file) { attach(entry, file); });
         var remove = button("Retirer");
         remove.setAttribute("aria-label", "Retirer le mot " + (index + 1));
         remove.onclick = function () {
