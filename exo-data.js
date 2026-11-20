@@ -290,26 +290,40 @@
   };
   var COMPR_APART = [["voiture", "taxi"], ["stylo", "crayon"], ["balle", "ballon"], ["vélo", "cycliste"], ["poule", "poulet"]];
   /* Mots illustrés d’un son : own = ceux qui font lire ce son (nouveaux), prev = ceux des sons placés avant lui */
-  function comprWords(soundId, order) {
+  function comprWords(soundId, order, custom) {
     var ids = order && order.length ? order : DEFAULT_ORDER, k = ids.indexOf(soundId), own = [], prev = [];
-    if (k < 0) return { own: own, prev: prev };
-    ids.forEach(function (id, i) {
-      if (i > k) return;
-      wordsFor(id, ids).forEach(function (w) { if (COMPR_PICS[w]) (i === k ? own : prev).push(w); });
+    var pics = Object.create(null);
+    ids.slice(0, k + 1).forEach(function (id, i) {
+      var list = i === k ? own : prev;
+      wordsFor(id, ids).forEach(function (w) {
+        if (COMPR_PICS[w] && !pics[w]) { list.push(w); pics[w] = COMPR_PICS[w]; }
+      });
+      var additions = custom && custom[id];
+      if (!Array.isArray(additions)) return;
+      additions.forEach(function (entry) {
+        if (!entry || typeof entry.word !== "string" || !entry.word || typeof entry.path !== "string" || !/^[a-z0-9-]{16,60}\.jpg$/.test(entry.path)) return;
+        if (list.indexOf(entry.word) < 0) list.push(entry.word);
+        pics[entry.word] = entry.path;
+      });
     });
-    return { own: own, prev: prev };
+    return { own: own, prev: prev.filter(function (w) { return own.indexOf(w) < 0; }), pics: pics };
   }
-  /* Un son a son étape « Je comprends » s’il fait lire au moins un mot illustré et qu’on peut faire un tableau de 4 */
-  function comprHas(soundId, order) { var W = comprWords(soundId, order); return W.own.length >= 1 && W.own.length + W.prev.length >= 4; }
+  /* Un son doit faire lire au moins un mot illustré et permettre un tableau de quatre mots. */
+  function comprHas(soundId, order, custom) {
+    var W = comprWords(soundId, order, custom);
+    return W.own.length >= 1 && W.own.length + W.prev.length >= 4;
+  }
   function comprApart(a, b) { return COMPR_APART.some(function (p) { return (p[0] === a && p[1] === b) || (p[0] === b && p[1] === a); }); }
   /* boards tableaux de size mots : dans chaque tableau, jusqu’à 2 mots du son, le reste pris dans les sons d’avant ; [ [mot, image]… ] */
-  function comprBuild(soundId, order, boards, size) {
-    var W = comprWords(soundId, order), out = [], used = {}, ownQ = phonoShuffle(W.own), oi = 0;
-    if (!comprHas(soundId, order)) return out;
+  function comprBuild(soundId, order, boards, size, custom) {
+    var W = comprWords(soundId, order, custom), out = [], used = Object.create(null), oi = 0;
+    var ownQ = phonoShuffle(W.own.filter(function (word) { return /\.jpg$/.test(W.pics[word]); }))
+      .concat(phonoShuffle(W.own.filter(function (word) { return !/\.jpg$/.test(W.pics[word]); })));
+    if (!W.own.length || W.own.length + W.prev.length < size) return out;
     for (var b = 0; b < boards; b++) {
       var board = [];
-      var ok = function (w) { return board.every(function (x) { return x[0] !== w && x[1] !== COMPR_PICS[w] && !comprApart(x[0], w); }); };
-      var add = function (w) { board.push([w, COMPR_PICS[w]]); used[w] = 1; };
+      var ok = function (w) { return board.every(function (x) { return x[0] !== w && x[1] !== W.pics[w] && !comprApart(x[0], w); }); };
+      var add = function (w) { board.push([w, W.pics[w]]); used[w] = 1; };
       for (var n = 0; n < Math.min(2, W.own.length); n++) { var w = ownQ[oi++ % ownQ.length]; if (ok(w)) add(w); }
       var rest = phonoShuffle(W.prev.concat(W.own)), fresh = rest.filter(function (w) { return !used[w]; }), again = rest.filter(function (w) { return used[w]; });
       fresh.concat(again).forEach(function (w) { if (board.length < size && ok(w)) add(w); });

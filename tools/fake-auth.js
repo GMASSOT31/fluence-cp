@@ -109,6 +109,14 @@
       getPublicUrl: function (path) { var b = st.voiceFiles && st.voiceFiles[path]; return { data: { publicUrl: b ? URL.createObjectURL(b) : "https://example.invalid/storage/v1/object/public/" + bucket + "/" + path } }; }
     }; } },
     rpc: function (name, a) {
+      if (name === "get_comprehension_exercises") return Promise.resolve({ data: JSON.parse(JSON.stringify(st.comprehension || {})), error: null });
+      if (name === "admin_save_comprehension_exercise") {
+        if (st.teachers[0].role !== "admin") return Promise.resolve({ error: { message: "Réservé à l’administrateur" } });
+        st.comprehension = st.comprehension || {};
+        if (JSON.stringify(st.comprehension[a.p_sound] || []) !== JSON.stringify(a.p_previous)) return Promise.resolve({ error: { message: "Cet exercice a changé ailleurs." } });
+        st.comprehension[a.p_sound] = a.p_entries;
+        return Promise.resolve({ data: null, error: null });
+      }
       if (name === "get_voice_overrides") return Promise.resolve({ data: JSON.parse(JSON.stringify(st.voices || (st.voices = /voix=1/.test(location.search) ? { o: "o-test.wav" } : {}))), error: null });
       if (name === "admin_set_voice") { if (st.teachers[0].role !== "admin") return Promise.resolve({ data: null, error: { message: "Réservé à l'administrateur" } }); if (a.p_path != null && !/^[a-z0-9_-]{1,60}\.wav$/.test(a.p_path)) return Promise.resolve({ data: null, error: { message: "Fichier invalide" } }); st.voices = st.voices || {}; if (a.p_path == null) delete st.voices[a.p_clip]; else st.voices[a.p_clip] = a.p_path; return Promise.resolve({ data: JSON.parse(JSON.stringify(st.voices)), error: null }); }
       if (name === "admin_edit_class") { st.editOps = (st.editOps || []).concat([a]); if (st.teachers[0].role !== "admin") return Promise.resolve({ data: null, error: { message: "Réservé à l'administrateur" } }); var ke = st.classes.filter(function (x) { return x.id === a.p_class; })[0]; if (!ke) return Promise.resolve({ data: null, error: { message: "Classe introuvable" } }); if (a.p_name != null) { var nn = String(a.p_name).trim(); if (!nn || nn.length > 80) return Promise.resolve({ data: null, error: { code: "22023", message: "Le nom de la classe doit faire entre 1 et 80 caractères." } }); ke.name = nn; } if (a.p_access_code != null) { try { ke.access_code = fixCode(a.p_access_code, true, ke.access_code); } catch (e) { return Promise.resolve({ data: null, error: e }); } } return Promise.resolve({ data: "ok", error: null }); }

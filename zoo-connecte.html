@@ -672,6 +672,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   .cp-word { min-height: 64px; padding: 8px 6px; font-family: Andika, "Trebuchet MS", system-ui, sans-serif; font-size: 1.7rem; font-weight: 700; border-radius: 18px; background: #fff; color: #1b2433; border: 3px solid var(--line); border-bottom-width: 6px; word-break: break-word; }
   .cp-word.sel { border-color: #1d6fe0; background: #eef5ff; box-shadow: 0 0 0 5px #1d6fe055; -webkit-transform: scale(1.04); transform: scale(1.04); }
   .cp-pic { position: relative; min-height: 104px; padding: 6px 0 18px; font-size: 3.6rem; line-height: 1.1; border-radius: 22px; background: #fff; color: #1b2433; border: 3px solid var(--line); border-bottom-width: 6px; }
+  .cp-pic img { display: block; width: 100%; height: 84px; object-fit: contain; }
   .cp-word.good, .cp-pic.good { background: #e3f6ea; border-color: #2e9b5b; color: #1d5c37; }
   .cp-word:disabled, .cp-pic:disabled { opacity: 1; }
   .cp-word.good { text-decoration: none; opacity: .75; }
@@ -1785,7 +1786,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   }catch(e){}
 })();
 </script>
-<script src="exo-data.js?v=5"></script>
+<script src="exo-data.js?v=6"></script>
 <script src="vendor/howler.core.min.js?v=2.2.4"></script>
 <script src="audio-lecture.js?v=3"></script>
 <script>/* Anciens iPad (iOS 12 et avant) : le navigateur ne connaît pas les événements « pointer » → les jeux au doigt (Serpent, Oiseau, Tuiles, Tour, Safari) ne réagissaient pas. On les traduit en événements tactiles (ou souris sur un vieil ordinateur). Rien ne change sur les appareils récents. */
@@ -4854,10 +4855,12 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   var COMPR_BOARDS = 2, COMPR_SIZE = 4, COMPR_ERR = 1, COMPR_COINS = 2;
   var CP = { run: null, timers: [], pick: null };
   var COMPR_SAY = "Lis chaque mot, puis touche son image.";
+  var comprCustom = {};
+  var comprImageBase = "https://pcxpazpflnlwmhyuozdx.supabase.co/storage/v1/object/public/comprehension-zoo/";
   function comprOrder() { return data.sounds.map(function (s) { return s.id; }); }
   function comprMine(sid) { if (!data.compr[sid]) data.compr[sid] = listenClean(null); return data.compr[sid]; }
   function comprDone(sid, id) { var C = comprMine(sid); return !!C.done[id] || (C.passes[id] || 0) >= 1; }
-  function comprHas(id) { return ZooExo.comprHas(id, comprOrder()); }
+  function comprHas(id) { return ZooExo.comprHas(id, comprOrder(), comprCustom); }
   function comprClear() { CP.timers.forEach(clearTimeout); CP.timers = []; }
   function comprStop() { comprClear(); if (CP.run) { listenStopVoice(); CP.run = null; } }
   function renderCompr() {
@@ -4878,7 +4881,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     body.appendChild(card);
   }
   function comprStart(sid, soundId) {
-    var sound = soundById(soundId), boards = sound ? ZooExo.comprBuild(soundId, comprOrder(), COMPR_BOARDS, COMPR_SIZE) : [];
+    var sound = soundById(soundId), boards = sound ? ZooExo.comprBuild(soundId, comprOrder(), COMPR_BOARDS, COMPR_SIZE, comprCustom) : [];
     if (!sound || !boards.length) { toast("Ce son n’a pas encore d’exercice."); goTo("home"); return; }
     comprClear();
     CP.run = { sid: sid, sound: sound, boards: boards, n: 0, failed: 0, q: null, said: false };
@@ -4918,7 +4921,12 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       Q.words.push(w); wg.appendChild(w);
     });
     shuffle(pairs).forEach(function (p) {
-      var b = el("button", "cp-pic", p[1]); b.type = "button"; b.setAttribute("aria-label", "Image " + (Q.pics.length + 1));
+      var b = el("button", "cp-pic"); b.type = "button";
+      if (/^[a-z0-9-]{16,60}\.jpg$/.test(p[1])) {
+        var img = el("img", ""); img.src = comprImageBase + p[1]; img.alt = "";
+        img.addEventListener("error", function () { b.textContent = "Image indisponible"; });
+        b.appendChild(img);
+      } else b.textContent = p[1]; b.setAttribute("aria-label", "Image " + (Q.pics.length + 1));
       b.addEventListener("click", function () { comprPickPic(Q, p, b, msg); });
       b._pair = p; Q.pics.push(b); pg.appendChild(b);
     });
@@ -8191,7 +8199,16 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       if(!result.data)throw new Error("Session expirée");
       var st=profile.data, p=result.data.progress||{};
       cloudVersion=Number(result.data.version)||0;
-      var settingsResponse=await cloudClient.rpc("student_get_teacher_settings",{p_token:cloudToken});
+      var requests=await Promise.all([
+        cloudClient.rpc("student_get_teacher_settings",{p_token:cloudToken}),
+        /[?&]integre=1(&|$)/.test(location.search) || window.ZOO_DEMO ? null :
+          Promise.race([
+            Promise.resolve(cloudClient.rpc("get_comprehension_exercises")).catch(function () { return null; }),
+            new Promise(function (resolve) { setTimeout(resolve, 2000); })
+          ])
+      ]);
+      var settingsResponse=requests[0], extra=requests[1];
+      if(extra&&!extra.error&&extra.data&&typeof extra.data==="object")comprCustom=extra.data;
       var teacherSettings=!settingsResponse.error&&settingsResponse.data||{};
       if(teacherSettings.thr&&typeof teacherSettings.thr==="object")["s","m","t"].forEach(function(k){var n=Number(teacherSettings.thr[k]);if(n>=1&&n<=300)data.thr[k]=n;});
       if(typeof teacherSettings.lock==="boolean")data.lock=teacherSettings.lock;
