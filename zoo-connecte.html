@@ -1291,9 +1291,16 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
 [data-avatar-charm]{position:relative;color:#fff;border:3px solid #ffe3a0}
 [data-avatar-style="cosmos"][data-avatar-charm]{background:radial-gradient(circle at 23% 19%,#fff 1px,transparent 3px),radial-gradient(circle at 75% 25%,#fff 1px,transparent 3px),linear-gradient(150deg,#29246b,#664bd5,#e883ed)}
 [data-avatar-style="jungle"][data-avatar-charm]{background:radial-gradient(circle at 25% 20%,#f5ffc0,transparent 40%),linear-gradient(140deg,#8ad354,#127878)}
-[data-avatar-style="arc"][data-avatar-charm]{background:linear-gradient(140deg,#ff8ab1,#ffe685,#81e9c3,#9fa5f9)}
+[data-avatar-style="sport"][data-avatar-charm]{background:linear-gradient(120deg,transparent 42%,#ed3545 43%,#ed3545 47%,transparent 48%),repeating-linear-gradient(45deg,#222738 0,#222738 5px,#313747 6px,#313747 9px);border-color:#ffd374}
+[data-avatar-style="princesse"][data-avatar-charm]{background:radial-gradient(circle at 25% 20%,#fff3db,transparent 30%),linear-gradient(145deg,#ff9dcc,#b957bc,#743da0);border-color:#ffd67a}
+[data-avatar-style="licorne"][data-avatar-charm]{background:radial-gradient(circle at 25% 24%,#fff 1px,transparent 3px),radial-gradient(circle at 72% 28%,#fff 1px,transparent 3px),linear-gradient(145deg,#7f67dc,#da98ec,#9ff3ed);border-color:#f3d8ff}
 [data-avatar-charm]::after{content:attr(data-avatar-charm);position:absolute;right:-5px;top:-6px;font-size:1.1rem;line-height:1;background:#fff5d0;border:1px solid #915e23;border-radius:50%;padding:3px}
-.avatar-style-grid button{margin:3px}
+.avatar-style-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;margin:12px 0}
+.avatar-style-choice{display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 4px}
+.avatar-style-choice:disabled{opacity:1}
+.avatar-style-preview{position:relative;display:grid;place-items:center;width:56px;height:56px;border-radius:14px;background:#e9e2ff;font-size:1.75rem}
+.avatar-style-confirm:not([hidden]){padding:8px;margin:8px 0;background:#e9e2ff;color:#29204e;border-radius:12px}
+.avatar-style-choice[aria-pressed="true"]{outline:2px solid #9865e8}
 .zoo-top-stat.wallet-raised{position:relative;z-index:2;outline:3px solid #ffe475;box-shadow:0 0 12px #f7b928}
 .wallet-gain{position:absolute;top:calc(100% + 3px);right:0;background:#fff2af;color:#3b2605;padding:4px 8px;border-radius:8px;white-space:nowrap;font-weight:bold;font-size:.85rem}
 </style>
@@ -1772,6 +1779,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     <button type="button" class="panel-nav bn-pin" id="bn-pin" title="Changer mon code secret" aria-label="Changer mon code secret" hidden><span class="pn-ico" aria-hidden="true">🔑</span></button>
   </nav>
   <div class="me-menu" id="me-menu" role="menu" hidden>
+    <button type="button" role="menuitem" id="me-avatar">🎨 Mon avatar</button>
     <div class="me-stats" id="me-stats"></div>
     <button type="button" role="menuitem" id="me-pin" hidden>🔑 Changer mon code secret</button>
     <button type="button" role="menuitem" id="me-logout">🚪 Me déconnecter</button>
@@ -3985,7 +3993,9 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   var AVATAR_STYLES = [
     { id:"cosmos", icon:"🪐", name:"Cosmos" },
     { id:"jungle", icon:"🌿", name:"Jungle" },
-    { id:"arc", icon:"🌈", name:"Arc-en-ciel" }
+    { id:"sport", icon:"🏎️", name:"Voiture Grand Luxe" },
+    { id:"princesse", icon:"👑", name:"Princesse" },
+    { id:"licorne", icon:"🦄", name:"Licorne" }
   ];
   var AVATAR_STYLE_PRICE = 20;
   function avatarStyle(sid) {
@@ -3993,7 +4003,10 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var owned = AVATAR_STYLES.filter(function (style) {
       return Array.isArray(saved.owned) && saved.owned.indexOf(style.id) >= 0;
     }).map(function (style) { return style.id; });
-    return { owned: owned, active: owned.indexOf(saved.active) >= 0 ? saved.active : null };
+    var tickets = Math.max(0, Math.floor(Number(saved.tickets) || 0));
+    if (Array.isArray(saved.owned) && saved.owned.indexOf("arc") >= 0) tickets++;
+    return { owned: owned, active: owned.indexOf(saved.active) >= 0 ? saved.active : null,
+      tickets: Math.min(tickets, AVATAR_STYLES.length - owned.length) };
   }
   function styleAvatar(node, id) {
     node.setAttribute("data-avatar-style", id || "");
@@ -4003,13 +4016,11 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   }
   function openAvatarPicker() {
     if (ses.role !== "student" || !studentById(ses.sid)) return;
-    var existing = document.getElementById("avatar-overlay");
-    if (existing) existing.remove();
+    if (document.getElementById("avatar-overlay")) return;
     var overlay = el("div", "avatar-overlay"); overlay.id = "avatar-overlay";
     var dialog = el("div", "avatar-dialog");
     dialog.setAttribute("role", "dialog"); dialog.setAttribute("aria-modal", "true"); dialog.setAttribute("aria-label", "Choisis ton avatar");
-    dialog.appendChild(el("h2", "", "🎨 Choisis ton personnage !"));
-    dialog.appendChild(el("p", "muted", "Touche la tête qui te plaît. Tu peux changer quand tu veux !"));
+    dialog.appendChild(el("h2", "", "🎨 Mon avatar"));
     var grid = el("div", "avatar-grid");
     AVATARS.forEach(function (av) {
       var btn = el("button", "avatar-choice", av.icon);
@@ -4024,26 +4035,55 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       });
       grid.appendChild(btn);
     });
-    dialog.appendChild(grid);
-    var styles = avatarStyle(ses.sid);
-    if (styles.owned.length) {
-      dialog.appendChild(el("h3", "", "Mes styles"));
-      var styleGrid = el("div", "avatar-style-grid");
-      [{id:null,icon:"",name:"Classique"}].concat(AVATAR_STYLES.filter(function (style) {
-        return styles.owned.indexOf(style.id) >= 0;
-      })).forEach(function (style) {
-        var button = el("button", "secondary", (style.icon ? style.icon + " " : "") + style.name);
-        button.type = "button"; button.setAttribute("aria-pressed", String(styles.active === style.id));
-        button.addEventListener("click", function () {
-          var student = studentById(ses.sid);
-          if (!student) return;
-          styles.active = style.id; student.avatarStyle = styles;
-          save(); renderPanels(); close();
-        });
-        styleGrid.appendChild(button);
-      });
-      dialog.appendChild(styleGrid);
+    var styles = avatarStyle(ses.sid), pendingStyle = null;
+    dialog.appendChild(el("h3", "", "Styles de mon avatar"));
+    dialog.appendChild(el("p", "muted", styles.tickets
+      ? nb(styles.tickets, "ticket disponible", "tickets disponibles") + " · Choisis un style avec un cadenas."
+      : "Un ticket de la boutique ouvre un style au choix."));
+    var styleGrid = el("div", "avatar-style-grid"), confirmation = el("div", "avatar-style-confirm");
+    confirmation.hidden = true;
+    function equip(id) {
+      var student = studentById(ses.sid);
+      if (!student) return;
+      var next = avatarStyle(ses.sid);
+      if (id && next.owned.indexOf(id) < 0) {
+        if (!next.tickets) return;
+        next.tickets--; next.owned.push(id);
+      }
+      next.active = id; student.avatarStyle = next;
+      save(); renderPanels(); close();
+      if (id) toast("Ton style est prêt !");
     }
+    [{id:null,name:"Classique"}].concat(AVATAR_STYLES).forEach(function (style) {
+      var locked = style.id && styles.owned.indexOf(style.id) < 0;
+      var button = el("button", "secondary avatar-style-choice");
+      var preview = el("span", "avatar-style-preview", $("pl-avatar").textContent);
+      preview.setAttribute("aria-hidden", "true"); styleAvatar(preview, style.id);
+      button.appendChild(preview);
+      button.appendChild(el("span", "", style.name));
+      button.appendChild(el("small", "", locked ? "🔒 Verrouillé" : styles.active === style.id ? "✓ Porté" : "Disponible"));
+      button.type = "button"; button.setAttribute("aria-pressed", String(styles.active === style.id));
+      button.disabled = !!locked && !styles.tickets;
+      button.addEventListener("click", function () {
+        if (!locked) { equip(style.id); return; }
+        pendingStyle = style.id;
+        prompt.textContent = "Utiliser 1 ticket pour « " + style.name + " » ?";
+        confirmation.hidden = false; accept.focus();
+        confirmation.scrollIntoView({ block: "nearest" });
+      });
+      styleGrid.appendChild(button);
+    });
+    var prompt = el("p"), accept = el("button", "primary", "🔓 Déverrouiller");
+    accept.type = "button"; accept.addEventListener("click", function () { if (pendingStyle) equip(pendingStyle); });
+    confirmation.appendChild(prompt); confirmation.appendChild(accept);
+    dialog.appendChild(styleGrid); dialog.appendChild(confirmation);
+    if (!styles.tickets && styles.owned.length < AVATAR_STYLES.length) {
+      var shop = el("button", "secondary", "🛍️ Aller chercher un ticket");
+      shop.type = "button"; shop.addEventListener("click", function () { close(); show("boutique"); });
+      dialog.appendChild(shop);
+    }
+    dialog.appendChild(el("h3", "", "Choisis ton personnage"));
+    dialog.appendChild(grid);
     var cancel = el("button", "secondary", "Fermer");
     cancel.type = "button"; cancel.addEventListener("click", close);
     dialog.appendChild(cancel);
@@ -4053,9 +4093,13 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     function close() { document.removeEventListener("keydown", onKey); overlay.remove(); }
     overlay.addEventListener("click", function (ev) { if (ev.target === overlay) close(); });
     document.addEventListener("keydown", onKey);
-    cancel.focus();
+    dialog.tabIndex = -1; dialog.focus();
   }
   $("btn-avatar").addEventListener("click", openAvatarPicker);
+  $("me-avatar").addEventListener("click", function () {
+    $("me-menu").hidden = true; $("bn-me").setAttribute("aria-expanded", "false");
+    openAvatarPicker();
+  });
 
   /* Panneaux latéraux : pièces, parties, accès à la boutique, aux cartes, aux jeux et à la lecture */
   var walletSeen = null, walletTimers = {};
@@ -7381,24 +7425,19 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       }
     }];
     var styles = avatarStyle(sid);
-    AVATAR_STYLES.forEach(function (style) {
-      var owned = styles.owned.indexOf(style.id) >= 0;
-      items.push({
-        icon: (studentById(sid) || {}).avatar || "🧑", label: style.name,
-        price: AVATAR_STYLE_PRICE, style: style.id, owned: owned, equipped: styles.active === style.id,
-        onBuy: function () {
-          var student = studentById(sid), next = avatarStyle(sid);
-          if (!student) return;
-          if (next.owned.indexOf(style.id) < 0) {
-            if (coins(sid) < AVATAR_STYLE_PRICE) return;
-            data.coins[sid] = coins(sid) - AVATAR_STYLE_PRICE;
-            next.owned.push(style.id);
-          }
-          next.active = style.id; student.avatarStyle = next;
-          zooNote = "Ton avatar porte le style " + style.name + " !";
-          buyFx(); save(); renderBoutique(); renderPanels();
-        }
-      });
+    items.push({
+      icon: "🎟️", label: "Ticket pour un style", price: AVATAR_STYLE_PRICE,
+      description: styles.tickets ? nb(styles.tickets, "ticket disponible", "tickets disponibles") : "Déverrouille un style au choix dans ton avatar.",
+      unavailable: styles.owned.length === AVATAR_STYLES.length ? "Tu as tous les styles !" :
+        styles.owned.length + styles.tickets >= AVATAR_STYLES.length ? "Tu as assez de tickets pour les styles restants." : "",
+      onBuy: function () {
+        var student = studentById(sid), next = avatarStyle(sid);
+        if (!student || coins(sid) < AVATAR_STYLE_PRICE || next.owned.length + next.tickets >= AVATAR_STYLES.length) return;
+        data.coins[sid] = coins(sid) - AVATAR_STYLE_PRICE;
+        next.tickets++; student.avatarStyle = next;
+        zooNote = "Ticket obtenu ! Choisis ton style quand tu veux.";
+        buyFx(); save(); renderBoutique(); renderPanels();
+      }
     });
     shopRewards().slice().sort(function (x, y) { return x.price - y.price; }).forEach(function (r) {
       items.push({
@@ -7415,19 +7454,14 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     return items;
   }
   function productCard(it, cn, idx) {
-    var afford = it.owned || cn >= it.price;
+    var afford = !it.unavailable && cn >= it.price;
     var card = el("div", "prod tint" + (idx % 5) + (afford ? " afford" : ""));
     var tile = el("div", "prod-icon", it.icon); tile.setAttribute("aria-hidden", "true");
-    if (it.style) styleAvatar(tile, it.style);
     if (it.qty) tile.appendChild(el("span", "qty", it.qty));
     card.appendChild(tile);
     card.appendChild(el("div", "prod-name", it.label));
-    if (it.owned) {
-      var equip = el("button", "secondary", it.equipped ? "Porté" : "Mettre ce style");
-      equip.type = "button"; equip.disabled = it.equipped;
-      equip.addEventListener("click", it.onBuy); card.appendChild(equip);
-      return card;
-    }
+    if (it.description) card.appendChild(el("p", "muted", it.description));
+    if (it.unavailable) { card.appendChild(el("p", "muted", it.unavailable)); return card; }
     if (afford) {
       card.appendChild(el("div", "can", "Tu peux l’acheter !"));
     } else {
@@ -7455,7 +7489,6 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var ov = el("div", "game-result buy-confirm"); ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true");
     var card = el("div", "game-result-card");
     var preview = el("div", "bc-icon", it.icon || "🎁");
-    if (it.style) styleAvatar(preview, it.style);
     card.appendChild(preview);
     card.appendChild(el("h2", "gr-title", "Tu veux acheter « " + it.label + " » ?"));
     var pr = el("p", "bc-price"); pr.appendChild(coinEl()); pr.appendChild(document.createTextNode(" " + nb(it.price, "pièce d’or", "pièces d’or"))); card.appendChild(pr);
@@ -7510,7 +7543,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var shelf = el("div", "shelf");
     shopItems(sid).forEach(function (it, i) { shelf.appendChild(productCard(it, cn, i)); });
     shop.appendChild(shelf);
-    if (!shopRewards().length) shop.appendChild(el("p", "shop-hint", "Bientôt de nouvelles surprises : le maître(sse) en ajoute !"));
+    var avatar = el("button", "secondary", "🎨 Choisir mon style");
+    avatar.type = "button"; avatar.addEventListener("click", openAvatarPicker); shop.appendChild(avatar);
     body.appendChild(shop);
     var mine = data.vouchers.filter(function (v) { return v.sid === sid && !v.done; });
     if (mine.length) {
@@ -8436,6 +8470,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       /* ?vue=boutique|jeux : ouvre directement la boutique ou la salle d’arcade (liens du Zoo de Calcul vers ces espaces partagés) */
       var wantView=(/[?&]vue=(boutique|jeux)(&|$)/.exec(location.search)||[])[1];
       setMode();show(wantView||"home");document.documentElement.classList.remove("booting");
+      if(wantView==="boutique"&&/[?&]avatar=1(&|$)/.test(location.search))openAvatarPicker();
       var bar=document.createElement("div");
       bar.id="cloud-status";bar.className="cs-ok";bar.style.cssText="position:fixed;bottom:10px;left:10px;z-index:9999;background:#372465;color:white;border-radius:12px;padding:8px 12px;font:13px system-ui;box-shadow:0 3px 12px #0005";
       bar.append(document.createTextNode("☁️ Connecté(e) · "+st.nickname));cloudStatusNode=bar;bar.dataset.nickname=st.nickname;

@@ -231,7 +231,9 @@
 [data-avatar-charm]{position:relative;color:#fff;border:3px solid #ffe3a0}
 [data-avatar-style="cosmos"][data-avatar-charm]{background:radial-gradient(circle at 23% 19%,#fff 1px,transparent 3px),radial-gradient(circle at 75% 25%,#fff 1px,transparent 3px),linear-gradient(150deg,#29246b,#664bd5,#e883ed)}
 [data-avatar-style="jungle"][data-avatar-charm]{background:radial-gradient(circle at 25% 20%,#f5ffc0,transparent 40%),linear-gradient(140deg,#8ad354,#127878)}
-[data-avatar-style="arc"][data-avatar-charm]{background:linear-gradient(140deg,#ff8ab1,#ffe685,#81e9c3,#9fa5f9)}
+[data-avatar-style="sport"][data-avatar-charm]{background:linear-gradient(120deg,transparent 42%,#ed3545 43%,#ed3545 47%,transparent 48%),repeating-linear-gradient(45deg,#222738 0,#222738 5px,#313747 6px,#313747 9px);border-color:#ffd374}
+[data-avatar-style="princesse"][data-avatar-charm]{background:radial-gradient(circle at 25% 20%,#fff3db,transparent 30%),linear-gradient(145deg,#ff9dcc,#b957bc,#743da0);border-color:#ffd67a}
+[data-avatar-style="licorne"][data-avatar-charm]{background:radial-gradient(circle at 25% 24%,#fff 1px,transparent 3px),radial-gradient(circle at 72% 28%,#fff 1px,transparent 3px),linear-gradient(145deg,#7f67dc,#da98ec,#9ff3ed);border-color:#f3d8ff}
 [data-avatar-charm]::after{content:attr(data-avatar-charm);position:absolute;right:-5px;top:-6px;font-size:1.1rem;line-height:1;background:#fff5d0;border:1px solid #915e23;border-radius:50%;padding:3px}
 .zoo-top-stat.wallet-raised{position:relative;z-index:2;outline:3px solid #ffe475;box-shadow:0 0 12px #f7b928}
 body.mode-student #zoo-top-stats .zoo-top-stat.wallet-raised{display:flex}
@@ -260,7 +262,7 @@ body.mode-student #zoo-top-stats .zoo-top-stat.wallet-raised{display:flex}
   <div class="layout" id="layout">
     <aside class="panel left" id="panel-left" aria-label="Mon espace" hidden>
       <div class="pcard">
-        <div class="avatar-profile"><div class="avatar-trigger" id="pl-avatar-box" role="img" aria-label="Mon avatar"><span id="pl-avatar" aria-hidden="true">🧑</span></div><div class="avatar-profile-name"><div class="who-name" id="pl-name"></div></div></div>
+        <div class="avatar-profile"><button type="button" class="avatar-trigger" id="pl-avatar-box" aria-label="Choisir mon avatar"><span id="pl-avatar" aria-hidden="true">🧑</span></button><div class="avatar-profile-name"><div class="who-name" id="pl-name"></div></div></div>
         <div class="row">
           <button type="button" class="ghost-sm" id="btn-logout">Me déconnecter</button>
           <button type="button" class="ghost-sm" id="btn-pin-left" title="Changer mon code secret" aria-label="Changer mon code secret" hidden>🔑</button>
@@ -290,6 +292,7 @@ body.mode-student #zoo-top-stats .zoo-top-stat.wallet-raised{display:flex}
     <button type="button" class="panel-nav bn-me" id="bn-me" aria-haspopup="true" aria-expanded="false" aria-controls="me-menu"><span class="pn-ico" aria-hidden="true">🙂</span><span>Moi</span></button>
   </nav>
   <div class="me-menu" id="me-menu" role="menu" hidden>
+    <button type="button" role="menuitem" id="me-avatar">🎨 Mon avatar</button>
     <button type="button" role="menuitem" data-go="boutique">🛍️ Boutique</button>
     <button type="button" role="menuitem" data-go="cartes">🔢 Mes nombres reconnus</button>
     <button type="button" role="menuitem" data-go="reconnues">🧮 Mes calculs gagnés</button>
@@ -394,7 +397,7 @@ body.mode-student #zoo-top-stats .zoo-top-stat.wallet-raised{display:flex}
   }
 
   var walletSeen = null;
-  var avatarCharms = { cosmos: "🪐", jungle: "🌿", arc: "🌈" };
+  var avatarCharms = { cosmos: "🪐", jungle: "🌿", sport: "🏎️", princesse: "👑", licorne: "🦄" };
   function renderAvatarStyle(id) {
     var node = $("pl-avatar").parentNode;
     if (typeof id === "string" && Object.prototype.hasOwnProperty.call(avatarCharms, id)) {
@@ -454,9 +457,14 @@ body.mode-student #zoo-top-stats .zoo-top-stat.wallet-raised{display:flex}
   /* ===== Boutique et salle d'arcade : espaces PARTAGÉS =====
      Le panneau central est le vrai écran du Zoo de Lecture (mêmes contenus, mêmes effets, mêmes pièces), affiché dans un cadre ;
      le bandeau, les panneaux et la barre du bas restent ceux du Zoo de Calcul. Pendant une partie, le cadre passe en plein écran. */
+  var openAvatarInFrame = false;
+  function goToAvatar() { openAvatarInFrame = true; goTo("boutique"); }
+  $("pl-avatar-box").addEventListener("click", goToAvatar);
+  $("me-avatar").addEventListener("click", goToAvatar);
   function zooFrame(box, v) {
     var f = el("iframe"); f.id = "zoo-frame"; f.title = v === "boutique" ? "Boutique" : "Salle d’arcade";
-    f.setAttribute("allow", "fullscreen"); f.setAttribute("allowfullscreen", ""); f.src = "zoo-connecte.html?vue=" + v + "&integre=1";
+    f.setAttribute("allow", "fullscreen"); f.setAttribute("allowfullscreen", ""); f.src = "zoo-connecte.html?vue=" + v + "&integre=1" + (openAvatarInFrame ? "&avatar=1" : "");
+    openAvatarInFrame = false;
     document.body.classList.add("zoo-view"); box.appendChild(f); fitFrame();
   }
   /* Le cadre occupe la hauteur visible (sous le bandeau, au-dessus de la barre du bas) : les fenêtres du Zoo (achat, résultats, cadeau) restent ainsi à l'écran */
