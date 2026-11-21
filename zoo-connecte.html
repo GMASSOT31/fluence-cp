@@ -506,7 +506,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   #v-jeu, #v-jeu .arcade-screen, #game-area { min-width: 0; max-width: 100%; }
   #v-jeu .arcade-screen { overflow: hidden; }
   .safari-wrap { width: 100%; max-width: 100%; min-width: 0; margin: 0 auto; }
-  .safari-canvas { display: block; box-sizing: border-box; width: 100%; max-width: 100%; height: auto; aspect-ratio: 9 / 4; border: 4px solid #263475; border-radius: 17px; background: #a1ecff; }
+  .safari-canvas { display: block; box-sizing: border-box; width: 100%; max-width: 100%; height: auto; aspect-ratio: 9 / 4; border: 4px solid #54304e; border-radius: 17px; background: #ffdc9a; }
   .flap-wrap { width: 100%; max-width: min(100%, 420px); margin: 0 auto; touch-action: none; user-select: none; -webkit-user-select: none; }
   .flap-hud { display: flex; justify-content: space-between; margin: 0 2px 6px; font-weight: 800; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
   .flap-canvas { display: block; width: 100%; height: auto; aspect-ratio: 400 / 480; border: 4px solid #263475; border-radius: 17px; background: #8fd3ff; touch-action: none; }
@@ -517,6 +517,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   .tiles-model b { min-width: 3ch; padding: 2px 14px; border-radius: 12px; background: #fde047; color: #1b2150; font-family: Fredoka, Figtree, sans-serif; font-size: 2.2rem; line-height: 1.2; text-align: center; }
   .flap-btn { display: block; width: 100%; min-height: 64px; margin-top: 6px; font-size: 1.5rem; touch-action: none; }
   .safari-controls { display: flex; justify-content: space-between; gap: 12px; margin: 12px 0; touch-action: none; user-select: none; }
+  .safari-heard { margin-top: 12px; }
+  .safari-heard button { min-height: 44px; margin: 3px; }
   .safari-control { min-width: 60px; min-height: 56px; font-size: 1.2rem; touch-action: none; }
   @media (max-width: 600px) { .safari-controls { gap: 6px; } .safari-control { min-width: 54px; } }
 
@@ -3860,18 +3862,18 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
      Si un record tombe, la pièce de l’objectif est comprise dedans : on ne rajoute que la différence. */
   var COIN_GOAL = 1, COIN_RECORD = 3, COIN_ABS = 10;
   function settleCoins(sid, gain, obj) { if (gain > 0 && obj) { data.coins[sid] = coins(sid) - COIN_GOAL; save(); } }
-  function finishScore(sid, area, id, value) {
+  function finishScore(sid, area, id, value, extra) {
     var obj = !!G.objCoin;
     statDay(sid, 4);
-    if (cloudMode) { finishScoreCloud(sid, area, id, value, obj); return; }
+    if (cloudMode) { finishScoreCloud(sid, area, id, value, obj, extra); return; }
     var g = gameInfo(id), prevAbs = absRecord(id);
     var res = recordScore(sid, id, value);
     var abs = res.record && prevAbs !== null && betterThan(g, value, prevAbs.value);
     var gain = abs && prevAbs.sid !== sid ? COIN_ABS : (res.record && !res.first ? COIN_RECORD : 0);   /* 10 seulement si on prend le record à un camarade */
     if (gain) { data.coins[sid] = coins(sid) + gain; save(); settleCoins(sid, gain, obj); renderPanels(); }
-    showScoreResult(sid, area, id, value, { record: res.record, first: res.first, prev: res.prev, abs: abs, gain: gain, prevAbs: prevAbs, obj: obj });
+    showScoreResult(sid, area, id, value, { record: res.record, first: res.first, prev: res.prev, abs: abs, gain: gain, prevAbs: prevAbs, obj: obj }, extra);
   }
-  async function finishScoreCloud(sid, area, id, value, obj) {
+  async function finishScoreCloud(sid, area, id, value, obj, extra) {
     var wait = el("p", "score-line", "Enregistrement du score…");
     area.appendChild(wait);
     var shown;
@@ -3889,17 +3891,18 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     }
     wait.remove();
     renderPanels();
-    showScoreResult(sid, area, id, value, shown);
+    showScoreResult(sid, area, id, value, shown, extra);
   }
   function closeGameResult() { var o = document.querySelector(".game-result"); if (o) o.parentNode.removeChild(o); }
   /* Fenêtre de fin de partie, au milieu de l’écran : message (gagné ou pas), record, Rejouer / Retour aux jeux */
-  function gameResultOverlay(sid, id, content) {
+  function gameResultOverlay(sid, id, content, extra) {
     closeGameResult();
     var ov = el("div", "game-result"); ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true");
     var card = el("div", "game-result-card");
     card.appendChild(el("h2", "gr-title", gameName(id)));
     card.appendChild(el("p", "gr-msg", $("game-msg").textContent));
     card.appendChild(content);
+    if (extra) card.appendChild(extra);
     var acts = el("div", "gr-actions");
     if (data.reward && credits(sid) > 0 && !limitReached(sid)) {
       var again = el("button", "primary go-next", "🔁 Rejouer"); again.type = "button";
@@ -3915,7 +3918,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     document.body.appendChild(ov); Music.refresh();
     var first = acts.querySelector("button"); if (first) first.focus({ preventScroll: true });
   }
-  function showScoreResult(sid, area, id, value, res) {
+  function showScoreResult(sid, area, id, value, res, extra) {
     var g = gameInfo(id), abs = res.abs, prevAbs = res.prevAbs;
     if (res.record) {
       var gain = res.gain;
@@ -3933,7 +3936,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
         box.appendChild(gl);
       }
       if (res.offline) box.appendChild(el("div", "rb-prev", "Pas de réseau : le record de la classe sera vérifié plus tard."));
-      gameResultOverlay(sid, id, box);
+      gameResultOverlay(sid, id, box, extra);
       var reduce = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
       if (!reduce) { confetti(abs ? 140 : 80, abs); setTimeout(function () { var c = $("confetti"); if (c) c.innerHTML = ""; }, 5000); }
       (abs ? [523, 659, 784, 1047, 784, 1047, 1319, 1568] : [523, 659, 784, 1047, 1319, 1568]).forEach(function (f, k) { tone(f, k * 0.08, 0.22, "triangle", 0.15); });
@@ -3942,7 +3945,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       var wrapR = el("div");
       wrapR.appendChild(el("p", "score-line", "Ton score : " + g.fmt(value) + ". Ton record : " + (h.best !== null ? g.fmt(h.best) : "à établir") + "."));
       if (res.obj) { var gl2 = el("div", "rb-coins"); gl2.appendChild(coinEl()); gl2.appendChild(document.createTextNode(" +1 pièce d’or : objectif réussi")); wrapR.appendChild(gl2); }
-      gameResultOverlay(sid, id, wrapR);
+      gameResultOverlay(sid, id, wrapR, extra);
     }
     setGameRecordLine(sid, id);
   }
@@ -6263,6 +6266,25 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
 
 
   /* Safari des animaux : plateforme 2D, clavier et commandes tactiles. */
+  function safariSoundPool(sid) {
+    if (document.documentElement.classList.contains("embed")) return [];
+    var current = missionBase(sid).sound, pool = [];
+    function addSound(snd) {
+      var items = snd && ZooExo.PHONO_SOUNDS[snd.id];
+      if (!items || pool.some(function (item) { return item.id === snd.id; })) return;
+      var item = items[Math.floor(Math.random() * items.length)];
+      var label = items.length === 1 && /^[a-zà-ÿ]{1,4}$/i.test(snd.label) ? snd.label : item[2];
+      if (!pool.some(function (entry) { return entry.label === label; })) pool.push({ id: snd.id, label: label, say: item[1] });
+    }
+    addSound(current);
+    var reviewed = 0;
+    for (var i = data.sounds.length - 1; i >= 0 && reviewed < 2; i--) {
+      var snd = data.sounds[i], before = pool.length;
+      if (snd !== current && (phonoDone(sid, snd.id) || listenDone(sid, snd.id) || readingReady(sid, snd.id))) addSound(snd);
+      if (pool.length > before) reviewed++;
+    }
+    return pool;
+  }
   function startSafari(sid) {
     var area = $("game-area");
     area.innerHTML = "";
@@ -6292,10 +6314,11 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     [245,460,680,900,1120,1350,1570,1790,2010,2230].forEach(function (x,i) {
       platforms.push({ x: x, y: 204 - (i % 3) * 17, w: 112, h: 17 });
     });
+    var pool = safariSoundPool(sid), heard = [], pickup = null, lastVoice = -Infinity, voiceActive = false;
     var stars = [];
     for (var i=0;i<20;i++) {
       var x = 140 + i * 112;
-      stars.push({ x: x, y: i % 2 === 0 ? 236 : 162 - (i % 3) * 15, taken: false });
+      stars.push({ x: x, y: i % 2 === 0 ? 236 : 162 - (i % 3) * 15, taken: false, sound: pool.length && i % 5 === 0 ? pool[(i / 5) % pool.length] : null });
     }
     var obstacles = [360,790,1240,1680,2110].map(function (x) { return { x:x, y: floorY-24, w: 28, h:24 }; });
     function keydown(e) {
@@ -6317,6 +6340,15 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     function bindHold(button, prop) {
       function down(e) { e.preventDefault(); keys[prop]=true; }
       function up(e) { e.preventDefault(); keys[prop]=false; }
+      if (!window.PointerEvent) {
+        button.addEventListener("touchstart", down, { passive: false });
+        button.addEventListener("touchend", up, { passive: false });
+        button.addEventListener("touchcancel", up, { passive: false });
+        button.addEventListener("mousedown", down);
+        button.addEventListener("mouseup", up);
+        button.addEventListener("mouseleave", up);
+        return;
+      }
       button.addEventListener("pointerdown",down);
       button.addEventListener("pointerup",up);
       button.addEventListener("pointercancel",up);
@@ -6326,6 +6358,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     bindHold(left,"left"); bindHold(right,"right"); bindHold(jump,"jump");
     G.safariCleanup = function () {
       ended=true; if (raf!==null) cancelAnimationFrame(raf);
+      if (voiceActive) listenStopVoice();
       window.removeEventListener("keydown",keydown);
       window.removeEventListener("keyup",keyup);
     };
@@ -6339,25 +6372,60 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
         winCoin(sid,area);
       } else $("game-msg").textContent = "Fin du Safari ! Tu as récupéré " + nb(got, "étoile", "étoiles") + " sur " + goal + ".";
       stopGame();
-      if (won) finishScore(sid,area,"safari",Math.max(1,Math.round(nowElapsed())));
+      var recap = null;
+      if (heard.length) {
+        recap = el("div", "safari-heard");
+        recap.appendChild(el("div", "muted", "Sons à réécouter"));
+        heard.forEach(function (sound) {
+          var b = el("button", "secondary", "🔊 " + sound.label); b.type = "button";
+          b.addEventListener("click", function () { phonoSay(sound.say); });
+          recap.appendChild(b);
+        });
+      }
+      if (won) finishScore(sid,area,"safari",Math.max(1,Math.round(nowElapsed())),recap);
       else {
         /* Partie perdue : pas de record (c’est un temps), mais on garde la performance pour la carte du jeu */
         if (!data.hi[sid]) data.hi[sid] = {};
         var sh = data.hi[sid].safari || (data.hi[sid].safari = { best: null, last: null, n: 0 });
         sh.lastTry = { stars: got, goal: goal, ts: Date.now() };
         save();
-        gameResultOverlay(sid, "safari", el("p", "score-line", "Ramasse les " + goal + " étoiles en moins de " + duration + " secondes pour établir un record !"));
+        gameResultOverlay(sid, "safari", el("p", "score-line", "Ramasse les " + goal + " étoiles en moins de " + duration + " secondes pour établir un record !"), recap);
         setGameRecordLine(sid, "safari");
       }
     }
-    function drawStar(x,y) {
+    var scenery = document.createElement("canvas");
+    scenery.width = canvas.width; scenery.height = canvas.height;
+    var bg = scenery.getContext("2d");
+    var sky = bg.createLinearGradient(0, 0, 0, 320);
+    sky.addColorStop(0, "#bc809e"); sky.addColorStop(1, "#ffdf9e");
+    bg.fillStyle = sky; bg.fillRect(0, 0, 720, 320);
+    function silhouette(fill, points) {
+      bg.fillStyle = fill; bg.beginPath();
+      bg.moveTo(points[0][0], points[0][1]);
+      points.slice(1).forEach(function (point) { bg.lineTo(point[0], point[1]); });
+      bg.closePath(); bg.fill();
+    }
+    bg.fillStyle = "#fff2ba"; bg.beginPath(); bg.arc(554, 101, 47, 0, 2 * Math.PI); bg.fill();
+    silhouette("#d59789", [[0,214],[105,140],[220,218],[310,173],[440,232],[630,158],[720,214],[720,320],[0,320]]);
+    silhouette("#b77b70", [[0,233],[144,216],[256,252],[400,213],[543,242],[720,207],[720,320],[0,320]]);
+    [86, 614].forEach(function (x) {
+      silhouette("#875c60", [[x-7,268],[x-3,218],[x-22,192],[x-12,192],[x+2,208],[x+23,183],[x+30,186],[x+7,221],[x+9,268]]);
+      bg.fillStyle = "#875c60"; bg.beginPath(); bg.ellipse(x, 186, 48, 13, 0, 0, 2 * Math.PI); bg.fill();
+    });
+    $("game-msg").textContent = "Ramasse 10 étoiles avant la fin du temps !";
+    function drawStar(x,y,sound) {
       ctx.beginPath();
       for (var j=0;j<10;j++) {
         var a=-Math.PI/2+j*Math.PI/5, rad=j%2?7:15;
         var px=x+Math.cos(a)*rad, py=y+Math.sin(a)*rad;
         if (!j) ctx.moveTo(px,py); else ctx.lineTo(px,py);
       }
-      ctx.closePath();ctx.fillStyle="#ffe35b";ctx.fill();ctx.lineWidth=2;ctx.strokeStyle="#b77613";ctx.stroke();
+      ctx.closePath();ctx.fillStyle="#ffe35b";ctx.fill();ctx.lineWidth=2;ctx.strokeStyle="#824500";ctx.stroke();
+      if (sound) {
+        ctx.fillStyle = "#fff4bf"; ctx.fillRect(x - 19, y - 9, 38, 18);
+        ctx.fillStyle = "#472716"; ctx.font = "bold 14px sans-serif"; ctx.textAlign = "center";
+        ctx.fillText(sound.label, x, y + 5, 36); ctx.textAlign = "left";
+      }
     }
     var last=performance.now();
     function frame(now) {
@@ -6381,23 +6449,31 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       obstacles.forEach(function (o) { if (rectHit(player,o)) { player.x=Math.max(0,o.x-58);player.y=150;player.vy=-5; } });
       stars.forEach(function (star) {
         if (!star.taken && Math.abs(player.x+player.w/2-star.x)<30 && Math.abs(player.y+player.h/2-star.y)<32) {
-          star.taken=true;got++;tone(800,0,.08,"sine",.09);
+          star.taken=true;got++;
+          if (star.sound) {
+            pickup = { sound: star.sound, until: now + 950 };
+            if (heard.indexOf(star.sound) < 0) heard.push(star.sound);
+          }
+          if (star.sound && data.sfx && !voiceActive && got < goal && now - lastVoice >= 1300) {
+            lastVoice = now; voiceActive = true;
+            phonoSay(star.sound.say, function () { voiceActive = false; });
+          } else tone(800,0,.08,"sine",.09);
         }
       });
       camera=Math.max(0,Math.min(world-canvas.width,player.x-165));
-      var sky=ctx.createLinearGradient(0,0,0,320);sky.addColorStop(0,"#70d9fa");sky.addColorStop(1,"#dbf9ff");
-      ctx.fillStyle=sky;ctx.fillRect(0,0,720,320);
-      ctx.fillStyle="#b5ecad";
-      for(var h=0;h<10;h++){var hx=h*280-camera*.25;ctx.beginPath();ctx.arc(hx,285,115,Math.PI,0);ctx.fill();}
-      ctx.fillStyle="#58b66b";
-      platforms.forEach(function(p){var x=p.x-camera;if(x+p.w<0||x>720)return;ctx.fillStyle="#a46a38";ctx.fillRect(x,p.y,p.w,p.h);ctx.fillStyle="#5acb64";ctx.fillRect(x,p.y,p.w,9);});
+      ctx.drawImage(scenery, 0, 0);
+      platforms.forEach(function(p){var x=p.x-camera;if(x+p.w<0||x>720)return;ctx.fillStyle="#834c43";ctx.fillRect(x,p.y,p.w,p.h);ctx.fillStyle="#ffce71";ctx.fillRect(x,p.y,p.w,6);});
       obstacles.forEach(function(o){var x=o.x-camera;ctx.fillStyle="#e85d70";ctx.fillRect(x,o.y,o.w,o.h);ctx.fillStyle="#fff";ctx.font="19px sans-serif";ctx.fillText("⚠",x+3,o.y+20);});
-      stars.forEach(function(star){if(!star.taken && star.x-camera>-20 && star.x-camera<740)drawStar(star.x-camera,star.y);});
+      stars.forEach(function(star){if(!star.taken && star.x-camera>-20 && star.x-camera<740)drawStar(star.x-camera,star.y,star.sound);});
       ctx.font="37px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(avatar,player.x-camera+player.w/2,player.y+player.h/2);
       ctx.textAlign="left";ctx.textBaseline="alphabetic";
       ctx.fillStyle="rgba(25,25,65,.8)";ctx.fillRect(12,12,245,35);
       ctx.fillStyle="#fff";ctx.font="bold 18px system-ui";ctx.fillText("⭐ "+got+"/"+goal+"     ⏱ "+leftSec+" s",22,36);
-      $("game-msg").textContent="Ramasse 10 étoiles avant la fin du temps !";
+      if (pickup && now < pickup.until) {
+        ctx.fillStyle = "#fff4bf"; ctx.fillRect(542, 12, 166, 40);
+        ctx.fillStyle = "#472716"; ctx.font = "bold 27px sans-serif"; ctx.textAlign = "center";
+        ctx.fillText(pickup.sound.label, 625, 41, 150); ctx.textAlign = "left";
+      }
       if(now-start>=duration*1000){finish(false);return;}
       if(got>=goal){finish(true);return;}
       raf=requestAnimationFrame(frame);

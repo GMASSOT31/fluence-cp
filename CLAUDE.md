@@ -3,6 +3,7 @@
 ## 1. Objectif
 Appli web de fluence de lecture pour des classes de CP, en ligne sur https://zoodelecture.fr
 - **Élève** (eleve.html → zoo-connecte.html) : lecture d'1 minute par son et par niveau (syllabes, mots, texte), en entraînement ou évaluation ; exercice d'écoute « J'écoute » ; animaux qui éclosent et grandissent ; pièces, roue, 8 jeux, boutique.
+- **Safari des animaux** : en Lecture, quatre étoiles sur vingt peuvent porter le son de la mission et jusqu’à deux sons déjà travaillés. Le jeu les fait entendre brièvement si les sons sont activés, avec un délai minimal entre deux lectures. La réécoute est facultative en fin de partie. Toutes les étoiles comptent à l’identique et aucune ne conditionne la progression pédagogique. En Calcul, la salle partagée utilise les étoiles ordinaires. Le décor est dessiné une fois par partie et les commandes tactiles ont un repli pour les navigateurs sans Pointer Events.
 - **Enseignant / admin** (enseignants.html) : classes, élèves, suivi, réglages pédagogiques.
 - **Guides pédagogiques** : `guides/<nom>/index.html` + `guides/guides.css` (mode d'emploi : `guides/README.md`) ; 5 publiés : `ateliers-lecture-cp`, `syllabes-lecture-cp`, `tablettes-lecture-cp`, `fluence-lecture-cp`, `differenciation-lecture-cp` (textes relus par Gabriel : à modifier avec son accord). **Partage** : `share.js` (landing, guides, espace enseignant). `sitemap.xml` + `robots.txt` ; aucune mesure d'audience (décision).
 - **Landing page** (index.html) : présente le site, accès élève/enseignant/démo ; **démo sans compte** avec visite guidée.
