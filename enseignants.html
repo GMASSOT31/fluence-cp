@@ -370,8 +370,16 @@ body.teacher-mode .teacher-header .teacher-nav button.nav-improve.active,.teache
 #adminPanel{min-width:0;max-width:100%;overflow-wrap:anywhere} #adminPanel input,#adminPanel select{max-width:100%}
 .dlg-box select{display:block;width:100%;padding:10px;margin:6px 0 4px;border:1px solid #c9bfdf;border-radius:10px;font:inherit;background:#fff;color:#242044}
 /* Le doré reprend le repère du badge Admin dans le bandeau. */
-:root{--admin-ink:#563600;--admin-line:#b47913;--admin-surface:#fff0c4}
-.panel[data-role="admin"],[data-admin-surface]{border-inline-start:4px solid var(--admin-line)}
+:root{--admin-ink:#432900;--admin-line:#a46500;--admin-surface:#ffe09a}
+.panel[data-role="admin"],[data-admin-surface]{
+  background:#fff8e5;border:2px solid var(--admin-line);border-inline-start-width:7px
+}
+[data-admin-surface]:not(.panel):not(.class-group){padding:10px;border-radius:12px}
+.panel[data-role="admin"] .section-icon{background:var(--admin-surface);color:var(--admin-ink)}
+.panel[data-role="admin"] button:not(.danger):not([disabled]),
+[data-admin-surface] button:not(.danger):not([disabled]){
+  background:var(--admin-surface);color:var(--admin-ink);border-color:var(--admin-line)
+}
 button[data-role="admin"],button[data-admin-action],
 body.teacher-mode .teacher-header .teacher-nav button:is([data-role="admin"],[data-admin-action]){
   background:var(--admin-surface);color:var(--admin-ink);border:1px solid var(--admin-line)
@@ -379,11 +387,11 @@ body.teacher-mode .teacher-header .teacher-nav button:is([data-role="admin"],[da
 button[data-role="admin"][aria-current="true"],button[data-role="admin"][aria-pressed="true"],
 button[data-role="admin"].active,button[data-admin-action]:hover,
 body.teacher-mode .teacher-header .teacher-nav button:is([data-role="admin"],[data-admin-action]):is(.active,:hover){
-  background:#ffe099;color:var(--admin-ink);border-color:#805200
+  background:#ffc64b;color:var(--admin-ink);border-color:#805200
 }
 .admin-scope-label{
   display:inline-block;width:max-content;border-radius:999px;padding:3px 9px;
-  background:var(--admin-surface);color:var(--admin-ink);font-size:.78rem;font-weight:800
+  background:#ffc64b;color:var(--admin-ink);font-size:.8rem;font-weight:850;border:1px solid var(--admin-line)
 }
 .panel[data-role="admin"] > .admin-scope-label,[data-admin-surface] > .admin-scope-label{margin-bottom:8px}
 </style></head><body><main><header class="hero">    <div class="zoo-hero">
@@ -901,7 +909,8 @@ async function renderGameRanking(){
   const list=Object.entries(tot).sort((a,b)=>b[1].parties-a[1].parties);
   const box=document.createElement("div");box.id="gameRanking";box.className="class-group";box.setAttribute("data-admin-surface","");box.style.setProperty("--cg","#b47913");
   const head=document.createElement("div");head.className="class-group-head";
-  const h=document.createElement("h4");h.textContent="🎮 Jeux les plus joués";
+  const h=document.createElement("h4");h.textContent="🎮 Jeux les plus joués ";
+  const badge=document.createElement("span");badge.className="admin-scope-label";badge.textContent="Administration";h.append(badge);
   const all=list.reduce((a,[,t])=>a+t.parties,0);
   const cnt=document.createElement("span");cnt.textContent=all+" partie"+(all>1?"s":"");head.append(h,cnt);box.append(head);const gbody=document.createElement("div");gbody.className="cg-body";box.append(gbody);foldGroup(head,gbody,"games");
   if(!list.length){const e=document.createElement("p");e.className="muted class-group-empty";e.textContent="Aucune partie terminée pour le moment.";gbody.append(e);}
@@ -1304,7 +1313,7 @@ async function renderStudentsTab(role){
  if(admin){const {data,error}=await client.from("teachers").select("id,email,ghosted_at").order("created_at",{ascending:true});if(error){msg("studentsMsg",errorText(error),true);return;}groups=data;}
  groups.forEach(t=>{
   const cls=allClasses.filter(c=>c.teacher_id===t.id),sts=allStudents.filter(s=>s.teacher_id===t.id);
-  if(admin){const h=document.createElement("h3");h.className="teacher-group";h.textContent="👤 "+(t.email||"Compte sans e-mail")+" · "+sts.length+" "+pl(sts.length,"élève","élèves")+(t.ghosted_at?" · ⏸️ compte suspendu":"");box.append(h);}
+  if(admin){const h=document.createElement("h3");h.className="teacher-group";h.setAttribute("data-admin-surface","");h.textContent="👤 "+(t.email||"Compte sans e-mail")+" · "+sts.length+" "+pl(sts.length,"élève","élèves")+(t.ghosted_at?" · ⏸️ compte suspendu":"");box.append(h);}
   if(!cls.length){const p=document.createElement("p");p.className="muted";p.textContent="Aucune classe.";box.append(p);return;}
   cls.forEach(c=>{
    const top=document.createElement("div");top.className="class-head";const head=document.createElement("div");head.className="class-head";const cbody=document.createElement("div");cbody.className="class-body";
@@ -1320,6 +1329,7 @@ async function renderStudentsTab(role){
    if(c.access_code){const cc=document.createElement("span");cc.className="class-code";cc.append("🔑 Code élèves : ");const cv=document.createElement("strong");cv.textContent=c.access_code;cc.append(cv);
     const cb=document.createElement("button");cb.type="button";cb.className="secondary";cb.textContent="📋 Copier";cb.title="Copier le code de la classe";cb.onclick=async()=>{try{await navigator.clipboard.writeText(c.access_code)}catch(e){const ta=document.createElement("textarea");ta.value=c.access_code;ta.style.cssText="position:fixed;opacity:0";document.body.append(ta);ta.select();try{document.execCommand("copy")}catch(e2){}ta.remove()}cb.textContent="✅ Copié";setTimeout(()=>{cb.textContent="📋 Copier"},1800)};cc.append(cb);if(c.teacher_id===currentUser.id||currentRole==="admin"){const ch=document.createElement("button");ch.type="button";ch.className="secondary";ch.textContent="✏️ Changer";ch.title="Changer le code de la classe";ch.onclick=()=>changeClassCode(c,"studentsMsg");cc.append(ch)}head.append(cc);}
    else{const cc=document.createElement("span");cc.className="class-code muted";cc.textContent="Pas encore de code (Réglages généraux › Mots de passe)";head.append(cc);}
+   if(admin&&c.teacher_id!==currentUser.id)cact.setAttribute("data-admin-surface","");
    head.append(cact);cbody.append(head);
    const members=sts.filter(s=>s.class_id===c.id),active=members.filter(s=>!s.ghosted_at),gone=members.filter(s=>s.ghosted_at);
    /* Les élèves actifs sont dans « Ma classe » (un seul endroit par élève) ; ici : leur nombre, un lien, et les élèves suspendus */
@@ -1354,7 +1364,8 @@ function moveStudent(st,teachers,done){
  const others=allClasses.filter(c=>c.id!==st.class_id);
  if(!others.length){if(done)done("Il n’y a pas d’autre classe où l’envoyer.",true);else msg("studentsMsg","Il n’y a pas d’autre classe où l’envoyer.",true);return}
  const mk=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
- const ov=mk("div","dlg-ov");ov.setAttribute("role","dialog");ov.setAttribute("aria-modal","true");const box=mk("div","dlg-box");
+ const ov=mk("div","dlg-ov");ov.setAttribute("role","dialog");ov.setAttribute("aria-modal","true");const box=mk("div","dlg-box");box.setAttribute("data-admin-surface","");
+ box.append(mk("span","admin-scope-label","Administration"));
  box.append(mk("p","dlg-text","Dans quelle classe mettre « "+st.nickname+" » ?"));
  const sel=document.createElement("select");sel.setAttribute("aria-label","Nouvelle classe");sel.style.width="100%";
  const order=teachers.slice().sort((a,b)=>(b.id===st.teacher_id)-(a.id===st.teacher_id));
