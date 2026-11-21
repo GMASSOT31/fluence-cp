@@ -1303,6 +1303,19 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
 .avatar-style-choice[aria-pressed="true"]{outline:2px solid #9865e8}
 .zoo-top-stat.wallet-raised{position:relative;z-index:2;outline:3px solid #ffe475;box-shadow:0 0 12px #f7b928}
 .wallet-gain{position:absolute;top:calc(100% + 3px);right:0;background:#fff2af;color:#3b2605;padding:4px 8px;border-radius:8px;white-space:nowrap;font-weight:bold;font-size:.85rem}
+.tiles-d-intro{text-align:center}
+.tiles-d-memo{width:100%;max-width:310px;box-sizing:border-box;margin:8px auto;padding:8px 12px;background:#fff8ea;color:#252036;border:2px solid #57b5b5;border-radius:18px;text-align:center}
+.tiles-d-memo svg{display:block;width:100%;max-height:135px;margin:4px auto}
+.tiles-d-memo figcaption{font-weight:800}
+.tiles-d-letter{font:800 2rem/1 Fredoka,sans-serif;color:#b12e32}
+.tiles-d-caption{display:flex;font-size:.78rem}
+.tiles-d-caption span{flex:1}
+.tiles-d-order{display:block;margin-top:5px;font:800 1.3rem/1.2 Fredoka,sans-serif}
+.tiles-d-order b{color:#b12e32}
+.tiles-rocket-memo{border-color:#c86422}
+.tiles-rocket-memo b{color:#b12e32}
+.tiles-rocket-memo figcaption,.tiles-rocket-memo strong{font:800 1.65rem/1.1 Fredoka,sans-serif}
+.tiles-rocket-memo p{margin:4px 0;font-size:.9rem;font-weight:700}
 </style>
 </head>
 <body>
@@ -3822,7 +3835,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     { id: "simon", name: "Répète les animaux", ico: "🧠", neon: "#a78bfa", tag: "Retiens la suite", mode: "max", fmt: function (v) { return nb(v, "animal", "animaux"); } },
     { id: "safari", name: "Safari des animaux", ico: "🦁", neon: "#ffcf4b", tag: "10 étoiles en moins de 30 secondes !", mode: "min", fmt: function (v) { return (v / 1000).toFixed(2).replace(".", ",") + " s"; } },
     { id: "stack", name: "Tour d’animaux", ico: "🦒", neon: "#f97316", tag: "Empile le plus haut possible", mode: "max", fmt: function (v) { return nb(v, "étage", "étages"); } },
-    { id: "tiles", name: "Tuiles des sons", ico: "🎹", neon: "#ef4444", tag: "Distingue le d du b", mode: "max", fmt: function (v) { return nb(v, "tuile", "tuiles"); } }
+    { id: "tiles", name: "Tuiles des sons", ico: "🎹", neon: "#ef4444", tag: "Distingue le d du b", mode: "max", fmt: function (v) { return nb(v, "tuile", "tuiles"); } },
+    { id: "tiles_e", name: "Tuiles du é", ico: "🚀", neon: "#fb923c", tag: "Touche les é de fusée !", mode: "max", fmt: function (v) { return nb(v, "tuile", "tuiles"); } }
   ];
   function gameInfo(id) { return GAMES.filter(function (g) { return g.id === id; })[0] || GAMES[0]; }
   function gameName(id) { return gameInfo(id).name; }
@@ -5255,7 +5269,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     gameFullscreen(true);
     startTiles(sid, { model: pair[0], traps: [pair[1]] });
   }
-  function tilesRemedEnd(sid, area, ok, msg) {
+  function tilesRemedEnd(sid, area, ok, msg, memo) {
     stopGame();
     var res = ok ? remedMark(sid, "tiles", "tiles", true) : (remedMark(sid, "tiles", "tiles", false), null);
     save(); renderPanels();
@@ -5265,6 +5279,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var card = el("div", "game-result-card");
     card.appendChild(el("h2", "gr-title", ok ? "Bravo ! 👏" : "Presque !"));
     card.appendChild(el("p", "gr-msg", $("game-msg").textContent));
+    if (memo) card.appendChild(memo);
     var acts = el("div", "gr-actions row");
     card.appendChild(acts);
     ov.appendChild(card);
@@ -6367,7 +6382,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     else if (gameId === "simon") startSimon(sid);
     else if (gameId === "safari") startSafari(sid);
     else if (gameId === "stack") startStack(sid);
-    else if (gameId === "tiles") startTiles(sid);
+    else if (gameId === "tiles" || gameId === "tiles_e") startTiles(sid, null, gameId);
     else startMemory(sid);
   }
   $("game-back").addEventListener("click", function () { if (G.remed) goTo("home"); else show("jeux"); });
@@ -6847,7 +6862,10 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   var TILES_MELODY = [523, 587, 659, 523, 523, 587, 659, 523, 659, 698, 784, 659, 698, 784, 784, 880, 784, 698, 659, 523, 784, 880, 784, 698, 659, 523, 523, 392, 523, 523, 392, 523];
   /* Modèle toujours « d » : on le distingue de « b » (et de « p », « q »), lettres miroir souvent confondues en script.
      row() fabrique une rangée de 3 tuiles : un « d » et 2 pièges (au moins un « b ») */
-  function tilesTarget(opt) {
+  function tilesTarget(opt, rocket) {
+    if (rocket) return { model: "é", traps: ["è", "e"], row: function () {
+      return shuffle([{ g: "é", good: true }, { g: "è", good: false }, { g: "e", good: false }]);
+    } };
     /* Exercice donné par l’enseignant (remédiation) : l’écriture à toucher et ses pièges (ceux que l’élève confond) */
     if (opt) return { model: opt.model, traps: opt.traps, row: function () {
       var a = opt.traps[Math.floor(Math.random() * opt.traps.length)], b = opt.traps[Math.floor(Math.random() * opt.traps.length)];
@@ -6858,8 +6876,39 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       return shuffle([{ g: "d", good: true }, { g: "b", good: false }, { g: other, good: false }]);
     } };
   }
-  function startTiles(sid, opt) {
-    var area = $("game-area"), target = tilesTarget(opt), M = "« " + target.model + " »";
+  function tilesDMemo() {
+    var figure = el("figure", "tiles-d-memo");
+    figure.innerHTML = `<strong class="tiles-d-letter">« d »</strong>
+      <figcaption>La dame et la main droite</figcaption>
+      <svg viewBox="0 0 300 140" role="img" aria-label="Une dame de profil, avec l’arrondi de la robe à gauche, et une main droite avec le pouce levé à droite.">
+        <g stroke="#332632" stroke-width="2.4" stroke-linejoin="round">
+          <path fill="#008c95" d="M109 62 Q121 67 124 81 L133 126 Q98 142 47 125 Q44 94 66 79 Q80 70 100 76 L101 63Z"/>
+          <path fill="#fac49e" d="M101 39 Q106 29 119 33 Q126 38 127 48 L133 54 L127 58 Q125 65 115 65 L115 72 L102 67 L103 56 Q96 54 99 48Z"/>
+          <path fill="#663d34" d="M101 54 Q89 50 94 40 Q99 27 118 33 L122 40 Q116 48 106 49Z"/>
+          <path fill="#13a9a4" d="M92 39 Q91 23 108 20 Q121 19 123 29 L130 28 Q135 34 121 41 Q99 49 92 39Z"/>
+          <path fill="none" d="M112 82 L109 103 L116 115 M122 48 L124 48"/>
+          <path fill="#fac49e" d="M252 112 Q228 132 202 115 L180 98 Q173 91 180 84 Q172 76 178 68 Q168 60 177 52 Q184 46 198 54 L217 64 Q215 48 217 26 Q219 13 228 16 Q234 18 232 33 Q232 54 241 67 Q251 83 263 86Z"/>
+          <path fill="none" d="M178 68 Q189 74 204 74 M180 84 Q192 89 204 89 M180 98 Q192 102 201 102 M217 64 Q215 82 225 93"/>
+        </g>
+        <g fill="#ec8a15"><path d="M33 38l3 7 8 1-6 5 2 8-7-4-7 4 2-8-6-5 8-1z"/><path d="M268 41l3 7 8 1-6 5 2 8-7-4-7 4 2-8-6-5 8-1z"/></g>
+      </svg>
+      <div class="tiles-d-caption"><span>L’arrondi de la robe</span><span>Le pouce de la main droite</span></div>
+      <strong class="tiles-d-order"><span>c</span> → <b>d</b> → <span>e</span></strong>`;
+    return figure;
+  }
+  function tilesRocketMemo() {
+    var figure = el("figure", "tiles-d-memo tiles-rocket-memo");
+    figure.innerHTML = '<figcaption>Le son <b>é</b></figcaption>' + ACCENT_HELP["voy2:é"].svg +
+      '<strong>la fus<b>é</b>e</strong><p>L’accent monte comme la fusée ! ↗</p>';
+    return figure;
+  }
+  function startTiles(sid, opt, gameId) {
+    gameId = gameId || "tiles";
+    var rocket = gameId === "tiles_e";
+    var area = $("game-area"), target = tilesTarget(opt, rocket), M = "« " + target.model + " »";
+    var memoD = target.model === "d" && target.traps.indexOf("b") >= 0;
+    var memo = rocket ? tilesRocketMemo : memoD ? tilesDMemo : null;
+    var tileVoices = rocket ? { "é": "et", "è": "est" } : memoD ? { d: "deu", b: "beu" } : {};
     var TRAPS = target.traps.map(function (x) { return "« " + x + " »"; }).join(", ").replace(/, ([^,]*)$/, " et $1");
     area.innerHTML = "";
     var W = 360, H = 480, COLS = 3, CW = W / COLS, RH = 100, SP = 150, MISS = H - 30;
@@ -6886,6 +6935,16 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     for (var si = 0; si < 46; si++) { var layer = si % 3; stars.push({ x: Math.random() * W, y: Math.random() * H, z: layer, r: 0.8 + layer * 0.7, ph: Math.random() * 6.3 }); }
     function showLives() { var h = ""; for (var i = 0; i < TILES_LIVES; i++) h += i < lives ? "❤️" : "🖤"; livesEl.textContent = h; livesEl.setAttribute("aria-label", nb(lives, "vie", "vies")); }
     showLives();
+    if (memo) {
+      var intro = el("div", "tiles-d-intro"), begin = el("button", "primary go-next", "Jouer");
+      begin.type = "button";
+      intro.appendChild(memo()); intro.appendChild(begin); area.insertBefore(intro, wrap);
+      wrap.hidden = true;
+      begin.addEventListener("click", function () {
+        intro.remove(); wrap.hidden = false; started = true; $("game-msg").textContent = "Touche seulement les " + M + " !";
+        raf = requestAnimationFrame(function (n) { last = n; frame(n); });
+      });
+    }
     function speed() {   /* px par image à 60 i/s : de plus en plus vite */
       var v = 0.75 + 4.45 * Math.pow(Math.min(1, t / 90), 1.5);   /* départ très lent (CP) : ~0,9 px/image à 10 s, ~1,2 à 20 s, même vitesse qu’avant à 90 s */
       return t > 90 ? v + 0.4 * ((t - 90) / 20) : v;
@@ -6893,11 +6952,11 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     function burst(x, y, n, cols) {
       for (var k = 0; k < n; k++) { var a = Math.random() * 6.3, v = 1 + Math.random() * 3; parts.push({ x: x, y: y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 26, max: 26, r: 2 + Math.random() * 3, col: cols[k % cols.length] }); }
     }
-    function hurt(x, y) {
+    function hurt(x, y, spoken) {
       if (inv > 0) return;
       lives--; showLives(); inv = 40; shake = 10; flash = 1; streak = 0;
       burst(x, y, 10, ["#ff6b6b", "#ffffff", "#ffd23f"]);
-      tone(260, 0, 0.14, "sawtooth", 0.07); tone(180, 0.1, 0.18, "sawtooth", 0.07);
+      if (!spoken) { tone(260, 0, 0.14, "sawtooth", 0.07); tone(180, 0.1, 0.18, "sawtooth", 0.07); }
       if (lives <= 0) { dead = true; deadT = 0; $("game-msg").textContent = "Aïe !"; }
       else banner = { text: lives > 1 ? "Aïe ! Encore " + lives + " vies" : "Aïe ! Dernière vie", life: 60 };
     }
@@ -6905,9 +6964,9 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       if (ended) return;
       ended = true;
       var msg = (max ? "Tu as tenu 2 minutes 30 ! " : "") + "Tu as touché " + nb(score, "bonne tuile", "bonnes tuiles") + ".";
-      if (opt) { tilesRemedEnd(sid, area, score >= TILES_GOAL, msg); return; }
+      if (opt) { tilesRemedEnd(sid, area, score >= TILES_GOAL, msg, memo ? memo() : null); return; }
       endGame(sid, area, score >= TILES_GOAL, msg, msg + " Il en fallait " + TILES_GOAL + " pour gagner une pièce d’or.");
-      finishScore(sid, area, "tiles", score);
+      finishScore(sid, area, gameId, score, memo ? memo() : null);
     }
     function tap(e) {
       e.preventDefault();
@@ -6922,18 +6981,28 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
         var c = r.cells[col];
         if (c.tapped) return;
         c.tapped = true;
+        var spoken = data.sfx && tileVoices[c.g];
+        if (spoken) phonoSay(spoken);
         if (c.good) {
           r.done = true; score++; scoreEl.textContent = "🎯 " + score + " / " + TILES_GOAL;
-          if (opt && score >= TILES_GOAL) { tone(TILES_MELODY[mel++ % TILES_MELODY.length], 0, 0.2, "triangle", 0.12); finish(false); return; }   /* exercice : fini dès 20 bonnes tuiles */
-          tone(TILES_MELODY[mel++ % TILES_MELODY.length], 0, 0.2, "triangle", 0.12);
+          if (!spoken) tone(TILES_MELODY[mel++ % TILES_MELODY.length], 0, 0.2, "triangle", 0.12);
+          if (opt && score >= TILES_GOAL) { finish(false); return; }
           streak++; laneGlow[col] = 1; ripples.push({ x: col * CW + CW / 2, y: r.y + RH / 2, life: 24, max: 24, col: "#86efac" });
           floats.push({ x: col * CW + CW / 2, y: r.y + 10, life: 40, max: 40, text: streak >= 5 && streak % 5 === 0 ? "🔥 " + streak + " !" : "+1" });
           burst(col * CW + CW / 2, r.y + RH / 2, 14, ["#4ade80", "#ffffff", "#ffd23f", "#67e8f9"]);
-        } else { streak = 0; sfxBad(); statConf(sid, target.model, c.g); hurt(col * CW + CW / 2, r.y + RH / 2); }
+        } else { streak = 0; if (!spoken) sfxBad(); statConf(sid, target.model, c.g); hurt(col * CW + CW / 2, r.y + RH / 2, spoken); }
         return;
       }
     }
-    canvas.addEventListener("pointerdown", tap);
+    if (window.PointerEvent) canvas.addEventListener("pointerdown", tap);
+    else {
+      canvas.addEventListener("mousedown", tap);
+      canvas.addEventListener("touchstart", function (event) {
+        event.preventDefault();
+        var point = event.changedTouches[0];
+        if (point) tap({ clientX: point.clientX, clientY: point.clientY, preventDefault: function () {} });
+      }, { passive: false });
+    }
     document.body.classList.add("flapping");
     G.cleanup = function () { ended = true; if (raf !== null) cancelAnimationFrame(raf); document.body.classList.remove("flapping"); };
     function decor(dt, sp) {
@@ -7056,7 +7125,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       raf = requestAnimationFrame(frame);
     }
     /*TEST_HOOK_TILES*/
-    raf = requestAnimationFrame(function (n) { last = n; frame(n); });
+    if (!memo) raf = requestAnimationFrame(function (n) { last = n; frame(n); });
   }
 
   /* Fin de partie commune : félicitations et pièce d’or, ou encouragements */
