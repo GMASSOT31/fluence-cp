@@ -5,7 +5,7 @@
 <meta name="robots" content="noindex,follow"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="manifest" href="/manifest-eleve.webmanifest"><link rel="apple-touch-icon" href="/img/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Zoo de Lecture"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>Zoo de Lecture · Espace élève connecté</title>
-<script src="zoo-embed.js?v=1"></script>
+<script src="zoo-embed.js?v=2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Figtree:wght@400;600;800&family=Fredoka:wght@500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
@@ -1287,6 +1287,15 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     .arc-legend .lg-long { display: none; }
     .arc-legend .lg-short { display: inline; }
   }
+/* Styles d’avatar et gains, dessinés en CSS pour fonctionner aussi sur les tablettes anciennes. */
+[data-avatar-charm]{position:relative;color:#fff;border:3px solid #ffe3a0}
+[data-avatar-style="cosmos"][data-avatar-charm]{background:radial-gradient(circle at 23% 19%,#fff 1px,transparent 3px),radial-gradient(circle at 75% 25%,#fff 1px,transparent 3px),linear-gradient(150deg,#29246b,#664bd5,#e883ed)}
+[data-avatar-style="jungle"][data-avatar-charm]{background:radial-gradient(circle at 25% 20%,#f5ffc0,transparent 40%),linear-gradient(140deg,#8ad354,#127878)}
+[data-avatar-style="arc"][data-avatar-charm]{background:linear-gradient(140deg,#ff8ab1,#ffe685,#81e9c3,#9fa5f9)}
+[data-avatar-charm]::after{content:attr(data-avatar-charm);position:absolute;right:-5px;top:-6px;font-size:1.1rem;line-height:1;background:#fff5d0;border:1px solid #915e23;border-radius:50%;padding:3px}
+.avatar-style-grid button{margin:3px}
+.zoo-top-stat.wallet-raised{position:relative;z-index:2;outline:3px solid #ffe475;box-shadow:0 0 12px #f7b928}
+.wallet-gain{position:absolute;top:calc(100% + 3px);right:0;background:#fff2af;color:#3b2605;padding:4px 8px;border-radius:8px;white-space:nowrap;font-weight:bold;font-size:.85rem}
 </style>
 </head>
 <body>
@@ -2367,6 +2376,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       notes:data.notes.filter(function(x){return x.sid===sid}),
       evos:data.evos.filter(function(x){return x.sid===sid}),
       avatar:(studentById(sid)||{}).avatar||null,
+      avatarStyle:(studentById(sid)||{}).avatarStyle||null,
       selSound:data.sel.sound||null, selKind:data.sel.kind||"s",
       shop:data.shop, maxPlays:data.maxPlays, reward:data.reward, sfx:data.sfx };
   }
@@ -2457,7 +2467,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
           cloudVersion=Number(cr.version);
           data.credits[cloudStudentId]=Number(cr.credits)||0;
           renderPanels();
-          toast("🎮 Tu as gagné "+cr.claimed+(cr.claimed>1?" parties de jeu":" partie de jeu")+" à la roue du calcul !");
+          toast("🎮 Tu as gagné "+cr.claimed+(cr.claimed>1?" parties de jeu":" partie de jeu")+" !");
         }
       }catch(e2){
         if(String(e2.message||"").includes("SYNC_CONFLICT"))throw e2;
@@ -3972,6 +3982,25 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     { icon: "🧑‍🚀", name: "Astronaute" }, { icon: "🥷", name: "Ninja" },
     { icon: "👑", name: "Roi ou reine" }, { icon: "🤖", name: "Robot" }
   ];
+  var AVATAR_STYLES = [
+    { id:"cosmos", icon:"🪐", name:"Cosmos" },
+    { id:"jungle", icon:"🌿", name:"Jungle" },
+    { id:"arc", icon:"🌈", name:"Arc-en-ciel" }
+  ];
+  var AVATAR_STYLE_PRICE = 20;
+  function avatarStyle(sid) {
+    var st = studentById(sid), saved = st && st.avatarStyle || {};
+    var owned = AVATAR_STYLES.filter(function (style) {
+      return Array.isArray(saved.owned) && saved.owned.indexOf(style.id) >= 0;
+    }).map(function (style) { return style.id; });
+    return { owned: owned, active: owned.indexOf(saved.active) >= 0 ? saved.active : null };
+  }
+  function styleAvatar(node, id) {
+    node.setAttribute("data-avatar-style", id || "");
+    var style = AVATAR_STYLES.filter(function (entry) { return entry.id === id; })[0];
+    if (style) node.setAttribute("data-avatar-charm", style.icon);
+    else node.removeAttribute("data-avatar-charm");
+  }
   function openAvatarPicker() {
     if (ses.role !== "student" || !studentById(ses.sid)) return;
     var existing = document.getElementById("avatar-overlay");
@@ -3996,6 +4025,25 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       grid.appendChild(btn);
     });
     dialog.appendChild(grid);
+    var styles = avatarStyle(ses.sid);
+    if (styles.owned.length) {
+      dialog.appendChild(el("h3", "", "Mes styles"));
+      var styleGrid = el("div", "avatar-style-grid");
+      [{id:null,icon:"",name:"Classique"}].concat(AVATAR_STYLES.filter(function (style) {
+        return styles.owned.indexOf(style.id) >= 0;
+      })).forEach(function (style) {
+        var button = el("button", "secondary", (style.icon ? style.icon + " " : "") + style.name);
+        button.type = "button"; button.setAttribute("aria-pressed", String(styles.active === style.id));
+        button.addEventListener("click", function () {
+          var student = studentById(ses.sid);
+          if (!student) return;
+          styles.active = style.id; student.avatarStyle = styles;
+          save(); renderPanels(); close();
+        });
+        styleGrid.appendChild(button);
+      });
+      dialog.appendChild(styleGrid);
+    }
     var cancel = el("button", "secondary", "Fermer");
     cancel.type = "button"; cancel.addEventListener("click", close);
     dialog.appendChild(cancel);
@@ -4010,11 +4058,22 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   $("btn-avatar").addEventListener("click", openAvatarPicker);
 
   /* Panneaux latéraux : pièces, parties, accès à la boutique, aux cartes, aux jeux et à la lecture */
+  var walletSeen = null, walletTimers = {};
+  function showWalletGain(id, gain, unit, plural) {
+    var counter = $(id).parentNode, old = counter.querySelector(".wallet-gain");
+    if (old) old.remove();
+    clearTimeout(walletTimers[id]);
+    var badge = el("span", "wallet-gain", "+" + nb(gain, unit, plural));
+    badge.setAttribute("role", "status");
+    counter.classList.add("wallet-raised"); counter.appendChild(badge);
+    walletTimers[id] = setTimeout(function () { badge.remove(); counter.classList.remove("wallet-raised"); }, 3200);
+  }
   function renderPanels() {
     if (ses.role !== "student") return;
     var sid = ses.sid, st = studentById(sid);
     if (!st) return;
     $("pl-name").textContent = st.name;
+    styleAvatar($("btn-avatar"), avatarStyle(sid).active);
     $("pl-avatar").textContent = AVATARS.some(function (a) { return a.icon === st.avatar; }) ? st.avatar : "🧑";
     /* « Qui es-tu ? » : le profil mémorisé sur cet appareil suit le prénom et l’avatar (rien n’est écrit s’ils n’ont pas changé) */
     try {
@@ -4026,6 +4085,11 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     $("pl-games").textContent = String(cr);
     $("top-coins").textContent = String(cn);
     $("top-games").textContent = String(cr);
+    if (walletSeen && walletSeen.sid === sid) {
+      if (cn > walletSeen.coins) showWalletGain("top-coins", cn - walletSeen.coins, "pièce", "pièces");
+      if (cr > walletSeen.credits) showWalletGain("top-games", cr - walletSeen.credits, "partie", "parties");
+    }
+    walletSeen = { sid: sid, coins: cn, credits: cr };
     $("st-coins").setAttribute("aria-label", nb(cn, "pièce d’or", "pièces d’or")); $("st-coins").title = "Pièces d’or";
     $("st-games").setAttribute("aria-label", nb(cr, "partie de jeu", "parties de jeu")); $("st-games").title = "Parties de jeu";
     var wb = $("btn-panel-wheel");
@@ -4034,7 +4098,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var pms = mission(sid);
     $("pr-next").textContent = pms.kind === "remed" ? "exercice de ton maître(sse)" : pms.sound ? { phono: "entendre", listen: "écouter", write: "écrire", read: "lire", compr: "comprendre" }[pms.kind] + " : " + pms.sound.label : (pms.medal || evalWaiting(sid) ? "lecture à enregistrer" : "tout est validé");
     $("pr-games").textContent = nb(cr, "partie", "parties");
-    var minPrice = shopRewards().reduce(function (m, r) { return Math.min(m, r.price); }, data.shop.packPrice);
+    var minPrice = shopRewards().reduce(function (m, r) { return Math.min(m, r.price); }, Math.min(data.shop.packPrice, data.shop.wheelPrice, AVATAR_STYLE_PRICE));
     $("pl-shop").textContent = cn >= minPrice ? "Tu peux acheter !" : "";
     var allSteps = stepsList();
     var doneSteps = allSteps.filter(function (x) { return isValid(sid, x.sound, x.kind); }).length;
@@ -7316,6 +7380,26 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
         openWheel(sid, "Tu as acheté un tour de roue !");
       }
     }];
+    var styles = avatarStyle(sid);
+    AVATAR_STYLES.forEach(function (style) {
+      var owned = styles.owned.indexOf(style.id) >= 0;
+      items.push({
+        icon: (studentById(sid) || {}).avatar || "🧑", label: style.name,
+        price: AVATAR_STYLE_PRICE, style: style.id, owned: owned, equipped: styles.active === style.id,
+        onBuy: function () {
+          var student = studentById(sid), next = avatarStyle(sid);
+          if (!student) return;
+          if (next.owned.indexOf(style.id) < 0) {
+            if (coins(sid) < AVATAR_STYLE_PRICE) return;
+            data.coins[sid] = coins(sid) - AVATAR_STYLE_PRICE;
+            next.owned.push(style.id);
+          }
+          next.active = style.id; student.avatarStyle = next;
+          zooNote = "Ton avatar porte le style " + style.name + " !";
+          buyFx(); save(); renderBoutique(); renderPanels();
+        }
+      });
+    });
     shopRewards().slice().sort(function (x, y) { return x.price - y.price; }).forEach(function (r) {
       items.push({
         icon: r.icon || "🎁", label: r.label, price: r.price,
@@ -7331,12 +7415,19 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     return items;
   }
   function productCard(it, cn, idx) {
-    var afford = cn >= it.price;
+    var afford = it.owned || cn >= it.price;
     var card = el("div", "prod tint" + (idx % 5) + (afford ? " afford" : ""));
     var tile = el("div", "prod-icon", it.icon); tile.setAttribute("aria-hidden", "true");
+    if (it.style) styleAvatar(tile, it.style);
     if (it.qty) tile.appendChild(el("span", "qty", it.qty));
     card.appendChild(tile);
     card.appendChild(el("div", "prod-name", it.label));
+    if (it.owned) {
+      var equip = el("button", "secondary", it.equipped ? "Porté" : "Mettre ce style");
+      equip.type = "button"; equip.disabled = it.equipped;
+      equip.addEventListener("click", it.onBuy); card.appendChild(equip);
+      return card;
+    }
     if (afford) {
       card.appendChild(el("div", "can", "Tu peux l’acheter !"));
     } else {
@@ -7363,7 +7454,9 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var old = document.querySelector(".buy-confirm"); if (old) old.parentNode.removeChild(old);
     var ov = el("div", "game-result buy-confirm"); ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true");
     var card = el("div", "game-result-card");
-    card.appendChild(el("div", "bc-icon", it.icon || "🎁"));
+    var preview = el("div", "bc-icon", it.icon || "🎁");
+    if (it.style) styleAvatar(preview, it.style);
+    card.appendChild(preview);
     card.appendChild(el("h2", "gr-title", "Tu veux acheter « " + it.label + " » ?"));
     var pr = el("p", "bc-price"); pr.appendChild(coinEl()); pr.appendChild(document.createTextNode(" " + nb(it.price, "pièce d’or", "pièces d’or"))); card.appendChild(pr);
     var acts = el("div", "gr-actions");
@@ -8309,7 +8402,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
 
       cloudStudentId=st.student_id;cloudClassId=st.class_id||null;
       p=voy2Fix(p,Number(data.thr.s)||25);
-      data.students=[{id:st.student_id,name:st.nickname,avatar:typeof p.avatar==="string"?p.avatar:undefined}];
+      data.students=[{id:st.student_id,name:st.nickname,avatar:typeof p.avatar==="string"?p.avatar:undefined,avatarStyle:p.avatarStyle}];
       data.results=Array.isArray(p.results)?cleanFraud(p.results):[];
       data.coins={[st.student_id]:Number(p.coins)||0};
       data.credits={[st.student_id]:Number(p.credits)||0};
