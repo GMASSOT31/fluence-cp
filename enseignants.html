@@ -1036,7 +1036,21 @@ function studentDetail(s,row,after){
      const {error}=await client.rpc("teacher_give_coins",{p_student:s.id,p_amount:10});gift.disabled=false;
      if(error){after(errorText(error),true);return;}
      after("🎁 10 pièces envoyées à "+s.nickname+". Elles arriveront dans son Zoo dès sa prochaine ouverture.",false,true);};
-    const ga=mk("div","pd-actions");ga.append(gift);details.append(ga);}
+    const games=mk("button","secondary pd-gift","🎮 Donner des parties");games.type="button";
+    games.onclick=async()=>{
+     if(games.disabled)return;
+     games.disabled=true;
+     try{
+      const response=await dlg("Combien de parties donner à "+s.nickname+" ? (1 à 20)",{input:true,value:"1",ok:"Donner",label:"Nombre de parties"});
+      if(response===null)return;
+      const count=Number(response);
+      if(!Number.isInteger(count)||count<1||count>20){after("Choisissez un nombre entier de 1 à 20.",true);return;}
+      const {error}=await client.rpc("teacher_give_credits",{p_student:s.id,p_amount:count});
+      if(error){after(errorText(error),true);return;}
+      after("🎮 "+count+" "+pl(count,"partie envoyée","parties envoyées")+" à "+s.nickname+".",false,true);
+     }finally{games.disabled=false;}
+    };
+    const ga=mk("div","pd-actions");ga.append(gift,games);details.append(ga);}
    return details;
 }
 

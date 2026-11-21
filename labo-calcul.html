@@ -228,6 +228,14 @@
     body.listen-focus .exo .msg { font-size: 1.5rem; }
     body.listen-focus .exo .pic { font-size: 2.6rem; }
   }
+[data-avatar-charm]{position:relative;color:#fff;border:3px solid #ffe3a0}
+[data-avatar-style="cosmos"][data-avatar-charm]{background:radial-gradient(circle at 23% 19%,#fff 1px,transparent 3px),radial-gradient(circle at 75% 25%,#fff 1px,transparent 3px),linear-gradient(150deg,#29246b,#664bd5,#e883ed)}
+[data-avatar-style="jungle"][data-avatar-charm]{background:radial-gradient(circle at 25% 20%,#f5ffc0,transparent 40%),linear-gradient(140deg,#8ad354,#127878)}
+[data-avatar-style="arc"][data-avatar-charm]{background:linear-gradient(140deg,#ff8ab1,#ffe685,#81e9c3,#9fa5f9)}
+[data-avatar-charm]::after{content:attr(data-avatar-charm);position:absolute;right:-5px;top:-6px;font-size:1.1rem;line-height:1;background:#fff5d0;border:1px solid #915e23;border-radius:50%;padding:3px}
+.zoo-top-stat.wallet-raised{position:relative;z-index:2;outline:3px solid #ffe475;box-shadow:0 0 12px #f7b928}
+body.mode-student #zoo-top-stats .zoo-top-stat.wallet-raised{display:flex}
+.wallet-gain{position:absolute;top:calc(100% + 3px);right:0;background:#fff2af;color:#3b2605;padding:4px 8px;border-radius:8px;white-space:nowrap;font-weight:bold;font-size:.85rem}
 </style>
 </head>
 <body class="mode-student calc">
@@ -355,6 +363,7 @@
         var pinOk = !(r[3] && r[3].pinChange === false); $("btn-pin-left").hidden = !pinOk; $("me-pin").hidden = !pinOk;
         load(r[0]); S.name = (r[1] && r[1].nickname) || "toi";
         var p = r[2] && r[2].progress; if (p && typeof p.avatar === "string" && p.avatar) S.avatar = p.avatar;
+        if (p && p.avatarStyle && Array.isArray(p.avatarStyle.owned) && p.avatarStyle.owned.indexOf(p.avatarStyle.active) >= 0) renderAvatarStyle(p.avatarStyle.active);
         if (p) { S.coins = Math.max(0, Math.floor(Number(p.coins) || 0)); S.credits = Math.max(0, Math.floor(Number(p.credits) || 0)); }
         start();
       });
@@ -384,8 +393,34 @@
     return matches(route.next) || route.replay.some(matches);
   }
 
+  var walletSeen = null;
+  var avatarCharms = { cosmos: "🪐", jungle: "🌿", arc: "🌈" };
+  function renderAvatarStyle(id) {
+    var node = $("pl-avatar").parentNode;
+    if (typeof id === "string" && Object.prototype.hasOwnProperty.call(avatarCharms, id)) {
+      node.setAttribute("data-avatar-style", id); node.setAttribute("data-avatar-charm", avatarCharms[id]);
+    } else {
+      node.removeAttribute("data-avatar-style"); node.removeAttribute("data-avatar-charm");
+    }
+  }
+  function updateRewardCounter(id, amount, previous, unit, plural) {
+    var number = $(id), counter = number.parentNode;
+    number.textContent = amount;
+    if (previous === null || amount <= previous) return;
+    var old = counter.querySelector(".wallet-gain");
+    if (old) old.remove();
+    var badge = el("span", "wallet-gain", "+" + nb(amount - previous, unit, plural));
+    badge.setAttribute("role", "status");
+    counter.classList.add("wallet-raised"); counter.appendChild(badge);
+    setTimeout(function () {
+      if (badge.parentNode !== counter) return;
+      badge.remove(); counter.classList.remove("wallet-raised");
+    }, 3200);
+  }
   function renderPanels() {
-    $("top-coins").textContent = S.coins; $("top-games").textContent = S.credits;
+    updateRewardCounter("top-coins", S.coins, walletSeen && walletSeen.coins, "pièce", "pièces");
+    updateRewardCounter("top-games", S.credits, walletSeen && walletSeen.credits, "partie", "parties");
+    walletSeen = { coins: S.coins, credits: S.credits };
     /* pastille « Animaux » : un animal par étape réussie (étapes proposées par l'enseignant), à la place des anciennes pastilles E0 / A0 / S0 */
     var pets = levelsDone(); $("top-pets-n").textContent = pets; $("top-pets").setAttribute("aria-label", nb(pets, "animal dans mon zoo", "animaux dans mon zoo")); $("top-pets").title = nb(pets, "animal dans mon zoo", "animaux dans mon zoo");
     $("pl-name").textContent = S.name; $("pl-avatar").textContent = S.avatar;
@@ -435,6 +470,7 @@
     var f = $("zoo-frame"), d = ev.data;
     if (ev.origin !== location.origin || !f || ev.source !== f.contentWindow || !d || d.zooEmbed !== 1) return;
     if (typeof d.coins === "number" && typeof d.credits === "number") { S.coins = d.coins; S.credits = d.credits; renderPanels(); }
+    if (typeof d.avatarStyle === "string") renderAvatarStyle(d.avatarStyle);
     if (typeof d.playing === "boolean") { document.body.classList.toggle("zoo-playing", d.playing); if (!d.playing) fitFrame(); }
   });
 

@@ -18,14 +18,16 @@
     var origin = location.origin;
     function post(m) { m.zooEmbed = 1; try { window.parent.postMessage(m, origin); } catch (e) {} }
     function start() {
-      var coins = document.getElementById("top-coins"), games = document.getElementById("top-games"), last = "";
+      var coins = document.getElementById("top-coins"), games = document.getElementById("top-games"), avatar = document.getElementById("btn-avatar"), last = "";
       function wallet() {
         if (!coins || !games) return;
-        var c = parseInt(coins.textContent, 10) || 0, g = parseInt(games.textContent, 10) || 0, k = c + "/" + g;
-        if (k !== last) { last = k; post({ coins: c, credits: g }); }
+        var c = parseInt(coins.textContent, 10) || 0, g = parseInt(games.textContent, 10) || 0;
+        var style = avatar ? avatar.getAttribute("data-avatar-style") || "" : "", k = c + "/" + g + "/" + style;
+        if (k !== last) { last = k; post({ coins: c, credits: g, avatarStyle: style }); }
       }
       function playing() { post({ playing: document.body.classList.contains("playing") }); }
       [coins, games].forEach(function (n) { if (n && window.MutationObserver) new MutationObserver(wallet).observe(n, { childList: true, characterData: true, subtree: true }); });
+      if (avatar && window.MutationObserver) new MutationObserver(wallet).observe(avatar, { attributes: true, attributeFilter: ["data-avatar-style"] });
       if (window.MutationObserver) new MutationObserver(playing).observe(document.body, { attributes: true, attributeFilter: ["class"] });
       window.addEventListener("load", function () { wallet(); playing(); });
       setTimeout(function () { wallet(); }, 1500);
