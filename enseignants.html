@@ -880,7 +880,7 @@ document.addEventListener("visibilitychange",refreshVisibleRecordings);
 setInterval(refreshVisibleRecordings,15000);
 
 /* Administrateur : jeux classés par nombre de parties terminées (tous les enseignants), sans aucun nom d’élève */
-const GAME_NAMES={memory:"🃏 Memory des animaux",snake:"🐍 Le serpent",flap:"🐤 L’oiseau volant",order:"⏱️ Dans l’ordre",simon:"🧠 Répète les animaux",safari:"🦁 Safari des animaux",stack:"🦒 Tour d’animaux",tiles:"🎹 Tuiles des sons",count:"🔢 Compte les animaux (ancien jeu)",catch:"🎯 Attrape-les (ancien jeu)"};
+const GAME_NAMES={memory:"🃏 Memory des animaux",snake:"🐍 Le serpent",flap:"🐤 L’oiseau volant",order:"⏱️ Dans l’ordre",simon:"🧠 Répète les animaux",safari:"🦁 Safari des animaux",stack:"🦒 Tour d’animaux",tiles:"🎹 Tuiles des sons",tiles_e:"🚀 Tuiles du é",count:"🔢 Compte les animaux (ancien jeu)",catch:"🎯 Attrape-les (ancien jeu)"};
 const openGroups=new Set();   /* blocs de « Progression » dépliés : gardés quand la liste se recharge */
 function foldGroup(head,body,key){
  body.classList.toggle("hidden",!openGroups.has(key));
