@@ -16,6 +16,7 @@
     students: [{ id: "s1", label: "lea", class_name: "CP-A" }, { id: "s2", label: "leo", class_name: "CP-A" }],
     requests: /[?&]req=1/.test(q) ? [{ teacher_id: "t2", label: "Autre enseignant", requested_at: "2026-10-23T09:00:00Z" }] : [], myRequested: /[?&]asked=1/.test(q)
   };
+  lab.assignments = /[?&]assignment=1/.test(q) ? { s1: { activity: "soustraction", level: "s0", assigned_at: "2026-11-21T07:00:00Z", done: false } } : {};
   if (/[?&]seed=gap/.test(q)) {   /* trou dans l'ordre + réussite hors périmètre (étape désactivée) */
     lab.me.levels = { "nombres:n1": { r: 2, ok: 2, q: 20, c: 19 }, "nombres:n2": { r: 1, ok: 1, q: 10, c: 9 }, "nombres:n4": { r: 1, ok: 1, q: 10, c: 9 }, "addition:a7": { r: 1, ok: 1, q: 10, c: 9 } };
     lab.settings = { levels: { nombres: ["n1", "n2", "n3", "n4"], addition: ["a1", "a2"], soustraction: ["s1"] } };
@@ -43,6 +44,14 @@
       if (a && a.p_token) return { allowed: studentAllowed(), role: "student" };
       var al = teacherAllowed(); if (role === "refuse" && lab.enabled) return { allowed: false, role: "teacher", requestable: true, requested: lab.myRequested };
       return { allowed: al, role: role === "admin" ? "admin" : "teacher", requestable: false, requested: false };
+    },
+    lab_student_assignment: function () { needStudent(); return lab.assignments.s1 ? Object.assign({}, lab.assignments.s1) : null; },
+    lab_teacher_assignments: function () { needTeacher(); return lab.assignments; },
+    lab_teacher_assign: function (a) {
+      needTeacher();
+      if (["s1", "s2"].indexOf(a.p_student) < 0) throw err("Élève hors de votre classe");
+      if (!a.p_activity && !a.p_level) { delete lab.assignments[a.p_student]; return null; }
+      return lab.assignments[a.p_student] = { activity: a.p_activity, level: a.p_level, assigned_at: new Date().toISOString(), done: false };
     },
     lab_student_state: function () { needStudent(); return mix({ progress: { levels: lab.me.levels, hist: lab.me.hist, nums: lab.me.nums, calcs: lab.me.calcs }, settings: lab.settings, wheels: wheelsLeft() }); },
     lab_student_spin_wheel: function () {
@@ -76,6 +85,8 @@
       var pass = Math.min(Math.max(lab.settings.pass || 80, 50), 100), ok = a.p_correct * 100 >= pass * a.p_total, coins = 0;
       if (ok && a.p_total >= 5 && lab.rewardedToday < 10) { coins = a.p_correct === a.p_total ? 2 : 1; lab.rewardedToday++; }
       lab.rounds[a.p_round] = coins;
+      var assigned = lab.assignments.s1;
+      if (ok && assigned && assigned.activity === a.p_activity && assigned.level === a.p_level) assigned.done = true;
       if (coins && lab.shared) lab.pending = Math.min(lab.pending + coins, 10000); else lab.me.coins += coins;
       var key = a.p_activity + ":" + a.p_level, c = lab.me.levels[key] || {}, s = a.p_stats || {};
       lab.me.levels[key] = { r: (c.r || 0) + 1, q: (c.q || 0) + a.p_total, c: (c.c || 0) + a.p_correct, rp: (c.rp || 0) + (s.replays || 0), h: (c.h || 0) + (s.helps || 0), ms: s.ms || 0,

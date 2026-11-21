@@ -166,8 +166,8 @@
     box.appendChild(head("🏫", "Ma classe · calcul", "Écouter les nombres, additions et soustractions : ce qui demande votre attention, puis chaque élève. Les résultats de lecture sont dans l’espace Lecture."));
     var msg = el("p", "msg", "Chargement…"); msg.id = "calcMsg"; msg.setAttribute("role", "status"); box.appendChild(msg);
     var board = el("div", "calc-board pb-scope"); box.appendChild(board);
-    Promise.all([rpc("lab_teacher_settings_get").catch(function () { return {}; }), rpc("lab_teacher_results")]).then(function (r) {
-      settings = r[0] || {}; msg.textContent = ""; view.all = r[1] || []; view.loadedAt = new Date(); paintBoard(board);
+    Promise.all([rpc("lab_teacher_settings_get").catch(function () { return {}; }), rpc("lab_teacher_results"), rpc("lab_teacher_assignments").catch(function () { return null; })]).then(function (r) {
+      settings = r[0] || {}; view.assignments = r[2]; msg.textContent = ""; view.all = r[1] || []; view.loadedAt = new Date(); paintBoard(board);
     }).catch(function () { msg.className = "msg err"; msg.textContent = "Impossible de charger les résultats de calcul. Réessayez dans un instant."; });
   }
   function paintBoard(board) {
@@ -246,6 +246,42 @@
     sec.appendChild(list); paint(); return sec;
   }
   function whenTxt(r) { return r.idle === null ? "jamais venu" : r.idle <= 0 ? "aujourd’hui" : r.idle === 1 ? "hier" : "il y a " + r.idle + " jours"; }
+  function assignmentEditor(r, current) {
+    var box = el("form", "pb-assign"), title = el("h4", "", "🎯 Exercice pour " + r.s.nickname);
+    var activities = el("select"), levels = el("select"), feedback = el("p", "msg");
+    activities.setAttribute("aria-label", "Activité de calcul"); levels.setAttribute("aria-label", "Étape de calcul");
+    feedback.setAttribute("role", "status");
+    Object.keys(ACT).forEach(function (act) {
+      var option = el("option", "", ACT[act].title); option.value = act; activities.appendChild(option);
+    });
+    if (current) activities.value = current.activity;
+    function fill() {
+      clear(levels);
+      E.missionLevels(activities.value).forEach(function (id) {
+        var option = el("option", "", E.levelInfo(activities.value, id).label);
+        option.value = id; levels.appendChild(option);
+      });
+      if (current && current.activity === activities.value) levels.value = current.level;
+    }
+    fill(); activities.addEventListener("change", fill);
+    var actions = el("div", "pb-as-acts"), give = el("button", "primary", current ? "Donner un nouvel exercice" : "Donner l’exercice");
+    var cancel = el("button", "secondary", "Annuler"), remove = el("button", "secondary", "Retirer l’exercice");
+    cancel.type = remove.type = "button"; give.type = "submit";
+    function save(act, level) {
+      give.disabled = remove.disabled = cancel.disabled = true;
+      rpc("lab_teacher_assign", { p_student: r.s.student_id, p_activity: act, p_level: level }).then(renderProgress).catch(function () {
+        feedback.textContent = "Impossible d’enregistrer. Réessayez.";
+        give.disabled = remove.disabled = cancel.disabled = false;
+      });
+    }
+    box.addEventListener("submit", function (event) { event.preventDefault(); save(activities.value, levels.value); });
+    remove.addEventListener("click", function () { save(null, null); });
+    cancel.addEventListener("click", function () { if (box.previousElementSibling) box.previousElementSibling.querySelector(".pb-asb").click(); });
+    actions.appendChild(give); if (current) actions.appendChild(remove); actions.appendChild(cancel);
+    box.appendChild(title); box.appendChild(el("p", "muted", "L’élève verra cette série en tête de sa mission jusqu’à sa réussite."));
+    box.appendChild(activities); box.appendChild(levels); box.appendChild(actions); box.appendChild(feedback);
+    return box;
+  }
   function lineCalc(r, tot, repaint) {
     var d = el("div", "pb-row c-" + r.color); d.setAttribute("data-sid", r.s.student_id);
     var who = el("div", "pb-who"); who.appendChild(el("span", "pb-dot", { red: "🔴", yellow: "🟡", green: "🟢", idle: "⚪" }[r.color])); who.appendChild(el("strong", "", r.s.nickname));
@@ -267,6 +303,25 @@
       if (nl) { window.scrollBy(0, nl.getBoundingClientRect().top - top); var nb = nl.querySelector(".pb-detail-btn"); if (nb) try { nb.focus({ preventScroll: true }); } catch (e) {} }
     });
     var btns = el("div", "pb-btns"); btns.appendChild(btn);
+    var C = ctx(), student = (C.allStudents || []).find(function (s) { return s.id === r.s.student_id; });
+    if (view.assignments && student && C.currentUser && student.teacher_id === C.currentUser.id) {
+      var current = view.assignments[r.s.student_id];
+      var info = current && E.levelInfo(current.activity, current.level);
+      if (info) tags.appendChild(el("span", "pb-tag " + (current.done ? "ok" : "asg"),
+        (current.done ? "✅ Exercice réussi · " : "🎯 Exercice donné · ") + info.label));
+      var assign = el("button", "secondary pb-see pb-asb", current && !current.done ? "🎯 Gérer l’exercice" : "🎯 Donner un exercice");
+      assign.type = "button"; assign.setAttribute("aria-expanded", "false");
+      assign.addEventListener("click", function () {
+        var next = d.nextElementSibling;
+        if (next && next.classList.contains("pb-assign")) {
+          next.remove(); assign.setAttribute("aria-expanded", "false");
+        } else {
+          d.parentNode.insertBefore(assignmentEditor(r, current), next);
+          assign.setAttribute("aria-expanded", "true");
+        }
+      });
+      btns.appendChild(assign);
+    }
     [who, time, prog, nums, btns].forEach(function (x) { d.appendChild(x); }); return d;
   }
   function chiffres(r) {

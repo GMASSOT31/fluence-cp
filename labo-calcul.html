@@ -361,13 +361,15 @@ body.mode-student #zoo-top-stats .zoo-top-stat.wallet-raised{display:flex}
       /* lecture seule du profil et de l'avatar du Zoo de Lecture (rien n'est écrit côté lecture) */
       return Promise.all([rpc("lab_student_state", { p_token: token }), rpc("student_session_profile", { p_token: token }).catch(function () { return null; }),
                           rpc("student_get_progress_v2", { p_token: token }).catch(function () { return null; }),
-                          rpc("student_get_teacher_settings", { p_token: token }).catch(function () { return null; })]).then(function (r) {
+                          rpc("student_get_teacher_settings", { p_token: token }).catch(function () { return null; }),
+                          rpc("lab_student_assignment", { p_token: token }).catch(function () { return null; })]).then(function (r) {
         if (window.ZooFx) ZooFx.setSfx(!(r[3] && r[3].sfx === false));
         var pinOk = !(r[3] && r[3].pinChange === false); $("btn-pin-left").hidden = !pinOk; $("me-pin").hidden = !pinOk;
         load(r[0]); S.name = (r[1] && r[1].nickname) || "toi";
         var p = r[2] && r[2].progress; if (p && typeof p.avatar === "string" && p.avatar) S.avatar = p.avatar;
         if (p && p.avatarStyle && Array.isArray(p.avatarStyle.owned) && p.avatarStyle.owned.indexOf(p.avatarStyle.active) >= 0) renderAvatarStyle(p.avatarStyle.active);
         if (p) { S.coins = Math.max(0, Math.floor(Number(p.coins) || 0)); S.credits = Math.max(0, Math.floor(Number(p.credits) || 0)); }
+        S.assignment = r[4];
         start();
       });
     }).catch(function () { gate("Un petit souci de connexion. Réessaie dans un instant.", { href: "labo-calcul.html", label: "Réessayer" }); });
@@ -390,7 +392,20 @@ body.mode-student #zoo-top-stats .zoo-top-stat.wallet-raised{display:flex}
   function levelsHidden() { return levelKeys(1, false).length - levelsDone(); }
   function numsCount() { return Object.keys(S.nums).length; }
   function calcsCount() { return Object.keys(S.calcs).length; }
-  function mission() { return E.mission(S.settings.levels, S.levels); }
+  function mission() {
+    var route = E.mission(S.settings.levels, S.levels), a = S.assignment;
+    if (a && !a.done && E.levelInfo(a.activity, a.level)) {
+      route.next = { act: a.activity, id: a.level, assigned: true };
+    }
+    return route;
+  }
+  function refreshAssignment() {
+    return rpc("lab_student_assignment", { p_token: token }).then(function (a) {
+      var changed = JSON.stringify(a) !== JSON.stringify(S.assignment);
+      S.assignment = a;
+      return changed;
+    }).catch(function () { return false; });
+  }
   function canPlay(route, act, id) {
     function matches(step) { return step && step.act === act && step.id === id; }
     return matches(route.next) || route.replay.some(matches);
@@ -446,6 +461,9 @@ body.mode-student #zoo-top-stats .zoo-top-stat.wallet-raised{display:flex}
     ({ home: home,
        boutique: function (b) { zooFrame(b, "boutique"); }, jeux: function (b) { zooFrame(b, "jeux"); }, cartes: numsView, reconnues: calcsView, progres: progressView, roue: function () { wheelScreen(function () { goTo("home"); }); } })[v](box);
     addNextBar(v); renderPanels(); window.scrollTo(0, 0); claimGifts();
+    if (v === "home") refreshAssignment().then(function (changed) {
+      if (changed && view === "home" && !R) { clear(box); home(box); }
+    });
   }
   /* Sur les écrans « à côté » (nombres, calculs, progression, boutique, jeux), un gros bouton vert ramène toujours à l'étape suivante (l'accueil) */
   function addNextBar(v) {
@@ -488,12 +506,13 @@ body.mode-student #zoo-top-stats .zoo-top-stat.wallet-raised{display:flex}
     var title = step || route.blocked ? "🎯 Ma mission" : "🎉 Parcours terminé !";
     card.appendChild(el("h2", "", title));
     if (step) setPath(step.act);
+    if (step && step.assigned) card.appendChild(el("p", "muted", "Exercice donné par ton enseignant"));
     if (!step && !S.wheels) {
       card.appendChild(el("p", "muted", route.blocked ? "Montre cet écran à ton enseignant pour ouvrir les nombres qu’il te reste à travailler." : "Tu peux retrouver tes animaux et refaire tes activités."));
       var review = el("button", "primary big-btn", "Revoir mes activités"); review.type = "button";
       review.addEventListener("click", function () { goTo("progres"); }); card.appendChild(review);
     } else {
-      var wheel = S.wheels > 0;
+      var wheel = S.wheels > 0 && !(step && step.assigned);
       var row = el("div", "home-step"), col = el("div", "home-col"), actions = el("div", "home-act-row");
       var label = wheel ? "🎡 Lance ta roue !" : ACT[step.act].icon + " " + ACT[step.act].title;
       var lv = step && E.levelInfo(step.act, step.id);
@@ -848,7 +867,12 @@ body.mode-student #zoo-top-stats .zoo-top-stat.wallet-raised{display:flex}
       else bilan();
     }
     function send() {
-      rpc("lab_student_submit_round", { p_token: token, p_round: R.id, p_activity: R.act, p_level: R.lv, p_correct: g, p_total: n, p_stats: stats }).then(done).catch(function () {
+      rpc("lab_student_submit_round", { p_token: token, p_round: R.id, p_activity: R.act, p_level: R.lv, p_correct: g, p_total: n, p_stats: stats }).then(function (res) {
+        if (S.assignment && S.assignment.activity === R.act && S.assignment.level === R.lv) {
+          return refreshAssignment().then(function () { done(res); });
+        }
+        done(res);
+      }).catch(function () {
         info.className = "msg bad"; info.textContent = "Je n’ai pas pu ranger ton résultat."; clear(row);
         var rt = el("button", "primary big-btn go-next", "Réessayer"); rt.type = "button"; rt.addEventListener("click", function () { info.className = "msg"; info.textContent = "Je range ton résultat…"; clear(row); send(); }); row.appendChild(rt);
       });
