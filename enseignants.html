@@ -1040,8 +1040,8 @@ function studentDetail(s,row,after){
     c.append(big,mk("div","pd-note",games.length+" "+pl(games.length,"jeu essayé","jeux essayés")));
     more(c,games.map(([g,h])=>(GAME_NAMES[g]||g)+" : "+((h&&Number(h.n))||0)+" "+pl((h&&Number(h.n))||0,"partie","parties")+" · record "+(h&&h.best!=null?h.best:"non défini")));grid.append(c)}
    details.append(grid,mk("div","pd-foot","En chiffres :"),summary,mk("div","pd-foot","Une médaille 🏅 ou une étoile ⭐ = un son lu à un niveau (syllabes, mots ou texte)."),mk("div","pd-foot",row?"Dernière sauvegarde : "+new Date(row.updated_at).toLocaleString("fr-FR"):"Aucune progression enregistrée sur le Zoo connecté."));
-   /* 🎁 +10 pièces : bouton discret, dans le détail (seulement pour ses propres élèves) */
-   if(s.teacher_id===currentUser.id){const gift=mk("button","secondary pd-gift","🎁 Donner 10 pièces d’or");gift.type="button";gift.title="Donner 10 pièces d’or à "+s.nickname;
+   const adminGift=currentRole==="admin"&&s.teacher_id!==currentUser.id;
+   if(s.teacher_id===currentUser.id||adminGift){const gift=mk("button","secondary pd-gift","🎁 Donner 10 pièces d’or");gift.type="button";gift.title="Donner 10 pièces d’or à "+s.nickname;
     gift.onclick=async()=>{if(!await dlg("Donner 10 pièces d’or à "+s.nickname+" ?",{ok:"Donner"}))return;gift.disabled=true;
      const {error}=await client.rpc("teacher_give_coins",{p_student:s.id,p_amount:10});gift.disabled=false;
      if(error){after(errorText(error),true);return;}
@@ -1060,7 +1060,9 @@ function studentDetail(s,row,after){
       after("🎮 "+count+" "+pl(count,"partie envoyée","parties envoyées")+" à "+s.nickname+".",false,true);
      }finally{games.disabled=false;}
     };
-    const ga=mk("div","pd-actions");ga.append(gift,games);details.append(ga);}
+    const ga=mk("div","pd-actions");
+    if(adminGift){ga.setAttribute("data-admin-surface","");ga.append(mk("span","admin-scope-label","Administration"));gift.setAttribute("data-admin-action","");games.setAttribute("data-admin-action","");}
+    ga.append(gift,games);details.append(ga);}
    return details;
 }
 
