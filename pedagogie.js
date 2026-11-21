@@ -196,7 +196,7 @@
     Object.keys(bySound).sort(function (a, b) { return bySound[b].length - bySound[a].length; }).slice(0, 4).forEach(function (id) {
       var list = bySound[id];
       card("a-block", "⚠️ " + plur(list.length, "élève bloque", "élèves bloquent") + " sur le son « " + soundName(id) + " »", list,
-        "Beaucoup d’erreurs, ou plusieurs lectures sans réussite. Vous pouvez lui donner un exercice (« + Assigner »).");
+        "Beaucoup d’erreurs, ou plusieurs lectures sans réussite. Vous pouvez lui donner un exercice (« Donner un exercice »).");
     });
     /* exercices donnés, pas encore réussis */
     var asg = rows.filter(function (r) { return r.asg && !asgState(r.asg, r.remed).ok; });
@@ -214,7 +214,7 @@
       var who = rows.filter(function (r) { return (conf[k].who[r.s.id] || 0) >= 2; });
       return { k: k, total: conf[k].total, who: who };
     }).filter(function (c) { return c.who.length; }).sort(function (a, b) { return b.who.length - a.who.length || b.total - a.total; }).slice(0, 3).forEach(function (c) {
-      card("a-conf", "🔀 Confondent « " + c.k.replace(" / ", " » et « ") + " »", c.who, "Au moins 2 fois. Un exercice « Tuiles des sons » peut aider (« + Assigner »).");
+      card("a-conf", "🔀 Confondent « " + c.k.replace(" / ", " » et « ") + " »", c.who, "Au moins 2 fois. Un exercice « Tuiles des sons » peut aider (« Donner un exercice »).");
     });
     var idle = rows.filter(function (r) { return r.inactive; });
     if (idle.length) card("a-idle", "💤 " + plur(idle.length, "élève n’est pas venu", "élèves ne sont pas venus") + " depuis " + INACTIVE_DAYS + " jours ou plus", idle, null);
@@ -266,6 +266,9 @@
       bar.append(b);
     });
     var legend = mk("p", "muted pb-legend", "🔴 en difficulté (bloqué, ou " + LATE + " sons de retard sur l’élève du milieu de la classe) · 🟡 avance normalement · 🟢 en avance de " + AHEAD + " sons ou plus · ⚪ pas venu depuis " + INACTIVE_DAYS + " jours");
+    if (rows.some(function (r) { return r.s.teacher_id === C.currentUser.id; })) {
+      sec.append(mk("p", "muted", "Pour réviser ou travailler une difficulté, choisissez « Donner un exercice » sur la ligne de l’élève."));
+    }
     sec.append(bar, legend, list);
     paint();
     return sec;
@@ -312,9 +315,9 @@
     act.setAttribute("aria-expanded", String(open));
     act.onclick = function () { if (state.open[r.s.id]) delete state.open[r.s.id]; else state.open[r.s.id] = true; repaint(); };
     var btns = mk("div", "pb-btns"); btns.append(act);
-    /* « + Assigner » : seulement pour ses propres élèves (le réglage est celui de l’enseignant de la classe) */
-    if (state.cls && C.currentUser && state.cls.teacher_id === C.currentUser.id) {
-      var asb = mk("button", "secondary pb-see pb-asb", r.asg && !asgState(r.asg, r.remed).ok ? "🎯 Exercice" : "+ Assigner"); asb.type = "button";
+    /* « Donner un exercice » : seulement pour ses propres élèves (le réglage est celui de l’enseignant de la classe) */
+    if (C.currentUser && r.s.teacher_id === C.currentUser.id) {
+      var asb = mk("button", "secondary pb-see pb-asb", r.asg && !asgState(r.asg, r.remed).ok ? "🎯 Gérer l’exercice" : "🎯 Donner un exercice"); asb.type = "button";
       asb.title = "Donner un exercice à " + r.s.nickname + " (en tête de sa mission jusqu’à réussite)";
       asb.setAttribute("aria-expanded", "false");
       asb.onclick = function () {
@@ -538,7 +541,7 @@
   }
 
 
-  /* ===== Remédiation (jalon 7) : « + Assigner » un exercice à un élève =====
+  /* ===== Remédiation (jalon 7) : « Donner un exercice » un exercice à un élève =====
      Réglage enseignant settings.assign[élève] = { type, sons, pair, ts } (enregistré avec les autres réglages, aucune migration).
      Le Zoo de l’élève le met en tête de sa mission jusqu’à réussite et note le résultat dans progress.remed = { ts, done, ok, tries, hist }. */
   window.pedaAssign = window.pedaAssign || {};
@@ -588,9 +591,8 @@
       var v = Array.isArray(c[k]) ? c[k] : null, n = v ? (Number(v[0]) || 0) + (Number(v[1]) || 0) : 0, e = n >= 3 ? (Number(v[1]) || 0) / n : -1;
       if (e > 0 && remedCan(NM[k], cur.id) && (!top || e > top.e)) top = { e: e, t: NM[k] };
     });
-    var t = top ? top.t : (remedCan("listen", cur.id) ? "listen" : null);
-    if (!t) return null;
-    return { a: { type: t, sons: [cur.id] }, why: top ? Math.round(top.e * 100) + " % d’erreurs à " + RT[t].slice(RT[t].indexOf(" ") + 1) + " sur le son " + q2(soundName(cur.id)) : "son en cours : " + q2(soundName(cur.id)) };
+    if (!top) return null;
+    return { a: { type: top.t, sons: [cur.id] }, why: Math.round(top.e * 100) + " % d’erreurs à " + RT[top.t].slice(RT[top.t].indexOf(" ") + 1) + " sur le son " + q2(soundName(cur.id)) };
   }
   function assignEditor(r, repaint) {
     var box = mk("div", "pb-assign"), cur = window.pedaAssign[r.s.id], prop = propose(r);
