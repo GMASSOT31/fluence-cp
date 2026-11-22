@@ -444,7 +444,7 @@
   /* ===== Réglages péda du calcul (enregistrement automatique, comme en lecture) ===== */
   function renderSettings() {
     var box = $("#calcSettings"); clear(box);
-    box.appendChild(head("🎓", "Pédagogie du calcul", "Ces réglages ne concernent que le calcul : ils n’ont aucun effet sur la lecture."));
+    box.appendChild(head("🎓", "Pédagogie du calcul", "Ces réglages de Calcul s’appliquent à vos classes qui utilisent vos réglages personnels."));
     var st = el("span", "save-state", ""); st.id = "calcSave"; st.setAttribute("role", "status"); box.appendChild(st);
     var f = el("div", "calc-fields"); box.appendChild(f);
     rpc("lab_teacher_settings_get").then(function (s) {
@@ -486,11 +486,20 @@
         else bubble.className = "calc-toast hidden";
       }
       function flush() {
-        var s2 = collect(); if (Object.keys(s2.levels).some(function (k) { return !s2.levels[k].length; })) { setState("⚠️ Gardez au moins une étape par activité.", "err"); return; }
-        rpc("lab_teacher_settings_set", { p_settings: s2 }).then(function (r) { settings = r || {}; setState("✓ Enregistré", "ok"); clearTimeout(okTimer); okTimer = setTimeout(function () { if (st.className.indexOf("ok") >= 0) setState("", ""); }, 2000); }).catch(function () { setState("⚠️ Non enregistré : vérifiez la connexion. Nouvel essai dans quelques secondes.", "err"); saveTimer = setTimeout(flush, 5000); });
+        clearTimeout(saveTimer);
+        var s2 = collect(); if (Object.keys(s2.levels).some(function (k) { return !s2.levels[k].length; })) { setState("⚠️ Gardez au moins une étape par activité.", "err"); return Promise.resolve({message:"Gardez au moins une étape par activité."}); }
+        return rpc("lab_teacher_settings_set", { p_settings: s2 }).then(function (r) { settings = r || {}; setState("✓ Enregistré", "ok"); clearTimeout(okTimer); okTimer = setTimeout(function () { if (st.className.indexOf("ok") >= 0) setState("", ""); }, 2000); }).catch(function (error) { setState("⚠️ Non enregistré : vérifiez la connexion. Nouvel essai dans quelques secondes.", "err"); saveTimer = setTimeout(flush, 5000); return error; });
       }
       function queue() { setState("Modifications en cours…", "pending"); clearTimeout(saveTimer); saveTimer = setTimeout(flush, 1000); }
       f.addEventListener("input", queue); f.addEventListener("change", queue);
+      if (role === "admin" && window.ZooClassPedagogy) {
+        var share = el("section", "panel", ""); share.setAttribute("data-admin-surface", "");
+        share.appendChild(el("span", "admin-scope-label", "Administration"));
+        share.appendChild(el("h2", "", "Partager mes réglages de Calcul"));
+        share.appendChild(el("p", "muted", "Vos réglages servent aussi de modèle lors des nouvelles inscriptions."));
+        var target = el("div"); share.appendChild(target); box.insertBefore(share, f);
+        window.ZooClassPedagogy(target, "calcul", flush);
+      }
     }).catch(function () { st.textContent = "⚠️ Impossible de charger les réglages."; st.className = "save-state err"; });
   }
 
