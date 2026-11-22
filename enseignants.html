@@ -461,18 +461,18 @@ body.teacher-mode .teacher-header .teacher-nav button:is([data-role="admin"],[da
   <div id="vocabAssign"></div>
   <section class="panel" data-admin-surface id="vocabImport" hidden>
     <span class="admin-scope-label">Administration</span>
-    <h3>Créer un corpus depuis un PDF</h3>
-    <label for="vocabTitle">Nom du corpus</label>
-    <input id="vocabTitle" maxlength="80" placeholder="École 1">
-    <label for="vocabPdf">PDF de l’imagier (6 à 18 mots, une carte par page)</label>
+    <h3>Importer un imagier depuis un PDF</h3>
+    <label for="vocabTitle">Nom de l’imagier</label>
+    <input id="vocabTitle" maxlength="80" placeholder="École">
+    <label for="vocabPdf">PDF de l’imagier (une carte par page)</label>
     <input id="vocabPdf" type="file" accept="application/pdf,.pdf">
     <details><summary>Prompt pour préparer le PDF</summary>
       <textarea id="vocabPrompt" rows="8" readonly aria-label="Prompt pour l’IA"></textarea>
       <button type="button" class="secondary" id="vocabCopyPrompt">Copier le prompt</button>
     </details>
     <button type="button" class="secondary" id="vocabPreview">Voir les cartes du PDF</button>
-    <div id="vocabPreviewCards" class="vocab-preview-grid"></div>
-    <button type="button" id="vocabPublish" disabled>Enregistrer ce corpus</button>
+    <div id="vocabPreviewCards"></div>
+    <button type="button" id="vocabPublish" disabled>Enregistrer les corpus</button>
     <p id="vocabImportStatus" role="status"></p>
   </section>
   <p class="muted">Pour donner aussi un exercice de phonologie, d’écoute, de dictée, de compréhension ou de tuiles, ouvrez la ligne de l’élève dans <button type="button" class="secondary" data-tab="pedagogie">Ma classe</button>.</p>
@@ -548,7 +548,7 @@ body.teacher-mode .teacher-header .teacher-nav button:is([data-role="admin"],[da
  <h3 style="margin:22px 0 8px">✉️ Messages du formulaire de contact</h3><p class="muted">Écrits sans compte depuis la page Contact du site. Répondez par e-mail.</p><p class="msg" id="ctMsg" role="status"></p><div id="ctList" class="content-list"></div>
 </section>
 </div>
-</section></main><script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=28"><\/script>':'<script src="vendor/supabase.js?v=2.118.0"><\/script>');})();</script><script src="profils.js?v=1"></script><script src="exo-data.js?v=6"></script><script src="vocabulaire.js?v=2"></script><script src="vocabulaire-import.js?v=2"></script><script src="vendor/qrcode.js?v=1.4.4"></script><script src="pedagogie.js?v=19"></script><script src="mes-sons.js?v=1"></script><script src="compr-admin.js?v=4"></script><script>
+</section></main><script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=28"><\/script>':'<script src="vendor/supabase.js?v=2.118.0"><\/script>');})();</script><script src="profils.js?v=1"></script><script src="exo-data.js?v=6"></script><script src="vocabulaire.js?v=2"></script><script src="vocabulaire-import.js?v=3"></script><script src="vendor/qrcode.js?v=1.4.4"></script><script src="pedagogie.js?v=19"></script><script src="mes-sons.js?v=1"></script><script src="compr-admin.js?v=4"></script><script>
 (function(){
 "use strict";
 /* Retour du lien « Mot de passe oublié » : on lit l’adresse avant que la bibliothèque Supabase ne la nettoie */
@@ -912,7 +912,7 @@ function renderVocabularyAssignment(){
  host.append(description,fields,status);
 }
 const vocabImport=(()=>{
- let cards=[], urls=[], file=null, id=null, uploaded=new Set(), busy=false;
+ let groups=[], urls=[], busy=false, started=false;
  const preview=$("vocabPreviewCards"), input=$("vocabPdf"), title=$("vocabTitle");
  const extract=$("vocabPreview"), publish=$("vocabPublish"), status=$("vocabImportStatus");
  const prompt=$("vocabPrompt");prompt.value=ZooVocabularyImport.prompt;
@@ -920,58 +920,95 @@ const vocabImport=(()=>{
   try{await navigator.clipboard.writeText(prompt.value);status.textContent="✓ Prompt copié.";}
   catch(error){prompt.focus();prompt.select();status.textContent="Le prompt est sélectionné. Copiez-le avec le menu de votre appareil.";}
  };
- function buttons(){input.disabled=title.disabled=extract.disabled=busy;publish.disabled=busy||!cards.length;}
+ function buttons(){input.disabled=extract.disabled=busy;title.disabled=busy||started;publish.disabled=busy||!groups.length;}
  function clear(){
-  urls.forEach(url=>URL.revokeObjectURL(url));urls=[];cards=[];preview.replaceChildren();
-  id=null;uploaded=new Set();
+  urls.forEach(url=>URL.revokeObjectURL(url));urls=[];groups=[];preview.replaceChildren();started=false;
  }
- input.onchange=()=>{clear();file=input.files[0];status.textContent="";buttons();};
+ input.onchange=()=>{clear();status.textContent="";buttons();};
  extract.onclick=async()=>{
   if(busy||currentRole!=="admin")return;
-  file=input.files[0];if(!file){status.textContent="Choisissez d’abord un fichier PDF.";return;}
+  const file=input.files[0];if(!file){status.textContent="Choisissez d’abord un fichier PDF.";return;}
   clear();busy=true;buttons();
   try{
    status.textContent="Lecture du PDF…";
-   cards=await ZooVocabularyImport.extract(file,(i,total)=>{status.textContent="Lecture du PDF · "+i+"/"+total;});
-   const bytes=crypto.getRandomValues(new Uint8Array(16));
-   bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;
-   const hex=Array.from(bytes,b=>b.toString(16).padStart(2,"0")).join("");
-   id=[hex.slice(0,8),hex.slice(8,12),hex.slice(12,16),hex.slice(16,20),hex.slice(20)].join("-");
-   cards.forEach((card,index)=>{
-    const field=document.createElement("label"), word=document.createElement("input"), image=document.createElement("img");
-    const url=URL.createObjectURL(card.blob);urls.push(url);image.src=url;image.alt="";
-    word.value=card.label;word.maxLength=80;word.setAttribute("aria-label","Mot de la carte "+(index+1));
-    word.oninput=()=>{card.label=word.value;};
-    field.append("Carte "+(index+1),image,word);preview.append(field);
+   const parsed=await ZooVocabularyImport.extract(file,(i,total)=>{status.textContent="Lecture du PDF · "+i+"/"+total;});
+   if(parsed.name&&!title.value.trim())title.value=parsed.name.slice(0,80);
+   groups=parsed.groups.map(cards=>{
+    const bytes=crypto.getRandomValues(new Uint8Array(16));
+    bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;
+    const hex=Array.from(bytes,b=>b.toString(16).padStart(2,"0")).join("");
+    return {id:[hex.slice(0,8),hex.slice(8,12),hex.slice(12,16),hex.slice(16,20),hex.slice(20)].join("-"),cards,uploaded:new Set(),saved:false};
    });
-   status.textContent=cards.length+" cartes extraites. Vérifiez les images et leurs noms avant d’enregistrer.";
+   groups.forEach((group,groupIndex)=>{
+    const section=document.createElement("section"), heading=document.createElement("h4"), grid=document.createElement("div");
+    heading.className="vocab-group-title";grid.className="vocab-preview-grid";
+    section.append(heading,grid);preview.append(section);
+    group.cards.forEach((card,index)=>{
+     const field=document.createElement("label"), word=document.createElement("input"), image=document.createElement("img");
+     const url=URL.createObjectURL(card.blob);urls.push(url);image.src=url;image.alt="";
+     word.value=card.label;word.maxLength=80;word.setAttribute("aria-label","Corpus "+(groupIndex+1)+", mot de la carte "+(index+1));
+     word.oninput=()=>{card.label=word.value;};
+     field.append("Carte "+(index+1),image,word);grid.append(field);
+    });
+   });
+   showTitles();
+   status.textContent=groups.map(g=>g.cards.length).join(" + ")+" cartes · "+groups.length+" corpus. Vérifiez les images et leurs noms.";
   }catch(error){status.textContent=errorText(error);}
   finally{busy=false;buttons();}
  };
+ function groupName(i){
+  const name=title.value.trim();
+  return groups.length===1?name:name+" "+(i+1);
+ }
+ function showTitles(){
+  preview.querySelectorAll(".vocab-group-title").forEach((heading,i)=>{
+   heading.textContent=(title.value.trim()?groupName(i):"Corpus "+(i+1))+" · "+groups[i].cards.length+" mots";
+  });
+ }
+ title.oninput=showTitles;
  publish.onclick=async()=>{
-  if(busy||currentRole!=="admin"||!cards.length)return;
-  const name=title.value.trim(), words=cards.map(card=>({label:card.label.trim()}));
-  if(!name||words.some(word=>!word.label)||new Set(words.map(word=>word.label.toLowerCase())).size!==words.length){
-   status.textContent="Donnez un nom au corpus et vérifiez que chaque carte a un nom différent.";return;
+  if(busy||currentRole!=="admin"||!groups.length)return;
+  const names=groups.map((_,i)=>groupName(i));
+  if(!title.value.trim()||names.some(name=>name.length>80)||
+     groups.some(group=>{
+      const labels=group.cards.map(card=>card.label.trim().toLowerCase());
+      return labels.some(label=>!label)||new Set(labels).size!==labels.length;
+     })){
+   status.textContent="Vérifiez le nom de l’imagier et donnez un nom différent à chaque carte d’un même corpus.";return;
   }
   busy=true;buttons();
   try{
-   for(let i=0;i<cards.length;i++){
-    if(uploaded.has(i))continue;
-    status.textContent="Envoi des images · "+(i+1)+"/"+cards.length;
-    const path=id+"/"+String(i+1).padStart(3,"0")+".jpg";
-    const {error}=await client.storage.from("vocabulaire-zoo").upload(path,cards[i].blob,{contentType:"image/jpeg"});
-    if(error&&String(error.statusCode)!=="409"&&String(error.status)!=="409")throw error;
-    uploaded.add(i);
+   if(!started){
+    await refreshVocabularyCatalog();
+    if(names.some(name=>ZooVocabulary.catalog.some(book=>book.title.toLowerCase()===name.toLowerCase()))){
+     status.textContent="Un corpus portant l’un de ces noms existe déjà. Changez le nom de l’imagier.";return;
+    }
    }
-   const {error}=await client.rpc("admin_create_vocabulary_corpus",{p_id:id,p_title:name,p_words:words});
-   if(error)throw error;
-   clear();input.value="";title.value="";
+   for(let n=0;n<groups.length;n++){
+    const group=groups[n];
+    if(group.saved)continue;
+    for(let i=0;i<group.cards.length;i++){
+     if(group.uploaded.has(i))continue;
+     status.textContent="Envoi de "+names[n]+" · "+(i+1)+"/"+group.cards.length;
+     const path=group.id+"/"+String(i+1).padStart(3,"0")+".jpg";
+     const {error}=await client.storage.from("vocabulaire-zoo").upload(path,group.cards[i].blob,{contentType:"image/jpeg"});
+     if(error&&String(error.statusCode)!=="409"&&String(error.status)!=="409")throw error;
+     group.uploaded.add(i);
+    }
+    const {error}=await client.rpc("admin_create_vocabulary_corpus",{
+     p_id:group.id,p_title:names[n],p_words:group.cards.map(card=>({label:card.label.trim()}))
+    });
+    if(error)throw error;
+    group.saved=true;started=true;
+   }
    await refreshVocabularyCatalog();
+   clear();input.value="";title.value="";
    renderVocabularyAssignment();
-   status.textContent="✓ « "+name+" » est disponible pour l’attribution.";
-  }catch(error){status.textContent=errorText(error);}
-  finally{busy=false;buttons();}
+   status.textContent="✓ "+names.join(", ")+" disponible"+(names.length>1?"s":"")+" pour l’attribution.";
+  }catch(error){
+   status.textContent=(started?"Certains corpus sont déjà enregistrés. Réessayez pour terminer. ":"")+errorText(error);
+   if(started)await refreshVocabularyCatalog().then(renderVocabularyAssignment).catch(()=>{});
+  }finally{busy=false;buttons();}
  };
  buttons();
 })();

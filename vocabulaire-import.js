@@ -4,13 +4,22 @@
   var loader;
   var pdfRoot = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
   var prompt = [
-    "À partir des planches d’imagier jointes, produis un fichier PDF distinct par corpus de 6 à 18 mots. Ne dépasse jamais 18 mots dans un PDF. Si l’imagier contient plus de 18 mots, répartis-les en plusieurs corpus en gardant l’ordre des planches et équilibre les derniers groupes pour qu’ils aient au moins 6 mots. Utilise uniquement les illustrations fournies : découpe-les depuis les planches. N’invente, ne redessine, ne remplace et ne retouche aucune illustration.",
-    "Crée une page A4 portrait par illustration (210 × 297 mm), sans couverture. Garde l’ordre indiqué. Fond blanc, sans bordure ni numéro.",
-    "Sur la première page uniquement, entre 2 % et 8 % de la hauteur depuis le haut, écris en texte sélectionnable : « CORPUS : NOM | MOTS : N ». Remplace NOM par le titre du corpus et N par le nombre exact de cartes dans ce PDF, de 6 à 18.",
-    "Place uniquement l’illustration, sans son libellé d’origine, au centre du rectangle compris entre 10 % et 90 % de la largeur, et entre 10 % et 72 % de la hauteur depuis le haut. Respecte ses proportions.",
-    "Sous le cadre, entre 80 % et 91 % de la hauteur depuis le haut, écris une seule fois son nom fidèle à la planche, en texte PDF sélectionnable sur une ligne. Garde les accents et les articles. Aucun autre texte dans la page en dehors de l’en-tête demandé sur la première page. Si un nom ou une image est illisible, signale-le avant de produire le PDF.",
-    "Vérifie que le nombre indiqué dans l’en-tête est égal au nombre de pages et qu’il ne dépasse pas 18. Puis livre les PDF séparément."
+    "À partir des planches jointes, produis UN SEUL PDF par thème, même si le Zoo doit créer plusieurs corpus. Utilise exclusivement les illustrations d’origine : découpe-les dans les planches, sans les inventer, les redessiner, les remplacer ni les retoucher. Garde l’ordre et les libellés d’origine.",
+    "Compte les N cartes. Le Zoo créera C = N divisé par 18, arrondi à l’entier supérieur. Un corpus contient entre 6 et 18 mots. Si le dernier groupe compterait moins de 6 cartes, le Zoo le complétera en déplaçant les dernières cartes du groupe précédent, sans dupliquer de cartes. Exemples : 18 → 1 corpus, 36 → 2, 54 → 3. Avec 52 cartes d’École, le Zoo créera École 1, École 2 et École 3 (18, 18 et 16 cartes).",
+    "Crée une page A4 portrait par illustration (210 × 297 mm), sans couverture ni séparateur. Sur la première page uniquement, entre 2 % et 8 % de la hauteur depuis le haut, écris cette ligne en texte PDF sélectionnable : « IMAGIER : NOM | MOTS : N | CORPUS : C ». Remplace NOM par le titre du thème sans numéro, N par le nombre total de cartes et C par le nombre de corpus.",
+    "Sur chaque page, fond blanc, place l’image seule entre 10 % et 90 % de la largeur et entre 10 % et 72 % de la hauteur depuis le haut. Respecte ses proportions. Entre 80 % et 91 % de la hauteur, écris le libellé en texte PDF sélectionnable sur une ligne. Garde les accents et les articles. N’ajoute ni numéro de page, ni autre texte.",
+    "Vérifie que les N pages contiennent exactement les N illustrations d’origine et que C est correct. Signale toute illustration ou tout libellé illisible au lieu de le deviner. Livre le PDF unique."
   ].join("\n\n");
+  function groupCards(cards) {
+    var groups = [];
+    for (var i = 0; i < cards.length; i += 18) groups.push(cards.slice(i, i + 18));
+    var last = groups[groups.length - 1];
+    if (last && last.length < 6 && groups.length > 1) {
+      var previous = groups[groups.length - 2];
+      groups[groups.length - 1] = previous.splice(previous.length - (6 - last.length)).concat(last);
+    }
+    return groups;
+  }
   function library() {
     if (root.pdfjsLib) return Promise.resolve(root.pdfjsLib);
     if (!loader) loader = new Promise(function (resolve, reject) {
@@ -31,10 +40,8 @@
     var pdfjs = await library();
     var task = pdfjs.getDocument({ data: await file.arrayBuffer(), isEvalSupported: false });
     try {
-      var pdf = await task.promise, cards = [];
-      if (pdf.numPages < 6 || pdf.numPages > 18) {
-        throw new Error("Le PDF contient " + pdf.numPages + " pages. Un corpus doit contenir de 6 à 18 mots, à raison d’une carte par page.");
-      }
+      var pdf = await task.promise, cards = [], name = "";
+      if (pdf.numPages < 6) throw new Error("Le PDF doit contenir au moins six cartes, une par page.");
       for (var i = 1; i <= pdf.numPages; i++) {
         var page = await pdf.getPage(i), size = page.getViewport({ scale: 1 });
         if (Math.abs(size.width / size.height - 210 / 297) > 0.012) throw new Error("Page " + i + " : utilisez le format A4 portrait.");
@@ -49,10 +56,21 @@
         }
         if (i === 1) {
           var header = textBetween(0.01, 0.09);
-          var count = /\|\s*MOTS\s*:\s*(\d+)\s*$/i.exec(header);
-          if (/^CORPUS\s*:/i.test(header) && !count) throw new Error("L’en-tête doit se terminer par « | MOTS : N ».");
-          if (count && Number(count[1]) !== pdf.numPages) {
-            throw new Error("L’en-tête annonce " + count[1] + " mots, mais le PDF contient " + pdf.numPages + " pages.");
+          var manifest = /^IMAGIER\s*:\s*(.+?)\s*\|\s*MOTS\s*:\s*(\d+)\s*\|\s*CORPUS\s*:\s*(\d+)\s*$/i.exec(header);
+          var legacy = /\|\s*MOTS\s*:\s*(\d+)\s*$/i.exec(header);
+          if (/^IMAGIER\s*:/i.test(header) && !manifest) {
+            throw new Error("Format attendu : « IMAGIER : NOM | MOTS : N | CORPUS : C ».");
+          }
+          var declaredCards = manifest ? Number(manifest[2]) : legacy ? Number(legacy[1]) : null;
+          if (declaredCards !== null && declaredCards !== pdf.numPages) {
+            throw new Error("L’en-tête annonce " + declaredCards + " mots, mais le PDF contient " + pdf.numPages + " pages.");
+          }
+          if (manifest) {
+            var actualGroups = Math.ceil(pdf.numPages / 18);
+            if (Number(manifest[3]) !== actualGroups) {
+              throw new Error("L’en-tête annonce " + manifest[3] + " corpus. Pour " + pdf.numPages + " mots, indiquez " + actualGroups + " corpus.");
+            }
+            name = manifest[1].trim();
           }
         }
         var label = textBetween(0.78, 0.93);
@@ -68,8 +86,8 @@
         page.cleanup();
         onPage(i, pdf.numPages);
       }
-      return cards;
+      return { name: name, groups: groupCards(cards) };
     } finally { await task.destroy(); }
   }
-  root.ZooVocabularyImport = { prompt: prompt, extract: extract };
+  root.ZooVocabularyImport = { prompt: prompt, extract: extract, groupCards: groupCards };
 })(window);
