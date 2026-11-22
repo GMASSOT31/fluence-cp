@@ -5371,7 +5371,10 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
             Array.prototype.forEach.call(answers.children, function (choice) {
               if (choice.getAttribute("data-answer") === "yes") choice.classList.add("vocab-correct");
             });
-            listenSpeak(word[0]);
+            if (answer === word) {
+              listenStopVoice();
+              sfxGood();
+            } else listenSpeak(word[0]);
             card.insertBefore(button(run.index === 5 ? "Voir le résultat" : "Mot suivant", "primary big-btn go-next", function () {
               if (run.index === 5) finish(); else { run.index++; draw(); }
             }), card.lastChild);
