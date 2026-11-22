@@ -395,6 +395,9 @@ body.teacher-mode .teacher-header .teacher-nav button:is([data-role="admin"],[da
   background:#ffc64b;color:var(--admin-ink);font-size:.8rem;font-weight:850;border:1px solid var(--admin-line)
 }
 .panel[data-role="admin"] > .admin-scope-label,[data-admin-surface] > .admin-scope-label{margin-bottom:8px}
+#vocabImport{margin-top:16px}.vocab-preview-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin:12px 0}
+.vocab-preview-grid label{display:block;background:#fff;border-radius:10px;padding:8px}
+.vocab-preview-grid img{display:block;width:100%;height:115px;object-fit:contain}
 </style></head><body><main><header class="hero">    <div class="zoo-hero">
       <div class="zoo-hero-copy">
         <span class="zoo-kicker">✦ LE GRAND JEU DE LA LECTURE ✦</span>
@@ -456,6 +459,22 @@ body.teacher-mode .teacher-header .teacher-nav button:is([data-role="admin"],[da
   <p class="muted">L’exercice donné passe en tête de la mission de l’élève. À la fin, il reprend son parcours de lecture là où il en était.</p>
   <h3>Corpus de vocabulaire</h3>
   <div id="vocabAssign"></div>
+  <section class="panel" data-admin-surface id="vocabImport" hidden>
+    <span class="admin-scope-label">Administration</span>
+    <h3>Créer un corpus depuis un PDF</h3>
+    <label for="vocabTitle">Nom du corpus</label>
+    <input id="vocabTitle" maxlength="80" placeholder="École 1">
+    <label for="vocabPdf">PDF de l’imagier</label>
+    <input id="vocabPdf" type="file" accept="application/pdf,.pdf">
+    <details><summary>Prompt pour préparer le PDF</summary>
+      <textarea id="vocabPrompt" rows="8" readonly aria-label="Prompt pour l’IA"></textarea>
+      <button type="button" class="secondary" id="vocabCopyPrompt">Copier le prompt</button>
+    </details>
+    <button type="button" class="secondary" id="vocabPreview">Voir les cartes du PDF</button>
+    <div id="vocabPreviewCards" class="vocab-preview-grid"></div>
+    <button type="button" id="vocabPublish" disabled>Enregistrer ce corpus</button>
+    <p id="vocabImportStatus" role="status"></p>
+  </section>
   <p class="muted">Pour donner aussi un exercice de phonologie, d’écoute, de dictée, de compréhension ou de tuiles, ouvrez la ligne de l’élève dans <button type="button" class="secondary" data-tab="pedagogie">Ma classe</button>.</p>
 </section>
 <section class="panel feature-card zoo-card" id="objSettings" data-section="reglages" data-sub="obj"><div class="section-head"><div class="section-icon">🎯</div><div><h2>Critère de réussite Fluence</h2><p class="muted">Ce que l’élève doit atteindre en 1 minute de lecture. Enregistrement automatique.</p></div></div><p class="save-state" id="objSave" role="status"></p><div class="zoo-form">
@@ -529,7 +548,7 @@ body.teacher-mode .teacher-header .teacher-nav button:is([data-role="admin"],[da
  <h3 style="margin:22px 0 8px">✉️ Messages du formulaire de contact</h3><p class="muted">Écrits sans compte depuis la page Contact du site. Répondez par e-mail.</p><p class="msg" id="ctMsg" role="status"></p><div id="ctList" class="content-list"></div>
 </section>
 </div>
-</section></main><script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=28"><\/script>':'<script src="vendor/supabase.js?v=2.118.0"><\/script>');})();</script><script src="profils.js?v=1"></script><script src="exo-data.js?v=6"></script><script src="vocabulaire.js?v=1"></script><script src="vendor/qrcode.js?v=1.4.4"></script><script src="pedagogie.js?v=18"></script><script src="mes-sons.js?v=1"></script><script src="compr-admin.js?v=4"></script><script>
+</section></main><script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=28"><\/script>':'<script src="vendor/supabase.js?v=2.118.0"><\/script>');})();</script><script src="profils.js?v=1"></script><script src="exo-data.js?v=6"></script><script src="vocabulaire.js?v=2"></script><script src="vocabulaire-import.js?v=1"></script><script src="vendor/qrcode.js?v=1.4.4"></script><script src="pedagogie.js?v=19"></script><script src="mes-sons.js?v=1"></script><script src="compr-admin.js?v=4"></script><script>
 (function(){
 "use strict";
 /* Retour du lien « Mot de passe oublié » : on lit l’adresse avant que la bibliothèque Supabase ne la nettoie */
@@ -718,6 +737,7 @@ async function refreshNow(){
  allStudents=students.data;allClasses=classes.data;$("nextSteps").classList.toggle("hidden",!allStudents.some(s=>s.teacher_id===currentUser.id));renderGuide();
  renderStudentsTab(profile.data.role).catch(e=>msg("studentsMsg",errorText(e),true));
  const settings=await client.from("teacher_zoo_settings").select("settings").eq("teacher_id",currentUser.id).maybeSingle();
+ await refreshVocabularyCatalog().catch(()=>{});
  {const dd=await client.rpc("get_exo_defaults");exoDef=(!dd.error&&dd.data&&typeof dd.data==="object")?dd.data:{};}
  if(!settings.error){const cfg=exoMerge((settings.data&&settings.data.settings)||{});window.pedaAllo=Array.isArray(cfg.allo)?cfg.allo.filter(x=>typeof x==="string"):[];window.pedaAssign=cfg.assign&&typeof cfg.assign==="object"&&!Array.isArray(cfg.assign)?cfg.assign:{};listenPassesCfg=Math.min(10,Math.max(1,Math.round(Number(cfg.listenCfg&&cfg.listenCfg.passes))||2));cfgSounds=Array.isArray(cfg.sounds)&&cfg.sounds.length?withVoy2(cfg.sounds):structuredClone(ORIGINAL_SOUNDS);cfgTexts=cfg.texts||{};cfgListen=cfg.listenCfg&&typeof cfg.listenCfg==="object"?cfg.listenCfg:null;if(cfgListen&&cfgListen.items&&typeof cfgListen.items==="object"){const it={};Object.keys(cfgListen.items).slice(0,80).forEach(k=>{const v=cfgListen.items[k],syl=dicWords((Array.isArray(v)?v:(v&&v.syl)||[]).join(" ")),words=dicWords(((v&&!Array.isArray(v)&&v.words)||[]).join(" "));if(syl.length||words.length)it[k]={syl,words}});cfgListen.items=it}cfgDictee=cleanDictee(cfg.dictee);savedReadingExercises=stable(exoValues());fillDicteeNums();cfgRewards=Array.isArray(cfg.rewards)?cfg.rewards.map(r=>r&&r.to&&r.to.t?r:{...r,to:{t:"all"}}):[];   /* récompenses d’avant : pour toutes les classes */const t=cfg.thr||{};$("thrS").value=t.s??25;$("thrM").value=t.m??20;$("thrT").value=t.t??15;$("lockSounds").checked=cfg.lock??true;$("rewardMode").checked=cfg.reward??true;$("soundEffects").checked=cfg.sfx??true;$("musicEnabled").checked=cfg.music??true;$("pinChange").checked=cfg.pinChange??true;{const mp=cfg.maxPlays??6;$("unlimitedPlays").checked=mp===0;$("maxPlays").value=mp===0?6:mp;$("maxPlays").disabled=mp===0;}$("packPrice").value=cfg.packPrice??10;$("wheelPrice").value=cfg.wheelPrice??7;}
  fillDicteeNums();fillListenNums();renderSoundOrder();renderExercise();renderDictee();renderListenExo();renderRewards();fillRewardTarget();
@@ -851,37 +871,111 @@ function renderClassPedagogy(container, subject, beforeSave){
  container.append(select,actions,feedback);
 }
 window.ZooClassPedagogy=renderClassPedagogy;
+const vocabBase="https://pcxpazpflnlwmhyuozdx.supabase.co";
+async function refreshVocabularyCatalog(){
+ const response=await client.rpc("get_vocabulary_corpora");
+ if(response.error)throw response.error;
+ ZooVocabulary.load(response.data,vocabBase);
+}
 function renderVocabularyAssignment(){
  const host=$("vocabAssign");host.replaceChildren();
- const students=document.createElement("select"), corpora=document.createElement("select");
- students.setAttribute("aria-label","Élève");corpora.setAttribute("aria-label","Imagier");
- students.append(new Option("Choisir un élève",""));
- allClasses.filter(c=>c.teacher_id===currentUser.id&&!c.ghosted_at).forEach(c=>{
-  const group=document.createElement("optgroup");group.label=c.name;
-  allStudents.filter(st=>st.class_id===c.id&&st.teacher_id===currentUser.id&&!st.ghosted_at).forEach(st=>group.append(new Option(st.nickname,st.id)));
-  if(group.children.length)students.append(group);
+ const admin=currentRole==="admin";
+ $("vocabImport").hidden=!admin;
+ const classes=document.createElement("select"), corpora=document.createElement("select"), status=document.createElement("p");
+ classes.setAttribute("aria-label","Classe entière");corpora.setAttribute("aria-label","Imagier");
+ classes.append(new Option("Choisir une classe",""));
+ allClasses.filter(c=>!c.ghosted_at&&(admin||c.teacher_id===currentUser.id)).forEach(c=>{
+  const owner=[...$("classTeacher").options].find(o=>o.value===c.teacher_id);
+  classes.append(new Option(c.name+(admin&&owner?" · "+owner.textContent:""),c.id));
  });
+ corpora.append(new Option("Choisir un imagier",""));
  ZooVocabulary.catalog.forEach(book=>corpora.append(new Option(book.title+" · "+book.words.length+" mots",book.id)));
+ const give=document.createElement("button");give.type="button";give.textContent="Donner à toute la classe";
+ status.setAttribute("role","status");
  const description=document.createElement("p");description.className="muted";
- description.textContent="Six mots à écouter et à répéter, puis six images à reconnaître. Chaque bloc doit être réussi à 6 sur 6.";
- const give=document.createElement("button");give.type="button";give.textContent="Donner l’imagier";give.disabled=true;
- const status=document.createElement("p");status.setAttribute("role","status");
- students.onchange=()=>{give.disabled=!students.value;status.textContent="";};
+ description.textContent=ZooVocabulary.catalog.length?"Chaque élève termine d’abord l’exercice qu’il a déjà commencé ou reçu. Pour un seul élève, utilisez Ma classe.":"Aucun corpus disponible. Les imagiers apparaîtront ici après leur import.";
+ function change(){give.disabled=!classes.value||!corpora.value;status.textContent="";}
+ classes.onchange=corpora.onchange=change;change();
  give.onclick=async()=>{
-  const id=students.value, book=ZooVocabulary.get(corpora.value), st=allStudents.find(s=>s.id===id);
-  if(!book||!st)return;
-  give.disabled=students.disabled=corpora.disabled=true;
+  const id=classes.value, book=ZooVocabulary.get(corpora.value), label=classes.options[classes.selectedIndex].textContent;
+  if(!book||!id)return;
+  give.disabled=classes.disabled=corpora.disabled=true;
   try{
-   const current=window.pedaAssign[id];
-   if(current&&!await dlg("Remplacer l’exercice de "+st.nickname+" par « "+book.title+" » ?",{ok:"Remplacer"}))return;
-   window.pedaAssign[id]={type:"vocabulaire",corpus:book.id,ts:Date.now()};
-   queueSave("pedaSave");await flushSave();
-   status.textContent=savePending?"Enregistrement en attente.":"✓ "+book.title+" attribué à "+st.nickname+".";
-  }finally{give.disabled=students.disabled=corpora.disabled=false;}
+   if(!await dlg("Donner « "+book.title+" » à toute la classe « "+label+" » ?",{ok:"Donner à la classe"}))return;
+   const {data,error}=await client.rpc("teacher_queue_vocabulary",{p_class:id,p_corpus:book.id});
+   if(error)throw error;
+   status.textContent=data?"✓ "+book.title+" attribué à la classe.":"Ce corpus figure déjà dans la liste de cette classe.";
+  }catch(error){status.textContent=errorText(error);}
+  finally{give.disabled=classes.disabled=corpora.disabled=false;}
  };
- const fields=document.createElement("div");fields.className="actions";fields.append(students,corpora,give);
+ const fields=document.createElement("div");fields.className="actions";fields.append(classes,corpora,give);
  host.append(description,fields,status);
 }
+const vocabImport=(()=>{
+ let cards=[], urls=[], file=null, id=null, uploaded=new Set(), busy=false;
+ const preview=$("vocabPreviewCards"), input=$("vocabPdf"), title=$("vocabTitle");
+ const extract=$("vocabPreview"), publish=$("vocabPublish"), status=$("vocabImportStatus");
+ const prompt=$("vocabPrompt");prompt.value=ZooVocabularyImport.prompt;
+ $("vocabCopyPrompt").onclick=async()=>{
+  try{await navigator.clipboard.writeText(prompt.value);status.textContent="✓ Prompt copié.";}
+  catch(error){prompt.focus();prompt.select();status.textContent="Le prompt est sélectionné. Copiez-le avec le menu de votre appareil.";}
+ };
+ function buttons(){input.disabled=title.disabled=extract.disabled=busy;publish.disabled=busy||!cards.length;}
+ function clear(){
+  urls.forEach(url=>URL.revokeObjectURL(url));urls=[];cards=[];preview.replaceChildren();
+  id=null;uploaded=new Set();
+ }
+ input.onchange=()=>{clear();file=input.files[0];status.textContent="";buttons();};
+ extract.onclick=async()=>{
+  if(busy||currentRole!=="admin")return;
+  file=input.files[0];if(!file){status.textContent="Choisissez d’abord un fichier PDF.";return;}
+  clear();busy=true;buttons();
+  try{
+   status.textContent="Lecture du PDF…";
+   cards=await ZooVocabularyImport.extract(file,(i,total)=>{status.textContent="Lecture du PDF · "+i+"/"+total;});
+   const bytes=crypto.getRandomValues(new Uint8Array(16));
+   bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;
+   const hex=Array.from(bytes,b=>b.toString(16).padStart(2,"0")).join("");
+   id=[hex.slice(0,8),hex.slice(8,12),hex.slice(12,16),hex.slice(16,20),hex.slice(20)].join("-");
+   cards.forEach((card,index)=>{
+    const field=document.createElement("label"), word=document.createElement("input"), image=document.createElement("img");
+    const url=URL.createObjectURL(card.blob);urls.push(url);image.src=url;image.alt="";
+    word.value=card.label;word.maxLength=80;word.setAttribute("aria-label","Mot de la carte "+(index+1));
+    word.oninput=()=>{card.label=word.value;};
+    field.append("Carte "+(index+1),image,word);preview.append(field);
+   });
+   status.textContent=cards.length+" cartes extraites. Vérifiez les images et leurs noms avant d’enregistrer.";
+  }catch(error){status.textContent=errorText(error);}
+  finally{busy=false;buttons();}
+ };
+ publish.onclick=async()=>{
+  if(busy||currentRole!=="admin"||!cards.length)return;
+  const name=title.value.trim(), words=cards.map(card=>({label:card.label.trim()}));
+  if(!name||words.some(word=>!word.label)||new Set(words.map(word=>word.label.toLowerCase())).size!==words.length){
+   status.textContent="Donnez un nom au corpus et vérifiez que chaque carte a un nom différent.";return;
+  }
+  busy=true;buttons();
+  try{
+   for(let i=0;i<cards.length;i++){
+    if(uploaded.has(i))continue;
+    status.textContent="Envoi des images · "+(i+1)+"/"+cards.length;
+    const path=id+"/"+String(i+1).padStart(3,"0")+".jpg";
+    const {error}=await client.storage.from("vocabulaire-zoo").upload(path,cards[i].blob,{contentType:"image/jpeg"});
+    if(error&&String(error.statusCode)!=="409"&&String(error.status)!=="409")throw error;
+    uploaded.add(i);
+   }
+   const {error}=await client.rpc("admin_create_vocabulary_corpus",{p_id:id,p_title:name,p_words:words});
+   if(error)throw error;
+   clear();input.value="";title.value="";
+   await refreshVocabularyCatalog();
+   renderVocabularyAssignment();
+   status.textContent="✓ « "+name+" » est disponible pour l’attribution.";
+  }catch(error){status.textContent=errorText(error);}
+  finally{busy=false;buttons();}
+ };
+ buttons();
+})();
+
 
 /* Pour qui est la récompense : toutes les classes (défaut), une classe, un élève */
 function rewardTo(r){const t=r.to||{t:"all"};if(t.t==="class"){const c=allClasses.find(x=>x.id===t.id);return "🏫 classe "+(c?c.name:"(supprimée)");}if(t.t==="student"){const s=allStudents.find(x=>x.id===t.id);return "🧒 "+(s?s.nickname:"(élève supprimé)");}return "👥 toutes les classes";}
@@ -1669,5 +1763,5 @@ refresh();
 <script src="share.js" defer></script>
 <script src="install.js?v=1" defer></script>
 <script src="labo-config.js?v=1" defer></script>
-<script src="labo-switch.js?v=23" defer></script>
+<script src="labo-switch.js?v=24" defer></script>
 </body></html>

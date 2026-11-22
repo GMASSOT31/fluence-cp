@@ -449,10 +449,7 @@
     content.appendChild(el("h2", "", "Paramétrer le contenu des exercices"));
     detached.type = "button"; detached.setAttribute("aria-expanded", "false");
     var detachedList = el("div"); detachedList.hidden = true;
-    detachedList.appendChild(el("p", "muted", "Vous pouvez attribuer une série de reconnaissance des nombres, d’additions ou de soustractions."));
-    var classLink = el("button", "secondary", "Choisir un élève dans Ma classe"); classLink.type = "button";
-    classLink.addEventListener("click", function () { bProg.click(); });
-    detachedList.appendChild(classLink);
+    detachedList.appendChild(el("p", "muted", "Aucun exercice collectif de Calcul n’est disponible pour le moment."));
     detached.addEventListener("click", function () {
       detachedList.hidden = !detachedList.hidden; detached.setAttribute("aria-expanded", String(!detachedList.hidden));
     });
