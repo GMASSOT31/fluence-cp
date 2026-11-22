@@ -1316,6 +1316,17 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
 .tiles-rocket-memo b{color:#b12e32}
 .tiles-rocket-memo figcaption,.tiles-rocket-memo strong{font:800 1.65rem/1.1 Fredoka,sans-serif}
 .tiles-rocket-memo p{margin:4px 0;font-size:.9rem;font-weight:700}
+.vocab-screen{max-width:620px;margin:0 auto;text-align:center}
+.vocab-screen button{margin:5px}
+.vocab-picture{display:flex;align-items:center;justify-content:center;min-height:78px;font-size:3rem;line-height:1.1;color:#172447;background:#fff6de;border-radius:12px;padding:6px}
+.vocab-screen>.vocab-picture{max-width:240px;min-height:120px;margin:12px auto;font-size:4.2rem}
+.vocab-picture.paper{background:#e4f2ff}.vocab-picture.eraser{color:#c83378}.vocab-picture.chalk{background:#315948;color:white}.vocab-picture.slate{background:#405078;color:white}.vocab-picture.color-pencil{background:#ffd1df}
+.vocab-word{display:block;font-size:1.6rem;margin:12px}
+.vocab-answers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:10px auto}
+.vocab-answers .vocab-answer{min-width:0;margin:0;padding:4px;background:#f4edff}
+.vocab-answer .vocab-picture{font-size:1.75rem;font-size:clamp(1.35rem,6vw,3rem);white-space:nowrap}
+.vocab-answer.vocab-correct{outline:3px solid #18865b;opacity:1}
+.vocab-feedback{min-height:1.4em}
 </style>
 </head>
 <body>
@@ -1554,6 +1565,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   <section id="v-reconnues" hidden><div id="reconnues-body"></div></section>
   <section id="v-ecrites" hidden><div id="ecrites-body"></div></section>
   <section id="v-phono" hidden><div id="phono-body"></div></section>
+  <section id="v-vocabulaire" hidden><div id="vocabulaire-body"></div></section>
   <section id="v-compr" hidden><div id="compr-body"></div></section>
 
   <!-- BOUTIQUE -->
@@ -1825,6 +1837,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
 })();
 </script>
 <script src="exo-data.js?v=6"></script>
+<script src="vocabulaire.js?v=1"></script>
 <script src="vendor/howler.core.min.js?v=2.2.4"></script>
 <script src="audio-lecture.js?v=3"></script>
 <script>/* Anciens iPad (iOS 12 et avant) : le navigateur ne connaît pas les événements « pointer » → les jeux au doigt (Serpent, Oiseau, Tuiles, Tour, Safari) ne réagissaient pas. On les traduit en événements tactiles (ou souris sur un vieil ordinateur). Rien ne change sur les appareils récents. */
@@ -2785,7 +2798,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   }
 
   /* ---------- Navigation ---------- */
-  var STUDENT_VIEWS = ["home", "lecture", "audition", "dictee", "phono", "compr", "cartes", "reconnues", "ecrites", "boutique", "jeux", "progres", "roue", "jeu"];
+  var STUDENT_VIEWS = ["home", "lecture", "audition", "dictee", "phono", "compr", "vocabulaire", "cartes", "reconnues", "ecrites", "boutique", "jeux", "progres", "roue", "jeu"];
   var TEACHER_VIEWS = ["eleves", "ecoute", "progression", "reglages"];
   var VIEWS = ["login"].concat(STUDENT_VIEWS, TEACHER_VIEWS);
   var GO_GROUP = { lecture: "lecture", audition: "audition", jeux: "jeux", jeu: "jeux", roue: "jeux", boutique: "boutique", cartes: "cartes", reconnues: "reconnues", ecrites: "ecrites", dictee: "dictee", progres: "progres" };
@@ -2809,6 +2822,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if (v !== "dictee") dicteeStop();
     if (v !== "phono") phonoStop();
     if (v !== "compr") comprStop();
+    if (v !== "vocabulaire") vocabStop();
     VIEWS.forEach(function (name) { $("v-" + name).hidden = (name !== v); });
     Array.prototype.forEach.call($("nav").querySelectorAll("button"), function (b) {
       if (b.getAttribute("data-view") === v) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
@@ -2828,6 +2842,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if (v === "ecrites") renderEcrites();
     if (v === "phono") renderPhono();
     if (v === "compr") renderCompr();
+    if (v === "vocabulaire") vocabStart();
     if (v === "reglages") listenSettingsFill();
     if (v === "jeux") renderJeux();
     if (v === "progres") renderMyProgress();
@@ -2845,7 +2860,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var host = id && $(id);
     if (!host || ses.viaTeacher || !cloudToken) return;
     var sid = ses.sid;
-    if (!(mission(sid).sound || (data.reward && pendingWheels(sid).length))) return;
+    if (!(mission(sid).sound || mission(sid).remed || (data.reward && pendingWheels(sid).length))) return;
     var bar = el("div", "next-bar"), b = el("button", "primary big-btn go-next", "👉 Mon étape suivante"); b.type = "button";
     b.addEventListener("click", function () { goTo("home"); });
     bar.appendChild(b);
@@ -5161,10 +5176,11 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
      ou tiles = « Tuiles des sons » sur deux écritures confondues (pair = [à toucher, piège], 20 bonnes tuiles, sans partie de jeu ni record).
      Résultat dans progress.remed = { ts, done: { son | "tiles": 1 }, ok: date de réussite, tries, hist: [10 derniers exercices réussis] } : lu par le tableau de bord. */
   var REMED_COINS = 3;
-  var REMED_NAMES = { phono: "🖼️ J’entends", listen: "👂 J’écoute", write: "✏️ J’écris", compr: "🧩 Je comprends", tiles: "🎹 Tuiles des sons" };
+  var REMED_NAMES = { phono: "🖼️ J’entends", listen: "👂 J’écoute", write: "✏️ J’écris", compr: "🧩 Je comprends", tiles: "🎹 Tuiles des sons", vocabulaire: "🖼️ Corpus de vocabulaire" };
   function remedStr(x) { return typeof x === "string" && x.length > 0 && x.length <= 12; }
   function assignClean(a) {
     if (!a || typeof a !== "object" || !REMED_NAMES[a.type] || !(Number(a.ts) > 0)) return null;
+    if (a.type === "vocabulaire") return ZooVocabulary.get(a.corpus) ? { type: a.type, corpus: a.corpus, ts: Number(a.ts) } : null;
     if (a.type === "tiles") {
       var p = Array.isArray(a.pair) ? a.pair.filter(remedStr).slice(0, 2) : [];
       return p.length === 2 && p[0] !== p[1] ? { type: "tiles", sons: [], pair: p, ts: Number(a.ts) } : null;
@@ -5189,6 +5205,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     return !LISTEN_SKIP[id];
   }
   function remedLabel(a, k) {
+    if (a.type === "vocabulaire") return "🖼️ " + ZooVocabulary.get(a.corpus).title + " · Bloc " + k.slice(1);
     if (a.type === "tiles") return REMED_NAMES.tiles + " " + q(a.pair[0]) + " et " + q(a.pair[1]);
     var s = soundById(k);
     return REMED_NAMES[a.type] + " le son " + q(s ? s.label : k);
@@ -5200,7 +5217,10 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var R = remedMine(sid);
     if (R.ts !== a.ts) { R.ts = a.ts; R.done = {}; R.ok = 0; R.tries = 0; }   /* nouvel exercice donné */
     if (R.ok) return null;
-    var keys = a.type === "tiles" ? ["tiles"] : a.sons.filter(function (id) { return remedCan(a.type, id); }), next = null, steps = [];
+    var keys = a.type === "tiles" ? ["tiles"] : a.type === "vocabulaire"
+      ? ZooVocabulary.blocks(ZooVocabulary.get(a.corpus)).map(function (_, i) { return "v" + (i + 1); })
+      : a.sons.filter(function (id) { return remedCan(a.type, id); });
+    var next = null, steps = [];
     keys.forEach(function (k) {
       var done = !!R.done[k];
       if (!done && !next) next = k;
@@ -5211,16 +5231,20 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   /* Une série terminée : si elle fait partie de l’exercice donné et qu’elle est réussie, l’étape est faite (toutes faites = exercice réussi, +3 pièces) */
   function remedMark(sid, type, id, ok) {
     var cur = remedNow(sid), key = type === "tiles" ? "tiles" : id;
-    if (!cur || cur.a.type !== type || !cur.steps.some(function (x) { return x.id === key && x.st !== "done"; })) return null;
+    if (!cur || cur.a.type !== type || (type === "vocabulaire" && cur.next !== key) || !cur.steps.some(function (x) { return x.id === key && x.st !== "done"; })) return null;
     cur.R.tries++;
     if (!ok) return null;
     cur.R.done[key] = 1;
     var all = cur.steps.every(function (x) { return x.id === key || x.st === "done"; }), gained = 0;
+    if (type === "vocabulaire" && data.reward) {
+      gained = 2; data.coins[sid] = coins(sid) + gained;
+      data.wheels.push({ id: uid(), sid: sid, ts: Date.now() });
+    }
     if (all) {
       cur.R.ok = Date.now();
-      cur.R.hist.unshift({ type: cur.a.type, sons: cur.a.sons, pair: cur.a.pair, ts: cur.a.ts, ok: cur.R.ok, tries: cur.R.tries });
+      cur.R.hist.unshift({ type: cur.a.type, sons: cur.a.sons, pair: cur.a.pair, corpus: cur.a.corpus, ts: cur.a.ts, ok: cur.R.ok, tries: cur.R.tries });
       cur.R.hist = cur.R.hist.slice(0, 10);
-      if (data.reward) { data.coins[sid] = coins(sid) + REMED_COINS; gained = REMED_COINS; }
+      if (data.reward && type !== "vocabulaire") { data.coins[sid] = coins(sid) + REMED_COINS; gained = REMED_COINS; }
     }
     return { all: all, gained: gained };
   }
@@ -5246,11 +5270,99 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   }
   /* Lance l’exercice donné, directement (même sur un son pas encore ouvert : c’est le choix de l’enseignant) */
   function remedGo(sid, a, k) {
-    if (a.type === "phono") { setPath("listen"); PH.pick = k; goTo("phono"); }
+    if (a.type === "vocabulaire") { setPath("listen"); goTo("vocabulaire"); }
+    else if (a.type === "phono") { setPath("listen"); PH.pick = k; goTo("phono"); }
     else if (a.type === "compr") { setPath("read"); CP.pick = k; goTo("compr"); }
     else if (a.type === "listen") { goTo("audition"); listenStart(sid, k); }
     else if (a.type === "write") { goTo("dictee"); dicteeStart(sid, k); }
     else tilesRemed(sid, a.pair);
+  }
+  var vocabRun = null;
+  function vocabStop() {
+    if (vocabRun) listenStopVoice();
+    vocabRun = null;
+  }
+  function vocabPicture(word) {
+    var pict = el("span", "vocab-picture " + (word[2] || ""), word[1]);
+    pict.setAttribute("aria-hidden", "true");
+    return pict;
+  }
+  function vocabStart() {
+    var sid = ses.sid, assigned = remedNow(sid);
+    if (!assigned || assigned.a.type !== "vocabulaire") { goTo("home"); return; }
+    var book = ZooVocabulary.get(assigned.a.corpus), groups = ZooVocabulary.blocks(book);
+    var block = Number(assigned.next.slice(1)) - 1, words = groups[block];
+    var run = { stage: "learn", index: 0, correct: 0, prompts: [], selected: false };
+    vocabStop(); vocabRun = run;
+    var body = $("vocabulaire-body");
+    function button(text, cls, action) {
+      var b = el("button", cls, text); b.type = "button";
+      b.addEventListener("click", function () { if (vocabRun === run) action(); });
+      return b;
+    }
+    function draw() {
+      if (vocabRun !== run) return;
+      var learn = run.stage === "learn", word = learn ? words[run.index] : run.prompts[run.index];
+      body.innerHTML = "";
+      var card = el("div", "card vocab-screen"), answers = el("div", "vocab-answers");
+      card.appendChild(el("h2", "", book.title + " · Bloc " + (block + 1) + "/" + groups.length));
+      card.appendChild(el("p", "", (learn ? "Écoute et répète" : "Écoute et touche la bonne image") + " · " + (run.index + 1) + "/6"));
+      function speak() { listenSpeak(word[0]); }
+      card.appendChild(button("🔊 Écouter", "secondary big-btn", speak));
+      if (learn) {
+        card.appendChild(vocabPicture(word)); card.appendChild(el("strong", "vocab-word", word[0]));
+        card.appendChild(button(run.index === 5 ? "Commencer le test" : "Mot suivant", "primary big-btn go-next", function () {
+          if (run.index === 5) { run.stage = "test"; run.index = 0; run.prompts = shuffle(words); }
+          else run.index++;
+          draw();
+        }));
+      } else {
+        run.selected = false;
+        var feedback = el("p", "vocab-feedback"); feedback.setAttribute("role", "status");
+        shuffle(words).forEach(function (answer) {
+          var b = button("", "secondary vocab-answer", function () {
+            if (run.selected) return;
+            run.selected = true;
+            if (answer === word) run.correct++;
+            Array.prototype.forEach.call(answers.children, function (choice) { choice.disabled = true; });
+            feedback.textContent = answer === word ? "✅ Bravo !" : "La bonne image est mise en évidence.";
+            Array.prototype.forEach.call(answers.children, function (choice) {
+              if (choice.getAttribute("data-answer") === "yes") choice.classList.add("vocab-correct");
+            });
+            listenSpeak(word[0]);
+            card.insertBefore(button(run.index === 5 ? "Voir le résultat" : "Mot suivant", "primary big-btn go-next", function () {
+              if (run.index === 5) finish(); else { run.index++; draw(); }
+            }), card.lastChild);
+          });
+          b.setAttribute("aria-label", answer[0]); if (answer === word) b.setAttribute("data-answer", "yes");
+          b.appendChild(vocabPicture(answer)); answers.appendChild(b);
+        });
+        card.appendChild(answers); card.appendChild(feedback);
+      }
+      card.appendChild(button("Faire une pause", "secondary", function () { goTo("home"); }));
+      body.appendChild(card); speak();
+    }
+    function finish() {
+      if (run.stage !== "test") return;
+      run.stage = "result"; listenStopVoice();
+      var res = remedMark(sid, "vocabulaire", assigned.next, run.correct === 6);
+      save(); renderPanels();
+      var card = el("div", "card vocab-screen");
+      body.innerHTML = ""; body.appendChild(card);
+      card.appendChild(el("h2", "", res ? (res.all ? "Imagier terminé !" : "Bloc réussi !") : "Encore un essai !"));
+      card.appendChild(el("p", "", run.correct + " bonnes réponses sur 6."));
+      if (res && res.gained) {
+        listenCoinBox(card, res.gained);
+        card.appendChild(button("🎡 Tourner ma roue", "primary big-btn go-next", function () { openWheel(sid, "Bravo pour ton imagier !"); }));
+      } else if (!res) {
+        card.appendChild(el("p", "", "Retrouve les six mots et réessaie ce bloc."));
+        card.appendChild(button("Revoir les mots", "primary big-btn go-next", vocabStart));
+      }
+      card.appendChild(button(res && !res.all ? "Bloc suivant" : "Ma mission", res && !res.gained ? "primary big-btn go-next" : "secondary", function () {
+        if (res && !res.all) vocabStart(); else goTo("home");
+      }));
+    }
+    draw();
   }
   /* Couleur du gros bouton d’une étape : vert = écoute, jaune = écriture, bleu = lecture */
   function actCls(a) {
@@ -5304,7 +5416,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   function mission(sid) {
     var out = missionBase(sid), rm = remedNow(sid);
     /* Exercice donné par l’enseignant : il passe en tête de la mission jusqu’à ce qu’il soit réussi */
-    if (rm) { out.base = { sound: out.sound, kind: out.kind }; out.remed = rm; out.kind = "remed"; out.level = null; out.steps = rm.steps; out.sound = rm.a.type === "tiles" ? (out.sound || data.sounds[0] || null) : soundById(rm.next); }
+    if (rm) { out.base = { sound: out.sound, kind: out.kind }; out.remed = rm; out.kind = "remed"; out.level = null; out.steps = rm.steps; out.sound = (rm.a.type === "tiles" || rm.a.type === "vocabulaire") ? (out.sound || data.sounds[0] || null) : soundById(rm.next); }
     return out;
   }
   function missionBase(sid) {
@@ -5340,7 +5452,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   function missionAct(sid, ms) {
     if (!ms || !ms.sound) return null;
     var s = ms.sound, KW = { s: "les syllabes", m: "les mots", t: "le texte" };
-    if (ms.kind === "remed") { var rm = ms.remed; return { pet: rm.a.type === "tiles" ? (s ? s.id : null) : rm.next, kind: "remed", rk: rm.a.type, btn: remedLabel(rm.a, rm.next), say: "Ton maître ou ta maîtresse t’a donné un exercice. Touche le gros bouton pour commencer.", go: function () { remedGo(sid, rm.a, rm.next); } }; }
+    if (ms.kind === "remed") { var rm = ms.remed; return { pet: (rm.a.type === "tiles" || rm.a.type === "vocabulaire") ? (s ? s.id : null) : rm.next, kind: "remed", rk: rm.a.type, btn: remedLabel(rm.a, rm.next), say: "Ton maître ou ta maîtresse t’a donné un exercice. Touche le gros bouton pour commencer.", go: function () { remedGo(sid, rm.a, rm.next); } }; }
     if (ms.kind === "phono") return { pet: s.id, kind: "phono", cls: " listen-go", btn: "🖼️ J’entends le son " + q(s.label), say: "Tu vas trouver les images où tu entends le son " + phonoName(s.id) + ". Touche le gros bouton pour commencer.", go: function () { setPath("listen"); PH.pick = s.id; goTo("phono"); } };
     if (ms.kind === "listen") return { pet: s.id, kind: "listen", cls: " listen-go", btn: "👂 J’écoute le son " + q(s.label), say: "Tu vas écouter et retrouver le son " + s.label + ". Touche le gros bouton pour commencer.", go: function () { setPath("listen"); LS.pick = s.id; goTo("audition"); } };
     if (ms.kind === "write") return { pet: s.id, kind: "write", cls: " write-go", btn: "✏️ J’écris le son " + q(s.label), say: "Tu vas écouter et écrire le son " + s.label + ". Touche le gros bouton pour commencer.", go: function () { setPath("write"); DS.pick = s.id; goTo("dictee"); } };
