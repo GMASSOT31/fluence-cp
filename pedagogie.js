@@ -1,5 +1,5 @@
 /* Espace « Pédagogie » de l'espace enseignant (enseignants.html) : tableau de bord d'une classe.
-   Fiche élève PDF : toile d’araignée des 6 compétences (bouton « 📄 Fiche » de chaque ligne, « 📄 Fiches de suivi » pour la classe).
+   Fiche élève PDF : toile d’araignée des 7 compétences (bouton « 📄 Fiche » de chaque ligne, « 📄 Fiches de suivi » pour la classe).
    Écran « Ma classe » : 1. À faire aujourd’hui (lectures à écouter, élèves bloqués, exercices donnés, confusions, absents)
    2. Mes élèves : une ligne par élève (filtres, 🌍, + Assigner, 📄 Fiche), « Détails » ouvre ses cartes sous la ligne (studentDetail d’enseignants.html)
    3. La classe en chiffres (7 derniers jours). Tous les chiffres d’un élève viennent d’analyse().
@@ -145,7 +145,7 @@
     classify(rows);
     state.rows = rows; state.cls = cls;
     if (C.pdfMake) {
-      var fa = mk("button", "secondary"); fa.append(mk("span", "pb-pdf-icon", "PDF"), document.createTextNode(" Araignées de suivi")); fa.type = "button"; fa.title = "Une fiche par élève, avec sa toile des 6 compétences";
+      var fa = mk("button", "secondary"); fa.append(mk("span", "pb-pdf-icon", "PDF"), document.createTextNode(" Araignées de suivi")); fa.type = "button"; fa.title = "Une fiche par élève, avec sa toile des 7 compétences";
       fa.onclick = function () { makeFiches(rows.slice().sort(function (a, b) { return String(a.s.nickname).localeCompare(b.s.nickname); }), cls, fa, "fiches-suivi-" + (C.pdfSlug(cls.name) || "classe")); };
       acts.append(fa);
     }
@@ -346,7 +346,7 @@
     w.append(m);
     var fa = mk("div", "pd-actions pb-dacts");
     if (C.pdfMake) {
-      var fi = mk("button", "secondary pb-see", "📄 Fiche de suivi (PDF)"); fi.type = "button"; fi.title = "Fiche de suivi de " + r.s.nickname + " à imprimer : toile des 6 compétences";
+      var fi = mk("button", "secondary pb-see", "📄 Fiche de suivi (PDF)"); fi.type = "button"; fi.title = "Fiche de suivi de " + r.s.nickname + " à imprimer : toile des 7 compétences";
       fi.onclick = function () { makeFiches([r], state.cls, fi, "fiche-suivi-" + (C.pdfSlug(r.s.nickname) || "eleve")); };
       fa.append(fi);
     }
@@ -383,7 +383,7 @@
     return s;
   }
 
-  /* ===== Fiche élève PDF (jalon 3) : toile d'araignée à 6 axes + points à travailler =====
+  /* ===== Fiche élève PDF (jalon 3) : toile d'araignée à 7 axes + points à travailler =====
      Chaque axe va de 0 à 100 %. Phonologie et compréhension : null tant que ces exercices n'existent pas dans le Zoo
      (progress.phono.done / progress.compr.done, mêmes clés que l'écoute et la dictée, seront lues automatiquement). */
   var KN = { s: "syllabes", m: "mots", t: "texte" };
@@ -399,14 +399,23 @@
     }
     return Math.max(1, Math.min(YEAR_WEEKS, n / 5));
   }
-  function expected(total) { return Math.max(1, Math.round(total * schoolWeeks() / YEAR_WEEKS)); }
+  function expected(total, now) { return Math.max(1, Math.round(total * schoolWeeks(now) / YEAR_WEEKS)); }
   function doneCount(o, need) {
     o = o && typeof o === "object" ? o : {};
     var done = o.done && typeof o.done === "object" ? o.done : {}, passes = o.passes && typeof o.passes === "object" ? o.passes : {};
     var order = soundsOrder(), ir = order.findIndex(function (x) { return x.id === "r"; });
     return order.filter(function (x, i) { return done[x.id] || (need && (Number(passes[x.id]) || 0) >= need(i, ir)); }).length;
   }
-  function axes(r) {
+  function vocabularyAxis(progress, now) {
+    var catalog = ZooVocabulary.catalog;
+    var mastered = progress.remed && progress.remed.vocabCompleted;
+    var completed = catalog.filter(function (book) { return mastered && mastered[book.id]; }).length;
+    var target = catalog.length ? expected(catalog.length, now) : 0;
+    return { k: "vocabulaire", name: "Vocabulaire", v: target ? Math.round(completed * 100 / target) : null,
+      txt: target ? completed + " sur " + target + " corpus attendus" : "aucun corpus disponible",
+      tip: "Corpus terminés sur l’objectif à cette date" };
+  }
+  function axes(r, now) {
     var p = r.p, tot = Math.max(1, r.total), thr = thrOf();
     var lp = Number(C.listenPasses) || 2, dp = Number(C.dicteePasses) || 1;
     var nL = doneCount(p.listen, function (i, ir) { return lp + (ir >= 0 && i >= ir ? 1 : 0); });
@@ -416,7 +425,7 @@
     var flu = (Array.isArray(p.results) ? p.results : []).filter(function (x) { return x && !x.void && !x.short && !(Number(x.fraud) > 0) && x.src !== "adj" && x.src !== "train" && Number(x.mclm) > 0 && thr[x.k]; })
       .sort(function (a, b) { return (Number(b.ts) || 0) - (Number(a.ts) || 0); });
     var last3 = flu.slice(0, 3), sp = last3.length ? Math.round(last3.reduce(function (a, x) { return a + Math.min(1, Number(x.mclm) / thr[x.k]); }, 0) * 100 / last3.length) : null;
-    var exp = expected(tot), pct = function (n) { return n === null ? null : Math.round(n * 100 / exp); };
+    var exp = expected(tot, now), pct = function (n) { return n === null ? null : Math.round(n * 100 / exp); };
     var sons = function (n) { return n === null ? "pas encore mesuré" : n + " " + (n > 1 ? "sons" : "son") + " · " + exp + " attendus"; };
     return { flu: flu, exp: exp, list: [
       { k: "phono", name: "Phonologie", v: pct(nP), txt: sons(nP), tip: "Entendre un son dans un mot" },
@@ -424,7 +433,8 @@
       { k: "dictee", name: "Dictée", v: pct(nD), txt: sons(nD), tip: "Écrire un son, une syllabe, un mot entendus" },
       { k: "lecture", name: "Lecture", v: pct(r.nValid), txt: sons(r.nValid), tip: "Lecture validée par l'enseignant" },
       { k: "compr", name: "Compréhension", v: pct(nC), txt: sons(nC), tip: "Associer un mot lu à son image" },
-      { k: "vitesse", name: "Vitesse", v: sp, txt: sp === null ? "pas encore de lecture" : sp + " % du seuil attendu", tip: "3 dernières lectures, par rapport au seuil de réussite de la classe" }
+      { k: "vitesse", name: "Vitesse", v: sp, txt: sp === null ? "pas encore de lecture" : sp + " % du seuil attendu", tip: "3 dernières lectures, par rapport au seuil de réussite de la classe" },
+      vocabularyAxis(p, now)
     ] };
   }
   function studentConf(r) {
@@ -466,11 +476,11 @@
   }
 
   /* Dessine une fiche (une page A4) */
-  function drawFiche(doc, r, cls, ref) {
-    var T = C.pdfText, ax = axes(r), W = 210, M = 16;
+  function drawFiche(doc, r, cls, ref, now) {
+    var T = C.pdfText, ax = axes(r, now), W = 210, M = 16;
     doc.setFillColor(55, 36, 101); doc.roundedRect(M, 12, W - 2 * M, 14, 3, 3, "F");
     doc.setTextColor(255); doc.setFont("helvetica", "bold"); doc.setFontSize(15); doc.text("Zoo de Lecture", M + 5, 21.4);
-    doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.text(T("Fiche de suivi · " + frDate(Date.now())), W - M - 5, 21.2, { align: "right" });
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.text(T("Fiche de suivi · " + frDate(now)), W - M - 5, 21.2, { align: "right" });
     doc.setTextColor(20); doc.setFont("helvetica", "bold"); doc.setFontSize(22); doc.text(T(r.s.nickname) || "?", M, 40);
     doc.setFont("helvetica", "normal"); doc.setFontSize(10.5); doc.setTextColor(80);
     doc.text(T("Classe : " + cls.name).slice(0, 70), M, 47);
@@ -481,14 +491,14 @@
     drawWeb(doc, T, ax.list, ref, W / 2, 108);
 
     /* légende */
-    doc.setLineWidth(0.7); doc.setDrawColor(91, 33, 182); doc.line(M, 66, M + 8, 66);
-    doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(70); doc.text(T(r.s.nickname), M + 10, 67);
-    if (ref) { doc.setLineWidth(0.4); doc.setDrawColor(150); doc.setLineDashPattern([1.2, 1.2], 0); doc.line(M, 71, M + 8, 71); doc.setLineDashPattern([], 0); doc.text(T("Élève moyen (sans absents ni extrêmes)"), M + 10, 72); }
-    doc.setLineWidth(0.7); doc.setDrawColor(46, 155, 100); doc.line(M, 76, M + 8, 76); doc.setTextColor(70); doc.text(T("Attendu à cette date (semaine " + Math.round(schoolWeeks()) + " sur " + YEAR_WEEKS + ")"), M + 10, 77);
+    doc.setLineWidth(0.7); doc.setDrawColor(91, 33, 182); doc.line(M, 61, M + 8, 61);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(70); doc.text(T(r.s.nickname), M + 10, 62);
+    if (ref) { doc.setLineWidth(0.4); doc.setDrawColor(150); doc.setLineDashPattern([1.2, 1.2], 0); doc.line(M, 66, M + 8, 66); doc.setLineDashPattern([], 0); doc.text(T("Élève moyen (sans absents ni extrêmes)"), M + 10, 67); }
+    doc.setLineWidth(0.7); doc.setDrawColor(46, 155, 100); doc.line(M, 71, M + 8, 71); doc.setTextColor(70); doc.text(T("Attendu à cette date (semaine " + Math.round(schoolWeeks(now)) + " sur " + YEAR_WEEKS + ")"), M + 10, 72);
 
-    /* Tableau des 6 axes */
+    /* Tableau des compétences */
     var y = 170;
-    doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.setTextColor(30); doc.text("Les 6 compétences", M, y); y += 2;
+    doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.setTextColor(30); doc.text("Les " + ax.list.length + " compétences", M, y); y += 2;
     ax.list.forEach(function (a, i) {
       y += 7;
       if (i % 2 === 0) { doc.setFillColor(244, 241, 252); doc.rect(M, y - 4.6, W - 2 * M, 7, "F"); }
@@ -531,14 +541,19 @@
       });
     }
     doc.setFontSize(7.5); doc.setTextColor(140);
-    doc.text(T("zoodelecture.fr · 100 % = attendu à cette date : " + ax.exp + " sons sur les " + r.total + " de l’année (semaine " + Math.round(schoolWeeks()) + " sur " + YEAR_WEEKS + "). Vitesse : 3 dernières lectures / seuil."), M, 290);
+    doc.text(T("zoodelecture.fr · 100 % = attendu à cette date : " + ax.exp + " sons sur les " + r.total + " de l’année (semaine " + Math.round(schoolWeeks(now)) + " sur " + YEAR_WEEKS + "). Vitesse : 3 dernières lectures / seuil."), M, 290);
   }
   function makeFiches(list, cls, btn, file) {
     if (!C.pdfMake) return;
+    var now = Date.now();
     C.pdfMake({ btn: btn, msgId: "pedaMsg", wait: "Création de la fiche…", file: file,
       title: list.length > 1 ? "Fiches de « " + cls.name + " »" : "Fiche de " + list[0].s.nickname,
       ok: "📄 " + (list.length > 1 ? list.length + " fiches de suivi pour « " + cls.name + " »" : "Fiche de suivi de " + list[0].s.nickname) + " : le PDF s’ouvre (sinon, regardez dans vos téléchargements).",
-      build: function (doc) { var ref = classRef(); list.forEach(function (r, i) { if (i) doc.addPage(); drawFiche(doc, r, cls, ref); }); } });
+      build: async function (doc) {
+        if (C.refreshVocabularyCatalog) await C.refreshVocabularyCatalog().catch(function () {});
+        var ref = classRef(now);
+        list.forEach(function (r, i) { if (i) doc.addPage(); drawFiche(doc, r, cls, ref, now); });
+      } });
   }
   /* Élève moyen de la classe (demandé par Gabriel le 18/11/2026) : sans les absents (pas venus depuis 7 jours ou jamais), puis, pour chaque axe,
      sans les 2 plus faibles ni les 2 plus forts (1 et 1 de 5 à 7 élèves) ; moyenne du reste. Au moins 3 élèves présents. Sert aussi au calcul. */
@@ -551,8 +566,8 @@
     if (lists.length < 3) return null;
     return lists[0].map(function (a, i) { return trimMean(lists.map(function (l) { return l[i].v; })); });
   }
-  function classRef() {
-    return refOf((state.rows || []).filter(function (r) { return !r.inactive; }).map(function (r) { return axes(r).list; }));
+  function classRef(now) {
+    return refOf((state.rows || []).filter(function (r) { return !r.inactive; }).map(function (r) { return axes(r, now).list; }));
   }
 
 
