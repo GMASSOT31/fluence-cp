@@ -220,6 +220,12 @@
     });
     var idle = rows.filter(function (r) { return r.inactive; });
     if (idle.length) card("a-idle", "💤 " + plur(idle.length, "élève n’est pas venu", "élèves ne sont pas venus") + " depuis " + INACTIVE_DAYS + " jours ou plus", idle, null);
+    var reminders = vocabularyReminders(rows);
+    if (reminders.length) {
+      var review = compactDetails("🗓️ Vocabulaire à réviser · " + reminders.length, "pb-alert-group", state.classId + ":vocab-review", state.folded);
+      reminders.forEach(function (reminder) { review.append(vocabularyReminderCard(reminder)); });
+      grid.append(review); n++;
+    }
     [["a-asg","🎯 Exercices donnés"], ["a-conf","🔀 Confusions"], ["a-rec","🎧 Lectures à écouter"],
      ["a-block","⚠️ Élèves bloqués"], ["a-idle","💤 En sommeil"]].forEach(function (group) {
       if (!groups[group[0]]) return;
@@ -575,6 +581,40 @@
      Réglage enseignant settings.assign[élève] = { type, sons, pair, ts } (enregistré avec les autres réglages, aucune migration).
      Le Zoo de l’élève le met en tête de sa mission jusqu’à réussite et note le résultat dans progress.remed = { ts, done, ok, tries, hist }. */
   window.pedaAssign = window.pedaAssign || {};
+  function vocabularyReminders(rows) {
+    var now = Date.now(), found = [];
+    rows.forEach(function (r) {
+      if (r.s.teacher_id !== C.currentUser.id) return;
+      var history = ZooVocabulary.reviewHistory(r.remed);
+      var active = r.asg && !asgState(r.asg, r.remed).ok;
+      ZooVocabulary.catalog.forEach(function (book) {
+        var entry = history[book.id], due = ZooVocabulary.reviewDue(entry);
+        if (due !== null && due <= now && !(active && r.asg.type === "vocabulaire" && r.asg.corpus === book.id)) {
+          found.push({ r: r, book: book, due: due, count: entry.count, blocked: active });
+        }
+      });
+    });
+    return found.sort(function (a, b) { return a.due - b.due || String(a.r.s.nickname).localeCompare(b.r.s.nickname); });
+  }
+  function vocabularyReminderCard(reminder) {
+    var r = reminder.r, book = reminder.book, card = mk("div", "pb-alert a-asg");
+    card.append(mk("strong", null, r.s.nickname + " · " + book.title));
+    card.append(mk("small", "pb-tip", "Révision " + reminder.count + " sur 3 · prévue le " + frDate(reminder.due)));
+    var assign = mk("button", "secondary", reminder.blocked ? "Exercice individuel déjà attribué" : "Attribuer la révision");
+    assign.type = "button"; assign.disabled = !!reminder.blocked;
+    assign.onclick = function () {
+      var current = currentAssignment(r.s.id);
+      if (current && !asgState(current, r.remed).ok) return;
+      assign.disabled = true;
+      window.pedaAssign[r.s.id] = { type: "vocabulaire", corpus: book.id, ts: Date.now() };
+      if (C.queueSave) C.queueSave("pedaSave");
+      state.notice = "🎯 Révision « " + book.title + " » donnée à " + r.s.nickname + ".";
+      render();
+    };
+    card.append(assign);
+    return card;
+  }
+
   function currentAssignment(id) {
     var a = (window.pedaAssign || {})[id];
     return a && (a.type !== "vocabulaire" || ZooVocabulary.get(a.corpus)) ? a : null;
@@ -601,8 +641,9 @@
   function asgState(a, rm) {
     rm = rm && typeof rm === "object" ? rm : {};
     var same = a && Number(rm.ts) === Number(a.ts), done = same && rm.done && typeof rm.done === "object" ? Object.keys(rm.done).length : 0;
+    var past = a && Array.isArray(rm.hist) && rm.hist.find(function (h) { return h && Number(h.ts) === Number(a.ts) && Number(h.ok) > 0; });
     var book = a && a.type === "vocabulaire" && ZooVocabulary.get(a.corpus);
-    return { ok: same && Number(rm.ok) > 0 ? Number(rm.ok) : 0, done: done, total: book ? ZooVocabulary.blocks(book).length : a ? (a.type === "tiles" ? 1 : (a.sons || []).length) : 0, tries: same ? Number(rm.tries) || 0 : 0 };
+    return { ok: same && Number(rm.ok) > 0 ? Number(rm.ok) : past ? Number(past.ok) : 0, done: done, total: book ? ZooVocabulary.blocks(book).length : a ? (a.type === "tiles" ? 1 : (a.sons || []).length) : 0, tries: same ? Number(rm.tries) || 0 : 0 };
   }
   function shortDate(ts) { var d = new Date(ts); return ("0" + d.getDate()).slice(-2) + "/" + ("0" + (d.getMonth() + 1)).slice(-2); }
   function asgStatusText(a, rm) {

@@ -1837,7 +1837,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
 })();
 </script>
 <script src="exo-data.js?v=6"></script>
-<script src="vocabulaire.js?v=2"></script>
+<script src="vocabulaire.js?v=3"></script>
 <script src="vendor/howler.core.min.js?v=2.2.4"></script>
 <script src="audio-lecture.js?v=3"></script>
 <script>/* Anciens iPad (iOS 12 et avant) : le navigateur ne connaît pas les événements « pointer » → les jeux au doigt (Serpent, Oiseau, Tuiles, Tour, Safari) ne réagissaient pas. On les traduit en événements tactiles (ou souris sur un vieil ordinateur). Rien ne change sur les appareils récents. */
@@ -5197,7 +5197,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     return sons.length ? { type: a.type, sons: sons, pair: null, ts: Number(a.ts) } : null;
   }
   function remedClean(o) {
-    var r = { ts: 0, done: {}, ok: 0, tries: 0, hist: [], vocabCompleted: {}, individualDone: 0 };
+    var r = { ts: 0, done: {}, ok: 0, tries: 0, hist: [], vocabCompleted: {}, vocabReview: ZooVocabulary.reviewHistory(o), individualDone: 0 };
     if (!o || typeof o !== "object") return r;
     r.ts = Number(o.ts) || 0; r.ok = Number(o.ok) || 0; r.individualDone = Number(o.individualDone) || 0; r.tries = listenInt(o.tries, 0, 99999, 0);
     if (o.done && typeof o.done === "object") Object.keys(o.done).slice(0, 10).forEach(function (k) { if (o.done[k]) r.done[k] = 1; });
@@ -5261,7 +5261,11 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if (all) {
       cur.R.ok = Date.now();
       if (!cur.a.collective) cur.R.individualDone = cur.a.ts;
-      if (type === "vocabulaire") cur.R.vocabCompleted[cur.a.corpus] = 1;
+      if (type === "vocabulaire") {
+        var corpus = cur.a.corpus, history = cur.R.vocabReview[corpus];
+        cur.R.vocabCompleted[corpus] = 1;
+        cur.R.vocabReview[corpus] = { count: Math.min(4, history ? history.count + 1 : 1), last: cur.R.ok };
+      }
       cur.R.hist.unshift({ type: cur.a.type, sons: cur.a.sons, pair: cur.a.pair, corpus: cur.a.corpus, ts: cur.a.ts, ok: cur.R.ok, tries: cur.R.tries });
       cur.R.hist = cur.R.hist.slice(0, 10);
       if (data.reward && type !== "vocabulaire") { data.coins[sid] = coins(sid) + REMED_COINS; gained = REMED_COINS; }
