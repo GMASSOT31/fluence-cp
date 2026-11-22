@@ -132,18 +132,18 @@
     var lv = E.levelInfo(best.act, best.id); return ACT[best.act].icon + " " + lv.label;
   }
   /* ===== Ma classe (calcul) : même écran que la lecture — choix de la classe, À faire aujourd’hui, Mes élèves (Tous / En difficulté / En avance / Pas venus), La classe en chiffres ===== */
-  var LATE = 3, AHEAD = 3, IDLE_DAYS = 7, DAY = 864e5, view = { classId: null, filter: "all", open: {}, rows: [] };
+  var LATE = 3, AHEAD = 3, IDLE_DAYS = 7, DAY = 864e5, view = { classId: null, filter: "all", open: {}, folded: {}, rows: [] };
   function median(a) { if (!a.length) return 0; var s = a.slice().sort(function (x, y) { return x - y; }), m = Math.floor(s.length / 2); return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; }
   function totalSteps() { return Object.keys(ACT).reduce(function (n, a) { return n + enabled(a).length; }, 0); }
   /* Un élève : étapes réussies (dans les étapes proposées), étape où il bloque (3 séries ou plus sans réussite), séries des 7 derniers jours, dernière venue */
   function analyse(s) {
-    var p = s.progress || {}, lv = p.levels || {}, done = 0, stuck = null, week = { nombres: 0, addition: 0, soustraction: 0 }, now = Date.now();
+    var p = s.progress || {}, lv = p.levels || {}, done = 0, won = 0, stuck = null, week = { nombres: 0, addition: 0, soustraction: 0 }, now = Date.now();
     Object.keys(ACT).forEach(function (a) {
       enabled(a).forEach(function (id) { var e = lv[a + ":" + id] || {}; if (e.ok >= 1) done++; else if ((e.r || 0) >= 3 && !stuck) stuck = { act: a, id: id, r: e.r }; });
     });
-    (Array.isArray(p.hist) ? p.hist : []).forEach(function (h) { var t = tsOf(h && h.t), a = String(h && h.k || "").split(":")[0]; if (t && now - t < 7 * DAY && week[a] != null) week[a]++; });
+    (Array.isArray(p.hist) ? p.hist : []).forEach(function (h) { var t = tsOf(h && h.t), a = String(h && h.k || "").split(":")[0]; if (t && now - t < 7 * DAY && week[a] != null) { week[a]++; if (h.ok === true) won++; } });
     var ts = lastTs(p), idle = ts ? Math.floor((now - ts) / DAY) : null;
-    return { s: s, lv: lv, done: done, stuck: stuck, week: week, series: week.nombres + week.addition + week.soustraction, idle: idle, ts: ts,
+    return { s: s, lv: lv, done: done, won: won, stuck: stuck, week: week, series: week.nombres + week.addition + week.soustraction, idle: idle, ts: ts,
              nums: Object.keys(p.nums || {}).length, calcs: Object.keys(p.calcs || {}).length };
   }
   function classify(rows) {
@@ -185,15 +185,19 @@
       sel.value = cls.id; sel.addEventListener("change", function () { view.classId = sel.value; view.open = {}; view.filter = "all"; paintBoard(board); });
       left.appendChild(el("span", "pb-lbl", "Classe")); left.appendChild(sel);
     } else { left.appendChild(el("span", "pb-lbl", "Classe")); left.appendChild(el("strong", "pb-cname", "📚 " + cls.name)); }
-    left.appendChild(el("span", "pb-count", studs.length + " " + pl(studs.length, "élève", "élèves")));
-    var acts = el("div", "pb-acts"), rl = el("button", "secondary", "↻ Actualiser"); rl.type = "button"; rl.title = "Recharger les derniers résultats des élèves"; rl.addEventListener("click", renderProgress); acts.appendChild(rl);
+    var acts = el("div", "pb-acts"), rl = el("button", "secondary pb-refresh", "↻"); rl.type = "button"; rl.title = "Actualiser les résultats"; rl.setAttribute("aria-label", rl.title); rl.addEventListener("click", renderProgress); left.appendChild(rl);
     var pc = ctx().allClasses && ctx().printLoginCards ? ctx().allClasses.filter(function (x) { return x.id === cls.id; })[0] : null;
-    if (pc) { var cm = el("button", "secondary", "🖨️ Codes pour la maison"); cm.type = "button"; cm.title = "Fiches de connexion au Zoo de Calcul (adresse zoodelecture.fr/calcul et QR code), à donner aux familles"; cm.addEventListener("click", function () { ctx().printLoginCards(pc, "calcMsg", cm, true); }); acts.appendChild(cm); }
-    if (ficheOK()) { var fa = el("button", "secondary", "📄 Fiches de suivi (PDF)"); fa.type = "button"; fa.title = "Une fiche par élève, avec sa toile des 6 compétences"; fa.addEventListener("click", function () { makeFiches(view.rows.slice().sort(function (a, b) { return String(a.s.nickname).localeCompare(b.s.nickname); }), cls.name, fa, "fiches-calcul-" + (ctx().pdfSlug(cls.name) || "classe")); }); acts.appendChild(fa); }
-    if (view.loadedAt) { var tm = el("span", "pb-updated", "À jour à " + view.loadedAt.getHours() + " h " + ("0" + view.loadedAt.getMinutes()).slice(-2)); tm.style.cssText = "font-size:.85em;align-self:center;white-space:nowrap"; acts.appendChild(tm); }
-    hd.appendChild(left); hd.appendChild(acts); board.appendChild(hd);
-    var rows = studs.map(analyse), med = classify(rows); view.rows = rows;
-    board.appendChild(todoCalc(rows)); board.appendChild(listCalc(rows)); board.appendChild(figuresCalc(rows, med)); board.appendChild(legend());
+    if (pc) { var cm = el("button", "secondary", "🖨️ QR codes"); cm.type = "button"; cm.title = "Fiches de connexion au Zoo de Calcul (adresse zoodelecture.fr/calcul et QR code), à donner aux familles"; cm.addEventListener("click", function () { ctx().printLoginCards(pc, "calcMsg", cm, true); }); acts.appendChild(cm); }
+    if (ficheOK()) { var fa = el("button", "secondary"); fa.appendChild(el("span", "pb-pdf-icon", "PDF")); fa.appendChild(document.createTextNode(" Araignées de suivi")); fa.type = "button"; fa.title = "Une fiche par élève, avec sa toile des 6 compétences"; fa.addEventListener("click", function () { makeFiches(view.rows.slice().sort(function (a, b) { return String(a.s.nickname).localeCompare(b.s.nickname); }), cls.name, fa, "fiches-calcul-" + (ctx().pdfSlug(cls.name) || "classe")); }); acts.appendChild(fa); }
+    hd.appendChild(left);
+    if (view.loadedAt) {
+      var tm = el("span", "pb-updated", view.loadedAt.getHours() + " h " + ("0" + view.loadedAt.getMinutes()).slice(-2));
+      tm.setAttribute("aria-label", "Heure de la dernière actualisation"); hd.appendChild(tm);
+    }
+    hd.appendChild(acts); board.appendChild(hd);
+    var rows = studs.map(analyse); classify(rows); view.rows = rows;
+    board.appendChild(figuresCalc(rows)); board.appendChild(todoCalc(rows)); board.appendChild(listCalc(rows));
+    board.querySelector(".pb-students").appendChild(legend());
   }
   function nameBtns(list) {
     var w = el("span", "pb-names");
@@ -204,12 +208,14 @@
     view.open[id] = true; var r = view.rows.filter(function (x) { return x.s.student_id === id; })[0];
     if (r && !keepRow(r, view.filter)) view.filter = "all";
     if (view.paint) view.paint();
+    var students = document.querySelector("#calcProgress .pb-students");
+    if (students) students.open = true;
     var line = document.querySelector('#calcProgress .pb-row[data-sid="' + id + '"]'); if (line) line.scrollIntoView({ block: "start", behavior: "smooth" });
   }
   /* 1. À faire aujourd’hui : élèves bloqués (par étape), élèves en retard, élèves absents */
   function todoCalc(rows) {
-    var sec = section("📌 À faire aujourd’hui"), grid = el("div", "pb-alerts"), n = 0;
-    function card(cls, title, list, tip) { var c = el("div", "pb-alert " + cls); c.appendChild(el("strong", "", title)); c.appendChild(nameBtns(list)); if (tip) c.appendChild(el("small", "pb-tip", tip)); grid.appendChild(c); n++; }
+    var sec = section("📌 À faire aujourd’hui"), grid = el("div", "pb-alerts"), n = 0, groups = {};
+    function card(cls, title, list, tip) { var c = el("div", "pb-alert " + cls); c.appendChild(el("strong", "", title)); c.appendChild(nameBtns(list)); if (tip) c.appendChild(el("small", "pb-tip", tip)); if (!groups[cls]) groups[cls] = []; groups[cls].push(c); n++; }
     var by = {}; rows.filter(function (r) { return r.stuck && !r.inactive; }).forEach(function (r) { var k = r.stuck.act + ":" + r.stuck.id; (by[k] = by[k] || []).push(r); });
     Object.keys(by).sort(function (a, b) { return by[b].length - by[a].length; }).slice(0, 4).forEach(function (k) {
       var a = k.split(":"), lvi = E.levelInfo(a[0], a[1]);
@@ -219,6 +225,13 @@
     if (late.length) card("a-block", "🐢 " + late.length + " " + pl(late.length, "élève a", "élèves ont") + " " + LATE + " étapes de retard ou plus", late, "Par rapport à l’élève du milieu de la classe.");
     var idle = rows.filter(function (r) { return r.inactive; });
     if (idle.length) card("a-idle", "💤 " + idle.length + " " + pl(idle.length, "élève n’est pas venu", "élèves ne sont pas venus") + " depuis " + IDLE_DAYS + " jours ou plus", idle);
+    var assigned = rows.filter(function (r) { var a = (view.assignments || {})[r.s.student_id]; return a && !a.done; });
+    if (assigned.length) card("a-asg", assigned.length + " " + pl(assigned.length,"exercice donné","exercices donnés"), assigned);
+    [["a-asg","🎯 Exercices donnés"],["a-block","⚠️ Élèves bloqués ou en retard"],["a-idle","💤 En sommeil"]].forEach(function (group) {
+      if (!groups[group[0]]) return;
+      var fold = window.ZooPeda.compactDetails(group[1], "pb-alert-group", view.classId + ":" + group[0], view.folded);
+      groups[group[0]].forEach(function (c) { fold.appendChild(c); }); grid.appendChild(fold);
+    });
     if (!n) grid.appendChild(el("p", "pb-calm", "✅ Rien d’urgent aujourd’hui."));
     sec.appendChild(grid); return sec;
   }
@@ -226,7 +239,7 @@
   var FILTERS = [["all", "Tous"], ["late", "En difficulté"], ["ahead", "En avance"], ["idle", "Pas venus"]];
   function keepRow(r, f) { return f === "all" || (f === "late" && r.color === "red") || (f === "ahead" && r.ahead && !r.inactive) || (f === "idle" && r.inactive); }
   function listCalc(rows) {
-    var sec = section("🧒 Mes élèves"), bar = el("div", "pb-filters"), list = el("div", "pb-list"), tot = totalSteps();
+    var sec = window.ZooPeda.compactDetails("🧒 Les élèves · " + rows.length, "pb-sec pb-students", view.classId + ":students", view.folded), bar = el("div", "pb-filters"), list = el("div", "pb-list"), tot = totalSteps();
     bar.setAttribute("role", "group"); bar.setAttribute("aria-label", "Filtrer les élèves");
     function paint() {
       clear(list);
@@ -331,13 +344,15 @@
     w.appendChild(chips); return w;
   }
   /* 3. La classe en chiffres (7 derniers jours) */
-  function figuresCalc(rows, med) {
+  function figuresCalc(rows) {
     var sec = section("📊 La classe en chiffres", "7 derniers jours"), tiles = el("div", "pb-tiles"), w = { nombres: 0, addition: 0, soustraction: 0 };
     rows.forEach(function (r) { Object.keys(w).forEach(function (a) { w[a] += r.week[a]; }); });
-    var nums = rows.length ? Math.round(rows.reduce(function (a, r) { return a + r.nums; }, 0) / rows.length) : 0;
+    var active = rows.filter(function (r) { return r.series > 0; });
+    var nums = active.length ? Math.round(active.reduce(function (a, r) { return a + r.nums; }, 0) / active.length) : null;
+    var mean = active.length ? Math.round(10 * active.reduce(function (a, r) { return a + r.won; }, 0) / active.length) / 10 : null;
     [["📊", String(w.nombres + w.addition + w.soustraction), "Séries faites : 👂 " + w.nombres + " écouter · ➕ " + w.addition + " addition · ➖ " + w.soustraction + " soustraction"],
-     ["🥚", Math.round(med) + " sur " + totalSteps(), "Étapes réussies par l’élève du milieu de la classe"],
-     ["🔢", String(nums), "Nombres reconnus en moyenne par élève (sur 101)"],
+     ["🏅", mean === null ? "—" : mean.toLocaleString("fr-FR"), "Exercices réussis en moyenne par élève actif"],
+     ["🔢", nums === null ? "—" : String(nums), "Nombres reconnus en moyenne par élève actif (sur 101)"],
      ["💤", String(rows.filter(function (r) { return r.inactive; }).length), "Élèves pas venus depuis " + IDLE_DAYS + " jours ou plus"]
     ].forEach(function (t) { var d = el("div", "pb-tile"); d.appendChild(el("span", "pb-ico", t[0])); d.appendChild(el("b", "", t[1])); d.appendChild(el("small", "", t[2])); tiles.appendChild(d); });
     sec.appendChild(tiles); return sec;

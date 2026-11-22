@@ -2181,7 +2181,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   /* ---------- Mesures pour l’espace Pédagogie de l’enseignant (progress.stats, JSON libre : aucune migration) ----------
      snd[son] = { l: [justes, ratées], w: [justes, ratées], p: [justes, ratées] } : réponses par son (l = écoute, w = dictée, p = « J’entends » ; « ratée » = au moins une erreur)
      conf["attendu|choisi"] = nombre : confusions (b|d, on|an…), 40 au plus, les plus fréquentes gardées
-     days["AAAA-MM-JJ"] = [secondes actives, séries d’écoute, dictées, lectures, parties] : 45 derniers jours
+     days["AAAA-MM-JJ"] = [secondes actives, séries d’écoute, dictées, lectures, parties, exercices réussis, exercices terminés] : 45 derniers jours
      Rien n’est affiché à l’élève. */
   var STAT_GRAPH = ["eau", "ain", "ein", "oin", "ill", "ou", "on", "an", "en", "in", "un", "am", "em", "im", "om", "ch", "ph", "gn", "qu", "gu", "oi", "au", "ai", "ei", "eu", "er", "ez"];
   function statsClean(o) {
@@ -2196,7 +2196,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if (o.conf && typeof o.conf === "object") Object.keys(o.conf).slice(0, 60).forEach(function (k) { if (k.length <= 30) r.conf[k] = listenInt(o.conf[k], 0, 99999, 0); });
     if (o.days && typeof o.days === "object") Object.keys(o.days).forEach(function (k) {
       var d = o.days[k];
-      if (/^\d{4}-\d\d-\d\d$/.test(k) && Array.isArray(d)) r.days[k] = [0, 1, 2, 3, 4].map(function (i) { return listenInt(d[i], 0, 86400, 0); });
+      if (/^\d{4}-\d\d-\d\d$/.test(k) && Array.isArray(d)) r.days[k] = [0, 1, 2, 3, 4, 5, 6].map(function (i) { return listenInt(d[i], 0, 86400, 0); });
     });
     return r;
   }
@@ -2215,6 +2215,10 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       var ks = Object.keys(st.days).sort();
       while (ks.length > 45) delete st.days[ks.shift()];
     } catch (e) {}
+  }
+  function statExercise(sid, ok) {
+    statDay(sid, 6);
+    if (ok) statDay(sid, 5);
   }
   /* une réponse juste ou ratée sur un son (a = "l" écoute, "w" dictée, "p" J’entends) */
   function statAns(sid, soundId, a, ok) {
@@ -3538,6 +3542,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   }
   function saveTraining() {
     data.results.push({ id: uid(), sid: S.sid, sound: S.sound, k: S.kind, n: current.n, e: current.e, t: current.t, mclm: current.mclm, ts: Date.now(), src: "train", short: current.short || undefined, fraud: current.fraud }); statDay(S.sid, 3);
+    statExercise(S.sid, !current.short && !current.fraud && current.mclm >= data.thr[S.kind]);
     data.sel.sid = S.sid;
     save();
   }
@@ -4721,6 +4726,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var ok = R.failed <= cfg.maxErrors, wasDone = listenDone(sid, id), gained = 0, nowDone = false;
     L.tries++;
     statDay(sid, 1);
+    statExercise(sid, ok);
     if (ok) dayMark(sid, "l");
     if (ok && !wasDone) {
       L.passes[id] = (L.passes[id] || 0) + 1;
@@ -4964,6 +4970,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var ok = R.failed <= PHONO_ERR, wasDone = phonoDone(sid, id), gained = 0, nowDone = false;
     P.tries++;
     statDay(sid, 1);
+    statExercise(sid, ok);
     if (ok && !wasDone) {
       P.passes[id] = (P.passes[id] || 0) + 1; P.done[id] = true; nowDone = true;
       if (data.reward && PHONO_COINS > 0) { data.coins[sid] = coins(sid) + PHONO_COINS; gained = PHONO_COINS; }
@@ -5131,6 +5138,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var n = R.boards.reduce(function (a, b) { return a + b.length; }, 0);
     C.tries++;
     statDay(sid, 3);
+    statExercise(sid, ok);
     if (ok && !wasDone) {
       C.passes[id] = (C.passes[id] || 0) + 1; C.done[id] = true; nowDone = true;
       if (data.reward && COMPR_COINS > 0) { data.coins[sid] = coins(sid) + COMPR_COINS; gained = COMPR_COINS; }
@@ -5359,6 +5367,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       if (run.stage !== "test") return;
       run.stage = "result"; listenStopVoice();
       var res = remedMark(sid, "vocabulaire", assigned.next, run.correct === 6);
+      statExercise(sid, !!res);
       save(); renderPanels();
       var card = el("div", "card vocab-screen");
       body.innerHTML = ""; body.appendChild(card);
@@ -5396,6 +5405,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   }
   function tilesRemedEnd(sid, area, ok, msg, memo) {
     stopGame();
+    statExercise(sid, ok);
     var res = ok ? remedMark(sid, "tiles", "tiles", true) : (remedMark(sid, "tiles", "tiles", false), null);
     save(); renderPanels();
     $("game-msg").textContent = (ok ? praise() + " ! " : "Bien essayé ! ") + msg + (ok ? "" : " Il en faut " + TILES_GOAL + ".");
@@ -5656,6 +5666,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var ok = R.failed <= cfg.maxErrors, wasDone = dicteeDone(sid, id), gained = 0, nowDone = false;
     D.tries++;
     statDay(sid, 2);
+    statExercise(sid, ok);
     if (ok) dayMark(sid, "w");
     if (ok && !wasDone) {
       D.passes[id] = (D.passes[id] || 0) + 1;
