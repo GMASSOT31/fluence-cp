@@ -8,7 +8,7 @@
 (function () {
   "use strict";
   var LATE = 3, AHEAD = 3, INACTIVE_DAYS = 7, DAY = 864e5;
-  var state = { classId: null, filter: "all", rows: [], open: {}, seq: 0, flash: null }, C = {};
+  var state = { classId: null, filter: "all", rows: [], open: {}, folded: {}, seq: 0, flash: null }, C = {};
   function $(id) { return document.getElementById(id); }
   window.pedaAllo = window.pedaAllo || [];   /* élèves allophones (réglage enseignant « allo ») */
 
@@ -35,9 +35,9 @@
     var nValid = order.filter(function (x) { return cert[x.id]; }).length;
     var curIdx = order.findIndex(function (x) { return !cert[x.id]; }), cur = curIdx >= 0 ? order[curIdx] : null;
     var st = p.stats && typeof p.stats === "object" ? p.stats : {}, days = st.days && typeof st.days === "object" ? st.days : {}, snd = st.snd && typeof st.snd === "object" ? st.snd : {};
-    var now = Date.now(), week = [], secs = 0, series = [0, 0, 0, 0];
+    var now = Date.now(), week = [], secs = 0, exercises = 0, successes = 0, series = [0, 0, 0, 0];
     for (var i = 0; i < 7; i++) week.push(dayKey(now - i * DAY));
-    week.forEach(function (k) { var d = days[k]; if (Array.isArray(d)) { secs += Number(d[0]) || 0; for (var j = 1; j <= 4; j++) series[j - 1] += Number(d[j]) || 0; } });
+    week.forEach(function (k) { var d = days[k]; if (Array.isArray(d)) { secs += Number(d[0]) || 0; exercises += Number(d[6]) || 0; successes += Number(d[5]) || 0; for (var j = 1; j <= 4; j++) series[j - 1] += Number(d[j]) || 0; } });
     /* dernière activité : jours mesurés, lectures, parties, dernière sauvegarde */
     var ts = [Date.parse((row && row.updated_at) || "") || 0];
     res.forEach(function (r) { ts.push(Number(r.ts) || 0); });
@@ -61,7 +61,7 @@
     var flu = res.filter(function (r) { return !r.void && !r.short && !(Number(r.fraud) > 0) && r.src !== "adj" && r.src !== "train" && Number(r.mclm) > 0; })
       .sort(function (a, b) { return (Number(b.ts) || 0) - (Number(a.ts) || 0); })[0] || null;
     return { s: s, row: row || null, canRec: canRec, p: p, nValid: nValid, total: order.length, cur: cur, err: err, answers: answers, readTries: readTries, blocked: blocked,
-      recs: recs.length, recTabs: recs.map(function (x) { return Number(x.tab) || 0; }).filter(function (n, i, a) { return n && a.indexOf(n) === i; }).sort(function (a, b) { return a - b; }), curSent: curSent, secs: secs, series: series, idle: idle, flu: flu, conf: st.conf && typeof st.conf === "object" ? st.conf : {}, measured: Object.keys(days).length > 0,
+      recs: recs.length, recTabs: recs.map(function (x) { return Number(x.tab) || 0; }).filter(function (n, i, a) { return n && a.indexOf(n) === i; }).sort(function (a, b) { return a - b; }), curSent: curSent, secs: secs, exercises: exercises, successes: successes, series: series, idle: idle, flu: flu, conf: st.conf && typeof st.conf === "object" ? st.conf : {}, measured: Object.keys(days).length > 0,
       allo: window.pedaAllo.indexOf(s.id) >= 0, asg: currentAssignment(s.id), remed: p.remed && typeof p.remed === "object" ? p.remed : null };
   }
   function classify(rows) {
@@ -114,20 +114,19 @@
       sel.value = cls.id; sel.onchange = function () { state.classId = sel.value; state.open = {}; render(); };
       left.append(mk("span", "pb-lbl", "Classe"), sel);
     } else left.append(mk("span", "pb-lbl", "Classe"), mk("strong", "pb-cname", "📚 " + cls.name));
-    left.append(mk("span", "pb-count", plur(studs.length, "élève", "élèves")));
     head.append(left);
     var acts = mk("div", "pb-acts");
     if (studs.length && C.printLoginCards) {
-      var pr = mk("button", "secondary", "🖨️ Codes pour la maison"); pr.type = "button"; pr.title = "Fiches de connexion à donner aux familles";
+      var pr = mk("button", "secondary", "🖨️ QR codes"); pr.type = "button"; pr.title = "Fiches de connexion à donner aux familles";
       pr.onclick = function () { C.printLoginCards(cls, "pedaMsg", pr); };
       acts.append(pr);
     }
     /* Les résultats ne se rechargent pas tout seuls pendant qu'on reste sur l'écran : bouton « Actualiser » + heure de la dernière mise à jour
        (et rechargement automatique quand on revient sur la page, voir plus bas) */
-    var rl = mk("button", "secondary", "↻ Actualiser"); rl.type = "button"; rl.title = "Recharger les derniers résultats des élèves";
+    var rl = mk("button", "secondary pb-refresh", "↻"); rl.type = "button"; rl.title = "Actualiser les résultats"; rl.setAttribute("aria-label", rl.title);
     rl.onclick = function () { render(); };
-    var when = mk("span", "pb-updated", ""); when.setAttribute("aria-live", "polite"); when.style.cssText = "font-size:.85em;align-self:center;white-space:nowrap";
-    acts.prepend(rl, when);
+    var when = mk("span", "pb-updated", ""); when.setAttribute("aria-live", "polite"); when.setAttribute("aria-label", "Heure de la dernière actualisation");
+    left.append(rl); head.append(when);
     head.append(acts);
     box.append(head, mk("p", "msg", null));
     box.lastChild.id = "pedaMsg"; box.lastChild.setAttribute("role", "status");
@@ -140,17 +139,17 @@
     if (seq !== state.seq) return;   /* un chargement plus récent a pris la main */
     wait.remove();
     if (q.error) { box.append(mk("p", "msg err", "Impossible de charger les résultats : " + (q.error.message || ""))); return; }
-    state.loadedAt = Date.now(); when.textContent = "À jour à " + hhmm(new Date());
+    state.loadedAt = Date.now(); when.textContent = hhmm(new Date());
     var map = {}; (q.data || []).forEach(function (r) { map[r.student_id] = r; });
     var rows = studs.map(function (s) { return analyse(s, map[s.id]); });
-    var med = classify(rows);
+    classify(rows);
     state.rows = rows; state.cls = cls;
     if (C.pdfMake) {
-      var fa = mk("button", "secondary", "📄 Fiches de suivi (PDF)"); fa.type = "button"; fa.title = "Une fiche par élève, avec sa toile des 6 compétences";
+      var fa = mk("button", "secondary"); fa.append(mk("span", "pb-pdf-icon", "PDF"), document.createTextNode(" Araignées de suivi")); fa.type = "button"; fa.title = "Une fiche par élève, avec sa toile des 6 compétences";
       fa.onclick = function () { makeFiches(rows.slice().sort(function (a, b) { return String(a.s.nickname).localeCompare(b.s.nickname); }), cls, fa, "fiches-suivi-" + (C.pdfSlug(cls.name) || "classe")); };
       acts.append(fa);
     }
-    box.append(todo(rows), matrix(rows), rhythm(rows, med));
+    box.append(rhythm(rows), todo(rows), matrix(rows));
   }
 
   /* Nom d’élève cliquable : ouvre son détail sous sa ligne */
@@ -168,6 +167,8 @@
     var r = (state.rows || []).find(function (x) { return x.s.id === id; });
     if (r && !keep(r, state.filter)) state.filter = "all";
     if (state.paint) state.paint();
+    var students = document.querySelector("#pedaBoard .pb-students");
+    if (students) students.open = true;
     var line = document.querySelector('.pb-row[data-sid="' + id + '"]');
     if (line) line.scrollIntoView({ block: "start", behavior: "smooth" });
   }
@@ -175,12 +176,13 @@
   /* 1. À faire aujourd’hui : lectures à écouter, élèves bloqués, exercices donnés pas encore faits, confusions, inactifs */
   function todo(rows) {
     var sec = section("📌 À faire aujourd’hui", null);
-    var grid = mk("div", "pb-alerts"), n = 0;
+    var grid = mk("div", "pb-alerts"), n = 0, groups = {};
     function card(cls, title, list, tip, btn) {
       var c = mk("div", "pb-alert " + cls); c.append(mk("strong", null, title), nameBtns(list));
       if (tip) c.append(mk("small", "pb-tip", tip));
       if (btn) c.append(btn);
-      grid.append(c); n++;
+      if (!groups[cls]) groups[cls] = [];
+      groups[cls].push(c); n++;
     }
     /* lectures enregistrées à écouter */
     var recs = rows.filter(function (r) { return r.recs > 0; }), nRec = recs.reduce(function (a, r) { return a + r.recs; }, 0);
@@ -218,6 +220,14 @@
     });
     var idle = rows.filter(function (r) { return r.inactive; });
     if (idle.length) card("a-idle", "💤 " + plur(idle.length, "élève n’est pas venu", "élèves ne sont pas venus") + " depuis " + INACTIVE_DAYS + " jours ou plus", idle, null);
+    [["a-asg","🎯 Exercices donnés"], ["a-conf","🔀 Confusions"], ["a-rec","🎧 Lectures à écouter"],
+     ["a-block","⚠️ Élèves bloqués"], ["a-idle","💤 En sommeil"]].forEach(function (group) {
+      if (!groups[group[0]]) return;
+      var key = state.classId + ":" + group[0];
+      var fold = compactDetails(group[1], "pb-alert-group", key, state.folded);
+      groups[group[0]].forEach(function (c) { fold.append(c); });
+      grid.append(fold);
+    });
     if (!n) grid.append(mk("p", "pb-calm", "✅ Rien d’urgent aujourd’hui."));
     sec.append(grid);
     if (!rows.some(function (r) { return r.measured; })) sec.append(mk("p", "muted pb-note", "Les erreurs, les confusions et le temps de travail sont mesurés depuis le 17 novembre 2026 : ces informations se rempliront au fil des séances."));
@@ -225,15 +235,16 @@
   }
 
   /* 3. La classe en chiffres */
-  function rhythm(rows, med) {
+  function rhythm(rows) {
     var sec = section("📊 La classe en chiffres", "7 derniers jours");
     var active = rows.filter(function (r) { return r.secs > 0; });
-    var avg = active.length ? Math.round(rows.reduce(function (a, r) { return a + r.secs; }, 0) / rows.length / 60) : null;
+    var avg = active.length ? Math.round(active.reduce(function (a, r) { return a + r.secs; }, 0) / active.length / 60) : null;
     var series = [0, 0, 0, 0]; rows.forEach(function (r) { for (var i = 0; i < 4; i++) series[i] += r.series[i]; });
-    var total = rows.length ? rows[0].total : 0;
+    var practising = rows.filter(function (r) { return r.secs > 0 || r.exercises > 0 || r.series.slice(0, 3).some(Boolean); });
+    var mean = practising.some(function (r) { return r.exercises > 0; }) ? Math.round(10 * practising.reduce(function (a, r) { return a + r.successes; }, 0) / practising.length) / 10 : null;
     var tiles = mk("div", "pb-tiles");
-    [["⏱️", avg === null ? "—" : avg + " min", "Temps de travail moyen par élève"],
-     ["🏅", Math.round(med) + " sur " + total, "Sons validés par l’élève du milieu de la classe"],
+    [["⏱️", avg === null ? "—" : avg + " min", "Temps moyen par élève actif"],
+     ["🏅", mean === null ? "—" : mean.toLocaleString("fr-FR"), "Exercices réussis en moyenne par élève actif"],
      ["💤", String(rows.filter(function (r) { return r.inactive; }).length), "Élèves pas venus depuis " + INACTIVE_DAYS + " jours ou plus"],
      ["📊", String(series[0] + series[1] + series[2]), "Exercices faits : 👂 " + series[0] + " écoute · ✏️ " + series[1] + " dictée · 📖 " + series[2] + " lecture"]
     ].forEach(function (t) { var d = mk("div", "pb-tile"); d.append(mk("span", "pb-ico", t[0]), mk("b", null, t[1]), mk("small", null, t[2])); tiles.append(d); });
@@ -245,7 +256,7 @@
   var FILTERS = [["all", "Tous"], ["late", "En difficulté"], ["ahead", "En avance"], ["idle", "Pas venus"], ["allo", "Apprennent le français"]];
   function keep(r, f) { return f === "all" || (f === "late" && r.color === "red") || (f === "ahead" && r.ahead && !r.inactive) || (f === "idle" && r.inactive) || (f === "allo" && r.allo); }
   function matrix(rows) {
-    var sec = section("🧒 Mes élèves", null);
+    var sec = compactDetails("🧒 Les élèves · " + rows.length, "pb-sec pb-students", state.classId + ":students", state.folded);
     var bar = mk("div", "pb-filters"); bar.setAttribute("role", "group"); bar.setAttribute("aria-label", "Filtrer les élèves");
     var list = mk("div", "pb-list");
     function paint() {
@@ -356,6 +367,13 @@
       m.textContent = text; m.classList.toggle("err", !!err);
     }));
     return w;
+  }
+  function compactDetails(title, cls, key, saved) {
+    var details = mk("details", "pb-fold " + cls);
+    details.append(mk("summary", null, title));
+    details.open = !!saved[key];
+    details.addEventListener("toggle", function () { saved[key] = details.open; });
+    return details;
   }
   function section(title, sub) {
     var s = mk("section", "pb-sec");
@@ -688,5 +706,5 @@
 
   /* « Mes classes » › « Voir mes élèves » : ouvrir Ma classe sur cette classe */
   function pick(id) { if (id && id !== state.classId) { state.classId = id; state.open = {}; state.filter = "all"; } }
-  window.ZooPeda = { pick: pick, asgLabel: asgLabel, asgState: asgState, asgStatusText: asgStatusText, render: render, openDetail: openDetail, analyse: analyse, classify: classify, axes: axes, drawFiche: drawFiche, drawWeb: drawWeb, refOf: refOf, schoolWeeks: schoolWeeks, YEAR_WEEKS: YEAR_WEEKS, state: state };
+  window.ZooPeda = { compactDetails: compactDetails, pick: pick, asgLabel: asgLabel, asgState: asgState, asgStatusText: asgStatusText, render: render, openDetail: openDetail, analyse: analyse, classify: classify, axes: axes, drawFiche: drawFiche, drawWeb: drawWeb, refOf: refOf, schoolWeeks: schoolWeeks, YEAR_WEEKS: YEAR_WEEKS, state: state };
 })();
