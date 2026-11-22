@@ -1,29 +1,9 @@
-/* Corpus illustrés. Les intitulés servent à la voix et à l’apprentissage, jamais aux réponses visibles du test. */
+/* Le catalogue est alimenté exclusivement par les imagiers importés. */
 (function (root) {
   "use strict";
-  var school = [
-    [
-      ["une trousse", "✏️👝"], ["un tableau", "🟩🖍️"], ["un stylo", "🖊️"], ["une gomme", "▰", "eraser"], ["un carnet", "📒"], ["un cahier", "📓"],
-      ["un taille-crayon", "✏️🔧"], ["une règle", "📏"], ["un feutre", "🖍️"], ["un crayon à papier", "✏️"], ["une craie", "▱", "chalk"], ["un dictionnaire", "📘🔤"],
-      ["une ardoise", "▣", "slate"], ["un bureau", "🗄️🪑"], ["un livre", "📕"], ["un album", "📖🖼️"], ["une chaise", "🪑"], ["un journal", "📰"]
-    ],
-    [
-      ["un pinceau", "🖌️"], ["une bibliothèque", "📚"], ["un crayon de couleur", "✏️", "color-pencil"], ["une paire de ciseaux", "✂️"], ["une élève", "👧📓"], ["une maîtresse", "👩‍🏫"],
-      ["point", "●", "punctuation"], ["texte", "▤", "paper"], ["exemple", "💡📝"], ["phrase", "▔▔▔ ●", "paper"], ["nom et prénom", "👤✍️"], ["virgule", ",", "punctuation"],
-      ["taillé", "✏️✨"], ["sablier", "⌛"], ["lecture", "🧒📖"], ["chorale", "👧🎶👦"], ["case", "▦", "paper"], ["brouillon", "📝〰"]
-    ],
-    [
-      ["interrogation", "?", "punctuation"], ["exclamation", "!", "punctuation"], ["correction", "📋✅"], ["dictée", "🗣️✍️"], ["exercice", "📝"], ["chuchoter", "🤫👂"],
-      ["souligner", "▁", "paper"], ["signer", "📄✍️"], ["gommer", "▰💨", "eraser"], ["relier", "●╱●", "paper"], ["entourer", "◉", "paper"], ["copier", "📄➜📄"],
-      ["barrer", "╳", "paper"], ["corriger", "✎✓", "paper"], ["cocher", "☑", "paper"], ["mémoriser", "🧠💭"]
-    ]
-  ];
-  var catalog = school.map(function (words, i) {
-    return { id: "ecole" + (i + 1), title: "École " + (i + 1), words: words };
-  });
-  function get(id) {
-    return catalog.filter(function (book) { return book.id === id; })[0] || null;
-  }
+  var catalog = [];
+  var api = { catalog: catalog, get: get, blocks: blocks, load: load };
+  function get(id) { return catalog.filter(function (book) { return book.id === id; })[0] || null; }
   function blocks(book) {
     var result = [];
     for (var i = 0; i < book.words.length; i += 6) {
@@ -33,5 +13,15 @@
     }
     return result;
   }
-  root.ZooVocabulary = { catalog: catalog, get: get, blocks: blocks };
+  function load(rows, base) {
+    catalog.length = 0;
+    (Array.isArray(rows) ? rows : []).forEach(function (row) {
+      if (!row || !/^[0-9a-f-]{36}$/.test(row.id) || typeof row.title !== "string"
+          || !Array.isArray(row.words) || row.words.length < 6 || !row.words.every(function (word) { return typeof word === "string"; })) return;
+      catalog.push({ id: row.id, title: row.title, words: row.words.map(function (word, i) {
+        return [word, base + "/storage/v1/object/public/vocabulaire-zoo/" + row.id + "/" + ("00" + (i + 1)).slice(-3) + ".jpg"];
+      }) });
+    });
+  }
+  root.ZooVocabulary = api;
 })(typeof window === "undefined" ? module.exports : window);

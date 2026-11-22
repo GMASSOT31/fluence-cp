@@ -1320,7 +1320,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
 .vocab-screen button{margin:5px}
 .vocab-picture{display:flex;align-items:center;justify-content:center;min-height:78px;font-size:3rem;line-height:1.1;color:#172447;background:#fff6de;border-radius:12px;padding:6px}
 .vocab-screen>.vocab-picture{max-width:240px;min-height:120px;margin:12px auto;font-size:4.2rem}
-.vocab-picture.paper{background:#e4f2ff}.vocab-picture.eraser{color:#c83378}.vocab-picture.chalk{background:#315948;color:white}.vocab-picture.slate{background:#405078;color:white}.vocab-picture.color-pencil{background:#ffd1df}
+.vocab-picture img{display:block;width:100%;max-width:220px;height:95px;object-fit:contain;background:white}.vocab-screen>.vocab-picture img{height:145px}
 .vocab-word{display:block;font-size:1.6rem;margin:12px}
 .vocab-answers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:10px auto}
 .vocab-answers .vocab-answer{min-width:0;margin:0;padding:4px;background:#f4edff}
@@ -1837,7 +1837,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
 })();
 </script>
 <script src="exo-data.js?v=6"></script>
-<script src="vocabulaire.js?v=1"></script>
+<script src="vocabulaire.js?v=2"></script>
 <script src="vendor/howler.core.min.js?v=2.2.4"></script>
 <script src="audio-lecture.js?v=3"></script>
 <script>/* Anciens iPad (iOS 12 et avant) : le navigateur ne connaît pas les événements « pointer » → les jeux au doigt (Serpent, Oiseau, Tuiles, Tour, Safari) ne réagissaient pas. On les traduit en événements tactiles (ou souris sur un vieil ordinateur). Rien ne change sur les appareils récents. */
@@ -5180,7 +5180,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   function remedStr(x) { return typeof x === "string" && x.length > 0 && x.length <= 12; }
   function assignClean(a) {
     if (!a || typeof a !== "object" || !REMED_NAMES[a.type] || !(Number(a.ts) > 0)) return null;
-    if (a.type === "vocabulaire") return ZooVocabulary.get(a.corpus) ? { type: a.type, corpus: a.corpus, ts: Number(a.ts) } : null;
+    if (a.type === "vocabulaire") return ZooVocabulary.get(a.corpus) ? { type: a.type, corpus: a.corpus, ts: Number(a.ts), collective: a.collective === true } : null;
     if (a.type === "tiles") {
       var p = Array.isArray(a.pair) ? a.pair.filter(remedStr).slice(0, 2) : [];
       return p.length === 2 && p[0] !== p[1] ? { type: "tiles", sons: [], pair: p, ts: Number(a.ts) } : null;
@@ -5189,10 +5189,13 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     return sons.length ? { type: a.type, sons: sons, pair: null, ts: Number(a.ts) } : null;
   }
   function remedClean(o) {
-    var r = { ts: 0, done: {}, ok: 0, tries: 0, hist: [] };
+    var r = { ts: 0, done: {}, ok: 0, tries: 0, hist: [], vocabCompleted: {}, individualDone: 0 };
     if (!o || typeof o !== "object") return r;
-    r.ts = Number(o.ts) || 0; r.ok = Number(o.ok) || 0; r.tries = listenInt(o.tries, 0, 99999, 0);
+    r.ts = Number(o.ts) || 0; r.ok = Number(o.ok) || 0; r.individualDone = Number(o.individualDone) || 0; r.tries = listenInt(o.tries, 0, 99999, 0);
     if (o.done && typeof o.done === "object") Object.keys(o.done).slice(0, 10).forEach(function (k) { if (o.done[k]) r.done[k] = 1; });
+    if (o.vocabCompleted && typeof o.vocabCompleted === "object") Object.keys(o.vocabCompleted).forEach(function (id) {
+      if (/^[0-9a-f-]{36}$/.test(id) && o.vocabCompleted[id]) r.vocabCompleted[id] = 1;
+    });
     if (Array.isArray(o.hist)) r.hist = o.hist.filter(function (h) { return h && typeof h === "object" && REMED_NAMES[h.type]; }).slice(0, 10);
     return r;
   }
@@ -5212,9 +5215,16 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   }
   /* L’exercice à faire maintenant, ou null : { a, R, steps (une étape par son, ou une seule pour les tuiles), next } */
   function remedNow(sid) {
-    var a = data.assign && data.assign[sid];
+    var R = remedMine(sid), individual = data.assign && data.assign[sid];
+    var queue = data.vocabQueue || [];
+    function pending(a) {
+      return a && !(!a.collective && R.individualDone === a.ts) && !(R.ts === a.ts && R.ok) && !R.hist.some(function (h) { return h.ts === a.ts && h.ok; });
+    }
+    if (individual && R.ts === individual.ts && R.ok) R.individualDone = individual.ts;
+    var collective = queue.filter(function (item) { return !R.vocabCompleted[item.corpus] && pending(item); });
+    var a = collective.filter(function (item) { return item.ts === R.ts && Object.keys(R.done).length > 0; })[0]
+      || (pending(individual) ? individual : null) || collective[0];
     if (!a) return null;
-    var R = remedMine(sid);
     if (R.ts !== a.ts) { R.ts = a.ts; R.done = {}; R.ok = 0; R.tries = 0; }   /* nouvel exercice donné */
     if (R.ok) return null;
     var keys = a.type === "tiles" ? ["tiles"] : a.type === "vocabulaire"
@@ -5242,6 +5252,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     }
     if (all) {
       cur.R.ok = Date.now();
+      if (!cur.a.collective) cur.R.individualDone = cur.a.ts;
+      if (type === "vocabulaire") cur.R.vocabCompleted[cur.a.corpus] = 1;
       cur.R.hist.unshift({ type: cur.a.type, sons: cur.a.sons, pair: cur.a.pair, corpus: cur.a.corpus, ts: cur.a.ts, ok: cur.R.ok, tries: cur.R.tries });
       cur.R.hist = cur.R.hist.slice(0, 10);
       if (data.reward && type !== "vocabulaire") { data.coins[sid] = coins(sid) + REMED_COINS; gained = REMED_COINS; }
@@ -5283,8 +5295,9 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     vocabRun = null;
   }
   function vocabPicture(word) {
-    var pict = el("span", "vocab-picture " + (word[2] || ""), word[1]);
-    pict.setAttribute("aria-hidden", "true");
+    var pict = el("span", "vocab-picture"), img = document.createElement("img");
+    img.src = word[1]; img.alt = ""; img.draggable = false;
+    pict.setAttribute("aria-hidden", "true"); pict.appendChild(img);
     return pict;
   }
   function vocabStart() {
@@ -8613,8 +8626,12 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
           Promise.race([
             Promise.resolve(cloudClient.rpc("get_comprehension_exercises")).catch(function () { return null; }),
             new Promise(function (resolve) { setTimeout(resolve, 2000); })
-          ])
+          ]),
+        Promise.resolve(cloudClient.rpc("get_vocabulary_corpora")).catch(function () { return {}; }),
+        Promise.resolve(cloudClient.rpc("student_vocabulary_queue",{p_token:cloudToken})).catch(function () { return {}; })
       ]);
+      ZooVocabulary.load(requests[2].data, "https://pcxpazpflnlwmhyuozdx.supabase.co");
+      data.vocabQueue = (Array.isArray(requests[3].data) ? requests[3].data : []).map(assignClean).filter(Boolean);
       var settingsResponse=requests[0], extra=requests[1];
       if(extra&&!extra.error&&extra.data&&typeof extra.data==="object")comprCustom=extra.data;
       var teacherSettings=!settingsResponse.error&&settingsResponse.data||{};

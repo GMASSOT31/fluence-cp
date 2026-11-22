@@ -109,6 +109,20 @@
       getPublicUrl: function (path) { var b = st.voiceFiles && st.voiceFiles[path]; return { data: { publicUrl: b ? URL.createObjectURL(b) : "https://example.invalid/storage/v1/object/public/" + bucket + "/" + path } }; }
     }; } },
     rpc: function (name, a) {
+      if (name === "get_vocabulary_corpora") return Promise.resolve({ data: st.corpora || [], error: null });
+      if (name === "admin_create_vocabulary_corpus") {
+        if (st.teachers[0].role !== "admin") return Promise.resolve({ data: null, error: { message: "Accès refusé" } });
+        st.corpora = (st.corpora || []).concat([{ id: a.p_id, title: a.p_title, words: a.p_words.map(function (card) { return card.label; }) }]);
+        return Promise.resolve({ data: a.p_id, error: null });
+      }
+      if (name === "teacher_queue_vocabulary") {
+        var c = st.classes.find(function (item) { return item.id === a.p_class; });
+        if (!c || (c.teacher_id !== st.user.id && st.teachers[0].role !== "admin")) return Promise.resolve({ data: null, error: { message: "Accès refusé" } });
+        st.vocabQueue = st.vocabQueue || new Set();
+        var key = a.p_class + ":" + a.p_corpus, added = !st.vocabQueue.has(key);
+        st.vocabQueue.add(key);
+        return Promise.resolve({ data: added, error: null });
+      }
       if (name === "get_comprehension_exercises") return Promise.resolve({ data: JSON.parse(JSON.stringify(st.comprehension || {})), error: null });
       if (name === "admin_save_comprehension_exercise") {
         if (st.teachers[0].role !== "admin") return Promise.resolve({ error: { message: "Réservé à l’administrateur" } });

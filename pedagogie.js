@@ -62,7 +62,7 @@
       .sort(function (a, b) { return (Number(b.ts) || 0) - (Number(a.ts) || 0); })[0] || null;
     return { s: s, row: row || null, canRec: canRec, p: p, nValid: nValid, total: order.length, cur: cur, err: err, answers: answers, readTries: readTries, blocked: blocked,
       recs: recs.length, recTabs: recs.map(function (x) { return Number(x.tab) || 0; }).filter(function (n, i, a) { return n && a.indexOf(n) === i; }).sort(function (a, b) { return a - b; }), curSent: curSent, secs: secs, series: series, idle: idle, flu: flu, conf: st.conf && typeof st.conf === "object" ? st.conf : {}, measured: Object.keys(days).length > 0,
-      allo: window.pedaAllo.indexOf(s.id) >= 0, asg: (window.pedaAssign || {})[s.id] || null, remed: p.remed && typeof p.remed === "object" ? p.remed : null };
+      allo: window.pedaAllo.indexOf(s.id) >= 0, asg: currentAssignment(s.id), remed: p.remed && typeof p.remed === "object" ? p.remed : null };
   }
   function classify(rows) {
     var med = median(rows.map(function (r) { return r.nValid; }));
@@ -542,6 +542,10 @@
      Réglage enseignant settings.assign[élève] = { type, sons, pair, ts } (enregistré avec les autres réglages, aucune migration).
      Le Zoo de l’élève le met en tête de sa mission jusqu’à réussite et note le résultat dans progress.remed = { ts, done, ok, tries, hist }. */
   window.pedaAssign = window.pedaAssign || {};
+  function currentAssignment(id) {
+    var a = (window.pedaAssign || {})[id];
+    return a && (a.type !== "vocabulaire" || ZooVocabulary.get(a.corpus)) ? a : null;
+  }
   var RT = { phono: "🖼️ J’entends", listen: "👂 J’écoute", write: "✏️ J’écris", compr: "🧩 Je comprends", tiles: "🎹 Tuiles des sons", vocabulaire: "🖼️ Corpus de vocabulaire" };
   var RT_HELP = { phono: "trouver les images où l’on entend le son", listen: "reconnaître le son entendu parmi des écritures", write: "écrire ce que dit la voix", compr: "lire des mots et trouver leur image", tiles: "toucher une écriture et éviter celle qu’il confond (20 bonnes tuiles)", vocabulaire: "écouter et répéter les mots, puis reconnaître les images par blocs de six" };
   var TILE_PAIRS = [["b", "d"], ["p", "q"], ["m", "n"], ["f", "v"], ["t", "d"], ["ou", "on"], ["on", "an"], ["an", "in"], ["ch", "j"], ["é", "è"]];
@@ -596,6 +600,7 @@
   }
   function assignEditor(r, repaint) {
     var box = mk("div", "pb-assign"), cur = window.pedaAssign[r.s.id], prop = propose(r);
+    if (cur && cur.type === "vocabulaire" && !ZooVocabulary.get(cur.corpus)) cur = null;
     var pick = cur ? JSON.parse(JSON.stringify(cur)) : (prop ? JSON.parse(JSON.stringify(prop.a)) : { type: "listen", sons: [] });
     box.append(mk("h4", null, "🎯 Exercice pour " + r.s.nickname));
     if (prop) {
@@ -604,7 +609,7 @@
     }
     var types = mk("div", "pb-chips"), what = mk("div", "pb-as-what"), help = mk("p", "muted pb-as-help");
     box.append(mk("p", "pb-as-lbl", "1. L’exercice"), types, help, what);
-    Object.keys(RT).forEach(function (t) {
+    Object.keys(RT).filter(function (t) { return t !== "vocabulaire" || ZooVocabulary.catalog.length; }).forEach(function (t) {
       var b = mk("button", "pb-chip", RT[t]); b.type = "button"; b.dataset.t = t;
       b.onclick = function () { if (pick.type === t) return; pick = t === "vocabulaire" ? { type: t, corpus: ZooVocabulary.catalog[0].id } : t === "tiles" ? { type: t, pair: prop && prop.a.type === "tiles" ? prop.a.pair.slice() : ["b", "d"] } : { type: t, sons: (pick.sons || []).filter(function (id) { return remedCan(t, id); }) }; paint(); };
       types.append(b);
