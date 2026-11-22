@@ -135,7 +135,11 @@
     if (!studs.length) { box.append(mk("p", "muted", "Aucun élève dans cette classe.")); return; }
     var wait = mk("p", "muted", "Chargement…"); box.append(wait);
     var seq = ++state.seq;
-    var q = await C.client.from("student_progress").select("student_id,progress,updated_at,pending_coins").in("student_id", studs.map(function (s) { return s.id; }));
+    var reads = await Promise.all([
+      C.client.from("student_progress").select("student_id,progress,updated_at,pending_coins").in("student_id", studs.map(function (s) { return s.id; })),
+      Promise.resolve(C.client.rpc("teacher_class_vocabulary", { p_class: cls.id })).catch(function () { return {}; })
+    ]);
+    var q = reads[0];
     if (seq !== state.seq) return;   /* un chargement plus récent a pris la main */
     wait.remove();
     if (q.error) { box.append(mk("p", "msg err", "Impossible de charger les résultats : " + (q.error.message || ""))); return; }
@@ -144,6 +148,7 @@
     var rows = studs.map(function (s) { return analyse(s, map[s.id]); });
     classify(rows);
     state.rows = rows; state.cls = cls;
+    state.classVocab = Array.isArray(reads[1].data) ? reads[1].data : [];
     if (C.pdfMake) {
       var fa = mk("button", "secondary"); fa.append(mk("span", "pb-pdf-icon", "PDF"), document.createTextNode(" Araignées de suivi")); fa.type = "button"; fa.title = "Une fiche par élève, avec sa toile des 7 compétences";
       fa.onclick = function () { makeFiches(rows.slice().sort(function (a, b) { return String(a.s.nickname).localeCompare(b.s.nickname); }), cls, fa, "fiches-suivi-" + (C.pdfSlug(cls.name) || "classe")); };
@@ -581,6 +586,26 @@
      Réglage enseignant settings.assign[élève] = { type, sons, pair, ts } (enregistré avec les autres réglages, aucune migration).
      Le Zoo de l’élève le met en tête de sa mission jusqu’à réussite et note le résultat dans progress.remed = { ts, done, ok, tries, hist }. */
   window.pedaAssign = window.pedaAssign || {};
+  window.pedaVocabGiven = window.pedaVocabGiven || {};
+  function rememberVocabulary(sid, assignment) {
+    if (!assignment || assignment.type !== "vocabulaire" || !ZooVocabulary.get(assignment.corpus)) return;
+    var before = window.pedaVocabGiven[sid];
+    var given = Array.isArray(before) ? before : [];
+    if (given.indexOf(assignment.corpus) < 0) window.pedaVocabGiven[sid] = given.concat(assignment.corpus);
+  }
+  function setAssignment(sid, assignment) {
+    rememberVocabulary(sid, window.pedaAssign[sid]);
+    rememberVocabulary(sid, assignment);
+    if (assignment) window.pedaAssign[sid] = assignment; else delete window.pedaAssign[sid];
+  }
+  function vocabularyStatus(r, book) {
+    var p = r.remed || {}, current = currentAssignment(r.s.id), given = window.pedaVocabGiven[r.s.id];
+    if ((p.vocabCompleted && p.vocabCompleted[book.id]) || ZooVocabulary.reviewHistory(p)[book.id]) return "✓ Réussi";
+    if ((current && current.type === "vocabulaire" && current.corpus === book.id)
+        || (Array.isArray(given) && given.indexOf(book.id) >= 0)
+        || (state.classVocab || []).indexOf(book.id) >= 0) return "↻ Déjà attribué";
+    return "＋ Nouveau";
+  }
   function vocabularyReminders(rows) {
     var now = Date.now(), found = [];
     rows.forEach(function (r) {
@@ -606,7 +631,7 @@
       var current = currentAssignment(r.s.id);
       if (current && !asgState(current, r.remed).ok) return;
       assign.disabled = true;
-      window.pedaAssign[r.s.id] = { type: "vocabulaire", corpus: book.id, ts: Date.now() };
+      setAssignment(r.s.id, { type: "vocabulaire", corpus: book.id, ts: Date.now() });
       if (C.queueSave) C.queueSave("pedaSave");
       state.notice = "🎯 Révision « " + book.title + " » donnée à " + r.s.nickname + ".";
       render();
@@ -685,7 +710,7 @@
     box.append(mk("p", "pb-as-lbl", "1. L’exercice"), types, help, what);
     Object.keys(RT).filter(function (t) { return t !== "vocabulaire" || ZooVocabulary.catalog.length; }).forEach(function (t) {
       var b = mk("button", "pb-chip", RT[t]); b.type = "button"; b.dataset.t = t;
-      b.onclick = function () { if (pick.type === t) return; pick = t === "vocabulaire" ? { type: t, corpus: ZooVocabulary.catalog[0].id } : t === "tiles" ? { type: t, pair: prop && prop.a.type === "tiles" ? prop.a.pair.slice() : ["b", "d"] } : { type: t, sons: (pick.sons || []).filter(function (id) { return remedCan(t, id); }) }; paint(); };
+      b.onclick = function () { if (pick.type === t) return; pick = t === "vocabulaire" ? { type: t, corpus: (ZooVocabulary.catalog.find(function (book) { return vocabularyStatus(r, book) === "＋ Nouveau"; }) || ZooVocabulary.catalog[0]).id } : t === "tiles" ? { type: t, pair: prop && prop.a.type === "tiles" ? prop.a.pair.slice() : ["b", "d"] } : { type: t, sons: (pick.sons || []).filter(function (id) { return remedCan(t, id); }) }; paint(); };
       types.append(b);
     });
     var msg = mk("p", "pb-as-msg"); msg.setAttribute("role", "status");
@@ -696,7 +721,7 @@
       var chips = mk("div", "pb-chips");
       if (pick.type === "vocabulaire") {
         var books = mk("select"); books.setAttribute("aria-label", "Imagier");
-        ZooVocabulary.catalog.forEach(function (book) { var option = mk("option", null, book.title + " · " + book.words.length + " mots"); option.value = book.id; books.append(option); });
+        ZooVocabulary.catalog.forEach(function (book) { var option = mk("option", null, vocabularyStatus(r, book) + " · " + book.title + " (" + book.words.length + " mots)"); option.value = book.id; books.append(option); });
         books.value = pick.corpus; books.onchange = function () { pick.corpus = books.value; };
         what.append(mk("p", "pb-as-lbl", "2. Choisissez l’imagier"), books);
       } else if (pick.type === "tiles") {
@@ -743,7 +768,7 @@
     ok.onclick = function () {
       var a = pick.type === "vocabulaire" ? { type: pick.type, corpus: pick.corpus, ts: Date.now() } : pick.type === "tiles" ? { type: "tiles", pair: pick.pair.slice(0, 2), ts: Date.now() } : { type: pick.type, sons: (pick.sons || []).slice(0, 3), ts: Date.now() };
       if (a.type !== "tiles" && a.type !== "vocabulaire" && !a.sons.length) { msg.textContent = "Choisissez au moins un son."; return; }
-      window.pedaAssign[r.s.id] = a;
+      setAssignment(r.s.id, a);
       if (C.queueSave) C.queueSave("pedaSave");
       r.asg = a; repaint();
       var m = $("pedaMsg"); if (m) m.textContent = "🎯 Exercice donné à " + r.s.nickname + " : " + asgLabel(a) + ". Il apparaîtra en tête de sa mission à sa prochaine connexion.";
@@ -753,7 +778,7 @@
     acts.append(ok, no);
     if (cur) {
       var rm = mk("button", "secondary pb-as-del", "Retirer l’exercice"); rm.type = "button";
-      rm.onclick = function () { delete window.pedaAssign[r.s.id]; if (C.queueSave) C.queueSave("pedaSave"); r.asg = null; repaint(); };
+      rm.onclick = function () { setAssignment(r.s.id, null); if (C.queueSave) C.queueSave("pedaSave"); r.asg = null; repaint(); };
       acts.append(rm);
     }
     box.append(msg, acts);

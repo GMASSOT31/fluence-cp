@@ -115,6 +115,10 @@
         st.corpora = (st.corpora || []).concat([{ id: a.p_id, title: a.p_title, words: a.p_words.map(function (card) { return card.label; }) }]);
         return Promise.resolve({ data: a.p_id, error: null });
       }
+      if (name === "teacher_class_vocabulary") {
+        var prefix = a.p_class + ":";
+        return Promise.resolve({data: Array.from(st.vocabQueue || []).filter(function (key) { return key.indexOf(prefix) === 0; }).map(function (key) { return key.slice(prefix.length); }), error: null});
+      }
       if (name === "teacher_queue_vocabulary") {
         var c = st.classes.find(function (item) { return item.id === a.p_class; });
         if (!c || (c.teacher_id !== st.user.id && st.teachers[0].role !== "admin")) return Promise.resolve({ data: null, error: { message: "Accès refusé" } });
