@@ -5332,7 +5332,24 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       var card = el("div", "card vocab-screen"), answers = el("div", "vocab-answers");
       card.appendChild(el("h2", "", book.title + " · Bloc " + (block + 1) + "/" + groups.length));
       card.appendChild(el("p", "", (learn ? "Écoute et répète" : "Écoute et touche la bonne image") + " · " + (run.index + 1) + "/6"));
-      function speak() { listenSpeak(word[0]); }
+      function speak() {
+        if (run.selected) { listenSpeak(word[0]); return; }
+        var parts = [
+          [learn ? "Répète le mot." : "Quelle image représente le mot", 300],
+          [word[0], 450],
+          [learn ? "Je répète le mot." : "Je répète.", 300],
+          [word[0], 0]
+        ];
+        function sayPart(index) {
+          var part = parts[index], expected = LS_SEQ + 1;
+          listenSpeak(part[0], index === parts.length - 1 ? null : function () {
+            setTimeout(function () {
+              if (vocabRun === run && LS_SEQ === expected) sayPart(index + 1);
+            }, part[1]);
+          });
+        }
+        sayPart(0);
+      }
       card.appendChild(button("🔊 Écouter", "secondary big-btn", speak));
       if (learn) {
         card.appendChild(vocabPicture(word)); card.appendChild(el("strong", "vocab-word", word[0]));
