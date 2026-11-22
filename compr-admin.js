@@ -15,7 +15,7 @@
     node.className = "secondary";
     return node;
   }
-  function jpeg(file) {
+  function jpeg(file, maxBytes) {
     return new Promise(function (resolve, reject) {
       if (!/^image\/(jpeg|png|webp|gif|avif)$/.test(file.type) || file.size > 12000000) {
         reject(new Error("Choisissez une image JPG, PNG, WebP, GIF ou AVIF de 12 Mo maximum."));
@@ -37,7 +37,7 @@
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
           canvas.toBlob(function (blob) {
-            if (blob && blob.size <= 500000) resolve(blob);
+            if (blob && blob.size <= (maxBytes || 500000)) resolve(blob);
             else reject(new Error("Cette image n’a pas pu être convertie."));
           }, "image/jpeg", 0.85);
         } catch (error) { reject(error); }
@@ -302,5 +302,5 @@
     if (state.edits[select.value]) status.textContent = "Brouillon retrouvé. Enregistrez ce son pour envoyer les modifications.";
     paint();
   }
-  window.ZooComprAdmin = { open: open };
+  window.ZooComprAdmin = { open: open, imageToJpeg: jpeg };
 })();
