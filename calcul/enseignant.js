@@ -445,6 +445,18 @@
   function renderSettings() {
     var box = $("#calcSettings"); clear(box);
     box.appendChild(head("🎓", "Pédagogie du calcul", "Ces réglages de Calcul s’appliquent à vos classes qui utilisent vos réglages personnels."));
+    var content = el("section", "panel"), detached = el("button", "secondary", "🎯 Exercices décrochés");
+    content.appendChild(el("h2", "", "Paramétrer le contenu des exercices"));
+    detached.type = "button"; detached.setAttribute("aria-expanded", "false");
+    var detachedList = el("div"); detachedList.hidden = true;
+    detachedList.appendChild(el("p", "muted", "Vous pouvez attribuer une série de reconnaissance des nombres, d’additions ou de soustractions."));
+    var classLink = el("button", "secondary", "Choisir un élève dans Ma classe"); classLink.type = "button";
+    classLink.addEventListener("click", function () { bProg.click(); });
+    detachedList.appendChild(classLink);
+    detached.addEventListener("click", function () {
+      detachedList.hidden = !detachedList.hidden; detached.setAttribute("aria-expanded", String(!detachedList.hidden));
+    });
+    content.appendChild(detached); content.appendChild(detachedList); box.appendChild(content);
     var st = el("span", "save-state", ""); st.id = "calcSave"; st.setAttribute("role", "status"); box.appendChild(st);
     var f = el("div", "calc-fields"); box.appendChild(f);
     rpc("lab_teacher_settings_get").then(function (s) {

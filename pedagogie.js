@@ -542,8 +542,8 @@
      Réglage enseignant settings.assign[élève] = { type, sons, pair, ts } (enregistré avec les autres réglages, aucune migration).
      Le Zoo de l’élève le met en tête de sa mission jusqu’à réussite et note le résultat dans progress.remed = { ts, done, ok, tries, hist }. */
   window.pedaAssign = window.pedaAssign || {};
-  var RT = { phono: "🖼️ J’entends", listen: "👂 J’écoute", write: "✏️ J’écris", compr: "🧩 Je comprends", tiles: "🎹 Tuiles des sons" };
-  var RT_HELP = { phono: "trouver les images où l’on entend le son", listen: "reconnaître le son entendu parmi des écritures", write: "écrire ce que dit la voix", compr: "lire des mots et trouver leur image", tiles: "toucher une écriture et éviter celle qu’il confond (20 bonnes tuiles)" };
+  var RT = { phono: "🖼️ J’entends", listen: "👂 J’écoute", write: "✏️ J’écris", compr: "🧩 Je comprends", tiles: "🎹 Tuiles des sons", vocabulaire: "🖼️ Corpus de vocabulaire" };
+  var RT_HELP = { phono: "trouver les images où l’on entend le son", listen: "reconnaître le son entendu parmi des écritures", write: "écrire ce que dit la voix", compr: "lire des mots et trouver leur image", tiles: "toucher une écriture et éviter celle qu’il confond (20 bonnes tuiles)", vocabulaire: "écouter et répéter les mots, puis reconnaître les images par blocs de six" };
   var TILE_PAIRS = [["b", "d"], ["p", "q"], ["m", "n"], ["f", "v"], ["t", "d"], ["ou", "on"], ["on", "an"], ["an", "in"], ["ch", "j"], ["é", "è"]];
   function exo() { return window.ZooExo || {}; }
   function remedCan(type, id) {
@@ -556,6 +556,7 @@
   function q2(t) { return "« " + t + " »"; }
   function asgLabel(a) {
     if (!a) return "";
+    if (a.type === "vocabulaire") { var book = ZooVocabulary.get(a.corpus); return RT.vocabulaire + (book ? " · " + book.title : ""); }
     if (a.type === "tiles") return RT.tiles + " " + q2(a.pair[0]) + " et " + q2(a.pair[1]);
     return RT[a.type] + " · " + (a.sons || []).map(function (id) { return q2(soundName(id)); }).join(", ");
   }
@@ -563,7 +564,8 @@
   function asgState(a, rm) {
     rm = rm && typeof rm === "object" ? rm : {};
     var same = a && Number(rm.ts) === Number(a.ts), done = same && rm.done && typeof rm.done === "object" ? Object.keys(rm.done).length : 0;
-    return { ok: same && Number(rm.ok) > 0 ? Number(rm.ok) : 0, done: done, total: a ? (a.type === "tiles" ? 1 : (a.sons || []).length) : 0, tries: same ? Number(rm.tries) || 0 : 0 };
+    var book = a && a.type === "vocabulaire" && ZooVocabulary.get(a.corpus);
+    return { ok: same && Number(rm.ok) > 0 ? Number(rm.ok) : 0, done: done, total: book ? ZooVocabulary.blocks(book).length : a ? (a.type === "tiles" ? 1 : (a.sons || []).length) : 0, tries: same ? Number(rm.tries) || 0 : 0 };
   }
   function shortDate(ts) { var d = new Date(ts); return ("0" + d.getDate()).slice(-2) + "/" + ("0" + (d.getMonth() + 1)).slice(-2); }
   function asgStatusText(a, rm) {
@@ -604,7 +606,7 @@
     box.append(mk("p", "pb-as-lbl", "1. L’exercice"), types, help, what);
     Object.keys(RT).forEach(function (t) {
       var b = mk("button", "pb-chip", RT[t]); b.type = "button"; b.dataset.t = t;
-      b.onclick = function () { if (pick.type === t) return; pick = t === "tiles" ? { type: t, pair: prop && prop.a.type === "tiles" ? prop.a.pair.slice() : ["b", "d"] } : { type: t, sons: (pick.sons || []).filter(function (id) { return remedCan(t, id); }) }; paint(); };
+      b.onclick = function () { if (pick.type === t) return; pick = t === "vocabulaire" ? { type: t, corpus: ZooVocabulary.catalog[0].id } : t === "tiles" ? { type: t, pair: prop && prop.a.type === "tiles" ? prop.a.pair.slice() : ["b", "d"] } : { type: t, sons: (pick.sons || []).filter(function (id) { return remedCan(t, id); }) }; paint(); };
       types.append(b);
     });
     var msg = mk("p", "pb-as-msg"); msg.setAttribute("role", "status");
@@ -613,7 +615,12 @@
       help.textContent = "L’élève va " + RT_HELP[pick.type] + ". L’exercice passe en tête de sa mission jusqu’à ce qu’il soit réussi.";
       what.innerHTML = ""; msg.textContent = "";
       var chips = mk("div", "pb-chips");
-      if (pick.type === "tiles") {
+      if (pick.type === "vocabulaire") {
+        var books = mk("select"); books.setAttribute("aria-label", "Imagier");
+        ZooVocabulary.catalog.forEach(function (book) { var option = mk("option", null, book.title + " · " + book.words.length + " mots"); option.value = book.id; books.append(option); });
+        books.value = pick.corpus; books.onchange = function () { pick.corpus = books.value; };
+        what.append(mk("p", "pb-as-lbl", "2. Choisissez l’imagier"), books);
+      } else if (pick.type === "tiles") {
         what.append(mk("p", "pb-as-lbl", "2. Les écritures confondues"));
         var pairs = [];
         Object.keys(r.conf || {}).sort(function (a, b) { return r.conf[b] - r.conf[a]; }).forEach(function (k) { var p = k.split("|"); if (p.length === 2 && p[0] && p[1] && p[0] !== "∅" && p[1] !== "∅" && p[0].length <= 4 && p[1].length <= 4 && p[0] !== p[1]) pairs.push(p); });
@@ -655,8 +662,8 @@
     var acts = mk("div", "pb-as-acts");
     var ok = mk("button", null, cur ? "✅ Remplacer l’exercice" : "✅ Donner l’exercice"); ok.type = "button";
     ok.onclick = function () {
-      var a = pick.type === "tiles" ? { type: "tiles", pair: pick.pair.slice(0, 2), ts: Date.now() } : { type: pick.type, sons: (pick.sons || []).slice(0, 3), ts: Date.now() };
-      if (a.type !== "tiles" && !a.sons.length) { msg.textContent = "Choisissez au moins un son."; return; }
+      var a = pick.type === "vocabulaire" ? { type: pick.type, corpus: pick.corpus, ts: Date.now() } : pick.type === "tiles" ? { type: "tiles", pair: pick.pair.slice(0, 2), ts: Date.now() } : { type: pick.type, sons: (pick.sons || []).slice(0, 3), ts: Date.now() };
+      if (a.type !== "tiles" && a.type !== "vocabulaire" && !a.sons.length) { msg.textContent = "Choisissez au moins un son."; return; }
       window.pedaAssign[r.s.id] = a;
       if (C.queueSave) C.queueSave("pedaSave");
       r.asg = a; repaint();
