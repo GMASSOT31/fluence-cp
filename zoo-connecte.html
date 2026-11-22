@@ -6902,13 +6902,27 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       '<strong>la fus<b>é</b>e</strong><p>L’accent monte comme la fusée ! ↗</p>';
     return figure;
   }
+  function tileSound(graph) {
+    var g = graph.trim().toLowerCase();
+    if (g === "q") return "keu";
+    for (var i = 0; i < LISTEN_ITEMS.length; i++) {
+      if (LISTEN_ITEMS[i][1].split(",").indexOf(g) >= 0) return LISTEN_ITEMS[i][2];
+    }
+    var groups = ZooExo.PHONO_SOUNDS;
+    for (var id in groups) {
+      var item = groups[id].filter(function (v) { return v[2] === g; })[0];
+      if (item) return item[1];
+    }
+    return g;
+  }
   function startTiles(sid, opt, gameId) {
     gameId = gameId || "tiles";
     var rocket = gameId === "tiles_e";
     var area = $("game-area"), target = tilesTarget(opt, rocket), M = "« " + target.model + " »";
     var memoD = target.model === "d" && target.traps.indexOf("b") >= 0;
     var memo = rocket ? tilesRocketMemo : memoD ? tilesDMemo : null;
-    var tileVoices = rocket ? { "é": "et", "è": "est" } : memoD ? { d: "deu", b: "beu" } : {};
+    var tileVoices = Object.create(null);
+    [target.model].concat(target.traps).forEach(function (graph) { tileVoices[graph] = tileSound(graph); });
     var TRAPS = target.traps.map(function (x) { return "« " + x + " »"; }).join(", ").replace(/, ([^,]*)$/, " et $1");
     area.innerHTML = "";
     var W = 360, H = 480, COLS = 3, CW = W / COLS, RH = 100, SP = 150, MISS = H - 30;
