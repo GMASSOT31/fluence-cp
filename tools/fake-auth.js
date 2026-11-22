@@ -115,6 +115,16 @@
         st.corpora = (st.corpora || []).concat([{ id: a.p_id, title: a.p_title, words: a.p_words.map(function (card) { return card.label; }) }]);
         return Promise.resolve({ data: a.p_id, error: null });
       }
+      if (name === "admin_update_vocabulary_corpus") {
+        if (st.teachers[0].role !== "admin") return Promise.resolve({ data: null, error: { message: "Accès refusé" } });
+        var book = (st.corpora || []).find(function (entry) { return entry.id === a.p_id; });
+        if (!book || (book.revision || 0) !== a.p_revision) return Promise.resolve({ data: null, error: { message: "Rechargez la page avant de réessayer." } });
+        book.title = a.p_title;
+        book.words = a.p_words.slice();
+        book.images = Object.assign({}, book.images, a.p_images);
+        book.revision = a.p_revision + 1;
+        return Promise.resolve({ data: book, error: null });
+      }
       if (name === "teacher_queue_vocabulary") {
         var c = st.classes.find(function (item) { return item.id === a.p_class; });
         if (!c || (c.teacher_id !== st.user.id && st.teachers[0].role !== "admin")) return Promise.resolve({ data: null, error: { message: "Accès refusé" } });

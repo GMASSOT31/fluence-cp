@@ -398,6 +398,12 @@ body.teacher-mode .teacher-header .teacher-nav button:is([data-role="admin"],[da
 #vocabImport{margin-top:16px}.vocab-preview-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin:12px 0}
 .vocab-preview-grid label{display:block;background:#fff;border-radius:10px;padding:8px}
 .vocab-preview-grid img{display:block;width:100%;height:115px;object-fit:contain}
+#vocabLibrary{margin:10px 0 16px}
+#vocabLibrary summary{cursor:pointer;padding:8px 0;overflow-wrap:anywhere}
+#vocabLibraryList>details{border-top:1px solid #d9c69d}
+#vocabLibrary fieldset{min-width:0;border:0;padding:0;margin:0 0 10px}
+#vocabLibrary .vocab-preview-grid label{min-width:0}
+#vocabLibrary input[type=file]{max-width:100%;padding:6px}
 
 /* Tableau Ma classe : une ligne de commande, l’heure, puis les deux exports. */
 .pb-scope>.pb-head{display:grid;grid-template-columns:minmax(0,1fr);gap:5px;padding:8px 10px}
@@ -490,6 +496,10 @@ body.teacher-mode .teacher-header .teacher-nav button:is([data-role="admin"],[da
   <div id="vocabAssign"></div>
   <section class="panel" data-admin-surface id="vocabImport" hidden>
     <span class="admin-scope-label">Administration</span>
+    <details id="vocabLibrary">
+      <summary>Modifier les corpus existants</summary>
+      <div id="vocabLibraryList"></div>
+    </details>
     <h3>Importer un imagier depuis un PDF</h3>
     <label for="vocabTitle">Nom de l’imagier</label>
     <input id="vocabTitle" maxlength="80" placeholder="École">
@@ -577,7 +587,7 @@ body.teacher-mode .teacher-header .teacher-nav button:is([data-role="admin"],[da
  <h3 style="margin:22px 0 8px">✉️ Messages du formulaire de contact</h3><p class="muted">Écrits sans compte depuis la page Contact du site. Répondez par e-mail.</p><p class="msg" id="ctMsg" role="status"></p><div id="ctList" class="content-list"></div>
 </section>
 </div>
-</section></main><script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=28"><\/script>':'<script src="vendor/supabase.js?v=2.118.0"><\/script>');})();</script><script src="profils.js?v=1"></script><script src="exo-data.js?v=6"></script><script src="vocabulaire.js?v=3"></script><script src="vocabulaire-import.js?v=3"></script><script src="vendor/qrcode.js?v=1.4.4"></script><script src="pedagogie.js?v=22"></script><script src="mes-sons.js?v=1"></script><script src="compr-admin.js?v=4"></script><script>
+</section></main><script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=28"><\/script>':'<script src="vendor/supabase.js?v=2.118.0"><\/script>');})();</script><script src="profils.js?v=1"></script><script src="exo-data.js?v=6"></script><script src="vocabulaire.js?v=4"></script><script src="vocabulaire-import.js?v=3"></script><script src="vendor/qrcode.js?v=1.4.4"></script><script src="pedagogie.js?v=22"></script><script src="mes-sons.js?v=1"></script><script src="compr-admin.js?v=5"></script><script>
 (function(){
 "use strict";
 /* Retour du lien « Mot de passe oublié » : on lit l’adresse avant que la bibliothèque Supabase ne la nettoie */
@@ -905,6 +915,84 @@ async function refreshVocabularyCatalog(){
  const response=await client.rpc("get_vocabulary_corpora");
  if(response.error)throw response.error;
  ZooVocabulary.load(response.data,vocabBase);
+ renderVocabularyLibrary();
+}
+function renderVocabularyLibrary(){
+ const list=$("vocabLibraryList"), books=ZooVocabulary.catalog;
+ if(currentRole!=="admin"){list.replaceChildren();return;}
+ const existing=new Map(Array.from(list.children,node=>[node.dataset.book,node]));
+ list.replaceChildren(...books.map(book=>existing.get(book.id)||vocabularyEditor(book)));
+ if(!books.length)list.textContent="Aucun corpus à modifier.";
+}
+function vocabularyEditor(book){
+ const make=(tag,text)=>{const node=document.createElement(tag);if(text)node.textContent=text;return node;};
+ const row=make("details"), heading=make("summary",book.title+" · "+book.words.length+" mots");
+ row.dataset.book=book.id;
+ row.append(heading);
+ row.addEventListener("toggle",()=>{
+  if(!row.open||row.children.length>1)return;
+  const form=make("form"), fields=make("fieldset"), title=make("input"), titleLabel=make("label","Nom du corpus");
+  const cards=make("details"), grid=make("div"), status=make("p"), save=make("button","Enregistrer le corpus");
+  title.required=true;title.maxLength=80;title.value=book.title;titleLabel.append(title);
+  grid.className="vocab-preview-grid";status.setAttribute("role","status");
+  const changes=book.words.map(([word,url],i)=>{
+   const cell=make("div"), label=make("label","Mot "+(i+1)), photo=make("label","Remplacer l’image"), name=make("input"), image=make("img"), file=make("input");
+   name.maxLength=80;name.value=word;label.append(name);
+   image.alt=word;image.loading="lazy";image.src=url;
+   file.type="file";file.accept="image/jpeg,image/png,image/webp,image/gif,image/avif";
+   file.setAttribute("aria-label","Remplacer l’image du mot "+(i+1));
+   file.onchange=()=>{
+    if(image.src.startsWith("blob:"))URL.revokeObjectURL(image.src);
+    image.src=file.files[0]?URL.createObjectURL(file.files[0]):book.words[i][1];
+   };
+   photo.append(file);cell.append(label,image,photo);grid.append(cell);
+   return {name,image,file,uploaded:null};
+  });
+  cards.append(make("summary","Mots et images"),grid);
+  fields.append(titleLabel,cards,save);form.append(fields,status);row.append(form);
+  form.onsubmit=async event=>{
+   event.preventDefault();
+   const name=title.value.trim(), words=changes.map(card=>card.name.value.trim());
+   if(!name||words.some(word=>!word)||new Set(words.map(word=>word.toLowerCase())).size!==words.length){
+    cards.open=true;status.textContent="Indiquez un titre et un libellé différent pour chaque carte.";return;
+   }
+   fields.disabled=true;status.textContent="Enregistrement…";
+   try{
+    const images={};
+    for(const [i,card] of changes.entries()){
+     const file=card.file.files[0];if(!file)continue;
+     const key=String(i+1).padStart(3,"0");
+     if(!card.uploaded||card.uploaded.file!==file){
+      const token=Array.from(crypto.getRandomValues(new Uint8Array(16)),b=>b.toString(16).padStart(2,"0")).join("");
+      const blob=await ZooComprAdmin.imageToJpeg(file,300000);
+      const {error}=await client.storage.from("vocabulaire-zoo").upload(book.id+"/"+key+"-"+token+".jpg",blob,{contentType:"image/jpeg"});
+      if(error)throw error;
+      card.uploaded={file,token};
+     }
+     images[key]=card.uploaded.token;
+    }
+    const {data,error}=await client.rpc("admin_update_vocabulary_corpus",{p_id:book.id,p_revision:book.revision,p_title:name,p_words:words,p_images:images});
+    if(error)throw error;
+    const saved=data;
+    heading.textContent=saved.title+" · "+saved.words.length+" mots";
+    book.title=saved.title;book.revision=saved.revision;title.value=saved.title;
+    changes.forEach((card,i)=>{
+     const key=String(i+1).padStart(3,"0"), token=images[key];
+     if(token){
+      if(card.image.src.startsWith("blob:"))URL.revokeObjectURL(card.image.src);
+      book.words[i][1]=vocabBase+"/storage/v1/object/public/vocabulaire-zoo/"+book.id+"/"+key+"-"+token+".jpg";
+     }
+     book.words[i][0]=saved.words[i];card.name.value=saved.words[i];card.image.alt=saved.words[i];
+     card.image.src=book.words[i][1];card.file.value="";card.uploaded=null;
+    });
+    const catalogBook=ZooVocabulary.get(book.id);
+    if(catalogBook&&catalogBook!==book)Object.assign(catalogBook,book);
+    renderVocabularyAssignment();status.textContent="✓ Modifications enregistrées.";
+   }catch(error){status.textContent=error.code==="23505"?"Un autre corpus porte déjà ce nom.":errorText(error);}
+   finally{fields.disabled=false;}
+  };
+ });
+ return row;
 }
 function renderVocabularyAssignment(){
  const host=$("vocabAssign");host.replaceChildren();

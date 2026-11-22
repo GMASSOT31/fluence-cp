@@ -53,8 +53,10 @@
     (Array.isArray(rows) ? rows : []).forEach(function (row) {
       if (!row || !/^[0-9a-f-]{36}$/.test(row.id) || typeof row.title !== "string"
           || !Array.isArray(row.words) || row.words.length < 6 || !row.words.every(function (word) { return typeof word === "string"; })) return;
-      catalog.push({ id: row.id, title: row.title, words: row.words.map(function (word, i) {
-        return [word, base + "/storage/v1/object/public/vocabulaire-zoo/" + row.id + "/" + ("00" + (i + 1)).slice(-3) + ".jpg"];
+      catalog.push({ id: row.id, title: row.title, revision: row.revision || 0, words: row.words.map(function (word, i) {
+        var card = ("00" + (i + 1)).slice(-3), image = row.images && row.images[card];
+        var file = typeof image === "string" && /^[0-9a-f]{32}$/.test(image) ? card + "-" + image : card;
+        return [word, base + "/storage/v1/object/public/vocabulaire-zoo/" + row.id + "/" + file + ".jpg"];
       }) });
     });
   }
