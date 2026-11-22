@@ -8492,6 +8492,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       var settingsResponse=requests[0], extra=requests[1];
       if(extra&&!extra.error&&extra.data&&typeof extra.data==="object")comprCustom=extra.data;
       var teacherSettings=!settingsResponse.error&&settingsResponse.data||{};
+      if(teacherSettings.comprehension&&typeof teacherSettings.comprehension==="object")comprCustom=teacherSettings.comprehension;
       if(teacherSettings.thr&&typeof teacherSettings.thr==="object")["s","m","t"].forEach(function(k){var n=Number(teacherSettings.thr[k]);if(n>=1&&n<=300)data.thr[k]=n;});
       if(typeof teacherSettings.lock==="boolean")data.lock=teacherSettings.lock;
       if(typeof teacherSettings.reward==="boolean")data.reward=teacherSettings.reward;
