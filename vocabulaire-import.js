@@ -4,11 +4,12 @@
   var loader;
   var pdfRoot = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
   var prompt = [
-    "À partir des planches d’imagier jointes, produis un fichier PDF par corpus. Utilise uniquement les illustrations fournies : découpe-les depuis les planches. N’invente, ne redessine, ne remplace et ne retouche aucune illustration.",
-    "Crée une page A4 portrait par illustration (210 × 297 mm), sans couverture. Garde l’ordre indiqué. Fond blanc, sans titre, bordure ni numéro.",
+    "À partir des planches d’imagier jointes, produis un fichier PDF distinct par corpus de 6 à 18 mots. Ne dépasse jamais 18 mots dans un PDF. Si l’imagier contient plus de 18 mots, répartis-les en plusieurs corpus en gardant l’ordre des planches et équilibre les derniers groupes pour qu’ils aient au moins 6 mots. Utilise uniquement les illustrations fournies : découpe-les depuis les planches. N’invente, ne redessine, ne remplace et ne retouche aucune illustration.",
+    "Crée une page A4 portrait par illustration (210 × 297 mm), sans couverture. Garde l’ordre indiqué. Fond blanc, sans bordure ni numéro.",
+    "Sur la première page uniquement, entre 2 % et 8 % de la hauteur depuis le haut, écris en texte sélectionnable : « CORPUS : NOM | MOTS : N ». Remplace NOM par le titre du corpus et N par le nombre exact de cartes dans ce PDF, de 6 à 18.",
     "Place uniquement l’illustration, sans son libellé d’origine, au centre du rectangle compris entre 10 % et 90 % de la largeur, et entre 10 % et 72 % de la hauteur depuis le haut. Respecte ses proportions.",
-    "Sous le cadre, entre 80 % et 91 % de la hauteur depuis le haut, écris une seule fois son nom fidèle à la planche, en texte PDF sélectionnable sur une ligne. Garde les accents et les articles. Aucun autre texte dans la page. Si un nom ou une image est illisible, signale-le avant de produire le PDF.",
-    "Ne livre le PDF qu’après avoir vérifié qu’il contient une illustration d’origine par page et qu’aucun nom ne manque."
+    "Sous le cadre, entre 80 % et 91 % de la hauteur depuis le haut, écris une seule fois son nom fidèle à la planche, en texte PDF sélectionnable sur une ligne. Garde les accents et les articles. Aucun autre texte dans la page en dehors de l’en-tête demandé sur la première page. Si un nom ou une image est illisible, signale-le avant de produire le PDF.",
+    "Vérifie que le nombre indiqué dans l’en-tête est égal au nombre de pages et qu’il ne dépasse pas 18. Puis livre les PDF séparément."
   ].join("\n\n");
   function library() {
     if (root.pdfjsLib) return Promise.resolve(root.pdfjsLib);
@@ -31,17 +32,30 @@
     var task = pdfjs.getDocument({ data: await file.arrayBuffer(), isEvalSupported: false });
     try {
       var pdf = await task.promise, cards = [];
-      if (pdf.numPages < 6 || pdf.numPages > 60) throw new Error("Le PDF doit contenir de 6 à 60 pages.");
+      if (pdf.numPages < 6 || pdf.numPages > 18) {
+        throw new Error("Le PDF contient " + pdf.numPages + " pages. Un corpus doit contenir de 6 à 18 mots, à raison d’une carte par page.");
+      }
       for (var i = 1; i <= pdf.numPages; i++) {
         var page = await pdf.getPage(i), size = page.getViewport({ scale: 1 });
         if (Math.abs(size.width / size.height - 210 / 297) > 0.012) throw new Error("Page " + i + " : utilisez le format A4 portrait.");
         var viewport = page.getViewport({ scale: 500 / size.width });
         var text = await page.getTextContent();
-        var label = text.items.filter(function (item) {
-          if (!item.str || !item.transform) return false;
-          var y = size.convertToViewportPoint(item.transform[4], item.transform[5])[1] / size.height;
-          return y >= 0.78 && y <= 0.93;
-        }).map(function (item) { return item.str; }).join(" ").trim();
+        function textBetween(top, bottom) {
+          return text.items.filter(function (item) {
+            if (!item.str || !item.transform) return false;
+            var y = size.convertToViewportPoint(item.transform[4], item.transform[5])[1] / size.height;
+            return y >= top && y <= bottom;
+          }).map(function (item) { return item.str; }).join(" ").trim();
+        }
+        if (i === 1) {
+          var header = textBetween(0.01, 0.09);
+          var count = /\|\s*MOTS\s*:\s*(\d+)\s*$/i.exec(header);
+          if (/^CORPUS\s*:/i.test(header) && !count) throw new Error("L’en-tête doit se terminer par « | MOTS : N ».");
+          if (count && Number(count[1]) !== pdf.numPages) {
+            throw new Error("L’en-tête annonce " + count[1] + " mots, mais le PDF contient " + pdf.numPages + " pages.");
+          }
+        }
+        var label = textBetween(0.78, 0.93);
         var canvas = document.createElement("canvas");
         canvas.width = Math.ceil(viewport.width); canvas.height = Math.ceil(viewport.height);
         await page.render({ canvasContext: canvas.getContext("2d"), viewport: viewport }).promise;
