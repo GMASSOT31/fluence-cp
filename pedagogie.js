@@ -8,7 +8,7 @@
 (function () {
   "use strict";
   var LATE = 3, AHEAD = 3, INACTIVE_DAYS = 7, DAY = 864e5;
-  var state = { classId: null, filter: "all", rows: [], open: {}, folded: {}, seq: 0, flash: null }, C = {};
+  var state = { classId: null, filter: "all", rows: [], open: {}, folded: {}, seq: 0, flash: null, focus: null, content: null }, C = {};
   function $(id) { return document.getElementById(id); }
   window.pedaAllo = window.pedaAllo || [];   /* élèves allophones (réglage enseignant « allo ») */
 
@@ -154,7 +154,18 @@
       fa.onclick = function () { makeFiches(rows.slice().sort(function (a, b) { return String(a.s.nickname).localeCompare(b.s.nickname); }), cls, fa, "fiches-suivi-" + (C.pdfSlug(cls.name) || "classe")); };
       acts.append(fa);
     }
-    box.append(rhythm(rows), todo(rows), matrix(rows));
+    state.content = mk("div", "pb-content"); box.append(state.content);
+    draw();
+  }
+  /* Contenu sous l'en-tête : la fiche d'un élève (state.focus) ou la vue de la classe (chiffres, à faire, liste des élèves) */
+  function draw() {
+    var c = state.content, rows = state.rows || [];
+    if (!c) return;
+    c.replaceChildren();
+    var r = state.focus && rows.find(function (x) { return x.s.id === state.focus; });
+    if (r) { c.append(studentView(r, rows)); return; }
+    state.focus = null;
+    c.append(rhythm(rows), todo(rows), matrix(rows));
   }
 
   /* Nom d’élève cliquable : ouvre son détail sous sa ligne */
@@ -182,6 +193,10 @@
     });
   }
   function openDetail(id) {
+    state.focus = id; draw();
+    var top = document.getElementById("pedaBoard");
+    if (top) scrollToStudent(top);
+    return;
     state.open[id] = true;
     var r = (state.rows || []).find(function (x) { return x.s.id === id; });
     if (r && !keep(r, state.filter)) state.filter = "all";
@@ -206,10 +221,10 @@
     /* lectures enregistrées à écouter */
     var recs = rows.filter(function (r) { return r.recs > 0; }), nRec = recs.reduce(function (a, r) { return a + r.recs; }, 0);
     if (nRec) {
-      var eb = mk("button", "pb-alert-btn", "🎧 Écouter maintenant"); eb.type = "button";
-      eb.onclick = function () { C.showTab("ecouter"); };
-      var where = recs.map(function (r) { return r.s.nickname + " : " + (r.recTabs.length ? "📱 tablette " + r.recTabs.join(", ") : "tablette sans numéro"); }).join(" · ");
-      card("a-rec", "🎧 " + plur(nRec, "lecture à écouter", "lectures à écouter") + " pour la médaille", recs, where, eb);
+      var byTab = {};
+      recs.forEach(function (r) { (r.recTabs.length ? r.recTabs : [0]).forEach(function (t) { (byTab[t] = byTab[t] || []).push(r.s.nickname); }); });
+      var where = Object.keys(byTab).sort(function (a, b) { return (Number(a) || 99) - (Number(b) || 99); }).map(function (t) { return (Number(t) ? "📱 Tablette " + t : "📱 Sans numéro") + " : " + byTab[t].join(", "); }).join(" · ");
+      card("a-rec", "🎧 " + plur(nRec, "lecture à écouter", "lectures à écouter") + " pour la médaille", recs, where + " — sur la tablette de l’élève : « 🎧 Mon maître(sse) écoute ».");
     }
     /* élèves bloqués, regroupés par son */
     var bySound = {};
@@ -283,14 +298,20 @@
   function matrix(rows) {
     var sec = compactDetails("🧒 Les élèves · " + rows.length, "pb-sec pb-students", state.classId + ":students", state.folded);
     var bar = mk("div", "pb-filters"); bar.setAttribute("role", "group"); bar.setAttribute("aria-label", "Filtrer les élèves");
-    var list = mk("div", "pb-list");
+    var list = mk("div", "pb-kids");
     function paint() {
       list.replaceChildren();
       var shown = rows.filter(function (r) { return keep(r, state.filter); });
       var rank = { red: 0, yellow: 1, green: 2, idle: 3 };
-      shown.sort(function (a, b) { return rank[a.color] - rank[b.color] || a.nValid - b.nValid || String(a.s.nickname).localeCompare(b.s.nickname); });
+      shown.sort(function (a, b) { return String(a.s.nickname).localeCompare(b.s.nickname); });
       if (!shown.length) list.append(mk("p", "muted", "Aucun élève dans ce filtre."));
-      shown.forEach(function (r) { var ln = line(r, paint); list.append(ln); if (state.open[r.s.id]) list.append(detail(r)); });
+      var dots = { red: "🔴", yellow: "🟡", green: "🟢", idle: "⚪" };
+      shown.forEach(function (r) {
+        var b = mk("button", "pb-kid c-" + r.color); b.type = "button"; b.title = "Voir la fiche de " + r.s.nickname;
+        b.append(mk("span", "pb-dot", dots[r.color]), mk("span", "pb-kname", r.s.nickname));
+        b.onclick = function () { openDetail(r.s.id); };
+        list.append(b);
+      });
       Array.prototype.forEach.call(bar.children, function (b) { var on = b.dataset.f === state.filter; b.classList.toggle("active", on); b.setAttribute("aria-pressed", String(on)); });
     }
     state.paint = paint;
@@ -302,10 +323,7 @@
       bar.append(b);
     });
     var legend = mk("p", "muted pb-legend", "🔴 en difficulté (bloqué, ou " + LATE + " sons de retard sur l’élève du milieu de la classe) · 🟡 avance normalement · 🟢 en avance de " + AHEAD + " sons ou plus · ⚪ pas venu depuis " + INACTIVE_DAYS + " jours");
-    if (rows.some(function (r) { return r.s.teacher_id === C.currentUser.id; })) {
-      sec.append(mk("p", "muted", "Pour réviser ou travailler une difficulté, choisissez « Donner un exercice » sur la ligne de l’élève."));
-    }
-    sec.append(bar, legend, list);
+    sec.append(bar, list, legend);
     paint();
     return sec;
   }
@@ -443,6 +461,126 @@
     else det.append(mk("p", "muted", "Aucune série pour l’instant."));
     card.append(det);
     return card;
+  }
+  /* ===== Fiche d'un élève (demandée par Gabriel le 23/11/2026) : tout l'écran pour lui, l'essentiel d'abord, le détail sur demande =====
+     1 en-tête (statut, parcours, dernière venue) · 2 chiffres clés + toile · 3 « Pour lui maintenant » (lectures à écouter par tablette, alertes, exercice donné)
+     · 4 actions regroupées · 5 tous les résultats (cartes de studentDetail, carte GS) repliés. Remplace l'onglet « À écouter ». */
+  var STATUS = { red: ["🔴", "En difficulté"], yellow: ["🟡", "Avance normalement"], green: ["🟢", "En avance"], idle: ["⚪", "Pas venu depuis " + INACTIVE_DAYS + " jours ou plus"] };
+  function pendingRecs(p) {
+    var done = (Array.isArray(p.results) ? p.results : []).filter(function (x) { return x && x.src === "rec"; });
+    return (Array.isArray(p.reviews) ? p.reviews : []).filter(function (v) {
+      return v && v.sound && !done.some(function (x) { return x.reviewId ? x.reviewId === v.id : x.sid === v.sid && x.ts === v.ts && x.sound === v.sound && x.k === v.kind; });
+    }).sort(function (a, b) { return (Number(a.tab) || 99) - (Number(b.tab) || 99) || (a.ts || 0) - (b.ts || 0); });
+  }
+  /* Toile en SVG (même axes que la fiche PDF) : 100 % = attendu à cette date (cercle vert), bord = 150 % */
+  function svgWeb(list) {
+    var NS = "http://www.w3.org/2000/svg", W = 380, cx = 190, cy = 130, R = 82, n = list.length;
+    var svg = document.createElementNS(NS, "svg"); svg.setAttribute("viewBox", "0 0 " + W + " 260"); svg.setAttribute("class", "pb-web"); svg.setAttribute("role", "img");
+    svg.setAttribute("aria-label", list.map(function (a) { return a.name + " : " + (a.v === null ? "pas mesuré" : a.v + " %"); }).join(", "));
+    function el(t, at) { var e = document.createElementNS(NS, t); Object.keys(at).forEach(function (k) { e.setAttribute(k, at[k]); }); svg.appendChild(e); return e; }
+    function pt(i, f) { var ang = -Math.PI / 2 + i * 2 * Math.PI / n; return [cx + Math.cos(ang) * R * f, cy + Math.sin(ang) * R * f]; }
+    function poly(f) { return list.map(function (a, i) { return pt(i, f(a)).join(","); }).join(" "); }
+    [0.5, 1].forEach(function (f) { el("polygon", { points: poly(function () { return f; }), fill: "none", stroke: "#e3e7ef", "stroke-width": 1 }); });
+    list.forEach(function (a, i) { var e = pt(i, 1); el("line", { x1: cx, y1: cy, x2: e[0], y2: e[1], stroke: "#e3e7ef" }); });
+    el("polygon", { points: poly(function () { return 100 / WEB_MAX; }), fill: "none", stroke: "#2e9b6a", "stroke-width": 1.5, "stroke-dasharray": "4 3" });
+    el("polygon", { points: poly(function (a) { return Math.min(WEB_MAX, a.v || 0) / WEB_MAX; }), fill: "rgba(112,70,206,.25)", stroke: "#7046ce", "stroke-width": 2 });
+    list.forEach(function (a, i) {
+      var e = pt(i, 1.2), t = el("text", { x: e[0], y: e[1], "text-anchor": Math.abs(e[0] - cx) < 8 ? "middle" : e[0] < cx ? "end" : "start", "dominant-baseline": "middle", "font-size": 11, fill: a.v === null ? "#9aa3b2" : "#242044" });
+      t.textContent = a.name + (a.v === null ? "" : " " + a.v + " %");
+    });
+    return svg;
+  }
+  function studentView(r, rows) {
+    var w = mk("div", "pb-fiche"), own = C.currentUser && r.s.teacher_id === C.currentUser.id, st = STATUS[r.color] || STATUS.yellow, gs = trackOf(r.s.id) === "gs";
+    function again() { draw(); }
+    /* navigation : retour à la classe, élève précédent / suivant (ordre alphabétique) */
+    var order = rows.slice().sort(function (a, b) { return String(a.s.nickname).localeCompare(b.s.nickname); }), i = order.indexOf(r);
+    var nav = mk("div", "pb-fnav"), back = mk("button", "secondary", "← Toute la classe"); back.type = "button";
+    back.onclick = function () { state.focus = null; draw(); };
+    nav.append(back);
+    var pn = mk("span", "pb-fpn");
+    [[-1, "‹ Précédent"], [1, "Suivant ›"]].forEach(function (d) {
+      var o = order[(i + d[0] + order.length) % order.length], b = mk("button", "secondary", d[1]); b.type = "button"; b.title = o.s.nickname;
+      b.onclick = function () { state.focus = o.s.id; draw(); };
+      if (order.length > 1) pn.append(b);
+    });
+    nav.append(pn); w.append(nav);
+    var m = mk("p", "msg pb-dmsg"); m.setAttribute("role", "status");
+    if (state.flash && state.flash.id === r.s.id) { m.textContent = state.flash.text; m.classList.toggle("err", !!state.flash.err); state.flash = null; }
+    w.append(m);
+    /* 1. en-tête */
+    var head = mk("div", "pb-fhead c-" + r.color);
+    var h = mk("h3", null); h.append(mk("span", "pb-dot", st[0]), document.createTextNode(" " + r.s.nickname));
+    var chips = mk("div", "pb-tags");
+    chips.append(mk("span", "pb-tag", st[1]), mk("span", "pb-tag" + (r.inactive ? " warn" : ""), "🕒 " + whenText(r)), mk("span", "pb-tag", "📖 Parcours " + (gs ? "GS" : "CP")));
+    if (r.allo) chips.append(mk("span", "pb-tag", "🌍 Apprend le français"));
+    head.append(h, chips); w.append(head);
+    /* 2. chiffres clés + toile */
+    var top = mk("div", "pb-ftop"), tiles = mk("div", "pb-tiles pb-ftiles");
+    function tile(ico, val, lab) { var d = mk("div", "pb-tile"); d.append(mk("span", "pb-ico", ico), mk("b", null, val), mk("small", null, lab)); tiles.append(d); }
+    if (gs && window.ZooGSData) {
+      var D = window.ZooGSData, g = (r.p && r.p.gs) || {}, gl = D.steps("cap", D.config(window.pedaGsCfg), r.s.nickname), gst = D.compState(g.lecture && g.lecture.cap), sm = D.summary(gst, gl, (g.series || []).filter(function (x) { return x && x.c === "cap"; }));
+      tile("🔤", sm.done + " / " + sm.total, "Étapes des lettres validées");
+      tile("🎯", sm.current >= 0 ? gl[sm.current].targets.join(" ") : "✓", sm.current >= 0 ? "Lettres en cours" + (gst.aid ? " · aide" : "") : "Toutes les lettres");
+    } else {
+      tile("📖", r.nValid + " / " + r.total, "Sons validés");
+      tile("🔤", r.cur ? "« " + soundName(r.cur.id) + " »" : "🎉", r.cur ? (r.blocked ? "Son en cours · bloqué" : "Son en cours") : "Tous les sons validés");
+    }
+    tile("⚡", r.flu ? Math.round(Number(r.flu.mclm)) + "/min" : "—", r.flu ? (KN[r.flu.k] || "lecture") + " lus par minute" : "Pas encore de lecture validée");
+    tile("⏱️", Math.round((r.secs || 0) / 60) + " min", "Travail sur 7 jours");
+    top.append(tiles);
+    if (!gs) { var web = mk("div", "pb-fweb"); web.append(svgWeb(axes(r, Date.now()).list), mk("small", "muted", "Pointillés verts : attendu à cette date")); top.append(web); }
+    w.append(top);
+    /* 3. pour lui maintenant */
+    var now = section("📌 Pour " + r.s.nickname + " maintenant", null), items = mk("ul", "pb-now");
+    function item(txt, cls) { items.append(mk("li", cls || null, txt)); }
+    var recs = pendingRecs(r.p || {});
+    recs.forEach(function (v) { item("🎧 " + (Number(v.tab) ? "📱 Tablette " + v.tab : "📱 Tablette sans numéro") + " · lecture des " + (KN[v.kind] || "syllabes") + " du son « " + soundName(v.sound) + " »" + (v.ts ? " · " + frDate(v.ts) : "") + " — à écouter sur sa tablette (« 🎧 Mon maître(sse) écoute »)", "pb-now-rec"); });
+    if (!recs.length && r.canRec) item("🎙 Peut enregistrer sa lecture pour la médaille (« 🎙 Je m’enregistre » dans son Zoo).");
+    if (r.blocked && r.cur) item("⚠️ Bloqué sur le son « " + soundName(r.cur.id) + " »" + (r.err !== null && r.answers >= 6 ? " (" + r.err + " % d’erreurs)" : " (" + r.readTries + " lectures sans réussite)") + " : un exercice peut l’aider.", "pb-now-warn");
+    studentConf(r).forEach(function (c) { item("🔀 Confond « " + c[0].replace(" / ", " » et « ") + " » (" + c[1] + " fois)"); });
+    if (r.asg) item("🎯 Exercice donné : " + asgLabel(r.asg) + " · " + asgStatusText(r.asg, r.remed), asgState(r.asg, r.remed).ok ? "pb-now-ok" : null);
+    if (r.inactive) item("💤 Pas venu depuis " + (r.idle === null ? "le début" : r.idle + " jours"), "pb-now-warn");
+    if (!items.children.length) item("✅ Rien de particulier pour le moment.", "pb-now-ok");
+    now.append(items); w.append(now);
+    /* 4. actions */
+    var acts = section("⚡ Actions", null), row = mk("div", "pb-factions");
+    if (own) {
+      var asb = mk("button", "primary", r.asg && !asgState(r.asg, r.remed).ok ? "🎯 Gérer l’exercice" : "🎯 Donner un exercice"); asb.type = "button";
+      var edSlot = mk("div");
+      asb.onclick = function () { if (edSlot.firstChild) { edSlot.replaceChildren(); return; } edSlot.append(assignEditor(r, again)); };
+      row.append(asb);
+    }
+    if (C.pdfMake) { var fi = mk("button", "secondary", "📄 Fiche de suivi (PDF)"); fi.type = "button"; fi.onclick = function () { makeFiches([r], state.cls, fi, "fiche-suivi-" + (C.pdfSlug(r.s.nickname) || "eleve")); }; row.append(fi); }
+    if (own) {
+      var al = mk("button", "secondary", r.allo ? "🌍 Ne plus marquer « apprend le français »" : "🌍 Apprend le français"); al.type = "button";
+      al.onclick = function () { var k = window.pedaAllo.indexOf(r.s.id); if (k >= 0) window.pedaAllo.splice(k, 1); else window.pedaAllo.push(r.s.id); r.allo = k < 0; if (C.queueSave) C.queueSave("pedaSave"); draw(); };
+      row.append(al);
+    }
+    if (C.studentActions && (C.currentRole === "admin" || own)) {
+      row.append(C.studentActions(r.s, function (text, err) {
+        if (err) { m.textContent = text; m.classList.add("err"); return; }
+        if (window.ZooPedaCtx) C = window.ZooPedaCtx();
+        var still = (C.allStudents || []).some(function (x) { return x.id === r.s.id && !x.ghosted_at && x.class_id === state.classId; });
+        if (still) state.flash = { id: r.s.id, text: text, err: false }; else { state.focus = null; state.notice = text; }
+        render();
+      }));
+    }
+    acts.append(row);
+    if (own) acts.append(edSlot);
+    acts.append(trackBox(r));
+    w.append(acts);
+    /* 5. tous les résultats, sur demande */
+    var all = mk("details", "pb-fold pb-fall"); all.append(mk("summary", null, "📈 Tous les résultats"));
+    all.open = !!state.folded["all:" + r.s.id];
+    all.addEventListener("toggle", function () { state.folded["all:" + r.s.id] = all.open; });
+    if (gs || (r.p && r.p.gs && r.p.gs.series && r.p.gs.series.length)) all.append(gsCard(r));
+    if (C.studentDetail) all.append(C.studentDetail(r.s, r.row, function (text, err, reload) {
+      if (reload) { state.flash = { id: r.s.id, text: text, err: err }; render(); return; }
+      m.textContent = text; m.classList.toggle("err", !!err);
+    }));
+    w.append(all);
+    return w;
   }
   function compactDetails(title, cls, key, saved) {
     var details = mk("details", "pb-fold " + cls);
