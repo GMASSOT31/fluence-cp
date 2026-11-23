@@ -7,7 +7,7 @@
    - Tous les accès au stockage sont protégés par try/catch (navigation privée, stockage bloqué) : sans stockage, rien ne casse.
    Syntaxe volontairement ancienne (ES2018) pour rester lisible par Safari 12 (iPad iOS 12 de l'école). */
 (function () {
-  var KEY = "profiles", MAX = 8;
+  var KEY = "profiles", MAX = 8, MAX_STUDENTS = 16;
 
   /* ---------- stockage ---------- */
   function store() { try { return window.localStorage; } catch (e) { return null; } }
@@ -66,7 +66,7 @@
     var prof = { id: id || newId(), role: c.role, name: c.name, avatar: avatar, login: c.login, ts: Date.now() };
     all.unshift(prof);
     var n = 0;   // 8 profils maximum par groupe : les plus anciens sortent
-    all = all.filter(function (p) { if (group(p.role) !== group(prof.role)) return true; n++; return n <= MAX; });
+    all = all.filter(function (p) { if (group(p.role) !== group(prof.role)) return true; n++; return n <= (prof.role === "student" ? MAX_STUDENTS : MAX); });
     return writeAll(all) ? prof : null;
   }
   /* Quand le prénom ou l'avatar change : met à jour le profil mémorisé (sans rien écrire si rien n'a changé) */
@@ -121,6 +121,7 @@
     ".zp-label{display:block;margin:0 0 6px;font-weight:700;color:var(--zp-ink,#fff);font-size:1.05rem}",
     ".zp-input{display:block;width:100%;min-height:52px;margin:0 0 10px;padding:12px 14px;border-radius:12px;border:2px solid var(--zp-line,#343b4f);background:var(--zp-input,#151823);color:var(--zp-ink,#fff);font-size:18px;font-family:inherit}",
     ".zp-err{margin:0 0 8px;padding:10px 12px;border-radius:12px;background:var(--zp-errbg,#4a1f2b);color:var(--zp-errink,#ffd9de);font-weight:700;font-size:1rem}",
+    "@media(min-width:601px){.zp-students .zp-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.zp-students .zp-tile{min-height:86px;padding:7px 4px;font-size:.94rem}.zp-students .zp-av{width:40px;height:40px;margin-bottom:4px;font-size:1.35rem}.zp-students .zp-rm{min-height:36px;margin-top:3px;padding:3px;font-size:.8rem}}",
     ".zp-who{text-align:center;margin:0 0 12px}.zp-who h2{margin:0;font:800 1.5rem Fredoka,Figtree,system-ui,sans-serif;color:var(--zp-ink,#fff)}.zp-who small{color:var(--zp-muted,#c3c9da);display:block;margin-top:4px;word-break:break-all}"
   ].join("\n");
   function ensureCss() {
@@ -133,7 +134,7 @@
   function pickerUI(host, opts) {
     ensureCss();
     host.innerHTML = "";
-    var root = el("div", "zp");
+    var root = el("div", opts.group === "student" ? "zp zp-students" : "zp");
     root.appendChild(el("h2", "zp-title", opts.title || "Qui es-tu ?"));
     var ul = el("ul", "zp-grid");
     list(opts.group).forEach(function (p) {
@@ -202,5 +203,5 @@
     return root;
   }
 
-  window.ZooProfils = { list: list, save: save, update: update, remove: remove, clear: clear, available: available, pickerUI: pickerUI, secretUI: secretUI, KEY: KEY, MAX: MAX };
+  window.ZooProfils = { list: list, save: save, update: update, remove: remove, clear: clear, available: available, pickerUI: pickerUI, secretUI: secretUI, KEY: KEY, MAX: MAX, MAX_STUDENTS: MAX_STUDENTS };
 })();
