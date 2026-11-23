@@ -1328,7 +1328,10 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
 .vocab-answer.vocab-correct{outline:3px solid #18865b;opacity:1}
 .vocab-feedback{min-height:1.4em}
 </style>
-</head>
+<style>
+.exercise-preview-mode header,.exercise-preview-mode #panel-left,.exercise-preview-mode #panel-right,.exercise-preview-mode #bottom-nav,.exercise-preview-mode #nav{display:none!important}
+.exercise-preview-mode #layout{grid-template-columns:minmax(0,1fr)!important}
+</style></head>
 <body>
 <main>
   <header>
@@ -1813,7 +1816,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
 </main>
 <div class="toast" id="toast" role="status"></div>
 
-<script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;/* Connexion élève : le jeton arrive aussi dans l’adresse (#zt=…) pour les appareils qui ne gardent pas sessionStorage d’une page à l’autre (application ajoutée à l’écran d’accueil) ; on le range puis on l’efface de l’adresse */var hm=location.hash.match(/[#&]zt=([0-9a-f]{64})/);if(hm&&!d){window.ZOO_HASH_TOKEN=hm[1];try{sessionStorage.setItem("zoo_student_token",hm[1])}catch(e){}try{history.replaceState(null,"",location.pathname+location.search)}catch(e){}}if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=28"><\/script>':'<script src="vendor/supabase.js?v=2.118.0"><\/script><script src="vendor/supabase-lite.js?v=1"><\/script>');})();</script>
+<script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){if(/[?&]apercu=1(&|$)/.test(location.search))return;var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;/* Connexion élève : le jeton arrive aussi dans l’adresse (#zt=…) pour les appareils qui ne gardent pas sessionStorage d’une page à l’autre (application ajoutée à l’écran d’accueil) ; on le range puis on l’efface de l’adresse */var hm=location.hash.match(/[#&]zt=([0-9a-f]{64})/);if(hm&&!d){window.ZOO_HASH_TOKEN=hm[1];try{sessionStorage.setItem("zoo_student_token",hm[1])}catch(e){}try{history.replaceState(null,"",location.pathname+location.search)}catch(e){}}if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=28"><\/script>':'<script src="vendor/supabase.js?v=2.118.0"><\/script><script src="vendor/supabase-lite.js?v=1"><\/script>');})();</script>
 <script src="profils.js?v=1"></script>
 <script>/* Filet de sécurité : si on ouvre la démo sur un appareil qui a déjà servi à un élève (profil « Qui es-tu ? » mémorisé), un écran demande d'abord « Tu es élève ? » (un élève en autonomie arrivait ici par erreur et croyait être dans sa classe). Enseignants et visiteurs : un seul bouton pour continuer. */
 (function(){
@@ -2305,7 +2308,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     v: 3,
     sel: { sid: null, sound: null, kind: "s" }
   };
-  var cloudMode = true, cloudToken = window.ZOO_HASH_TOKEN || sessionStorage.getItem("zoo_student_token"), cloudClient = window.supabase.createClient("https://pcxpazpflnlwmhyuozdx.supabase.co","sb_publishable_j65mDpDNsuwwaL6uRjsMtA_U_OXQXlL");
+  var previewMode = /[?&]apercu=1(&|$)/.test(location.search);
+  var cloudMode = !previewMode, cloudToken = cloudMode ? (window.ZOO_HASH_TOKEN || sessionStorage.getItem("zoo_student_token")) : null, cloudClient = cloudMode && window.supabase.createClient("https://pcxpazpflnlwmhyuozdx.supabase.co","sb_publishable_j65mDpDNsuwwaL6uRjsMtA_U_OXQXlL");
   /* Récompenses de l'enseignant visibles par cet élève : r.to = {t:"all"} (ou absent) | {t:"class",id} | {t:"student",id} ; tout est montré hors compte élève */
   function shopRewards() {
     return data.shop.rewards.filter(function (r) {
@@ -2318,7 +2322,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   var classRecords = {}, classSize = 1, classRecordsRefreshing = false, classRecordsChecked = 0;
   function cloudStatus(label){if(window.ZOO_DEMO)label=label.replace("Sauvegardé","Simulé dans la démo").replace("Sauvegarde en attente","Simulation en cours");if(cloudStatusNode){cloudStatusNode.firstChild.textContent=label+" · "+(cloudStatusNode.dataset.nickname||"");cloudStatusNode.classList.toggle("cs-ok",/^☁️/.test(label));}}
   var loaded = false;
-  if (!cloudMode) try {
+  if (!cloudMode && !previewMode) try {
     var raw = localStorage.getItem(KEY);
     if (raw) {
       var d = JSON.parse(raw);
@@ -2565,7 +2569,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     await refreshClassRecords(true);
     return r;
   }
-  function save() { if(cloudMode)cloudQueue(); else try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) {} }
+  function save() { if(previewMode)return; if(cloudMode)cloudQueue(); else try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) {} }
   function uid() { return "x" + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36); }
 
   function parseItems(t) {
@@ -2871,6 +2875,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     host.insertBefore(bar, host.firstChild);
   }
   function goTo(v) {
+    if (previewMode && v === "home") { previewMessage("Aperçu terminé. Fermez cette fenêtre pour choisir un autre exercice."); return; }
     if (S.phase === "running") { toast("Arrête d’abord la lecture en cours."); return; }
     show(v);
   }
@@ -4613,12 +4618,12 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     card.appendChild(note);
     body.appendChild(card);
   }
-  function listenStart(sid, soundId) {
+  function listenStart(sid, soundId, previewWords) {
     var my = data.listenCfg.items[soundId] || { syl: [], words: [] };
-    var sound = soundById(soundId), items = !sound ? [] : (listenWordTurn(sid, soundId)
+    var sound = soundById(soundId), items = !sound ? [] : ((previewMode ? previewWords : listenWordTurn(sid, soundId))
       ? (my.words.length ? my.words.map(listenCustomItem) : wordsOf(soundId).map(wordItem))
       : (my.syl.length ? my.syl.map(listenCustomItem) : (listenSylItems(sid, sound) || listenItems(sound))));
-    if (!sound || !items.length) { toast("Ce son n’a pas encore d’exercice."); return; }
+    if (!sound || !items.length) { if (previewMode) previewMessage("Aucun exercice pour ce son et ce contenu."); else toast("Ce son n’a pas encore d’exercice."); return; }
     listenClear();
     LS.run = { sid: sid, sound: sound, items: items, order: [], n: 0, failed: 0, q: null };
     for (var i = 0; i < data.listenCfg.questions; i++) {
@@ -5599,7 +5604,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   }
   function dicteeStart(sid, soundId) {
     var sound = soundById(soundId), items = sound ? dicteeBuild(sid, sound) : [];
-    if (!sound || !items.length) { toast("Ce son n’a pas encore d’exercice."); return; }
+    if (!sound || !items.length) { if (previewMode) previewMessage("Aucun exercice pour ce son et ce contenu."); else toast("Ce son n’a pas encore d’exercice."); return; }
     dicteeClear();
     DS.run = { sid: sid, sound: sound, items: items, n: 0, failed: 0, q: null };
     listenFocus(true);
@@ -5815,7 +5820,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   /* Fil du jour : ce que l'élève a déjà fait aujourd'hui (écouter l, écrire w, lire r). Mémorisé seulement sur l'appareil, jamais envoyé au serveur. */
   function dayKey() { var d = new Date(); return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(); }
   function dayGet(sid) { try { var o = JSON.parse(localStorage.getItem("zoo_day_" + sid) || "{}"); return o && o.d === dayKey() ? o : { d: dayKey() }; } catch (e) { return { d: dayKey() }; } }
-  function dayMark(sid, k) { try { var o = dayGet(sid); o[k] = 1; localStorage.setItem("zoo_day_" + sid, JSON.stringify(o)); } catch (e) {} }
+  function dayMark(sid, k) { if (previewMode) return; try { var o = dayGet(sid); o[k] = 1; localStorage.setItem("zoo_day_" + sid, JSON.stringify(o)); } catch (e) {} }
   function readingReminder(sid, onlyAlert) {
     var readings = data.results.filter(function (r) { return r.sid === sid && !r.void && !r.short && !r.fraud && r.src !== "adj"; });
     var lastReview = readings.reduce(function (last, r) {
@@ -6517,6 +6522,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   }
   /* Plein écran pendant une partie (si l’appareil le permet ; sinon la page seule passe en mode jeu) */
   function gameFullscreen(on) {
+    if (previewMode) return;
     try {
       var d = document, de = d.documentElement, cur = d.fullscreenElement || d.webkitFullscreenElement;
       if (on && !cur) { var rq = de.requestFullscreen || de.webkitRequestFullscreen; if (rq) { var p = rq.call(de); if (p && p.catch) p.catch(function () {}); } }
@@ -8745,7 +8751,60 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       $("btn-finished").click();
     }
   };
-  if(!cloudMode){setMode();show("login");document.documentElement.classList.remove("booting");}bootCloud();
+  function bootExercisePreview(preview) {
+    var cfg = preview.settings || {}, sid = "apercu", sound = preview.sound;
+    data.students = [{id:sid,name:"Aperçu"}];
+    data.reward = false; data.music = false; data.lock = false; data.allowRec = false;
+    data.sounds = Array.isArray(cfg.sounds) && cfg.sounds.length ? cfg.sounds : data.sounds;
+    data.texts = cfg.texts || {};
+    if (cfg.thr) ["s","m","t"].forEach(function(k){if(cfg.thr[k]>=1 && cfg.thr[k]<=300)data.thr[k]=cfg.thr[k];});
+    data.listenCfg = listenCfgClean(cfg.listenCfg);
+    data.dicteeCfg = dicteeCfgClean(cfg.dictee);
+    comprCustom = preview.comprehension || {};
+    ses.role = "student"; ses.sid = sid; data.sel.sid = sid;
+    setMode();
+    document.body.classList.add("exercise-preview-mode");
+    switch(preview.type) {
+      case "exo":
+        if (soundById(sound) && hasContent(sound,preview.kind)) {
+          show("lecture"); lireLaunch("train",sound,preview.kind); return;
+        } break;
+      case "exoecoute":
+        show("audition"); listenStart(sid,sound,preview.variant==="words"); return;
+      case "dictee":
+        show("dictee"); dicteeStart(sid,sound); return;
+      case "phono":
+        if (soundById(sound) && phonoBuild(sound,1).length) { show("phono"); phonoStart(sid,sound); return; }
+        break;
+      case "comprehension":
+        if (comprHas(sound)) { show("compr"); comprStart(sid,sound); return; }
+        break;
+      case "decroches":
+        if (preview.book && preview.book.words.length >= 6) {
+          ZooVocabulary.catalog.splice(0,ZooVocabulary.catalog.length,preview.book);
+          data.remed={}; data.assign={}; data.assign[sid]={type:"vocabulaire",corpus:preview.book.id,ts:Date.now()};
+          show("vocabulaire"); return;
+        } break;
+      case "tiles":
+        var assignment=assignClean({type:"tiles",pair:String(sound).split("|"),ts:Date.now()});
+        if (assignment) { tilesRemed(sid,assignment.pair); return; }
+        break;
+    }
+    previewMessage("Cet exercice n’est pas disponible avec cette sélection.");
+  }
+  function previewMessage(text) {
+    show("home");
+    var card=el("div","card",text);
+    $("home-body").replaceChildren(card);
+  }
+  if (previewMode) {
+    document.documentElement.classList.remove("booting");
+    window.addEventListener("message",function receive(event) {
+      if (event.source!==window.parent || event.origin!==location.origin || !event.data || !event.data.zooExercisePreview) return;
+      window.removeEventListener("message",receive);
+      bootExercisePreview(event.data.zooExercisePreview);
+    });
+  } else bootCloud();
 })();
 </script>
 <script src="labo-config.js?v=1" defer></script>
