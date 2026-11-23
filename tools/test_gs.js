@@ -36,4 +36,26 @@ t("réglages : valeurs hors limites ramenées aux défauts, groupes de l'enseign
   assert.strictEqual(c.cap.questions, 10); assert.strictEqual(c.cap.seuil, 90); assert.deepStrictEqual(c.cap.props, [2, 4]); assert.deepStrictEqual(c.groups, ["AB", "CD"]);
 });
 t("résumé : jamais 100 % après une série", function () { var st = G.compState(null); G.record(st, list, cfg, "cap", 10, 10, false, 1); assert.strictEqual(G.summary(st, list, [{ ok: true }]).pct, 0); });
+t("parcours : pour chaque groupe capitales → capitale/script → script → script/cursive → cursive → ordre", function () {
+  var it = G.path(cfg, "Léo"), first = it.filter(function (x) { return x.step.group === 1; }).map(function (x) { return x.comp; });
+  assert.deepStrictEqual(first.filter(function (c, i) { return first.indexOf(c) === i; }), ["cap", "capscript", "script", "scriptcurs", "curs", "ordre"]);
+  assert.strictEqual(it[0].comp, "cap"); assert.ok(it.some(function (x) { return x.step.group === 2 && x.comp === "cap"; }));
+  var st = G.lecState(null); assert.strictEqual(G.pathCurrent(st, it), 0);
+  it.filter(function (x) { return x.comp === "cap" && x.step.group === 1; }).forEach(function (x) { st.cap.val[x.step.key] = 1; });
+  assert.strictEqual(it[G.pathCurrent(st, it)].comp, "capscript");
+});
+t("activité désactivée : absente du parcours", function () { var c = G.config({ lecture: { curs: { on: false }, scriptcurs: { on: false } } }); assert.ok(G.path(c, "Léo").every(function (x) { return x.comp !== "curs" && x.comp !== "scriptcurs"; })); });
+t("association : les deux sens, bonne réponse proposée", function () {
+  var st = G.steps("capscript", cfg, "Léo")[2], s = G.buildSeries(st, cfg, "capscript", false), dirs = {};
+  s.qs.forEach(function (q) { dirs[q.dir] = 1; assert.ok(q.opts.indexOf(q.t) >= 0); }); assert.deepStrictEqual(Object.keys(dirs).sort(), ["0", "1"]);
+});
+t("ordre : 3 lettres au 1er groupe, 4 puis 5, jamais présentées déjà rangées", function () {
+  var o = G.steps("ordre", cfg, "Léo"); assert.deepStrictEqual(o.map(function (x) { return x.n; }), [3, 4, 5]);
+  for (var k = 0; k < 30; k++) G.buildSeries(o[1], cfg, "ordre", false).qs.forEach(function (q) {
+    assert.strictEqual(q.seq.length, 4); assert.notStrictEqual(q.opts.join(""), q.seq.join("")); assert.deepStrictEqual(q.seq.slice().sort(), q.seq);
+    assert.ok(q.seq.some(function (c) { return o[1].targets.indexOf(c) >= 0; }));
+  });
+  assert.strictEqual(G.buildSeries(o[0], cfg, "ordre", true).qs[0].seq.length, 2);
+});
+t("écritures : capitale, script et cursive", function () { assert.strictEqual(G.glyph("B", "cap"), "B"); assert.strictEqual(G.glyph("B", "curs"), "b"); });
 console.log("TOUS LES TESTS GS PASSENT (" + n + ")");

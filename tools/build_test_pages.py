@@ -90,6 +90,7 @@ def main():
     shutil.copy(os.path.join(ROOT, "vendor", "howler.core.min.js"), os.path.join(OUT, "vendor", "howler.core.min.js"))   # sons enregistrés du Zoo
     shutil.copy(os.path.join(ROOT, "vendor", "qrcode.js"), os.path.join(OUT, "vendor", "qrcode.js"))   # QR codes des fiches de connexion
     shutil.copytree(os.path.join(ROOT, "audio"), os.path.join(OUT, "audio"), dirs_exist_ok=True)
+    shutil.copytree(os.path.join(ROOT, "fonts"), os.path.join(OUT, "fonts"), dirs_exist_ok=True)   # cursive Marelle du parcours GS
     make_test_voice(os.path.join(OUT, "audio", "test-voix", "on-test.wav"))
     for name in ["audio-lecture.js", "test-syllabes.html"]:
         shutil.copy(os.path.join(ROOT, name), os.path.join(OUT, name))
