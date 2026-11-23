@@ -388,6 +388,11 @@ body.teacher-mode .teacher-header .teacher-nav button.nav-improve.active,.teache
 .invite-list{margin:4px 0 0;padding-left:18px;line-height:1.7} .invite-list .link-btn{margin-left:6px}
 .invite-form input{display:block;width:100%;margin:0 0 10px}
 #adminPanel{min-width:0;max-width:100%;overflow-wrap:anywhere} #adminPanel input,#adminPanel select{max-width:100%}
+.admin-fold{border-top:1px solid #d9b975}
+.admin-fold>summary{padding:12px 4px;min-height:44px;font-weight:800;cursor:pointer}
+.admin-fold[open]>summary{margin-bottom:6px}
+#adminMsg:empty{display:none}
+#adminList .row,#adminList .actions{flex-wrap:wrap}
 .dlg-box select{display:block;width:100%;padding:10px;margin:6px 0 4px;border:1px solid #c9bfdf;border-radius:10px;font:inherit;background:#fff;color:#242044}
 /* Le doré reprend le repère du badge Admin dans le bandeau. */
 :root{--admin-ink:#432900;--admin-line:#a46500;--admin-surface:#ffe09a}
@@ -595,7 +600,19 @@ body.teacher-mode .teacher-header .teacher-nav button:is([data-role="admin"],[da
   <button type="button" class="secondary" data-share-btn>🔗 Partager Zoo de Lecture</button>
   <span class="share-more" data-share-more hidden><a data-share-wa href="https://wa.me/">WhatsApp</a><a data-share-mail href="mailto:">E-mail</a><button type="button" class="secondary" data-share-copy>Copier le lien</button></span>
   <span class="share-status" data-share-status role="status" aria-live="polite"></span></div>
-<section class="panel hidden" data-section="enseignants" data-role="admin" id="adminPanel"><h2>🛡️ Administration de Zoo de Lecture</h2><p class="muted">Comptes enseignants inscrits et quotas d'élèves. Les modifications sont enregistrées sur le serveur.</p><div id="inviteAdmin" class="invite-admin hidden"></div><div id="autoSeatsBox" class="auto-seats hidden"></div><div id="adminList"></div><p id="adminMsg" class="msg" role="status"></p></section>
+<section class="panel hidden" data-section="enseignants" data-role="admin" id="adminPanel">
+ <h2>Administration des enseignants</h2>
+ <details class="admin-fold">
+  <summary>Inviter un collègue</summary>
+  <div id="inviteAdmin" class="invite-admin hidden"></div>
+ </details>
+ <details class="admin-fold">
+  <summary>Gestion du nombre d’élèves</summary>
+  <p id="adminMsg" class="msg" role="status"></p>
+  <div id="autoSeatsBox" class="auto-seats hidden"></div>
+  <div id="adminList"></div>
+ </details>
+</section>
 <section class="panel feature-card improve-card hidden" data-section="ameliorations" data-role="teacher" id="feedbackPanel">
  <div class="section-head"><div class="section-icon">💡</div><div><h2>Aidez-nous à améliorer Zoo de Lecture</h2><p class="muted">Un avis, une idée, un bug, une question ? Choisissez le type de message, écrivez-le et envoyez-le : l’administrateur le lira.</p></div></div>
  <p class="fb-reply hidden" id="fbReplyNote"><strong>🆕 L’administrateur vous a répondu.</strong> <a href="#fbMineTitle">Voir la réponse</a></p>
@@ -1911,7 +1928,7 @@ async function copyText(t){try{await navigator.clipboard.writeText(t);return tru
 async function renderInviteAdmin(){
  const box=$("inviteAdmin"),mk=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
  box.classList.remove("hidden");box.replaceChildren();
- box.append(mk("h3",null,"✉️ Inviter un collègue"),mk("p","muted","Votre collègue reçoit un lien, tape deux fois son e-mail et deux fois son mot de passe : son compte est prêt, avec 15 places d’élèves. Un lien par collègue, valable 30 jours."));
+ box.append(mk("p","muted","Votre collègue reçoit un lien, tape deux fois son e-mail et deux fois son mot de passe : son compte est prêt, avec 15 places d’élèves. Un lien par collègue, valable 30 jours."));
  const st=mk("p","msg");st.setAttribute("role","status");
  const make=mk("button",null,"✉️ Créer un lien d’invitation");make.type="button";
  make.onclick=()=>busy2(make,async()=>{const {data,error}=await client.rpc("admin_create_invite");if(error){st.className="msg err";st.textContent=errorText(error);return}lastInvite=data.token;await renderInviteAdmin()});
@@ -2008,5 +2025,5 @@ refresh();
 <script src="share.js" defer></script>
 <script src="install.js?v=1" defer></script>
 <script src="labo-config.js?v=1" defer></script>
-<script src="labo-switch.js?v=27" defer></script>
+<script src="labo-switch.js?v=28" defer></script>
 </body></html>
