@@ -162,6 +162,20 @@
     });
     return w;
   }
+  function scrollToStudent(line) {
+    if (!line) return;
+    var row = line.getBoundingClientRect(), offset = 0;
+    document.querySelectorAll("header.hero, .teacher-header").forEach(function (header) {
+      var bounds = header.getBoundingClientRect(), style = window.getComputedStyle(header);
+      if (style.position === "sticky" && bounds.right > row.left && bounds.left < row.right) {
+        offset = Math.max(offset, (parseFloat(style.top) || 0) + bounds.height);
+      }
+    });
+    window.scrollTo({
+      top: window.scrollY + row.top - offset - 12,
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth"
+    });
+  }
   function openDetail(id) {
     state.open[id] = true;
     var r = (state.rows || []).find(function (x) { return x.s.id === id; });
@@ -169,8 +183,8 @@
     if (state.paint) state.paint();
     var students = document.querySelector("#pedaBoard .pb-students");
     if (students) students.open = true;
-    var line = document.querySelector('.pb-row[data-sid="' + id + '"]');
-    if (line) line.scrollIntoView({ block: "start", behavior: "smooth" });
+    var line = document.querySelector('#pedaBoard .pb-row[data-sid="' + id + '"]');
+    scrollToStudent(line);
   }
 
   /* 1. À faire aujourd’hui : lectures à écouter, élèves bloqués, exercices donnés pas encore faits, confusions, inactifs */
@@ -762,5 +776,5 @@
 
   /* « Mes classes » › « Voir mes élèves » : ouvrir Ma classe sur cette classe */
   function pick(id) { if (id && id !== state.classId) { state.classId = id; state.open = {}; state.filter = "all"; } }
-  window.ZooPeda = { compactDetails: compactDetails, pick: pick, asgLabel: asgLabel, asgState: asgState, asgStatusText: asgStatusText, render: render, openDetail: openDetail, analyse: analyse, classify: classify, axes: axes, drawFiche: drawFiche, drawWeb: drawWeb, refOf: refOf, schoolWeeks: schoolWeeks, YEAR_WEEKS: YEAR_WEEKS, state: state };
+  window.ZooPeda = { compactDetails: compactDetails, pick: pick, asgLabel: asgLabel, asgState: asgState, asgStatusText: asgStatusText, render: render, openDetail: openDetail, scrollToStudent: scrollToStudent, analyse: analyse, classify: classify, axes: axes, drawFiche: drawFiche, drawWeb: drawWeb, refOf: refOf, schoolWeeks: schoolWeeks, YEAR_WEEKS: YEAR_WEEKS, state: state };
 })();
