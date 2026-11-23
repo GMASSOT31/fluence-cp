@@ -13,6 +13,12 @@
     students: [{ id: "s1", nickname: "lea", class_id: "c1", teacher_id: "t1", pin_hash: "x" }, { id: "s2", nickname: "leo", class_id: "c1", teacher_id: "t1", pin_hash: "x" }, { id: "s3", nickname: "Zoé", class_id: "c2", teacher_id: "t2", pin_hash: "x" }],
     progress: { s1: { student_id: "s1", progress: { coins: 3, dictee: { passes: { voy: 1, l: 1 }, done: { voy: true, l: true }, tries: 4 }, hi: { memory: { best: 12 }, catch: { best: 9 }, simon: { best: 5 }, order: { best: 20 } }, results: [{ src: "eval", mclm: 285, ts: 5, k: "s", sound: "l" }, { src: "eval", mclm: 200, ts: 4, k: "s", sound: "l" }, { src: "train", ts: 3 }, { src: "train", ts: 2 }, { src: "train", ts: 1 }], reviews: [], vouchers: [{ id: "v1", label: "Image surprise", icon: "🖼️", done: false }, { id: "v2", label: "Crayon magique", icon: "✏️", done: false }] }, updated_at: "2026-10-20T10:00:00Z", pending_coins: 0, given_vouchers: [] } }, gifts: []
   };
+  /* ?imagiers=1 : trois imagiers ; le 2e est déjà dans la file de la classe cpE (repères « Nouveau » / « Déjà attribué ») */
+  if (/[?&]imagiers=1/.test(location.search)) {
+    var W = ["chat", "lune", "vélo", "pomme", "robe", "moto"];
+    st.corpora = [1, 2, 3].map(function (n) { return { id: "20000000-0000-0000-0000-00000000000" + n, title: "Imagier " + n, words: W.slice() }; });
+    st.vocabQueue = new Set(["c1:20000000-0000-0000-0000-000000000002"]);
+  }
   /* ?pedago=1 : une classe de 12 élèves avec des mesures (tableau de bord Pédagogie) */
   if (/[?&]pedago=1/.test(location.search)) (function () {
     var order = ["voy", "voy2", "l", "f", "ch", "s", "m", "r", "n", "v", "j", "z", "p", "t", "c", "b", "d"];
@@ -124,6 +130,10 @@
         book.images = Object.assign({}, book.images, a.p_images);
         book.revision = a.p_revision + 1;
         return Promise.resolve({ data: book, error: null });
+      }
+      if (name === "teacher_class_vocabulary") {
+        var prefix = a.p_class + ":";
+        return Promise.resolve({data: Array.from(st.vocabQueue || []).filter(function (key) { return key.indexOf(prefix) === 0; }).map(function (key) { return key.slice(prefix.length); }), error: null});
       }
       if (name === "teacher_queue_vocabulary") {
         var c = st.classes.find(function (item) { return item.id === a.p_class; });
