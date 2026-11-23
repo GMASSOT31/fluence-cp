@@ -4,7 +4,7 @@
 
 ## Où en est-on ?
 - [x] Phase 0 — audit (constats ci-dessous).
-- [ ] **Étape A — prototype « Capitales » (GS Lecture)**, à faire valider par Gabriel avant toute autre activité. Comprend : choix du parcours Lecture dans la fiche élève, accueil GS de l'élève, activité 4.2 complète (paliers, séries, validation 2 × 80 %, aide après 2 échecs, roue après chaque série réussie), carte de suivi enseignant.
+- [x] **Étape A — prototype « Capitales » (GS Lecture)** — fait le 23/11/2026, branche `claude/parcours-gs-capitales` (PR à valider par Gabriel). Fichiers : `gs-data.js` (définitions + moteur, `node tools/test_gs.js`), `gs-lecture.js` (écran élève, vue `v-gs`, accueil GS dans `renderHome`, contexte `window.ZooGSCtx` de zoo-connecte.html), `pedagogie.js` (`trackBox` choix du parcours dans Détails, `gsCard` suivi, pastille « GS » sur la ligne), `enseignants.html` (`window.pedaTracks`, `window.pedaGsCfg`, `collectSettings` garde `tracks` et `gs`). Tests : `zoo-test.html?gs=1` (élève GS), `enseignants-test.html?teacher=1&pedago=1&gs=1` (Alya en GS avec aide). **Limites connues** : voix de l'appareil pour les noms de lettres ; panneaux de gauche et compteurs du bandeau restent ceux du CP (« Mes cartes lues », N0/E0) ; pas encore d'éditeur des réglages GS (défauts de gs-data.js) ; choix du parcours seulement pour ses propres élèves (pas pour l'admin sur la classe d'un autre).
 - [ ] Étape B — rituel alphabet (4.1) + voix enregistrées des noms de lettres.
 - [ ] Étape C — autres activités GS Lecture (4.3 à 4.7) sur le modèle du prototype ; police cursive.
 - [ ] Étape D — modification collective des parcours + paramétrage GS dans Pédagogie + radar GS Lecture.
@@ -23,6 +23,14 @@ Branches et PR de ce chantier : `claude/parcours-gs-…` (une par étape). Toujo
 - **Polices** : Andika (lettres claires, déjà chargée), Fredoka, Figtree via Google Fonts. **Aucune police cursive scolaire.**
 - **Aucun mécanisme de rituel/capsule** ; réutilisables : `showEvolution`, overlays, `img/presentation-zoo.mp4` (accueil seulement).
 
+## Décisions de Gabriel (23/11/2026)
+- Plan validé : prototype « Capitales » d'abord.
+- Récompenses GS : **même niveau de contrôle que le CP** (sur l'appareil) ; une même série ne donne jamais deux roues. Contrôle serveur éventuel plus tard pour CP et GS ensemble.
+- Groupes de lettres : « s'appuyer sur les recommandations officielles et la recherche ». Aucun ordre officiel imposé n'a été trouvé (sites eduscol non joignables depuis la session, extraits de recherche seulement). Principes retenus : **lettres du prénom d'abord** (guide eduscol « Pour préparer l'apprentissage de la lecture et de l'écriture à l'école maternelle »), nom/forme/son en aller-retour, **séparer les lettres proches** (b/d/p/q, m/n, n/u, t/d), lettres rares en dernier. Défaut : prénom, puis AIORLS · EUMTFB · PNCVJZ · DGQKHYXW (modifiable, `gs-data.js` DEFAULTS).
+
+## Règle de validation implémentée (gs-data.js `record`)
+Palier = groupe de lettres × nombre de propositions (2, 3, 4 ; un petit groupe ne répète pas un palier identique). Validé après `series` (2) séries **réussies d'affilée** (≥ `seuil` 80 %) sans aide ; une série ratée remet le compteur à 0 ; 2 ratées d'affilée → aide (une proposition de moins + démonstration) ; une série aidée réussie fait revenir au niveau normal mais ne valide jamais. Roue après chaque série réussie (aidée comprise), une seule par id de série.
+
 ## Choix techniques (proposés, à confirmer au fil des étapes)
 1. **Parcours de l'élève** : `teacher_zoo_settings.settings.tracks = {idÉlève: {lecture:"gs"|"cp", calcul:"gs"|"cp"}}` — absent = CP (T01, aucune donnée existante touchée). Même mécanisme que `assign`/`allo` : **aucune migration**, seul l'enseignant peut l'écrire (RLS existante), l'élève le lit via `student_get_teacher_settings`. À ajouter dans le chargement (`window.pedaTracks`) et dans `collectSettings`. Retour arrière : supprimer la clé.
 2. **Progression GS Lecture** : nouvelle clé `progress.gs` dans `student_progress` (JSON libre, comme `phono`/`dictee`) : `{lecture: {comp: {idCompétence: {palier, ok:[ids de séries réussies], ko, aide, valide:{palier:date}}}, series:[dernières séries, 60 max], rewarded:[ids]}, rituel:{lecture:date}}`. Le CP n'y touche pas → CP ↔ GS conserve tout (T04).
@@ -32,4 +40,5 @@ Branches et PR de ce chantier : `claude/parcours-gs-…` (une par étape). Toujo
 6. **CE1** : visible « À venir », désactivé dans le sélecteur.
 
 ## Journal
+- 23/11/2026 — Claude : prototype « Capitales » terminé et testé (moteur 11 tests, élève 4 séries : étoile, validation, échec, aide ; enseignant : GS → CP → GS sans perte ; CP inchangé).
 - 23/11/2026 — Claude : cahier des charges enregistré, audit fait, plan ci-dessus.

@@ -327,6 +327,7 @@
       repaint();
     };
     who.append(al);
+    if (trackOf(r.s.id) === "gs") { var gsP = mk("span", "pb-gs", "GS"); gsP.title = "Parcours de lecture : GS (les lettres)"; who.append(gsP); }
     var time = mk("div", "pb-time", r.secs ? Math.round(r.secs / 60) + " min" : "0 min"); time.title = "Temps de travail sur 7 jours";
     var prog = mk("div", "pb-prog");
     var pbar = mk("div", "pb-bar"), fill = document.createElement("i");
@@ -389,12 +390,59 @@
       }));
     }
     if (fa.children.length) w.append(fa);
+    w.append(trackBox(r));
+    if (trackOf(r.s.id) === "gs" || (r.p && r.p.gs && r.p.gs.series && r.p.gs.series.length)) w.append(gsCard(r));
     if (!C.studentDetail) return w;
     w.append(C.studentDetail(r.s, r.row, function (text, err, reload) {
       if (reload) { state.flash = { id: r.s.id, text: text, err: err }; render(); return; }
       m.textContent = text; m.classList.toggle("err", !!err);
     }));
     return w;
+  }
+  /* ===== Parcours GS / CP / CE1 (docs/parcours-gs) : réglage settings.tracks[élève] = {lecture:"gs"|"cp"} ; absent = CP ===== */
+  window.pedaTracks = window.pedaTracks || {};
+  function trackOf(sid) { var t = window.pedaTracks[sid]; return t && t.lecture === "gs" ? "gs" : "cp"; }
+  function trackBox(r) {
+    var box = mk("div", "pb-track"), own = C.currentUser && r.s.teacher_id === C.currentUser.id, cur = trackOf(r.s.id);
+    box.append(mk("strong", null, "Parcours de lecture : "));
+    [["gs", "GS"], ["cp", "CP"], ["ce1", "CE1 · à venir"]].forEach(function (o) {
+      var b = mk("button", "pb-trk" + (cur === o[0] ? " on" : ""), o[1]); b.type = "button";
+      b.setAttribute("aria-pressed", String(cur === o[0]));
+      if (o[0] === "ce1" || !own) b.disabled = true;
+      if (!own) b.title = "Seul l’enseignant de la classe peut changer le parcours";
+      b.onclick = function () {
+        if (cur === o[0]) return;
+        var t = window.pedaTracks[r.s.id] || {};
+        if (o[0] === "cp") delete t.lecture; else t.lecture = o[0];
+        if (Object.keys(t).length) window.pedaTracks[r.s.id] = t; else delete window.pedaTracks[r.s.id];
+        if (C.queueSave) C.queueSave("pedaSave");
+        state.flash = { id: r.s.id, text: "Parcours de lecture de " + r.s.nickname + " : " + o[1] + ". Ses résultats sont tous gardés.", err: false };
+        render();
+      };
+      box.append(b);
+    });
+    box.append(mk("span", "muted pb-trk-note", " Calcul : CP (GS bientôt)"));
+    return box;
+  }
+  /* Suivi GS « Les lettres » : paliers validés, palier en cours, aide, dernières séries */
+  function gsCard(r) {
+    var D = window.ZooGSData, card = mk("div", "pb-gscard"), g = (r.p && r.p.gs) || {};
+    if (!D) return card;
+    var cfg = D.config(window.pedaGsCfg), list = D.steps("cap", cfg, r.s.nickname), st = D.compState(g.lecture && g.lecture.cap);
+    var series = Array.isArray(g.series) ? g.series.filter(function (x) { return x && x.c === "cap"; }) : [], sm = D.summary(st, list, series);
+    var label = { nouveau: "pas encore commencé", en_cours: "en cours", maitrise: "toutes les lettres sont validées", difficulte: "en difficulté" }[sm.status];
+    card.append(mk("h4", null, "🔤 Les lettres (parcours GS)"));
+    card.append(mk("p", null, sm.done + " étape" + (sm.done > 1 ? "s" : "") + " validée" + (sm.done > 1 ? "s" : "") + " sur " + sm.total + " · " + label));
+    var bar = mk("div", "pb-bar"), fill = mk("i"); fill.style.width = sm.pct + "%"; bar.append(fill); card.append(bar);
+    if (sm.current >= 0) card.append(mk("p", "muted", "En cours : " + D.stepLabel(list[sm.current]) + " (" + list[sm.current].targets.join(" ") + ")" + (st.ok ? " · " + st.ok + " série réussie sur " + cfg.cap.series : "") + (st.aid ? " · 🤝 aide activée" : "")));
+    var det = mk("details", "pb-gsdet"); det.append(mk("summary", null, "Voir le détail"));
+    var vals = list.filter(function (x) { return st.val[x.key]; });
+    if (vals.length) { var ul = mk("ul"); vals.forEach(function (x) { ul.append(mk("li", null, "✅ " + D.stepLabel(x) + " (" + x.targets.join(" ") + ") — " + new Date(st.val[x.key]).toLocaleDateString("fr-FR"))); }); det.append(ul); }
+    var last = series.slice(-8).reverse();
+    if (last.length) { var ul2 = mk("ul"); last.forEach(function (x) { ul2.append(mk("li", null, (x.ok ? "✓ " : "✗ ") + x.g + "/" + x.q + (x.aid ? " avec aide" : "") + " — " + new Date(x.ts).toLocaleDateString("fr-FR") + " " + new Date(x.ts).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }))); }); det.append(mk("p", "muted", "Dernières séries :"), ul2); }
+    else det.append(mk("p", "muted", "Aucune série pour l’instant."));
+    card.append(det);
+    return card;
   }
   function compactDetails(title, cls, key, saved) {
     var details = mk("details", "pb-fold " + cls);

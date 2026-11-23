@@ -14,6 +14,8 @@
     o[srv.me.id] = m[1] === "tiles" ? { type: "tiles", pair: ["b", "d"], ts: 1763400000000 } : { type: m[1], sons: m[1] === "compr" ? ["p"] : ["voy", "m"], ts: 1763400000000 };
     return o;
   }
+  /* ?gs=1 : l'élève est en parcours GS en lecture (réglage enseignant settings.tracks) */
+  function gsOpt() { var o = {}; if (!/[?&]gs=1/.test(location.search)) return undefined; o[srv.me.id] = { lecture: "gs" }; return o; }
   function all() { return [{ id: srv.me.id, nickname: srv.me.nickname, avatar: srv.me.progress.avatar, hi: srv.me.progress.hi || {} }].concat(srv.others); }
   function best(game) {
     var m = MODES[game], b = null;
@@ -38,7 +40,7 @@
       if (a.p_old_pin !== srv.pin) { srv.pinFails = (srv.pinFails || 0) + 1; return { ok: false, code: "bad_old" }; }
       srv.pin = a.p_new_pin; srv.pinFails = 0; return { ok: true };
     },
-    student_get_teacher_settings: function () { return { rewards: /recompenses=1/.test(location.search) ? [{ id: "r1", label: "Gomme tous", price: 5, icon: "🎁" }, { id: "r2", label: "Bonbon ma classe", price: 6, icon: "🍭", to: { t: "class", id: "c1" } }, { id: "r3", label: "Autre classe", price: 7, icon: "📚", to: { t: "class", id: "c2" } }, { id: "r4", label: "Pour moi", price: 8, icon: "⭐", to: { t: "student", id: srv.me.id } }, { id: "r5", label: "Pour un autre", price: 9, icon: "🧸", to: { t: "student", id: "zzz" } }] : undefined, listenCfg: /ecoute=1/.test(location.search) ? { questions: 5, maxErrors: 1, passes: 2, coins: 2, items: { voy: ["fu", "fo", "Ou!"], l: { syl: ["la", "lu"], words: ["lune"] } } } : undefined, dictee: /dictee=1/.test(location.search) ? { syl: 2, words: 1, items: { voy: { syl: ["a", "o", "Ou!"], words: ["moto"] } } } : undefined, pinChange: !/sanspin/.test(location.search), reward: true, maxPlays: /illimite/.test(location.search) ? 0 : 50, wheelPrice: /prix4/.test(location.search) ? 4 : 7, evalCode: !/sanscode/.test(location.search), assign: remedOpt() }; },
+    student_get_teacher_settings: function () { return { rewards: /recompenses=1/.test(location.search) ? [{ id: "r1", label: "Gomme tous", price: 5, icon: "🎁" }, { id: "r2", label: "Bonbon ma classe", price: 6, icon: "🍭", to: { t: "class", id: "c1" } }, { id: "r3", label: "Autre classe", price: 7, icon: "📚", to: { t: "class", id: "c2" } }, { id: "r4", label: "Pour moi", price: 8, icon: "⭐", to: { t: "student", id: srv.me.id } }, { id: "r5", label: "Pour un autre", price: 9, icon: "🧸", to: { t: "student", id: "zzz" } }] : undefined, listenCfg: /ecoute=1/.test(location.search) ? { questions: 5, maxErrors: 1, passes: 2, coins: 2, items: { voy: ["fu", "fo", "Ou!"], l: { syl: ["la", "lu"], words: ["lune"] } } } : undefined, dictee: /dictee=1/.test(location.search) ? { syl: 2, words: 1, items: { voy: { syl: ["a", "o", "Ou!"], words: ["moto"] } } } : undefined, pinChange: !/sanspin/.test(location.search), reward: true, maxPlays: /illimite/.test(location.search) ? 0 : 50, wheelPrice: /prix4/.test(location.search) ? 4 : 7, evalCode: !/sanscode/.test(location.search), assign: remedOpt(), tracks: gsOpt() }; },
     student_get_class_records: function () {
       var r = {}; Object.keys(MODES).forEach(function (g) { var b = best(g); if (b) { delete b.ts; r[g] = b; } });
       return { classSize: all().length, records: all().length < 2 ? {} : r };
