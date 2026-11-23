@@ -588,6 +588,9 @@
   }
 
   window.CalcTeacher = {
+    pickClass: function (id) {
+      if (id !== view.classId) { view.classId = id; view.open = {}; view.filter = "all"; }
+    },
     _fiche: { draw: function (d, r, n, f) { drawCalcFiche(d, r, n, f); }, view: view },
     init: function (a) {
       if (document.getElementById("calc-teacher-css") || !E || !C.url) return;
