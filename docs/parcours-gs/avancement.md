@@ -5,7 +5,7 @@
 ## Où en est-on ?
 - [x] Phase 0 — audit (constats ci-dessous).
 - [x] **Étape A — prototype « Capitales » (GS Lecture)** — fait le 23/11/2026, branche `claude/parcours-gs-capitales` (PR à valider par Gabriel). Fichiers : `gs-data.js` (définitions + moteur, `node tools/test_gs.js`), `gs-lecture.js` (écran élève, vue `v-gs`, accueil GS dans `renderHome`, contexte `window.ZooGSCtx` de zoo-connecte.html), `pedagogie.js` (`trackBox` choix du parcours dans Détails, `gsCard` suivi, pastille « GS » sur la ligne), `enseignants.html` (`window.pedaTracks`, `window.pedaGsCfg`, `collectSettings` garde `tracks` et `gs`). Tests : `zoo-test.html?gs=1` (élève GS), `enseignants-test.html?teacher=1&pedago=1&gs=1` (Alya en GS avec aide). **Limites connues** : voix de l'appareil pour les noms de lettres ; panneaux de gauche et compteurs du bandeau restent ceux du CP (« Mes cartes lues », N0/E0) ; pas encore d'éditeur des réglages GS (défauts de gs-data.js) ; choix du parcours seulement pour ses propres élèves (pas pour l'admin sur la classe d'un autre).
-- [ ] Étape B — rituel alphabet (4.1) + voix enregistrées des noms de lettres.
+- [x] **Étape B — rituel + voix** — faite le 23/11/2026, branche `claude/parcours-gs-rituel` : comptine des lettres (`gs-lecture.js` `rituel`/`renderRituel` : 1re séance = grosse action « 🎵 La comptine des lettres », « Plus tard » possible, ensuite petit bouton ; `progress.gs.rituel.lecture` ; pas de roue) ; lecteur de sons GS (`say`/`sayAll`, voix de l'appareil en secours) ; **`audio/gs.mp3` + `gs.json` fabriqués** (61 sons : lettres `L:A`…, nombres `N:0`–`N:20`, consignes `c:…` ; 418 Ko) par `tools/build_gs_audio.py` dans une session de l'environnement « fluence-cp » (seul à avoir accès à `speech.platform.bing.com`). Sons non écoutés par un humain : à faire vérifier par Gabriel.
 - [ ] Étape C — autres activités GS Lecture (4.3 à 4.7) sur le modèle du prototype ; police cursive.
 - [ ] Étape D — modification collective des parcours + paramétrage GS dans Pédagogie + radar GS Lecture.
 - [ ] Étape E — GS Calcul (5.1 à 5.6), demande une migration du Zoo de Calcul.
@@ -40,5 +40,6 @@ Palier = groupe de lettres × nombre de propositions (2, 3, 4 ; un petit groupe 
 6. **CE1** : visible « À venir », désactivé dans le sélecteur.
 
 ## Journal
+- 23/11/2026 — Claude : étape B faite (comptine + 61 sons enregistrés). Entre-temps, à la demande de Gabriel : « Ma classe » refaite en liste épurée + fiche élève (PR 369 Lecture, PR 370 Calcul), onglet « À écouter » intégré.
 - 23/11/2026 — Claude : prototype « Capitales » terminé et testé (moteur 11 tests, élève 4 séries : étoile, validation, échec, aide ; enseignant : GS → CP → GS sans perte ; CP inchangé).
 - 23/11/2026 — Claude : cahier des charges enregistré, audit fait, plan ci-dessus.
