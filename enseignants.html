@@ -516,12 +516,30 @@ body.teacher-mode .teacher-header .teacher-nav button:is([data-role="admin"],[da
   <div id="students" class="content-list"></div>
  </section>
  <section class="panel feature-card progress-card" id="listenSettings" data-section="ecouter"><h2>À écouter</h2><p class="muted">Lectures enregistrées par les élèves pour leur médaille 🏅. Le son reste sur la tablette où l’élève a lu (son numéro 📱 est indiqué) : sur cette tablette, élève connecté, touchez « 🎧 Mon maître(sse) écoute » sur sa mission, tapez votre mot de passe, puis écoutez et notez.</p><div id="recordingsList"></div><h3>Lectures validées récemment</h3><div id="validatedRecordings"></div></section>
-<details class="pedagogy-picker exercise-picker" data-section="reglages"><summary>Les exercices</summary><div class="sub-picker set-pick" data-section="reglages" role="group" aria-label="Les exercices"><button type="button" data-sub-btn="exo"><span class="sp-ico">📖</span><strong>Exercice de lecture</strong><small>Syllabes, mots et textes</small></button><button type="button" data-sub-btn="exoecoute"><span class="sp-ico">👂</span><strong>Exercice d’écoute</strong><small>Syllabes et mots à écouter</small></button><button type="button" data-sub-btn="dictee"><span class="sp-ico">✏️</span><strong>Exercice de dictée</strong><small>Syllabes et mots à écrire</small></button><button type="button" data-sub-btn="comprehension"><span class="sp-ico">🧩</span><strong>Exercice Je comprends</strong><small>Mots à lire et images à associer</small></button><button type="button" data-sub-btn="decroches"><span class="sp-ico">🎯</span><strong>Exercices décrochés</strong><small>Exercices à donner à un élève</small></button><button type="button" data-sub-btn="phono"><span class="sp-ico">🖼️</span><strong>J’entends</strong></button><button type="button" data-sub-btn="tiles"><span class="sp-ico">🎹</span><strong>Tuiles des sons</strong></button></div></details>
 <details id="progressionPicker" class="pedagogy-picker exercise-picker" data-section="reglages"><summary>Progression et réussite</summary><div class="sub-picker set-pick" data-section="reglages" role="group" aria-label="Progression et réussite"><button type="button" data-sub-btn="obj"><span class="sp-ico">🎯</span><strong>Critère de réussite Fluence</strong><small>Vitesse à atteindre, passage au son suivant</small></button><button type="button" data-sub-btn="sons"><span class="sp-ico">🔤</span><strong>Progression des phonèmes</strong><small>L’ordre de la progression</small></button><button type="button" data-sub-btn="eval"><span class="sp-ico">🏅</span><strong>Explication des médailles</strong><small>Lecture enregistrée par l’élève</small></button></div></details>
+<details id="readingActivities" class="pedagogy-picker exercise-picker" data-section="reglages">
+  <summary>Les activités</summary>
+  <h3 id="autonomousActivitiesTitle">Du parcours autonome</h3>
+  <div class="sub-picker activity-route" role="group" aria-labelledby="autonomousActivitiesTitle">
+    <button type="button" data-sub-btn="phono"><span class="sp-ico" aria-hidden="true">🖼️</span><strong>J’entends</strong></button>
+    <span class="activity-arrow" aria-hidden="true"></span>
+    <button type="button" data-sub-btn="exoecoute"><span class="sp-ico" aria-hidden="true">👂</span><strong>J’écoute</strong></button>
+    <span class="activity-arrow" aria-hidden="true"></span>
+    <button type="button" data-sub-btn="dictee"><span class="sp-ico" aria-hidden="true">✏️</span><strong>J’écris</strong></button>
+    <span class="activity-arrow" aria-hidden="true"></span>
+    <button type="button" data-sub-btn="exo"><span class="sp-ico" aria-hidden="true">📖</span><strong>Je lis</strong></button>
+    <span class="activity-arrow" aria-hidden="true"></span>
+    <button type="button" data-sub-btn="comprehension"><span class="sp-ico" aria-hidden="true">🧩</span><strong>Je comprends</strong></button>
+  </div>
+  <h3 id="detachedActivitiesTitle">Activités décrochées du parcours</h3>
+  <div class="sub-picker set-pick" role="group" aria-labelledby="detachedActivitiesTitle">
+    <button type="button" data-sub-btn="tiles"><span class="sp-ico" aria-hidden="true">🎹</span><strong>Tuiles de son</strong></button>
+    <button type="button" data-sub-btn="decroches"><span class="sp-ico" aria-hidden="true">🖼️</span><strong>Corpus de mots</strong></button>
+  </div>
+</details>
 <section class="panel feature-card" data-section="reglages" data-sub="decroches" id="readingDetached">
-  <h2>Exercices décrochés</h2>
+  <h2>Corpus de mots</h2>
   <p class="muted">L’exercice donné passe en tête de la mission de l’élève. À la fin, il reprend son parcours de lecture là où il en était.</p>
-  <h3>Corpus de vocabulaire</h3>
   <div id="vocabAssign"></div>
   <section class="panel" data-admin-surface id="vocabImport" hidden>
     <span class="admin-scope-label">Administration</span>
@@ -576,6 +594,18 @@ body.teacher-mode .teacher-header .teacher-nav button:is([data-role="admin"],[da
 <section class="panel feature-card" data-section="reglages" data-sub="phono" id="phonoPreview"><h2>J’entends</h2></section>
 <section class="panel feature-card" data-section="reglages" data-sub="tiles" id="tilesPreview"><h2>Tuiles des sons</h2></section>
 <style>
+#readingActivities h3{margin:10px 0;font-size:1rem}
+#space .activity-route{display:flex;align-items:stretch;gap:6px}
+.activity-route button{flex:1;min-width:0;align-items:center;text-align:center;padding:8px 4px}
+#space .activity-route strong{font-size:.94rem}
+.activity-arrow{align-self:center;color:#60468f;font-weight:800}
+.activity-arrow::before{content:"→"}
+@media(max-width:600px){
+ #space .activity-route{flex-direction:column;gap:3px}
+ #space .activity-route button{flex-direction:row;justify-content:flex-start;padding:5px 12px;gap:10px;min-height:44px}
+ #space .activity-route .sp-ico{margin:0}
+ .activity-arrow::before{content:"↓"}
+}
 .exercise-picker>summary{font-size:1.15rem;font-weight:800;padding:12px 4px;cursor:pointer}
 .exercise-preview-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:16px}
 .exercise-preview-actions select{width:auto;max-width:100%;margin:0}
@@ -1294,7 +1324,7 @@ function showTab(tab){
  if(tab==="pedagogie"&&window.ZooPeda)window.ZooPeda.render().catch(e=>{const m=$("pedaMsg");if(m)m.textContent=errorText(e)});
  document.querySelectorAll("[data-section]").forEach(el=>el.classList.toggle("hidden",el.dataset.section!==tab || el.id==="pinSettings" || (!!el.dataset.role && el.dataset.role!==currentRole) || (!!el.dataset.sub && el.dataset.sub!==activeSubs[tab])));
  document.querySelectorAll("[data-sub-btn][data-role]").forEach(b=>{b.hidden=b.dataset.role!==currentRole});
- document.querySelectorAll("[data-sub-btn]").forEach(b=>{const on=b.dataset.subBtn===activeSubs[b.closest(".sub-picker").dataset.section];b.classList.toggle("active",on);b.setAttribute("aria-pressed",String(on))});
+ document.querySelectorAll("[data-sub-btn]").forEach(b=>{const on=b.dataset.subBtn===activeSubs[b.closest("[data-section]").dataset.section];b.classList.toggle("active",on);b.setAttribute("aria-pressed",String(on))});
  document.querySelectorAll(".teacher-nav [data-tab]").forEach(el=>el.classList.toggle("active",el.dataset.tab===(NAV_OF[tab]||tab)));
  if(tab==="reglages"){
   const exercise=document.querySelector('[data-section="reglages"][data-sub="'+activeSubs.reglages+'"]');
@@ -1315,7 +1345,7 @@ $("progressionPicker").addEventListener("toggle",()=>{
 document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
 document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{const [tab,sub]=b.dataset.go.split(":");activeSubs[tab]=sub;showTab(tab);window.scrollTo({top:0,behavior:"smooth"})});
 document.querySelectorAll("[data-sub-btn]").forEach(button=>button.onclick=()=>{
- const tab=button.closest(".sub-picker").dataset.section, sub=button.dataset.subBtn;
+ const tab=button.closest("[data-section]").dataset.section, sub=button.dataset.subBtn;
  if(tab==="eleves"&&activeSubs.eleves==="liste"&&sub==="ajout"){
   const c=allClasses.find(c=>c.id===$("managedClass").value&&!c.ghosted_at);
   if(c){
