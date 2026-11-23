@@ -68,11 +68,18 @@
     /* panneaux (affichés par la fonction d'affichage de la page grâce à data-section) */
     var prog = el("section", "panel feature-card calc-card hidden"); prog.setAttribute("data-section", "calc-progression"); prog.id = "calcProgress";
     var reg = el("section", "panel feature-card calc-card hidden"); reg.setAttribute("data-section", "calc-reglages"); reg.id = "calcSettings";
-    var acc = el("section", "panel feature-card calc-card hidden"); acc.setAttribute("data-section", "enseignants"); acc.setAttribute("data-role", "admin"); acc.id = "calcAccess";
-    content.appendChild(prog); content.appendChild(reg); content.appendChild(acc);
+    content.appendChild(prog); content.appendChild(reg);
     [bProg, bReg].forEach(function (b) { b.addEventListener("click", function () { if (mode === "calcul") render(b.dataset.tab); }); });
-    var bEns = $('[data-tab="enseignants"]', nav);
-    if (role === "admin" && bEns) bEns.addEventListener("click", renderAccess);
+    var adminPanel = $("#adminPanel");
+    if (role === "admin" && adminPanel) {
+      var access = el("details", "admin-fold"), holder = el("div");
+      holder.id = "calcAccess";
+      access.appendChild(el("summary", "", "Accès au laboratoire Calcul"));
+      access.appendChild(holder); adminPanel.appendChild(access);
+      access.addEventListener("toggle", function () {
+        if (access.open && !holder.firstChild) renderAccess();
+      });
+    }
     return true;
   }
   function head(icon, title, sub) {
@@ -538,8 +545,6 @@
   /* ===== Accès au laboratoire (administrateur) ===== */
   function renderAccess() {
     var box = $("#calcAccess"); clear(box);
-    box.appendChild(el("span", "admin-scope-label", "Administration"));
-    box.appendChild(head("🔐", "Accès au laboratoire de calcul", "Réservé à l’administrateur : qui voit le Zoo de Calcul."));
     var holder = el("div"); box.appendChild(holder); holder.appendChild(el("p", "muted", "Chargement…"));
     function load() { rpc("lab_admin_state").then(paint).catch(function () { clear(holder); holder.appendChild(el("p", "msg err", "Impossible de charger les accès.")); }); }
     function paint(st) {
