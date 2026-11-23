@@ -467,17 +467,11 @@
   function renderSettings() {
     var box = $("#calcSettings"); clear(box);
     box.appendChild(head("🎓", "Pédagogie du calcul", "Ces réglages de Calcul s’appliquent à vos classes qui utilisent vos réglages personnels."));
-    var content = el("section", "panel"), detached = el("button", "secondary", "🎯 Exercices décrochés");
-    content.appendChild(el("h2", "", "Paramétrer le contenu des exercices"));
-    detached.type = "button"; detached.setAttribute("aria-expanded", "false");
-    var detachedList = el("div"); detachedList.hidden = true;
-    detachedList.appendChild(el("p", "muted", "Aucun exercice collectif de Calcul n’est disponible pour le moment."));
-    detached.addEventListener("click", function () {
-      detachedList.hidden = !detachedList.hidden; detached.setAttribute("aria-expanded", String(!detachedList.hidden));
-    });
-    content.appendChild(detached); content.appendChild(detachedList); box.appendChild(content);
-    var st = el("span", "save-state", ""); st.id = "calcSave"; st.setAttribute("role", "status"); box.appendChild(st);
-    var f = el("div", "calc-fields"); box.appendChild(f);
+    var content = el("details", "panel exercise-picker"), menu = el("div", "actions");
+    var st = el("span", "save-state", ""); st.id = "calcSave"; st.setAttribute("role", "status");
+    var f = el("div", "calc-fields"); f.hidden = true;
+    content.appendChild(el("summary", "", "Les exercices"));
+    content.appendChild(menu); content.appendChild(st); content.appendChild(f); box.appendChild(content);
     rpc("lab_teacher_settings_get").then(function (s) {
       settings = s || {}; saved = JSON.stringify(settings);
       var q = el("input"), qd = el("div"), p = el("input"), pd = el("div"), vd = el("div"), v = el("input");
@@ -485,14 +479,23 @@
       var lq = el("label", "", "Nombre de questions par série (5 à 20)"); lq.setAttribute("for", "calcQ"); qd.appendChild(lq); qd.appendChild(q); f.appendChild(qd);
       var lp = el("label", "", "Une série est réussie à partir de … % de bonnes réponses du premier coup (50 à 100)"); lp.setAttribute("for", "calcP"); pd.appendChild(lp); pd.appendChild(p); f.appendChild(pd);
       var lv = el("label", "", ""); lv.style.display = "flex"; lv.style.gap = "8px"; lv.style.alignItems = "center"; v.style.width = v.style.height = "20px"; lv.appendChild(v); lv.appendChild(document.createTextNode("Lire automatiquement le nombre à voix haute (ÉCOUTER)")); vd.appendChild(lv); f.appendChild(vd);
-      var boxes = {}, orders = {};
+      var boxes = {}, orders = {}, activities = {}, controls = {};
       /* Les choix s’insèrent dans l’ordre commun de la mission. */
       Object.keys(ACT).forEach(function (a) {
         var fs = el("fieldset"), lg = el("legend", "", ACT[a].icon + " " + ACT[a].title + " — étapes proposées"), list = el("ol", "calc-order"), on = enabled(a);
         fs.style.border = "0"; fs.style.padding = "0"; fs.style.margin = "0"; lg.style.fontWeight = "800"; fs.appendChild(lg);
         orders[a] = E.missionLevels(a); boxes[a] = {};
         orders[a].forEach(function (id) { boxes[a][id] = on.indexOf(id) >= 0; });
-        fs.appendChild(list); f.appendChild(fs);
+        fs.appendChild(list); f.appendChild(fs); activities[a]=fs; fs.hidden=true;
+        var activity=el("button","secondary",ACT[a].icon+" "+ACT[a].title); activity.type="button";
+        activity.setAttribute("aria-pressed","false"); controls[a]=activity; menu.appendChild(activity);
+        activity.onclick=function () {
+          f.hidden=false;note.hidden=true;detached.setAttribute("aria-expanded","false");
+          Object.keys(activities).forEach(function (key) {
+            activities[key].hidden=key!==a; controls[key].setAttribute("aria-pressed",String(key===a));
+          });
+          vd.hidden=a!=="nombres";
+        };
         orders[a].forEach(function (id) {
           var lv2 = E.levelInfo(a, id), li = el("li", "calc-step"), cb = el("input"), lab = el("label");
           cb.type = "checkbox"; cb.value = id; cb.checked = !!boxes[a][id]; cb.disabled = E.isRequired(id); cb.addEventListener("change", function () { boxes[a][id] = cb.checked; });
@@ -501,6 +504,23 @@
           li.appendChild(lab); list.appendChild(li);
         });
       });
+      Object.keys(activities).forEach(function(a){
+        var row=el("div","exercise-preview-actions"), select=el("select"), preview=el("button","","Visualiser");
+        select.setAttribute("aria-label","Étape à visualiser"); preview.type="button";
+        orders[a].forEach(function(id){
+          var opt=el("option","",E.levelInfo(a,id).label);opt.value=id;select.appendChild(opt);
+        });
+        select.value=orders[a].filter(function(id){return boxes[a][id];})[0]||orders[a][0];
+        preview.onclick=function(){window.ZooExercisePreview("labo-calcul.html",{act:a,id:select.value,settings:collect()});};
+        row.appendChild(select);row.appendChild(preview);activities[a].appendChild(row);
+      });
+      var detached=el("button","secondary","🎯 Exercices décrochés"), note=el("p","muted","Aucun exercice collectif de Calcul n’est disponible pour le moment.");
+      detached.type="button";detached.setAttribute("aria-expanded","false");note.hidden=true;
+      detached.onclick=function(){
+        note.hidden=!note.hidden;detached.setAttribute("aria-expanded",String(!note.hidden));
+        f.hidden=true;Object.keys(controls).forEach(function(a){controls[a].setAttribute("aria-pressed","false");});
+      };
+      menu.appendChild(detached);content.appendChild(note);
       f.appendChild(el("p", "muted", "La mission alterne reconnaissance des nombres et calcul. Une première étoile ouvre la suite. Les paliers jusqu’à 5 et jusqu’à 10 font partie du parcours de tous les élèves. Les soustractions s’ouvrent après la reconnaissance des nombres jusqu’à 16. Si vous décochez une étape de reconnaissance, les calculs qui en dépendent attendront que les mêmes nombres soient validés dans une autre étape."));
       function collect() {
         var levels = {}; Object.keys(orders).forEach(function (a) { levels[a] = orders[a].filter(function (id) { return boxes[a][id]; }); if (levels[a].length) levels[a] = levels[a].concat(E.marks(a)); });
@@ -521,14 +541,14 @@
         var s2 = collect(); if (Object.keys(s2.levels).some(function (k) { return !s2.levels[k].length; })) { setState("⚠️ Gardez au moins une étape par activité.", "err"); return Promise.resolve({message:"Gardez au moins une étape par activité."}); }
         return rpc("lab_teacher_settings_set", { p_settings: s2 }).then(function (r) { settings = r || {}; setState("✓ Enregistré", "ok"); clearTimeout(okTimer); okTimer = setTimeout(function () { if (st.className.indexOf("ok") >= 0) setState("", ""); }, 2000); }).catch(function (error) { setState("⚠️ Non enregistré : vérifiez la connexion. Nouvel essai dans quelques secondes.", "err"); saveTimer = setTimeout(flush, 5000); return error; });
       }
-      function queue() { setState("Modifications en cours…", "pending"); clearTimeout(saveTimer); saveTimer = setTimeout(flush, 1000); }
+      function queue(event) { if (event.target.closest(".exercise-preview-actions")) return; setState("Modifications en cours…", "pending"); clearTimeout(saveTimer); saveTimer = setTimeout(flush, 1000); }
       f.addEventListener("input", queue); f.addEventListener("change", queue);
       if (role === "admin" && window.ZooClassPedagogy) {
         var share = el("section", "panel", ""); share.setAttribute("data-admin-surface", "");
         share.appendChild(el("span", "admin-scope-label", "Administration"));
         share.appendChild(el("h2", "", "Partager mes réglages de Calcul"));
         share.appendChild(el("p", "muted", "Vos réglages servent aussi de modèle lors des nouvelles inscriptions."));
-        var target = el("div"); share.appendChild(target); box.insertBefore(share, f);
+        var target = el("div"); share.appendChild(target); box.appendChild(share);
         window.ZooClassPedagogy(target, "calcul", flush);
       }
     }).catch(function () { st.textContent = "⚠️ Impossible de charger les réglages."; st.className = "save-state err"; });

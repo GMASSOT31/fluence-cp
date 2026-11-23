@@ -239,7 +239,10 @@
 body.mode-student #zoo-top-stats .zoo-top-stat.wallet-raised{display:flex}
 .wallet-gain{position:absolute;top:calc(100% + 3px);right:0;background:#fff2af;color:#3b2605;padding:4px 8px;border-radius:8px;white-space:nowrap;font-weight:bold;font-size:.85rem}
 </style>
-</head>
+<style>
+.exercise-preview-mode #layout{grid-template-columns:minmax(0,1fr)!important}
+.exercise-preview-mode header,.exercise-preview-mode #panel-left,.exercise-preview-mode #panel-right,.exercise-preview-mode #bottom-nav{display:none!important}
+</style></head>
 <body class="mode-student calc">
 <main>
   <header>
@@ -315,6 +318,7 @@ body.mode-student #zoo-top-stats .zoo-top-stat.wallet-raised{display:flex}
 (function () {
   "use strict";
   var CFG = window.LABO_CALCUL || { enabled: false }, E = window.CalcEngine, V = window.CalcVoice;
+  var previewMode = /[?&]apercu=1(&|$)/.test(location.search), previewExercise = null;
   var token = null, client = null, R = null, view = "home", toastTimer = null;
   var S = { name: "", avatar: "🧑", levels: {}, nums: {}, calcs: {}, coins: 0, credits: 0, settings: {}, wheels: 0 };
   var ACT = {
@@ -454,6 +458,7 @@ body.mode-student #zoo-top-stats .zoo-top-stat.wallet-raised{display:flex}
   /* Parcours en cours : ÉCOUTER (violet), Addition (orange) ou Soustraction (rose) ; il change dès que l'élève entre dans une activité */
   function setPath(a) { document.body.setAttribute("data-path", a); }
   function goTo(v) {
+    if (previewExercise) { V.stop(); startRound(previewExercise.act,previewExercise.id); return; }
     if (v === "cartes") setPath("nombres");
     V.stop(); R = null; view = v; document.body.classList.remove("listen-focus", "zoo-playing", "zoo-view");
     var me = $("me-menu"); me.hidden = true; $("bn-me").setAttribute("aria-expanded", "false");
@@ -537,7 +542,7 @@ body.mode-student #zoo-top-stats .zoo-top-stat.wallet-raised{display:flex}
   }
   /* ===== Une série (l'écran entier est consacré à l'exercice, comme l'écoute de la lecture) ===== */
   function startRound(act, id) {
-    if (!canPlay(mission(), act, id)) { goTo("home"); return; }
+    if (!previewMode && !canPlay(mission(), act, id)) { goTo("home"); return; }
     setPath(act);
     var n = Math.max(5, Math.min(20, parseInt(S.settings.questions, 10) || 10));
     R = { act: act, lv: id, qs: E.makeRound(act, id, n), i: 0, good: 0, replays: 0, helps: 0, times: [], id: uuid(), res: [], q: null, nums: [], calcs: [] };
@@ -807,7 +812,16 @@ body.mode-student #zoo-top-stats .zoo-top-stat.wallet-raised{display:flex}
   }
   function finish() {
     V.stop(); var box = $("view"); clear(box);
-    var n = R.qs.length, g = R.good, wait = el("div", "card calc-card stage"), stats = { replays: R.replays, helps: R.helps, ms: median(R.times), nums: R.nums, calcs: R.calcs };
+    var n = R.qs.length, g = R.good;
+    if (previewMode) {
+      var card=el("div","card calc-card stage"), replay=el("button","primary big-btn","Rejouer");
+      var pass=Math.min(100,Math.max(50,Number(S.settings.pass)||80));
+      card.appendChild(el("h2","","Série terminée !"));
+      card.appendChild(el("p","",g+" bonnes réponses du premier coup sur "+n+" · "+(g*100>=pass*n?"Série réussie":"Seuil de réussite : "+pass+" %")));
+      replay.type="button";replay.onclick=function(){startRound(previewExercise.act,previewExercise.id);};
+      card.appendChild(replay);box.appendChild(card);return;
+    }
+    var wait = el("div", "card calc-card stage"), stats = { replays: R.replays, helps: R.helps, ms: median(R.times), nums: R.nums, calcs: R.calcs };
     var info = el("p", "msg", "Je range ton résultat…"); wait.appendChild(el("h2", "", "Bravo, tu as fini !")); wait.appendChild(info); var row = el("div", "crow"); wait.appendChild(row); box.appendChild(wait);
     /* Ordre : d'abord l'éclosion (si un œuf doit éclore ou un animal grandir), le bilan seulement après « Continuer » ; aucun bouton du bilan n'existe avant */
     function done(res) {
@@ -1109,7 +1123,17 @@ body.mode-student #zoo-top-stats .zoo-top-stat.wallet-raised{display:flex}
   function lecture() { location.href = "zoo-connecte.html"; }
   $("me-lecture").addEventListener("click", lecture);
 
-  boot();
+  if (previewMode) {
+    window.addEventListener("message",function receive(event) {
+      if (event.source!==window.parent || event.origin!==location.origin || !event.data || !event.data.zooExercisePreview) return;
+      var preview=event.data.zooExercisePreview;
+      if (!E.levelInfo(preview.act,preview.id)) { gate("Cette étape n’est pas disponible."); return; }
+      window.removeEventListener("message",receive);
+      previewExercise=preview;S.settings=preview.settings||{};
+      document.body.classList.add("exercise-preview-mode");
+      startRound(preview.act,preview.id);
+    });
+  } else boot();
 })();
 </script>
 </body>
