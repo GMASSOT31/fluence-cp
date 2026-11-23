@@ -210,7 +210,7 @@
     if (view.paint) view.paint();
     var students = document.querySelector("#calcProgress .pb-students");
     if (students) students.open = true;
-    var line = document.querySelector('#calcProgress .pb-row[data-sid="' + id + '"]'); if (line) line.scrollIntoView({ block: "start", behavior: "smooth" });
+    var line = document.querySelector('#calcProgress .pb-row[data-sid="' + id + '"]'); if (window.ZooPeda) window.ZooPeda.scrollToStudent(line);
   }
   /* 1. À faire aujourd’hui : élèves bloqués (par étape), élèves en retard, élèves absents */
   function todoCalc(rows) {
