@@ -1127,12 +1127,14 @@ body.mode-student #zoo-top-stats .zoo-top-stat.wallet-raised{display:flex}
     window.addEventListener("message",function receive(event) {
       if (event.source!==window.parent || event.origin!==location.origin || !event.data || !event.data.zooExercisePreview) return;
       var preview=event.data.zooExercisePreview;
+      window.parent.postMessage({zooExercisePreviewStarted:true},location.origin);
       if (!E.levelInfo(preview.act,preview.id)) { gate("Cette étape n’est pas disponible."); return; }
       window.removeEventListener("message",receive);
       previewExercise=preview;S.settings=preview.settings||{};
       document.body.classList.add("exercise-preview-mode");
       startRound(preview.act,preview.id);
     });
+    window.parent.postMessage({zooExercisePreviewReady:true},location.origin);
   } else boot();
 })();
 </script>

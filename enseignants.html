@@ -587,6 +587,7 @@ body.teacher-mode .teacher-header .teacher-nav button:is([data-role="admin"],[da
 .exercise-preview::backdrop{background:#201834aa}
 .exercise-preview[open]{position:fixed;inset:0;margin:auto;display:flex;flex-direction:column;overflow:hidden;z-index:1000}
 .exercise-preview>div{position:relative;z-index:1;background:white;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;font-weight:800}
+.exercise-preview-status{margin:12px}
 .exercise-preview iframe{position:static;display:block;flex:1 1 0;min-height:0;width:100%;height:0;border:0}
 .compr-edit-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:10px 0}
 .compr-edit-row input{max-width:100%}
@@ -1204,12 +1205,31 @@ window.ZooExercisePreview=function(path,payload){
  dialog.className="exercise-preview";dialog.setAttribute("aria-label","Aperçu de l’exercice");
  header.append("Aperçu · aucun résultat enregistré",close);close.textContent="Fermer";close.type="button";
  frame.title="Exercice à essayer";
- frame.onload=()=>frame.contentWindow.postMessage({zooExercisePreview:payload},location.origin);
+ frame.style.visibility="hidden";
+ const status=document.createElement("p");status.className="exercise-preview-status";
+ status.setAttribute("role","status");status.textContent="Chargement de l’exercice…";
  const trigger=document.activeElement;
- const dismiss=()=>{dialog.remove();if(trigger)trigger.focus();};
+ const timer=setTimeout(()=>{
+  status.textContent="L’aperçu n’a pas pu se charger. Fermez cette fenêtre, actualisez la page et réessayez.";
+  window.removeEventListener("message",receive);
+ },12000);
+ function receive(event){
+  if(event.origin!==location.origin||event.source!==frame.contentWindow||!event.data)return;
+  if(event.data.zooExercisePreviewReady===true){
+   frame.contentWindow.postMessage({zooExercisePreview:payload},location.origin);
+  }else if(event.data.zooExercisePreviewStarted===true){
+   clearTimeout(timer);window.removeEventListener("message",receive);
+   status.remove();frame.style.visibility="";
+  }
+ }
+ const dismiss=()=>{
+  clearTimeout(timer);window.removeEventListener("message",receive);
+  dialog.remove();if(trigger)trigger.focus();
+ };
  close.onclick=dismiss;dialog.addEventListener("close",dismiss);
- dialog.append(header,frame);document.body.append(dialog);
- frame.src=path+"?apercu=1";
+ window.addEventListener("message",receive);
+ frame.src=path+"?apercu=1&version=2";
+ dialog.append(header,status,frame);document.body.append(dialog);
  if(dialog.showModal)dialog.showModal();else dialog.setAttribute("open","");
  close.focus();
 };
