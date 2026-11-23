@@ -239,6 +239,24 @@ body.teacher-mode .teacher-header .teacher-nav button.active{background:#1b2433;
 .pb-see{padding:8px 14px}
 .pb-btns .pb-asb{background:#eee5fa;color:#452579;border:1px solid #a682ca;font-weight:800}
 .pb-btns .pb-asb:hover,.pb-btns .pb-asb[aria-expanded="true"]{background:#e0cdf6}
+.pb-kids{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:6px 0}
+.pb-kid{display:flex;align-items:center;gap:8px;padding:12px 14px;border-radius:14px;background:#fff;border:1px solid #e3e7ef;color:var(--ink,#242044);font-weight:700;text-align:left;cursor:pointer}
+.pb-kid:hover,.pb-kid:focus-visible{border-color:#7046ce;box-shadow:0 0 0 3px #7046ce22}
+.pb-kid .pb-kname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pb-fiche{display:flex;flex-direction:column;gap:14px}
+.pb-fnav{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}.pb-fpn{display:flex;gap:6px}
+.pb-fhead{padding:14px 16px;border-radius:16px;background:#fff;border:1px solid #e3e7ef;border-left:8px solid #c9cdd6}
+.pb-fhead.c-red{border-left-color:#d64545}.pb-fhead.c-yellow{border-left-color:#e3b20b}.pb-fhead.c-green{border-left-color:#2e9b6a}
+.pb-fhead h3{margin:0 0 8px;font-size:1.5rem}
+.pb-ftop{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:14px;align-items:center}
+.pb-ftiles{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+.pb-fweb{text-align:center}.pb-web{width:100%;max-width:340px;height:auto}
+.pb-now{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.pb-now li{padding:10px 12px;border-radius:12px;background:#f6f3ff;border:1px solid #e3dcf5}
+.pb-now li.pb-now-rec{background:#fff6dc;border-color:#f0d58a;font-weight:600}.pb-now li.pb-now-warn{background:#fdecec;border-color:#f3c3c3}.pb-now li.pb-now-ok{background:#ecf8f1;border-color:#c9ebd8}
+.pb-factions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.pb-fall>summary{font-weight:800;padding:10px 0;cursor:pointer}
+@media(max-width:700px){.pb-ftop{grid-template-columns:1fr}.pb-kids{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .pb-gs{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:999px;background:#e5f4ec;color:#1d6b45;font-size:.78rem;font-weight:800}
 .pb-track{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0;padding:10px 12px;border-radius:14px;background:#f6f3ff;border:1px solid #e3dcf5}
 .pb-trk{padding:8px 14px;border-radius:999px;background:#fff;color:#3c3472;border:1px solid #cfd6e3;font-weight:700}
@@ -480,8 +498,8 @@ body.teacher-mode .teacher-header .teacher-nav button:is([data-role="admin"],[da
  <aside class="panel teacher-header" aria-label="Menu de l’espace enseignant">
   <div class="side-title">🧑‍🏫 Espace enseignant</div>
   <nav class="teacher-nav" aria-label="Rubriques de l'espace enseignant">
-   <button type="button" data-tab="pedagogie"><span class="nav-ico" aria-hidden="true">🏫</span><span class="nav-label">Ma classe</span></button>
-   <button type="button" data-tab="ecouter"><span class="nav-ico" aria-hidden="true">🎧</span><span class="nav-label">À écouter</span><span class="nav-badge hidden" id="listenBadge"></span></button>
+   <button type="button" data-tab="pedagogie"><span class="nav-ico" aria-hidden="true">🏫</span><span class="nav-label">Ma classe</span><span class="nav-badge hidden" id="listenBadge" title="Lectures à écouter"></span></button>
+   <!-- « À écouter » est intégré à Ma classe (fiche de l’élève et « À faire aujourd’hui ») depuis le 23/11/2026 ; la section reste accessible par showTab("ecouter") -->
    <button type="button" data-tab="eleves"><span class="nav-ico" aria-hidden="true">📚</span><span class="nav-label">Mes classes</span></button>
    <button type="button" data-tab="reglages"><span class="nav-ico" aria-hidden="true">🎓</span><span class="nav-label">Pédagogie</span></button>
    <button type="button" data-tab="general"><span class="nav-ico" aria-hidden="true">⚙️</span><span class="nav-label">Réglages<span class="nav-long"> généraux</span></span></button>
@@ -567,7 +585,7 @@ body.teacher-mode .teacher-header .teacher-nav button:is([data-role="admin"],[da
     <button type="button" id="vocabPublish" disabled>Enregistrer les corpus</button>
     <p id="vocabImportStatus" role="status"></p>
   </section>
-  <p class="muted">Pour donner aussi un exercice de phonologie, d’écoute, de dictée, de compréhension ou de tuiles, ouvrez la ligne de l’élève dans <button type="button" class="secondary" data-tab="pedagogie">Ma classe</button>.</p>
+  <p class="muted">Pour donner aussi un exercice de phonologie, d’écoute, de dictée, de compréhension ou de tuiles, ouvrez la fiche de l’élève dans <button type="button" class="secondary" data-tab="pedagogie">Ma classe</button>.</p>
 </section>
 <section class="panel feature-card zoo-card" id="objSettings" data-section="reglages" data-sub="obj"><div class="section-head"><div class="section-icon">🎯</div><div><h2>Critère de réussite Fluence</h2><p class="muted">Ce que l’élève doit atteindre en 1 minute de lecture. Enregistrement automatique.</p></div></div><p class="save-state" id="objSave" role="status"></p><div class="zoo-form">
  <h3>Vitesse pour réussir une étape</h3><div class="eval-grid"><label>Syllabes par minute<input id="thrS" type="number" min="1" max="300" required value="25"></label><label>Mots par minute<input id="thrM" type="number" min="1" max="300" required value="20"></label><label>Texte : mots par minute<input id="thrT" type="number" min="1" max="300" required value="15"></label></div>
@@ -679,7 +697,7 @@ body.teacher-mode .teacher-header .teacher-nav button:is([data-role="admin"],[da
  <h3 style="margin:22px 0 8px">✉️ Messages du formulaire de contact</h3><p class="muted">Écrits sans compte depuis la page Contact du site. Répondez par e-mail.</p><p class="msg" id="ctMsg" role="status"></p><div id="ctList" class="content-list"></div>
 </section>
 </div>
-</section></main><script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=28"><\/script>':'<script src="vendor/supabase.js?v=2.118.0"><\/script>');})();</script><script src="profils.js?v=2"></script><script src="exo-data.js?v=6"></script><script src="gs-data.js?v=1"></script><script src="vocabulaire.js?v=4"></script><script src="vocabulaire-import.js?v=3"></script><script src="vendor/qrcode.js?v=1.4.4"></script><script src="pedagogie.js?v=27"></script><script src="mes-sons.js?v=1"></script><script src="compr-admin.js?v=5"></script><script>
+</section></main><script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=28"><\/script>':'<script src="vendor/supabase.js?v=2.118.0"><\/script>');})();</script><script src="profils.js?v=2"></script><script src="exo-data.js?v=6"></script><script src="gs-data.js?v=1"></script><script src="vocabulaire.js?v=4"></script><script src="vocabulaire-import.js?v=3"></script><script src="vendor/qrcode.js?v=1.4.4"></script><script src="pedagogie.js?v=29"></script><script src="mes-sons.js?v=1"></script><script src="compr-admin.js?v=5"></script><script>
 (function(){
 "use strict";
 /* Retour du lien « Mot de passe oublié » : on lit l’adresse avant que la bibliothèque Supabase ne la nettoie */
