@@ -9,6 +9,8 @@
 - **Administration et appareils partagés** : « Mes classes » affiche les informations de la classe sélectionnée. « Administration des enseignants » propose trois volets repliés (invitation, quotas et accès Calcul). « Qui es-tu ? » retient 16 profils élèves par appareil et les affiche en quatre colonnes sur tablette et ordinateur.
 - **Repères des imagiers (23/11/2026, PR 366, reprise de la PR 349 fermée)** : migration `20261208_imagiers_attribues_classe.sql` appliquée (`teacher_class_vocabulary`, lecture seule, enseignant de la classe ou admin). Le sélecteur individuel marque « Nouveau / Déjà attribué / Réussi » ; `settings.vocabGiven` garde les imagiers déjà donnés à chaque élève. Faux serveur : `?imagiers=1`.
 
+- **Chantier en cours : parcours GS / CP / CE1 (depuis le 23/11/2026)** : cahier des charges `docs/parcours-gs/cahier-des-charges.md`, état et choix techniques `docs/parcours-gs/avancement.md` (à lire avant toute tâche de ce chantier, à mettre à jour à chaque étape).
+
 ## 1. Objectif
 Appli web de fluence de lecture pour des classes de CP, en ligne sur https://zoodelecture.fr
 - **Élève** (eleve.html → zoo-connecte.html) : lecture d'1 minute par son et par niveau (syllabes, mots, texte), en entraînement ou évaluation ; exercice d'écoute « J'écoute » ; animaux qui éclosent et grandissent ; pièces, roue, 8 jeux, boutique.
