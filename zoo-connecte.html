@@ -8803,7 +8803,9 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       if (event.source!==window.parent || event.origin!==location.origin || !event.data || !event.data.zooExercisePreview) return;
       window.removeEventListener("message",receive);
       bootExercisePreview(event.data.zooExercisePreview);
+      window.parent.postMessage({zooExercisePreviewStarted:true},location.origin);
     });
+    window.parent.postMessage({zooExercisePreviewReady:true},location.origin);
   } else bootCloud();
 })();
 </script>
