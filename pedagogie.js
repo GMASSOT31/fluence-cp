@@ -446,18 +446,26 @@
   function gsCard(r) {
     var D = window.ZooGSData, card = mk("div", "pb-gscard"), g = (r.p && r.p.gs) || {};
     if (!D) return card;
-    var cfg = D.config(window.pedaGsCfg), list = D.steps("cap", cfg, r.s.nickname), st = D.compState(g.lecture && g.lecture.cap);
-    var series = Array.isArray(g.series) ? g.series.filter(function (x) { return x && x.c === "cap"; }) : [], sm = D.summary(st, list, series);
+    var cfg = D.config(window.pedaGsCfg), items = D.path(cfg, r.s.nickname), st = D.lecState(g.lecture);
+    var series = Array.isArray(g.series) ? g.series.filter(function (x) { return x && D.COMP[x.c || "cap"]; }) : [], sm = D.pathSummary(st, items, series), cur = sm.item;
     var label = { nouveau: "pas encore commencé", en_cours: "en cours", maitrise: "toutes les lettres sont validées", difficulte: "en difficulté" }[sm.status];
     card.append(mk("h4", null, "🔤 Les lettres (parcours GS)"));
     card.append(mk("p", null, sm.done + " étape" + (sm.done > 1 ? "s" : "") + " validée" + (sm.done > 1 ? "s" : "") + " sur " + sm.total + " · " + label));
     var bar = mk("div", "pb-bar"), fill = mk("i"); fill.style.width = sm.pct + "%"; bar.append(fill); card.append(bar);
-    if (sm.current >= 0) card.append(mk("p", "muted", "En cours : " + D.stepLabel(list[sm.current]) + " (" + list[sm.current].targets.join(" ") + ")" + (st.ok ? " · " + st.ok + " série réussie sur " + cfg.cap.series : "") + (st.aid ? " · 🤝 aide activée" : "")));
+    if (cur) { var cs = st[cur.comp]; card.append(mk("p", "muted", "En cours : " + D.stepLabel(cur.step, cur.comp) + " (" + cur.step.targets.join(" ") + ")" + (cs.ok ? " · " + cs.ok + " série réussie sur " + cfg[cur.comp].series : "") + (cs.aid ? " · 🤝 aide activée" : ""))); }
+    /* une ligne par activité : étapes validées / total */
+    var acts = mk("ul", "pb-gsacts");
+    D.COMPS.lecture.forEach(function (k) {
+      var its = items.filter(function (x) { return x.comp === k.id; }); if (!its.length) return;
+      var n = its.filter(function (x) { return st[k.id].val[x.step.key]; }).length;
+      acts.append(mk("li", null, (n === its.length ? "✅ " : n ? "🟡 " : "⚪ ") + k.nom + " : " + n + " / " + its.length));
+    });
+    card.append(acts);
     var det = mk("details", "pb-gsdet"); det.append(mk("summary", null, "Voir le détail"));
-    var vals = list.filter(function (x) { return st.val[x.key]; });
-    if (vals.length) { var ul = mk("ul"); vals.forEach(function (x) { ul.append(mk("li", null, "✅ " + D.stepLabel(x) + " (" + x.targets.join(" ") + ") — " + new Date(st.val[x.key]).toLocaleDateString("fr-FR"))); }); det.append(ul); }
+    var vals = items.filter(function (x) { return st[x.comp].val[x.step.key]; });
+    if (vals.length) { var ul = mk("ul"); vals.forEach(function (x) { ul.append(mk("li", null, "✅ " + D.stepLabel(x.step, x.comp) + " (" + x.step.targets.join(" ") + ") — " + new Date(st[x.comp].val[x.step.key]).toLocaleDateString("fr-FR"))); }); det.append(ul); }
     var last = series.slice(-8).reverse();
-    if (last.length) { var ul2 = mk("ul"); last.forEach(function (x) { ul2.append(mk("li", null, (x.ok ? "✓ " : "✗ ") + x.g + "/" + x.q + (x.aid ? " avec aide" : "") + " — " + new Date(x.ts).toLocaleDateString("fr-FR") + " " + new Date(x.ts).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }))); }); det.append(mk("p", "muted", "Dernières séries :"), ul2); }
+    if (last.length) { var ul2 = mk("ul"); last.forEach(function (x) { ul2.append(mk("li", null, (x.ok ? "✓ " : "✗ ") + (D.COMP[x.c || "cap"] || {}).court + " · " + x.g + "/" + x.q + (x.aid ? " avec aide" : "") + " — " + new Date(x.ts).toLocaleDateString("fr-FR") + " " + new Date(x.ts).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }))); }); det.append(mk("p", "muted", "Dernières séries :"), ul2); }
     else det.append(mk("p", "muted", "Aucune série pour l’instant."));
     card.append(det);
     return card;
@@ -519,9 +527,9 @@
     var top = mk("div", "pb-ftop"), tiles = mk("div", "pb-tiles pb-ftiles");
     function tile(ico, val, lab) { var d = mk("div", "pb-tile"); d.append(mk("span", "pb-ico", ico), mk("b", null, val), mk("small", null, lab)); tiles.append(d); }
     if (gs && window.ZooGSData) {
-      var D = window.ZooGSData, g = (r.p && r.p.gs) || {}, gl = D.steps("cap", D.config(window.pedaGsCfg), r.s.nickname), gst = D.compState(g.lecture && g.lecture.cap), sm = D.summary(gst, gl, (g.series || []).filter(function (x) { return x && x.c === "cap"; }));
+      var D = window.ZooGSData, g = (r.p && r.p.gs) || {}, gl = D.path(D.config(window.pedaGsCfg), r.s.nickname), gst = D.lecState(g.lecture), sm = D.pathSummary(gst, gl, g.series || []), gc = sm.item;
       tile("🔤", sm.done + " / " + sm.total, "Étapes des lettres validées");
-      tile("🎯", sm.current >= 0 ? gl[sm.current].targets.join(" ") : "✓", sm.current >= 0 ? "Lettres en cours" + (gst.aid ? " · aide" : "") : "Toutes les lettres");
+      tile("🎯", gc ? gc.step.targets.join(" ") : "✓", gc ? D.COMP[gc.comp].court + (gst[gc.comp].aid ? " · aide" : "") : "Toutes les lettres");
     } else {
       tile("📖", r.nValid + " / " + r.total, "Sons validés");
       tile("🔤", r.cur ? "« " + soundName(r.cur.id) + " »" : "🎉", r.cur ? (r.blocked ? "Son en cours · bloqué" : "Son en cours") : "Tous les sons validés");

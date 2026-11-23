@@ -33,6 +33,8 @@ CLIPS.update({
     "c:rituel": "D’abord, écoute la comptine des lettres. Touche le gros bouton.",
     "c:fini": "Bravo, tu connais toutes les lettres ! Tu peux t’entraîner encore.",
     "c:roue": "Une roue t’attend. Touche le gros bouton pour la lancer.",
+    "c:meme": "Touche la même lettre.",
+    "c:ordre": "Range les lettres dans l’ordre de l’alphabet.",
 })
 
 
