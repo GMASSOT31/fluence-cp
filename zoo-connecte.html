@@ -1568,6 +1568,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   <section id="v-reconnues" hidden><div id="reconnues-body"></div></section>
   <section id="v-ecrites" hidden><div id="ecrites-body"></div></section>
   <section id="v-phono" hidden><div id="phono-body"></div></section>
+  <section id="v-gs" hidden><div id="gs-body"></div></section>
   <section id="v-vocabulaire" hidden><div id="vocabulaire-body"></div></section>
   <section id="v-compr" hidden><div id="compr-body"></div></section>
 
@@ -1840,6 +1841,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
 })();
 </script>
 <script src="exo-data.js?v=6"></script>
+<script src="gs-data.js?v=1"></script>
+<script src="gs-lecture.js?v=1"></script>
 <script src="vocabulaire.js?v=4"></script>
 <script src="vendor/howler.core.min.js?v=2.2.4"></script>
 <script src="audio-lecture.js?v=3"></script>
@@ -2300,6 +2303,9 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     listenCfg: listenCfgClean(null),
     dictee: {},
     dicteeCfg: dicteeCfgClean(null),
+    gs: {},   /* parcours GS (gs-lecture.js) : progression par élève, enregistrée dans progress.gs */
+    tracks: {},   /* parcours choisi par l’enseignant (settings.tracks) : { lecture: "gs"|"cp" } — jamais enregistré dans la progression */
+    gsCfg: null,   /* réglages GS de l’enseignant (settings.gs) */
     phono: {},   /* « J’entends » : { passes, done, tries } par élève, comme l’écoute et la dictée */
     compr: {},   /* « Je comprends » : idem */
     remed: {},   /* exercice donné par l’enseignant (remédiation) : résultat par élève, voir remedClean */
@@ -2412,6 +2418,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       listen:data.listen[sid]||{},
       dictee:data.dictee[sid]||{},
       phono:data.phono[sid]||{},
+      gs:data.gs[sid]||{},
       compr:data.compr[sid]||{},
       remed:data.remed[sid]||{},
       stats:(data.stats&&data.stats[sid])||{},
@@ -2806,7 +2813,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   }
 
   /* ---------- Navigation ---------- */
-  var STUDENT_VIEWS = ["home", "lecture", "audition", "dictee", "phono", "compr", "vocabulaire", "cartes", "reconnues", "ecrites", "boutique", "jeux", "progres", "roue", "jeu"];
+  var STUDENT_VIEWS = ["home", "lecture", "audition", "dictee", "phono", "gs", "compr", "vocabulaire", "cartes", "reconnues", "ecrites", "boutique", "jeux", "progres", "roue", "jeu"];
   var TEACHER_VIEWS = ["eleves", "ecoute", "progression", "reglages"];
   var VIEWS = ["login"].concat(STUDENT_VIEWS, TEACHER_VIEWS);
   var GO_GROUP = { lecture: "lecture", audition: "audition", jeux: "jeux", jeu: "jeux", roue: "jeux", boutique: "boutique", cartes: "cartes", reconnues: "reconnues", ecrites: "ecrites", dictee: "dictee", progres: "progres" };
@@ -2829,6 +2836,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if (v !== "audition") { listenStop(); listenFocus(false); }
     if (v !== "dictee") dicteeStop();
     if (v !== "phono") phonoStop();
+    if (v !== "gs" && window.ZooGS) ZooGS.stop();
     if (v !== "compr") comprStop();
     if (v !== "vocabulaire") vocabStop();
     VIEWS.forEach(function (name) { $("v-" + name).hidden = (name !== v); });
@@ -2839,7 +2847,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       if (GO_GROUP[v] === b.getAttribute("data-go")) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
     });
     if (v === "login") { resetPath(); renderLogin(); }
-    if (v === "lecture" || v === "cartes" || v === "compr") setPath("read"); else if (v === "audition" || v === "reconnues" || v === "phono") setPath("listen"); else if (v === "dictee" || v === "ecrites") setPath("write");
+    if (v === "lecture" || v === "cartes" || v === "compr") setPath("read"); else if (v === "audition" || v === "reconnues" || v === "phono" || v === "gs") setPath("listen"); else if (v === "dictee" || v === "ecrites") setPath("write");
     if (v === "home") renderHome();
     if (v === "lecture") { lireReset(); renderSetup(); }
     if (v === "cartes") renderCartes();
@@ -2849,6 +2857,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if (v === "dictee") renderDictee();
     if (v === "ecrites") renderEcrites();
     if (v === "phono") renderPhono();
+    if (v === "gs" && window.ZooGS) ZooGS.render();
     if (v === "compr") renderCompr();
     if (v === "vocabulaire") vocabStart();
     if (v === "reglages") listenSettingsFill();
@@ -4179,6 +4188,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     wb.hidden = !(data.reward && pw > 0);
     wb.textContent = pw > 1 ? "Lancer la roue (" + pw + ")" : "Lancer la roue";
     var pms = mission(sid);
+    if (window.ZooGS && ZooGS.track(sid, "lecture") === "gs") $("pr-next").textContent = "les lettres"; else
     $("pr-next").textContent = pms.kind === "remed" ? "exercice de ton maître(sse)" : pms.sound ? { phono: "entendre", listen: "écouter", write: "écrire", read: "lire", compr: "comprendre" }[pms.kind] + " : " + pms.sound.label : (pms.medal || evalWaiting(sid) ? "lecture à enregistrer" : "tout est validé");
     $("pr-games").textContent = nb(cr, "partie", "parties");
     var minPrice = shopRewards().reduce(function (m, r) { return Math.min(m, r.price); }, Math.min(data.shop.packPrice, data.shop.wheelPrice, AVATAR_STYLE_PRICE));
@@ -5860,6 +5870,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     myNotes.forEach(function (n) { body.appendChild(el("div", "note", n.text)); });
     if (myNotes.length) { data.notes = data.notes.filter(function (n) { return n.sid !== sid; }); save(); }
     playPendingEvos(sid);
+    /* Parcours GS choisi par l’enseignant : accueil propre au GS (gs-lecture.js), une seule grande action */
+    if (window.ZooGS && ZooGS.track(sid, "lecture") === "gs") { ZooGS.home(body, sid, st); return; }
     /* Une seule prochaine action, bien visible, avec sa consigne lue à voix haute (🔊) pour les CP */
     var ms = mission(sid), nx = nextStep(sid), wheels = data.reward ? pendingWheels(sid).length : 0;
     var step = missionAct(sid, ms), act = step;
@@ -8650,6 +8662,12 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     toast(data.lock ? "Verrouillage activé" : "Tous les sons sont accessibles");
   });
 
+  /* Contexte donné au parcours GS (gs-lecture.js) : le grand script est fermé, comme ZooPedaCtx côté enseignant */
+  window.ZooGSCtx = function () {
+    return { get data() { return data; }, el: el, $: $, save: save, renderPanels: renderPanels, listenSpeak: listenSpeak, listenStopVoice: listenStopVoice,
+      sfxGood: sfxGood, sfxBad: sfxBad, confetti: confetti, openWheel: openWheel, pendingWheels: pendingWheels, uid: uid, goTo: goTo, quitAsk: quitAsk,
+      listenFocus: listenFocus, studentById: studentById, statDay: statDay, statExercise: statExercise };
+  };
   async function bootCloud(){
     if(!cloudToken){location.replace("eleve.html?m=session");return;}
     try {
@@ -8704,6 +8722,9 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       data.listenCfg=listenCfgClean(teacherSettings.listenCfg);
       data.dictee={};data.dictee[st.student_id]=listenClean(p.dictee);
       data.phono={};data.phono[st.student_id]=listenClean(p.phono);
+      data.gs={};if(window.ZooGS)data.gs[st.student_id]=ZooGS.clean(p.gs);
+      data.tracks={};{var trk=teacherSettings.tracks&&typeof teacherSettings.tracks==="object"?teacherSettings.tracks[st.student_id]:null;if(trk&&typeof trk==="object")data.tracks[st.student_id]={lecture:trk.lecture==="gs"?"gs":"cp"};}
+      data.gsCfg=teacherSettings.gs&&typeof teacherSettings.gs==="object"?teacherSettings.gs:null;
       data.compr={};data.compr[st.student_id]=listenClean(p.compr);
       data.stats={};data.stats[st.student_id]=statsClean(p.stats);
       data.remed={};data.remed[st.student_id]=remedClean(p.remed);

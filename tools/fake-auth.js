@@ -42,6 +42,13 @@
     var T = now - 3 * DAY;
     st.progress.p0.progress.remed = { ts: T, done: { tiles: 1 }, ok: now - DAY, tries: 2, hist: [{ type: "tiles", pair: ["b", "d"], ts: T, ok: now - DAY, tries: 2 }] };
     if (!st.zooSettings) st.zooSettings = { settings: { assign: { p0: { type: "tiles", pair: ["b", "d"], ts: T }, p1: { type: "listen", sons: ["m"], ts: now - DAY } } } };
+    /* ?gs=1 : Alya (p4) est en parcours GS en lecture, avec une étape validée, une série réussie et l'aide en cours */
+    if (/[?&]gs=1/.test(location.search)) {
+      st.zooSettings.settings.tracks = { p4: { lecture: "gs" } };
+      st.progress.p4.progress.gs = { lecture: { cap: { i: 1, ok: 0, ko: 2, aid: true, val: { "prenom-2": now - 2 * DAY } } },
+        series: [{ id: "a1", c: "cap", k: "prenom-2", q: 10, g: 9, th: 80, aid: false, ts: now - 3 * DAY, ok: true }, { id: "a2", c: "cap", k: "prenom-2", q: 10, g: 10, th: 80, aid: false, ts: now - 2 * DAY, ok: true },
+          { id: "a3", c: "cap", k: "prenom-3", q: 10, g: 6, th: 80, aid: false, ts: now - DAY, ok: false }, { id: "a4", c: "cap", k: "prenom-3", q: 10, g: 5, th: 80, aid: false, ts: now - DAY + 600000, ok: false }], rw: ["a1", "a2"] };
+    }
   })();
   function fixCode(v, isUpdate, old) {
     var c = v == null ? null : norm(v); if (c === "") c = null;

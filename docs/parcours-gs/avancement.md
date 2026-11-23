@@ -4,7 +4,7 @@
 
 ## Où en est-on ?
 - [x] Phase 0 — audit (constats ci-dessous).
-- [ ] **Étape A — prototype « Capitales » (GS Lecture)** — EN COURS, branche `claude/parcours-gs-capitales` : ✅ `gs-data.js` (définitions + moteur) et `tools/test_gs.js` (11 tests, `node tools/test_gs.js`) ; à faire : écran élève (`gs-lecture.js` branché dans zoo-connecte.html), choix du parcours + carte de suivi (pedagogie.js / enseignants.html), faux serveurs `?gs=1`, captures, PR., à faire valider par Gabriel avant toute autre activité. Comprend : choix du parcours Lecture dans la fiche élève, accueil GS de l'élève, activité 4.2 complète (paliers, séries, validation 2 × 80 %, aide après 2 échecs, roue après chaque série réussie), carte de suivi enseignant.
+- [x] **Étape A — prototype « Capitales » (GS Lecture)** — fait le 23/11/2026, branche `claude/parcours-gs-capitales` (PR à valider par Gabriel). Fichiers : `gs-data.js` (définitions + moteur, `node tools/test_gs.js`), `gs-lecture.js` (écran élève, vue `v-gs`, accueil GS dans `renderHome`, contexte `window.ZooGSCtx` de zoo-connecte.html), `pedagogie.js` (`trackBox` choix du parcours dans Détails, `gsCard` suivi, pastille « GS » sur la ligne), `enseignants.html` (`window.pedaTracks`, `window.pedaGsCfg`, `collectSettings` garde `tracks` et `gs`). Tests : `zoo-test.html?gs=1` (élève GS), `enseignants-test.html?teacher=1&pedago=1&gs=1` (Alya en GS avec aide). **Limites connues** : voix de l'appareil pour les noms de lettres ; panneaux de gauche et compteurs du bandeau restent ceux du CP (« Mes cartes lues », N0/E0) ; pas encore d'éditeur des réglages GS (défauts de gs-data.js) ; choix du parcours seulement pour ses propres élèves (pas pour l'admin sur la classe d'un autre).
 - [ ] Étape B — rituel alphabet (4.1) + voix enregistrées des noms de lettres.
 - [ ] Étape C — autres activités GS Lecture (4.3 à 4.7) sur le modèle du prototype ; police cursive.
 - [ ] Étape D — modification collective des parcours + paramétrage GS dans Pédagogie + radar GS Lecture.
@@ -40,4 +40,5 @@ Palier = groupe de lettres × nombre de propositions (2, 3, 4 ; un petit groupe 
 6. **CE1** : visible « À venir », désactivé dans le sélecteur.
 
 ## Journal
+- 23/11/2026 — Claude : prototype « Capitales » terminé et testé (moteur 11 tests, élève 4 séries : étoile, validation, échec, aide ; enseignant : GS → CP → GS sans perte ; CP inchangé).
 - 23/11/2026 — Claude : cahier des charges enregistré, audit fait, plan ci-dessus.
