@@ -4,7 +4,7 @@
 
 ## Où en est-on ?
 - [x] Phase 0 — audit (constats ci-dessous).
-- [ ] **Étape A — prototype « Capitales » (GS Lecture)**, à faire valider par Gabriel avant toute autre activité. Comprend : choix du parcours Lecture dans la fiche élève, accueil GS de l'élève, activité 4.2 complète (paliers, séries, validation 2 × 80 %, aide après 2 échecs, roue après chaque série réussie), carte de suivi enseignant.
+- [ ] **Étape A — prototype « Capitales » (GS Lecture)** — EN COURS, branche `claude/parcours-gs-capitales` : ✅ `gs-data.js` (définitions + moteur) et `tools/test_gs.js` (11 tests, `node tools/test_gs.js`) ; à faire : écran élève (`gs-lecture.js` branché dans zoo-connecte.html), choix du parcours + carte de suivi (pedagogie.js / enseignants.html), faux serveurs `?gs=1`, captures, PR., à faire valider par Gabriel avant toute autre activité. Comprend : choix du parcours Lecture dans la fiche élève, accueil GS de l'élève, activité 4.2 complète (paliers, séries, validation 2 × 80 %, aide après 2 échecs, roue après chaque série réussie), carte de suivi enseignant.
 - [ ] Étape B — rituel alphabet (4.1) + voix enregistrées des noms de lettres.
 - [ ] Étape C — autres activités GS Lecture (4.3 à 4.7) sur le modèle du prototype ; police cursive.
 - [ ] Étape D — modification collective des parcours + paramétrage GS dans Pédagogie + radar GS Lecture.
@@ -22,6 +22,14 @@ Branches et PR de ce chantier : `claude/parcours-gs-…` (une par étape). Toujo
 - **Audio** : `audio/syllabes.json` ne contient que des sons de lecture (« b » = « beu ») : **aucun nom de lettre ni nombre enregistré**. `tools/build_audio_sprite.py` a les noms de fichiers en dur ; `audio-lecture.js` ne charge qu'une carte. Le calcul parle avec la voix de l'appareil (`calcul/voice.js`).
 - **Polices** : Andika (lettres claires, déjà chargée), Fredoka, Figtree via Google Fonts. **Aucune police cursive scolaire.**
 - **Aucun mécanisme de rituel/capsule** ; réutilisables : `showEvolution`, overlays, `img/presentation-zoo.mp4` (accueil seulement).
+
+## Décisions de Gabriel (23/11/2026)
+- Plan validé : prototype « Capitales » d'abord.
+- Récompenses GS : **même niveau de contrôle que le CP** (sur l'appareil) ; une même série ne donne jamais deux roues. Contrôle serveur éventuel plus tard pour CP et GS ensemble.
+- Groupes de lettres : « s'appuyer sur les recommandations officielles et la recherche ». Aucun ordre officiel imposé n'a été trouvé (sites eduscol non joignables depuis la session, extraits de recherche seulement). Principes retenus : **lettres du prénom d'abord** (guide eduscol « Pour préparer l'apprentissage de la lecture et de l'écriture à l'école maternelle »), nom/forme/son en aller-retour, **séparer les lettres proches** (b/d/p/q, m/n, n/u, t/d), lettres rares en dernier. Défaut : prénom, puis AIORLS · EUMTFB · PNCVJZ · DGQKHYXW (modifiable, `gs-data.js` DEFAULTS).
+
+## Règle de validation implémentée (gs-data.js `record`)
+Palier = groupe de lettres × nombre de propositions (2, 3, 4 ; un petit groupe ne répète pas un palier identique). Validé après `series` (2) séries **réussies d'affilée** (≥ `seuil` 80 %) sans aide ; une série ratée remet le compteur à 0 ; 2 ratées d'affilée → aide (une proposition de moins + démonstration) ; une série aidée réussie fait revenir au niveau normal mais ne valide jamais. Roue après chaque série réussie (aidée comprise), une seule par id de série.
 
 ## Choix techniques (proposés, à confirmer au fil des étapes)
 1. **Parcours de l'élève** : `teacher_zoo_settings.settings.tracks = {idÉlève: {lecture:"gs"|"cp", calcul:"gs"|"cp"}}` — absent = CP (T01, aucune donnée existante touchée). Même mécanisme que `assign`/`allo` : **aucune migration**, seul l'enseignant peut l'écrire (RLS existante), l'élève le lit via `student_get_teacher_settings`. À ajouter dans le chargement (`window.pedaTracks`) et dans `collectSettings`. Retour arrière : supprimer la clé.
