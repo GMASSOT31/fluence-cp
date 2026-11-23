@@ -139,7 +139,7 @@
     var lv = E.levelInfo(best.act, best.id); return ACT[best.act].icon + " " + lv.label;
   }
   /* ===== Ma classe (calcul) : même écran que la lecture — choix de la classe, À faire aujourd’hui, Mes élèves (Tous / En difficulté / En avance / Pas venus), La classe en chiffres ===== */
-  var LATE = 3, AHEAD = 3, IDLE_DAYS = 7, DAY = 864e5, view = { classId: null, filter: "all", open: {}, folded: {}, rows: [] };
+  var LATE = 3, AHEAD = 3, IDLE_DAYS = 7, DAY = 864e5, view = { classId: null, filter: "all", open: {}, folded: {}, rows: [], focus: null, board: null };
   function median(a) { if (!a.length) return 0; var s = a.slice().sort(function (x, y) { return x - y; }), m = Math.floor(s.length / 2); return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; }
   function totalSteps() { return Object.keys(ACT).reduce(function (n, a) { return n + enabled(a).length; }, 0); }
   /* Un élève : étapes réussies (dans les étapes proposées), étape où il bloque (3 séries ou plus sans réussite), séries des 7 derniers jours, dernière venue */
@@ -178,6 +178,7 @@
     }).catch(function () { msg.className = "msg err"; msg.textContent = "Impossible de charger les résultats de calcul. Réessayez dans un instant."; });
   }
   function paintBoard(board) {
+    board = board || view.board; view.board = board;
     clear(board);
     var all = view.all || [];
     if (!all.length) { board.appendChild(el("p", "muted", "Aucun élève pour l’instant : créez votre classe dans « Mes classes »." )); return; }
@@ -203,6 +204,9 @@
     }
     hd.appendChild(acts); board.appendChild(hd);
     var rows = studs.map(analyse); classify(rows); view.rows = rows;
+    var fr = view.focus && rows.filter(function (x) { return x.s.student_id === view.focus; })[0];
+    if (fr) { board.appendChild(calcFiche(fr, rows)); return; }
+    view.focus = null;
     board.appendChild(figuresCalc(rows)); board.appendChild(todoCalc(rows)); board.appendChild(listCalc(rows));
     board.querySelector(".pb-students").appendChild(legend());
   }
@@ -212,6 +216,9 @@
     return w;
   }
   function openDetail(id) {
+    view.focus = id; paintBoard();
+    if (window.ZooPeda && view.board) window.ZooPeda.scrollToStudent(view.board);
+    return;
     view.open[id] = true; var r = view.rows.filter(function (x) { return x.s.student_id === id; })[0];
     if (r && !keepRow(r, view.filter)) view.filter = "all";
     if (view.paint) view.paint();
@@ -246,14 +253,19 @@
   var FILTERS = [["all", "Tous"], ["late", "En difficulté"], ["ahead", "En avance"], ["idle", "Pas venus"]];
   function keepRow(r, f) { return f === "all" || (f === "late" && r.color === "red") || (f === "ahead" && r.ahead && !r.inactive) || (f === "idle" && r.inactive); }
   function listCalc(rows) {
-    var sec = window.ZooPeda.compactDetails("🧒 Les élèves · " + rows.length, "pb-sec pb-students", view.classId + ":students", view.folded), bar = el("div", "pb-filters"), list = el("div", "pb-list"), tot = totalSteps();
+    var sec = window.ZooPeda.compactDetails("🧒 Les élèves · " + rows.length, "pb-sec pb-students", view.classId + ":students", view.folded), bar = el("div", "pb-filters"), list = el("div", "pb-kids"), tot = totalSteps();
     bar.setAttribute("role", "group"); bar.setAttribute("aria-label", "Filtrer les élèves");
     function paint() {
       clear(list);
-      var rank = { red: 0, yellow: 1, green: 2, idle: 3 }, shown = rows.filter(function (r) { return keepRow(r, view.filter); });
-      shown.sort(function (a, b) { return rank[a.color] - rank[b.color] || a.done - b.done || String(a.s.nickname).localeCompare(b.s.nickname); });
+      var shown = rows.filter(function (r) { return keepRow(r, view.filter); });
+      shown.sort(function (a, b) { return String(a.s.nickname).localeCompare(b.s.nickname); });
       if (!shown.length) list.appendChild(el("p", "muted", "Aucun élève dans ce filtre."));
-      shown.forEach(function (r) { list.appendChild(lineCalc(r, tot, paint)); if (view.open[r.s.student_id]) { var d = el("div", "pb-detail calc-detail"); d.appendChild(detailGrid(r.lv)); d.appendChild(chiffres(r)); if (ficheOK()) { var fi = el("button", "secondary pb-see", "📄 Fiche de suivi (PDF)"); fi.type = "button"; fi.style.marginTop = "10px"; fi.title = "Fiche de suivi de " + r.s.nickname + " à imprimer : toile des 6 compétences"; (function (r, fi) { fi.addEventListener("click", function () { var c = view.all.filter(function (x) { return x.class_id === view.classId; })[0]; makeFiches([r], c ? c.class_name : "", fi, "fiche-calcul-" + (ctx().pdfSlug(r.s.nickname) || "eleve")); }); })(r, fi); d.appendChild(fi); } list.appendChild(d); } });
+      shown.forEach(function (r) {
+        var b = el("button", "pb-kid c-" + r.color); b.type = "button"; b.title = "Voir la fiche de " + r.s.nickname;
+        b.appendChild(el("span", "pb-dot", { red: "🔴", yellow: "🟡", green: "🟢", idle: "⚪" }[r.color])); b.appendChild(el("span", "pb-kname", r.s.nickname));
+        b.addEventListener("click", function () { openDetail(r.s.student_id); });
+        list.appendChild(b);
+      });
       Array.prototype.forEach.call(bar.children, function (b) { var on = b.getAttribute("data-f") === view.filter; b.classList.toggle("active", on); b.setAttribute("aria-pressed", String(on)); });
     }
     view.paint = paint;
@@ -343,6 +355,54 @@
       btns.appendChild(assign);
     }
     [who, time, prog, nums, btns].forEach(function (x) { d.appendChild(x); }); return d;
+  }
+  /* Fiche d'un élève (même présentation que la Lecture, 23/11/2026) : en-tête, chiffres clés + toile, « pour lui maintenant », actions, tous les résultats */
+  function calcFiche(r, rows) {
+    var w = el("div", "pb-fiche"), tot = totalSteps(), C = ctx(), student = (C.allStudents || []).find(function (s) { return s.id === r.s.student_id; });
+    var own = view.assignments && student && C.currentUser && student.teacher_id === C.currentUser.id, current = view.assignments ? view.assignments[r.s.student_id] : null;
+    var order = rows.slice().sort(function (a, b) { return String(a.s.nickname).localeCompare(b.s.nickname); }), i = order.indexOf(r);
+    var nav = el("div", "pb-fnav"), back = el("button", "secondary", "← Toute la classe"); back.type = "button";
+    back.addEventListener("click", function () { view.focus = null; paintBoard(); });
+    nav.appendChild(back);
+    var pn = el("span", "pb-fpn");
+    if (order.length > 1) [[-1, "‹ Précédent"], [1, "Suivant ›"]].forEach(function (d) {
+      var o = order[(i + d[0] + order.length) % order.length], b = el("button", "secondary", d[1]); b.type = "button"; b.title = o.s.nickname;
+      b.addEventListener("click", function () { view.focus = o.s.student_id; paintBoard(); }); pn.appendChild(b);
+    });
+    nav.appendChild(pn); w.appendChild(nav);
+    var st = { red: ["🔴", "En difficulté"], yellow: ["🟡", "Avance normalement"], green: ["🟢", "En avance"], idle: ["⚪", "Pas venu depuis " + IDLE_DAYS + " jours ou plus"] }[r.color];
+    var head = el("div", "pb-fhead c-" + r.color), h = el("h3", ""); h.appendChild(el("span", "pb-dot", st[0])); h.appendChild(document.createTextNode(" " + r.s.nickname));
+    var chips = el("div", "pb-tags"); chips.appendChild(el("span", "pb-tag", st[1])); chips.appendChild(el("span", "pb-tag" + (r.inactive ? " warn" : ""), "🕒 " + whenTxt(r)));
+    head.appendChild(h); head.appendChild(chips); w.appendChild(head);
+    var top = el("div", "pb-ftop"), tiles = el("div", "pb-tiles pb-ftiles");
+    function tile(ico, val, lab) { var d = el("div", "pb-tile"); d.appendChild(el("span", "pb-ico", ico)); d.appendChild(el("b", "", val)); d.appendChild(el("small", "", lab)); tiles.appendChild(d); }
+    tile("🐾", r.done + " / " + tot, "Étapes réussies");
+    tile(r.stuck ? "🧱" : "➡️", r.stuck ? "Bloqué" : r.idle === null ? "À commencer" : "En route", r.idle === null ? "Pas encore commencé" : r.stuck ? "Bloqué : " + ACT[r.stuck.act].icon + " " + (E.levelInfo(r.stuck.act, r.stuck.id) || {}).label : "Prochaine étape : " + nextStep(r.lv));
+    tile("📊", String(r.series), "Séries sur 7 jours : 👂 " + r.week.nombres + " · ➕ " + r.week.addition + " · ➖ " + r.week.soustraction);
+    tile("🔢", r.nums + " / 101", "Nombres reconnus du premier coup");
+    top.appendChild(tiles);
+    if (window.ZooPeda && window.ZooPeda.svgWeb && window.ZooPeda.schoolWeeks) { var web = el("div", "pb-fweb"); web.appendChild(window.ZooPeda.svgWeb(calcAxes(r).list)); web.appendChild(el("small", "muted", "Pointillés verts : attendu à cette date")); top.appendChild(web); }
+    w.appendChild(top);
+    var now = section("📌 Pour " + r.s.nickname + " maintenant"), items = el("ul", "pb-now");
+    function item(t, c) { items.appendChild(el("li", c || "", t)); }
+    if (r.stuck) item("🧱 Bloqué sur " + ACT[r.stuck.act].icon + " " + (E.levelInfo(r.stuck.act, r.stuck.id) || {}).label + " (" + r.stuck.r + " séries sans réussite) : montrez « 🧩 Je m’aide » ou donnez un exercice.", "pb-now-warn");
+    if (r.late && !r.stuck) item("🐢 " + LATE + " étapes de retard ou plus sur l’élève du milieu de la classe.", "pb-now-warn");
+    var ci = current && E.levelInfo(current.activity, current.level);
+    if (ci) item((current.done ? "✅ Exercice réussi : " : "🎯 Exercice donné : ") + ci.label, current.done ? "pb-now-ok" : "");
+    if (r.inactive) item("💤 Pas venu depuis " + (r.idle === null ? "le début" : r.idle + " jours"), "pb-now-warn");
+    if (!items.children.length) item("✅ Rien de particulier pour le moment.", "pb-now-ok");
+    now.appendChild(items); w.appendChild(now);
+    var acts = section("⚡ Actions"), row = el("div", "pb-factions"), slot = el("div");
+    if (own) {
+      var asb = el("button", "primary", current && !current.done ? "🎯 Gérer l’exercice" : "🎯 Donner un exercice"); asb.type = "button";
+      asb.addEventListener("click", function () { if (slot.firstChild) { clear(slot); return; } slot.appendChild(assignmentEditor(r, current)); });
+      row.appendChild(asb);
+    }
+    if (ficheOK()) { var fi = el("button", "secondary", "📄 Fiche de suivi (PDF)"); fi.type = "button"; fi.addEventListener("click", function () { makeFiches([r], (rows[0] && rows[0].s.class_name) || "", fi, "fiche-calcul-" + ((ctx().pdfSlug && ctx().pdfSlug(r.s.nickname)) || "eleve")); }); row.appendChild(fi); }
+    if (row.children.length) { acts.appendChild(row); acts.appendChild(slot); w.appendChild(acts); }
+    var all = el("details", "pb-fold pb-fall"); all.appendChild(el("summary", "", "📈 Tous les résultats"));
+    all.appendChild(detailGrid(r.lv)); all.appendChild(chiffres(r)); w.appendChild(all);
+    return w;
   }
   function chiffres(r) {
     var w = el("div"); w.appendChild(el("div", "pd-foot", "En chiffres :")); var chips = el("div", "pd-chips");

@@ -989,5 +989,5 @@
 
   /* « Mes classes » › « Voir mes élèves » : ouvrir Ma classe sur cette classe */
   function pick(id) { if (id && id !== state.classId) { state.classId = id; state.open = {}; state.filter = "all"; } }
-  window.ZooPeda = { compactDetails: compactDetails, pick: pick, asgLabel: asgLabel, asgState: asgState, asgStatusText: asgStatusText, render: render, openDetail: openDetail, scrollToStudent: scrollToStudent, tilePairs: TILE_PAIRS, analyse: analyse, classify: classify, axes: axes, drawFiche: drawFiche, drawWeb: drawWeb, refOf: refOf, schoolWeeks: schoolWeeks, YEAR_WEEKS: YEAR_WEEKS, state: state };
+  window.ZooPeda = { svgWeb: svgWeb, compactDetails: compactDetails, pick: pick, asgLabel: asgLabel, asgState: asgState, asgStatusText: asgStatusText, render: render, openDetail: openDetail, scrollToStudent: scrollToStudent, tilePairs: TILE_PAIRS, analyse: analyse, classify: classify, axes: axes, drawFiche: drawFiche, drawWeb: drawWeb, refOf: refOf, schoolWeeks: schoolWeeks, YEAR_WEEKS: YEAR_WEEKS, state: state };
 })();
