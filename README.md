@@ -1,6 +1,8 @@
 # Zoo de Lecture
 
-Application pédagogique statique pour la lecture et la fluence au CP.
+Application pédagogique statique pour la lecture et le calcul au CP.
+
+Pour reprendre le développement, lire [CLAUDE.md](CLAUDE.md) et [les outils de test](tools/README.md).
 
 ## Publier gratuitement avec GitHub Pages
 
@@ -20,4 +22,4 @@ Chaque modification sur la branche `main` est ensuite publiée automatiquement.
 - `enseignants.html` : espace enseignant et administration.
 - `zoo-local.html` : ancienne version du Zoo, sans serveur (données dans le navigateur). Plus utilisée, gardée pour mémoire.
 
-**Important :** les données des élèves sont conservées dans le stockage local du navigateur, propre à chaque adresse. Elles ne seront pas transférées automatiquement depuis Netlify. Garder l'ancien site accessible si ces données doivent être récupérées.
+La progression des comptes élèves est sauvegardée dans Supabase. Le navigateur conserve notamment la liste des profils mémorisés sur l’appareil. Les enregistrements de lecture restent sur l’appareil qui les a capturés, jusqu’à leur écoute et validation par l’enseignant.

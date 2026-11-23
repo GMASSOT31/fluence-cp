@@ -32,8 +32,10 @@ Puis ouvrir dans le navigateur :
 
 - Après toute modification de la salle de jeux : relancer les 8 jeux.
 - Vérifier aussi l'affichage téléphone (375 × 667).
+- Pour les aperçus, ouvrir `enseignants-test.html`, choisir une activité dans Pédagogie et utiliser « Visualiser ». Vérifier que l’exercice s’ouvre sans formulaire de connexion, que la modification d’un réglage est visible et que l’essai n’enregistre aucun résultat.
+- Pour « Qui es-tu ? », ouvrir `eleve-test.html` et utiliser des profils fictifs. Vérifier quatre colonnes à 768 px et deux à 375 px.
 - Quand on modifie `demo.js` ou `demo-tour.js`, augmenter leur numéro de version (`demo.js?v=…` dans les deux pages, `demo-tour.js?v=…` dans `demo.js`) pour contourner le cache des navigateurs.
-- Migrations Supabase : d'abord un essai dans une transaction annulée (`raise exception 'DRYRUN_RESULT …'`), puis application seulement avec l'accord explicite de la personne responsable du projet, et ajout du fichier dans `supabase/migrations/`.
+- Migrations Supabase : d'abord un essai sur une base locale jetable, puis application seulement avec l'accord explicite de la personne responsable du projet, et ajout du fichier dans `supabase/migrations/`.
 
 ## Sons enregistrés des syllabes (`audio/syllabes.mp3` + `.json`)
 - `python3 -m venv /tmp/zoo-venv && /tmp/zoo-venv/bin/pip install edge-tts` (une fois), puis depuis la racine : `/tmp/zoo-venv/bin/python -I tools/build_audio_sprite.py`.

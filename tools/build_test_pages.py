@@ -30,8 +30,8 @@ LOADER = re.compile(r"<script>/\* Démo sans compte.*?</script>", re.S)
 FLAP_HOOK = ("window.__flap={bird:bird,pipes:pipes,state:function(){return{t:t,dead:dead,won:won,started:started,ended:ended,passed:passed,scroll:scroll,lives:lives,inv:inv}},"
              "setT:function(v){t=v;bi=FLAP_BANNERS.filter(function(x){return x<=v}).length}};")
 TILES_HOOK = ("window.__tiles={rows:function(){return rows},state:function(){return{t:t,lives:lives,score:score,dead:dead,ended:ended,started:started,model:target.model}},setT:function(v){t=v},setScore:function(v){score=v},finish:finish};")
-HOOK_AT = 'if(!cloudMode){setMode();show("login");'
-HOOK = ("window.__t={phonoEnd:phonoEnd,comprEnd:comprEnd,remedNow:remedNow,remedMark:remedMark,remedGo:remedGo,tilesRemed:tilesRemed,DS:DS,comprStart:comprStart,comprDone:comprDone,comprHas:comprHas,CP:CP,phonoStart:phonoStart,phonoDone:phonoDone,phonoHas:phonoHas,PH:PH,lireLaunch:lireLaunch,show:show,recCount:recCount,soundSent:soundSent,isUnlocked:isUnlocked,getSes:function(){return ses},listenStopVoice:listenStopVoice,mission:mission,aheadOK:aheadOK,ses:ses,nextStep:nextStep,dicteeNext:dicteeNext,dicteeStart:dicteeStart,dicteeEnd:dicteeEnd,enterStudent:enterStudent,data:data,LS:LS,G:G,finishScore:finishScore,winCoin:winCoin,coins:coins,listenEnd:listenEnd,listenStart:listenStart,show:show,listenPick:listenPick,"
+HOOK_AT = '  function bootExercisePreview(preview) {'
+HOOK = ("window.__t={assignClean:assignClean,phonoEnd:phonoEnd,comprEnd:comprEnd,remedNow:remedNow,remedMark:remedMark,remedGo:remedGo,tilesRemed:tilesRemed,DS:DS,comprStart:comprStart,comprDone:comprDone,comprHas:comprHas,CP:CP,phonoStart:phonoStart,phonoDone:phonoDone,phonoHas:phonoHas,PH:PH,lireLaunch:lireLaunch,show:show,recCount:recCount,soundSent:soundSent,isUnlocked:isUnlocked,getSes:function(){return ses},listenStopVoice:listenStopVoice,mission:mission,aheadOK:aheadOK,ses:ses,nextStep:nextStep,dicteeNext:dicteeNext,dicteeStart:dicteeStart,dicteeEnd:dicteeEnd,enterStudent:enterStudent,data:data,LS:LS,G:G,finishScore:finishScore,winCoin:winCoin,coins:coins,listenEnd:listenEnd,listenStart:listenStart,show:show,listenPick:listenPick,"
         "listenMine:listenMine,listenNeed:listenNeed,pendingWheels:pendingWheels,renderHome:renderHome,renderJeux:renderJeux,"
         "LISTEN_ITEMS:LISTEN_ITEMS,LISTEN_WORDS:LISTEN_WORDS,LISTEN_SYL_CONS:LISTEN_SYL_CONS,LISTEN_SYL_VOW:LISTEN_SYL_VOW,SYL_VOWELS:SYL_VOWELS,SYL_E_WORDS:SYL_E_WORDS,SYL_SAY_FIX:SYL_SAY_FIX,SYL_NO_INVERSE:SYL_NO_INVERSE,LISTEN_SKIP:LISTEN_SKIP,sylOK:sylOK,sylSay:sylSay,sylConsAll:sylConsAll,sylVowSay:sylVowSay,"
         "listenSpeak:listenSpeak,listenSay:listenSay,DS:DS,dicteeNext:dicteeNext,dicteeMine:dicteeMine,openWheel:openWheel,showEvolution:showEvolution,charFor:charFor,uid:uid,saveReview:saveReview,petState:petState,isValid:isValid,confetti:confetti,statDiff:statDiff,statsMine:statsMine,statDay:statDay};")
@@ -69,8 +69,9 @@ def make_test_voice(path):
 def main():
     os.makedirs(OUT, exist_ok=True)
     zoo = swap_backend(read("zoo-connecte.html"), "fake-supabase.js", token=True)
-    if HOOK_AT in zoo:
-        zoo = zoo.replace(HOOK_AT, HOOK + HOOK_AT, 1)
+    if zoo.count(HOOK_AT) != 1:
+        raise SystemExit("Point d’insertion de window.__t introuvable ou ambigu dans zoo-connecte.html")
+    zoo = zoo.replace(HOOK_AT, "  " + HOOK + "\n" + HOOK_AT, 1)
     zoo = zoo.replace("/*TEST_HOOK_FLAP*/", FLAP_HOOK, 1)   # accès à l'oiseau pour les tests (uniquement ici)
     zoo = zoo.replace("/*TEST_HOOK_TILES*/", TILES_HOOK, 1)
     # « Mes sons » : ?voix=1 = une voix d'admin pour « on » (fichier de test fabriqué plus bas), sans appel au vrai serveur
