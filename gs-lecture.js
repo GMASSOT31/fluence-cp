@@ -20,6 +20,7 @@
       ".gs-let.w-curs{height:166px;font-size:3.2rem;line-height:1;padding:0}.gs-demo.w-curs{font-size:6rem;line-height:1.6}" +
       ".gs-model{display:flex;justify-content:center;margin:6px 0}.gs-model .gs-let{width:150px;height:150px;font-size:4.6rem;border-color:#2e9b6a;background:#f2faf6;cursor:default}.gs-model .gs-let.w-curs{height:190px;font-size:3.8rem}" +
       ".gs-slots{display:flex;justify-content:center;flex-wrap:wrap;margin:10px 0 2px}.gs-slot{font-family:Andika,Figtree,sans-serif;font-weight:700;font-size:2.6rem;width:78px;height:86px;line-height:80px;margin:5px;text-align:center;border:3px dashed #b8c0cc;border-radius:18px;color:#1d6b45}" +
+      ".gs-stairs{align-items:flex-end;flex-wrap:nowrap}.gs-stairs.long{flex-wrap:wrap}.gs-step-arrow{font-size:1.8rem;font-weight:700;color:#8a93a3;line-height:1;margin:0 1px}" +
       ".gs-slot.full{border-style:solid;border-color:#2e9b6a;background:#dff3e8}.gs-let.used{visibility:hidden}.gs-pair{font-family:Andika,Figtree,sans-serif;font-weight:700;font-size:5rem;text-align:center;margin:10px 0}" +
       ".gs-pair span{display:inline-block;min-width:1.2em}.gs-pair i{font-style:normal;color:#8a93a3;font-size:3rem;margin:0 .4em;vertical-align:middle}" +
       ".gs-grid{display:flex;flex-wrap:wrap;justify-content:center;margin:14px -8px}" +
@@ -32,7 +33,7 @@
       ".gs-abc{display:flex;flex-wrap:wrap;justify-content:center;margin:6px -3px 12px}.gs-abc span{font-family:Andika,Figtree,sans-serif;font-weight:700;font-size:1.25rem;width:34px;height:40px;line-height:40px;margin:3px;text-align:center;border-radius:10px;background:#eef1f6;color:#8a93a3;transition:background .2s,color .2s}" +
       ".gs-abc span.seen{background:#dff3e8;color:#1d6b45}.gs-abc span.now{background:#2e9b6a;color:#fff}" +
       "@media (prefers-reduced-motion:reduce){.gs-abc span{transition:none}}" +
-      "@media (max-width:600px){.gs-let{width:96px;height:96px;font-size:3rem;margin:6px}.gs-let.w-curs{height:136px;font-size:2.6rem}.gs-model .gs-let.w-curs{height:156px;font-size:3.1rem}.gs-demo{font-size:5.5rem}.gs-model .gs-let{width:120px;height:120px;font-size:3.8rem}.gs-slot{width:62px;height:72px;line-height:66px;font-size:2.1rem;margin:4px}.gs-pair{font-size:3.8rem}}";
+      "@media (max-width:600px){.gs-let{width:96px;height:96px;font-size:3rem;margin:6px}.gs-let.w-curs{height:136px;font-size:2.6rem}.gs-model .gs-let.w-curs{height:156px;font-size:3.1rem}.gs-demo{font-size:5.5rem}.gs-model .gs-let{width:120px;height:120px;font-size:3.8rem}.gs-slot{width:62px;height:72px;line-height:66px;font-size:2.1rem;margin:4px}.gs-stairs .gs-slot{width:52px;height:62px;line-height:56px;font-size:1.8rem;margin:3px 2px}.gs-step-arrow{font-size:1.3rem}.gs-pair{font-size:3.8rem}}";
     document.head.appendChild(s);
     try { if (document.fonts && document.fonts.load) document.fonts.load("40px 'Marelle GS'"); } catch (e) {}   /* la cursive est prête avant la 1re question */
   }
@@ -269,7 +270,14 @@
     card.appendChild(again);
     if (R.aid) { var strip = C.el("div", "gs-abc"); Object.keys(D.LETTER_SAY).forEach(function (L) { strip.appendChild(C.el("span", Q.seq.indexOf(L) >= 0 ? "seen" : "", L)); }); card.appendChild(strip); }
     var row = C.el("div", "gs-slots");
-    Q.seq.forEach(function () { var d = C.el("div", "gs-slot", ""); slots.push(d); row.appendChild(d); });
+    /* cases qui montent comme un escalier, de gauche à droite, avec une flèche entre deux cases (demandé par Gabriel le 24/11/2026) : on lit l'ordre A → Z */
+    row.className = "gs-slots gs-stairs" + (Q.seq.length > 5 ? " long" : "");
+    Q.seq.forEach(function (L, i) {
+      if (i && Q.seq.length <= 5) { var ar = C.el("span", "gs-step-arrow", "›"); ar.setAttribute("aria-hidden", "true"); ar.style.marginBottom = (i * 10 + 18) + "px"; row.appendChild(ar); }
+      var d = C.el("div", "gs-slot", ""); if (Q.seq.length <= 5) d.style.marginBottom = (i * 10) + "px";
+      d.setAttribute("aria-label", i === 0 ? "Première case" : i === Q.seq.length - 1 ? "Dernière case" : "Case " + (i + 1));
+      slots.push(d); row.appendChild(d);
+    });
     card.appendChild(row);
     var grid = C.el("div", "gs-grid");
     Q.opts.forEach(function (L) {
