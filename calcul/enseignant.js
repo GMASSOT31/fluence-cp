@@ -189,7 +189,7 @@
     var msg = el("p", "msg", "Chargement…"); msg.id = "calcMsg"; msg.setAttribute("role", "status"); box.appendChild(msg);
     var board = el("div", "calc-board pb-scope"); box.appendChild(board);
     Promise.all([rpc("lab_teacher_settings_get").catch(function () { return {}; }), rpc("lab_teacher_results"), rpc("lab_teacher_assignments").catch(function () { return null; })]).then(function (r) {
-      settings = r[0] || {}; view.assignments = r[2]; msg.textContent = ""; view.all = r[1] || []; view.loadedAt = new Date(); paintBoard(board);
+      settings = r[0] || {}; view.assignments = r[2]; msg.textContent = view.notice || ""; if (msg.isConnected) view.notice = null;   /* un chargement remplacé entre-temps ne « mange » pas le message */ view.all = r[1] || []; view.loadedAt = new Date(); paintBoard(board);
     }).catch(function () { msg.className = "msg err"; msg.textContent = "Impossible de charger les résultats de calcul. Réessayez dans un instant."; });
   }
   function paintBoard(board) {
@@ -209,6 +209,9 @@
       left.appendChild(el("span", "pb-lbl", "Classe")); left.appendChild(sel);
     } else { left.appendChild(el("span", "pb-lbl", "Classe")); left.appendChild(el("strong", "pb-cname", "📚 " + cls.name)); }
     var acts = el("div", "pb-acts"), rl = el("button", "secondary pb-refresh", "↻"); rl.type = "button"; rl.title = "Actualiser les résultats"; rl.setAttribute("aria-label", rl.title); rl.addEventListener("click", renderProgress); left.appendChild(rl);
+    /* ⋯ Classe (ancien onglet « Mes classes ») : même menu que Ma classe de la Lecture */
+    var fullCls = (ctx().allClasses || []).filter(function (x) { return x.id === cls.id; })[0];
+    if (fullCls && ctx().classMenu) left.appendChild(ctx().classMenu(fullCls));
     var pc = ctx().allClasses && ctx().printLoginCards ? ctx().allClasses.filter(function (x) { return x.id === cls.id; })[0] : null;
     if (pc) { var cm = el("button", "secondary", "🖨️ QR codes"); cm.type = "button"; cm.title = "Fiches de connexion au Zoo de Calcul (adresse zoodelecture.fr/calcul et QR code), à donner aux familles"; cm.addEventListener("click", function () { ctx().printLoginCards(pc, "calcMsg", cm, true); }); acts.appendChild(cm); }
     if (ficheOK()) { var fa = el("button", "secondary"); fa.appendChild(el("span", "pb-pdf-icon", "PDF")); fa.appendChild(document.createTextNode(" Araignées de suivi")); fa.type = "button"; fa.title = "Une fiche par élève, avec sa toile des 6 compétences"; fa.addEventListener("click", function () { makeFiches(view.rows.slice().sort(function (a, b) { return String(a.s.nickname).localeCompare(b.s.nickname); }), cls.name, fa, "fiches-calcul-" + (ctx().pdfSlug(cls.name) || "classe")); }); acts.appendChild(fa); }
@@ -399,6 +402,8 @@
     nav.appendChild(pn); w.appendChild(nav);
     var st = { red: ["🔴", "En difficulté"], yellow: ["🟡", "Avance normalement"], green: ["🟢", "En avance"], idle: ["⚪", "Pas venu depuis " + IDLE_DAYS + " jours ou plus"] }[r.color];
     var head = el("div", "pb-fhead c-" + r.color), h = el("h3", ""); h.appendChild(el("span", "pb-dot", st[0])); h.appendChild(document.createTextNode(" " + r.s.nickname));
+    /* ✏️ discret : corriger l'orthographe du prénom (même fonction que la Lecture) */
+    if (student && window.ZooPeda && window.ZooPeda.renameBtn) h.appendChild(window.ZooPeda.renameBtn(student, C.currentUser && student.teacher_id === C.currentUser.id, function (text, err) { var mm = $("#calcMsg"); if (err) { if (mm) { mm.textContent = text; mm.className = "msg err"; } return; } view.notice = text; renderProgress(); }));
     var chips = el("div", "pb-tags"); chips.appendChild(el("span", "pb-tag", st[1])); chips.appendChild(el("span", "pb-tag" + (r.inactive ? " warn" : ""), "🕒 " + whenTxt(r)));
     head.appendChild(h); head.appendChild(chips); w.appendChild(head);
     var top = el("div", "pb-ftop"), tiles = el("div", "pb-tiles pb-ftiles");
@@ -833,6 +838,11 @@
   }
 
   window.CalcTeacher = {
+    /* après une action sur la classe (⋯ Classe) : Ma classe du Calcul est rechargée si elle est affichée, avec le message */
+    refreshBoard: function (notice) {
+      var box = $("#calcProgress"); if (!box || !box.offsetParent) return;
+      if (notice) view.notice = notice; renderProgress();
+    },
     pickClass: function (id) {
       if (id !== view.classId) { view.classId = id; view.open = {}; view.filter = "all"; }
     },

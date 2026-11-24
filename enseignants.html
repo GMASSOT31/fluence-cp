@@ -248,6 +248,7 @@ body.teacher-mode .teacher-header .teacher-nav button.active{background:#1b2433;
 .pb-fhead{padding:14px 16px;border-radius:16px;background:#fff;border:1px solid #e3e7ef;border-left:8px solid #c9cdd6}
 .pb-fhead.c-red{border-left-color:#d64545}.pb-fhead.c-yellow{border-left-color:#e3b20b}.pb-fhead.c-green{border-left-color:#2e9b6a}
 .pb-fhead h3{margin:0 0 8px;font-size:1.5rem}
+.pb-rename{background:none;border:0;padding:2px 6px;margin-left:4px;font-size:1rem;opacity:.45;box-shadow:none;cursor:pointer;vertical-align:middle;min-height:0}.pb-rename:hover,.pb-rename:focus-visible{opacity:1;background:#f1edff}
 .pb-ftop{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:14px;align-items:center}
 .pb-ftiles{grid-template-columns:repeat(2,minmax(0,1fr))!important}
 .pb-fweb{text-align:center}.pb-web{width:100%;max-width:340px;height:auto}
@@ -418,6 +419,8 @@ body.teacher-mode .teacher-header .teacher-nav button.nav-improve.active,.teache
 .more-menu{position:relative;display:inline-block}.more-btn{min-width:46px;padding:6px 12px;font-size:1.25rem;font-weight:900;line-height:1}
 .more-pop{position:absolute;right:0;top:calc(100% + 6px);z-index:30;min-width:240px;display:flex;flex-direction:column;gap:6px;padding:8px;background:#fff;border:1px solid #dfe3ec;border-radius:14px;box-shadow:0 12px 30px rgba(20,25,40,.2)}
 .more-pop button{width:100%;text-align:left;margin:0}
+.class-more .more-btn{font-size:.86rem;font-weight:800;padding:7px 12px;min-width:0;white-space:nowrap}.class-more .more-pop{left:0;right:auto;min-width:min(270px,calc(100vw - 64px));max-width:calc(100vw - 64px)}
+.class-nav{display:none!important}.class-back{margin:0 0 12px}.dlg-list{max-height:55vh;overflow:auto;margin:6px 0 10px}.dlg-list .row{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid #eef0f5}
 
 /* Invitation d’un collègue (admin) et page d’inscription par invitation ; « Changer de classe » */
 .invite-admin{margin:6px 0 18px;padding:14px 16px;border:2px solid #d9cff5;border-radius:16px;background:#faf8ff} .invite-admin h3{margin:0 0 4px}
@@ -514,7 +517,7 @@ body.teacher-mode .teacher-header .teacher-nav button:is([data-role="admin"],[da
   <nav class="teacher-nav" aria-label="Rubriques de l'espace enseignant">
    <button type="button" data-tab="pedagogie"><span class="nav-ico" aria-hidden="true">🏫</span><span class="nav-label">Ma classe</span><span class="nav-badge hidden" id="listenBadge" title="Lectures à écouter"></span></button>
    <!-- « À écouter » est intégré à Ma classe (fiche de l’élève et « À faire aujourd’hui ») depuis le 23/11/2026 ; la section reste accessible par showTab("ecouter") -->
-   <button type="button" data-tab="eleves"><span class="nav-ico" aria-hidden="true">📚</span><span class="nav-label">Mes classes</span></button>
+   <!-- « Mes classes » est intégré à Ma classe (bouton « ⋯ Classe » de l’en-tête) depuis le 24/11/2026 ; les formulaires « Créer une classe » / « Ajouter un élève » restent la section « eleves » -->
    <button type="button" data-tab="reglages"><span class="nav-ico" aria-hidden="true">🎓</span><span class="nav-label">Pédagogie</span></button>
    <button type="button" data-tab="general"><span class="nav-ico" aria-hidden="true">⚙️</span><span class="nav-label">Réglages<span class="nav-long"> généraux</span></span></button>
    <button type="button" data-tab="enseignants" data-role="admin" id="teachersAdminTab" class="hidden nav-extra"><span class="nav-ico" aria-hidden="true">🛡️</span><span class="nav-label">Enseignants</span><span class="nav-badge hidden" id="adminBadge"></span></button>
@@ -525,13 +528,14 @@ body.teacher-mode .teacher-header .teacher-nav button:is([data-role="admin"],[da
  <div class="teacher-content">
   <p id="spaceMsg" class="msg" role="status"></p>
   <section class="panel guide hidden" id="guide" aria-live="polite"></section>
-<div class="sub-picker class-nav" data-section="eleves" role="group" aria-label="Gestion des classes">
+<div class="class-back" data-section="eleves"><button type="button" class="secondary" id="backToClass">← Retour à Ma classe</button></div>
+<div class="sub-picker class-nav hidden" data-section="eleves" role="group" aria-label="Gestion des classes">
  <button type="button" data-sub-btn="liste">Mes classes</button>
  <button type="button" data-sub-btn="classes">Créer une classe</button>
  <button type="button" data-sub-btn="ajout">Ajouter un élève</button>
 </div>
 <section class="panel feature-card classes-card" id="classesSettings" data-section="eleves" data-sub="classes">
-  <div class="section-head"><div class="section-icon">📚</div><div><h2>Créer une classe</h2><p class="muted">Retrouvez le code et les fiches de connexion dans « Mes classes ».</p></div></div>
+  <div class="section-head"><div class="section-icon">📚</div><div><h2>Créer une classe</h2><p class="muted">Retrouvez ensuite le code et les fiches de connexion dans Ma classe, bouton « ⋯ Classe ».</p></div></div>
   <div class="form-zone"><form id="classForm"><div id="classTeacherBox" class="hidden" data-admin-surface><span class="admin-scope-label">Administration</span><label for="classTeacher">Choisir l’enseignant</label><select id="classTeacher"></select><p class="muted" style="margin:4px 0 0">Administrateur : la classe sera créée dans le compte de cet enseignant.</p></div><label for="className">Nom de la classe</label><input id="className" required maxlength="80" placeholder="Ex. CP A"><label for="classCode">Code de classe (que vos élèves taperont)</label><input id="classCode" maxlength="30" autocomplete="off" autocapitalize="none" placeholder="Ex. cpmassot"><p class="muted" style="margin:4px 0 0">3 à 20 lettres ou chiffres. Majuscules, accents et espaces ne comptent pas. Évitez les codes trop faciles comme 1234.</p><div class="actions"><button>+ Ajouter la classe</button></div></form><div class="class-created hidden" id="classCreated"><p id="classCreatedText"></p><button type="button" id="goAddStudents">➕ Ajouter mes élèves à cette classe</button></div></div>
  </section>
  <section class="panel feature-card student-card" id="addStudentSettings" data-section="eleves" data-sub="ajout">
@@ -716,7 +720,7 @@ body.teacher-mode .teacher-header .teacher-nav button:is([data-role="admin"],[da
  <h3 style="margin:22px 0 8px">✉️ Messages du formulaire de contact</h3><p class="muted">Écrits sans compte depuis la page Contact du site. Répondez par e-mail.</p><p class="msg" id="ctMsg" role="status"></p><div id="ctList" class="content-list"></div>
 </section>
 </div>
-</section></main><script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=28"><\/script>':'<script src="vendor/supabase.js?v=2.118.0"><\/script>');})();</script><script src="profils.js?v=2"></script><script src="exo-data.js?v=6"></script><script src="gs-data.js?v=6"></script><script src="vocabulaire.js?v=4"></script><script src="vocabulaire-import.js?v=3"></script><script src="vendor/qrcode.js?v=1.4.4"></script><script src="pedagogie.js?v=35"></script><script src="mes-sons.js?v=1"></script><script src="compr-admin.js?v=5"></script><script>
+</section></main><script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=28"><\/script>':'<script src="vendor/supabase.js?v=2.118.0"><\/script>');})();</script><script src="profils.js?v=2"></script><script src="exo-data.js?v=6"></script><script src="gs-data.js?v=6"></script><script src="vocabulaire.js?v=4"></script><script src="vocabulaire-import.js?v=3"></script><script src="vendor/qrcode.js?v=1.4.4"></script><script src="pedagogie.js?v=36"></script><script src="mes-sons.js?v=1"></script><script src="compr-admin.js?v=5"></script><script>
 (function(){
 "use strict";
 /* Retour du lien « Mot de passe oublié » : on lit l’adresse avant que la bibliothèque Supabase ne la nettoie */
@@ -830,8 +834,12 @@ async function printLoginCards(c,msgId,btn,calc){
   });
   }});
 }
+/* Message dans Ma classe (Lecture : gardé pendant le rechargement de la page ; Calcul : sous l’en-tête) */
+let calcNotice=null;
+function boardMsg(t,err){const id=document.body.classList.contains("calc-mode")?"calcMsg":"pedaMsg";if($(id))msg(id,t,err);if(!err&&id==="pedaMsg"&&window.ZooPeda)window.ZooPeda.state.notice=t;if(!err&&id==="calcMsg")calcNotice=t}
+function msgTo(id,t,e){if(id==="board")boardMsg(t,e);else msg(id,t,e)}
 async function renameClass(c,msgId){
- const old=c.name;
+ const old=c.name;const msg=msgTo;
  const name=await dlg("Nouveau nom pour la classe « "+old+" » :",{input:true,value:old,ok:"Renommer",label:"Nom de la classe"});
  if(name===null)return;
  const n=name.trim();
@@ -840,11 +848,12 @@ async function renameClass(c,msgId){
  const own=c.teacher_id===currentUser.id;
  const {error}=own?await client.from("classes").update({name:n}).eq("id",c.id).select("id").single():await client.rpc("admin_edit_class",{p_class:c.id,p_name:n});
  if(error){msg(msgId,errorText(error),true);return;}
- if(msgId==="studentsMsg")studentsNotice="✏️ « "+old+" » s’appelle maintenant « "+n+" ».";
- await refresh();if(msgId!=="studentsMsg")msg(msgId,"✏️ « "+old+" » s’appelle maintenant « "+n+" ».");
+ const said="✏️ « "+old+" » s’appelle maintenant « "+n+" ».";
+ if(msgId==="studentsMsg")studentsNotice=said;if(msgId==="board")boardMsg(said);
+ await refresh();if(msgId!=="studentsMsg")msg(msgId,said);
 }
 async function changeClassCode(c,msgId){
- msgId=msgId||"codeMsg";
+ msgId=msgId||"codeMsg";const msg=msgTo;
  const code=await dlg("Nouveau code pour la classe « "+c.name+" » (3 à 20 lettres ou chiffres).\nAttention : l’ancien code « "+c.access_code+" » ne marchera plus.",{input:true,value:c.access_code||"",ok:"Changer le code",label:"Code de la classe"});
  if(code===null)return;
  if(!validClassCode(code)){msg(msgId,CLASS_CODE_RULE,true);return;}
@@ -852,7 +861,7 @@ async function changeClassCode(c,msgId){
  const {data,error}=own?await client.from("classes").update({access_code:code}).eq("id",c.id).select("access_code").single():await client.rpc("admin_edit_class",{p_class:c.id,p_access_code:code});
  if(error){msg(msgId,errorText(error),true);return;}
  const done=own?"🔑 Nouveau code pour « "+c.name+" » : "+data.access_code+". Donnez-le à vos élèves.":"Le code de « "+c.name+" » a changé. Prévenez la personne concernée : ses élèves doivent taper le nouveau code.";
- if(msgId==="studentsMsg")studentsNotice=done;
+ if(msgId==="studentsMsg")studentsNotice=done;if(msgId==="board")boardMsg(done);
  await refresh();if(msgId!=="studentsMsg")msg(msgId,done);
 }
 function errorText(e){
@@ -933,6 +942,7 @@ async function refreshNow(){
  students.data.forEach(s=>{const c=classes.data.find(x=>x.id===s.class_id);const d=document.createElement("div");d.className="row";d.textContent="🧒 "+s.nickname+" · "+(c?c.name:"Classe inconnue")+" · "+(s.pin_hash?"Code secret choisi":"Code secret à choisir");if(s.teacher_id!==currentUser.id){d.textContent+=" · géré par un autre enseignant";$("students").append(d);return}const btn=document.createElement("button");btn.className="secondary";btn.style.marginLeft="12px";btn.textContent=s.pin_hash?"Changer le code":"Choisir le code";btn.onclick=async()=>{const pin=await dlg("Code secret de 4 à 8 chiffres pour "+s.nickname+" :",{input:true,ok:"Enregistrer",label:"Code secret"});if(pin===null)return;if(!/^[0-9]{4,8}$/.test(pin)){msg("spaceMsg","Le code secret doit contenir 4 à 8 chiffres.",true);return;}const {error}=await client.rpc("set_student_pin",{p_student:s.id,p_pin:pin});if(error)msg("spaceMsg",errorText(error),true);else{msg("spaceMsg","PIN enregistré pour "+s.nickname+".");await refresh()}};d.append(btn);$("students").append(d)});
  if(!students.data.length)$("students").textContent="Aucun élève pour le moment.";
  showTab(activeTab);refreshListenBadge().catch(()=>{});
+ if(calcNotice&&document.body.classList.contains("calc-mode")&&window.CalcTeacher&&window.CalcTeacher.refreshBoard){window.CalcTeacher.refreshBoard(calcNotice);calcNotice=null}
  msg("spaceMsg","");
  }catch(e){msg("spaceMsg","Erreur technique pendant le chargement : "+errorText(e),true);console.error("Zoo enseignant refresh",e);}
 }
@@ -1271,7 +1281,7 @@ $("addReward").onclick=()=>{const label=$("rewardName").value.trim(),price=Numbe
 async function loadPendingRewards(){const {data,error}=await client.from("student_progress").select("student_id,progress,given_vouchers").eq("teacher_id",currentUser.id);const box=$("pendingRewards");box.replaceChildren();if(error){box.textContent=errorText(error);return;}let count=0;(data||[]).forEach(row=>{const given=Array.isArray(row.given_vouchers)?row.given_vouchers:[];(row.progress?.vouchers||[]).filter(v=>!v.done&&!given.includes(v.id)).forEach(v=>{count++;const div=document.createElement("div");div.className="row";const name=allStudents.find(s=>s.id===row.student_id)?.nickname||"Élève";const label=document.createElement("span");label.textContent=(v.icon||"🎁")+" "+name+" : "+v.label;const done=document.createElement("button");done.type="button";done.textContent="✅ Remis";done.title="La récompense a été donnée : le bon disparaît du Zoo de l’élève";done.onclick=async()=>{done.disabled=true;const {error}=await client.rpc("teacher_give_voucher",{p_student:row.student_id,p_voucher:String(v.id)});if(error){done.disabled=false;msg("settingsMsg",errorText(error),true);return;}await loadPendingRewards();};div.append(label,done);box.append(div)})});if(!count)box.textContent="Aucune récompense à remettre.";}
 
 /* Pont vers pedagogie.js (tableau de bord) : ce script est fermé, on lui donne ce dont il a besoin */
-window.ZooPedaCtx=()=>({refreshVocabularyCatalog,studentDetail,studentActions,refresh,client,currentUser,currentRole,allStudents,allClasses,cfgSounds,voy2Fix,pl,showTab,printLoginCards,queueSave,pdfMake,pdfText,pdfSlug,listenPasses:listenPassesCfg,dicteePasses:cfgDictee.passes});
+window.ZooPedaCtx=()=>({refreshVocabularyCatalog,studentDetail,studentActions,classMenu,renameStudent,openClassForm,refresh,client,currentUser,currentRole,allStudents,allClasses,cfgSounds,voy2Fix,pl,showTab,printLoginCards,queueSave,pdfMake,pdfText,pdfSlug,listenPasses:listenPassesCfg,dicteePasses:cfgDictee.passes});
 /* L’aperçu reçoit uniquement le contenu pédagogique, dans un cadre sans session élève. */
 window.ZooExercisePreview=function(path,payload){
  const dialog=document.createElement("dialog"), header=document.createElement("div"), close=document.createElement("button"), frame=document.createElement("iframe");
@@ -1360,15 +1370,23 @@ function setupReadingPreviews(){
 setupReadingPreviews();
 /* Menu à 5 entrées : Ma classe (tout sur chaque élève), À écouter, Mes classes (classes, codes, élèves suspendus ; data-tab « eleves »), Pédagogie (reglages : objectifs, ordre des sons, médaille, exercices), Réglages généraux (general : jeux et sons, boutique, mots de passe) */
 const NAV_OF={liste:"eleves"};
+function classTabBtn(){return document.querySelector('.teacher-nav [data-tab="pedagogie"],.teacher-nav [data-tab="calc-progression"]')}
+/* Ma classe (Lecture ou Calcul, selon la matière affichée) */
+function goClass(){const b=classTabBtn();if(b&&b.dataset.tab!=="pedagogie")b.click();else showTab("pedagogie");window.scrollTo(0,0)}
 function showTab(tab){
  if(tab==="liste"){tab="eleves";activeSubs.eleves="liste"}
+ /* « Mes classes » n’est plus un onglet : sans formulaire à ouvrir, on va dans Ma classe */
+ if(tab==="eleves"&&(!activeSubs.eleves||activeSubs.eleves==="liste")){
+  if(allClasses.some(c=>currentRole==="admin"||c.teacher_id===(currentUser&&currentUser.id))){activeSubs.eleves=null;const b=classTabBtn();if(b&&b.dataset.tab!=="pedagogie"){b.click();return}tab="pedagogie"}
+  else activeSubs.eleves="classes";
+ }
  activeTab=tab;
- if(tab==="eleves"&&!activeSubs.eleves)activeSubs.eleves=allClasses.some(c=>currentRole==="admin"||c.teacher_id===(currentUser&&currentUser.id))?"liste":"classes";
  if(tab==="pedagogie"&&window.ZooPeda)window.ZooPeda.render().catch(e=>{const m=$("pedaMsg");if(m)m.textContent=errorText(e)});
  document.querySelectorAll("[data-section]").forEach(el=>el.classList.toggle("hidden",el.dataset.section!==tab || el.id==="pinSettings" || (!!el.dataset.role && el.dataset.role!==currentRole) || (!!el.dataset.sub && el.dataset.sub!==activeSubs[tab])));
  document.querySelectorAll("[data-sub-btn][data-role]").forEach(b=>{b.hidden=b.dataset.role!==currentRole});
  document.querySelectorAll("[data-sub-btn]").forEach(b=>{const on=b.dataset.subBtn===activeSubs[b.closest("[data-section]").dataset.section];b.classList.toggle("active",on);b.setAttribute("aria-pressed",String(on))});
- document.querySelectorAll(".teacher-nav [data-tab]").forEach(el=>el.classList.toggle("active",el.dataset.tab===(NAV_OF[tab]||tab)));
+ const navTab=tab==="eleves"?(classTabBtn()||{dataset:{}}).dataset.tab:(NAV_OF[tab]||tab);
+ document.querySelectorAll(".teacher-nav [data-tab]").forEach(el=>el.classList.toggle("active",el.dataset.tab===navTab));
  if(tab==="reglages"){
   const exercise=document.querySelector('[data-section="reglages"][data-sub="'+activeSubs.reglages+'"]');
   if(exercise&&exercise.refreshPreview)exercise.refreshPreview();
@@ -1387,6 +1405,7 @@ $("progressionPicker").addEventListener("toggle",()=>{
  }
 });
 document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+$("backToClass").onclick=()=>{activeSubs.eleves=null;goClass()};
 document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{const [tab,sub]=b.dataset.go.split(":");activeSubs[tab]=sub;showTab(tab);window.scrollTo({top:0,behavior:"smooth"})});
 document.querySelectorAll("[data-sub-btn]").forEach(button=>button.onclick=()=>{
  const tab=button.closest("[data-section]").dataset.section, sub=button.dataset.subBtn;
@@ -2038,6 +2057,61 @@ function studentActions(st,done){
  if(admin){const mv=mk("↔️ Changer de classe");mv.setAttribute("data-admin-action","");mv.setAttribute("title","Réservé à l’administration");mv.onclick=async()=>{const {data,error}=await client.from("teachers").select("id,email,ghosted_at").order("created_at",{ascending:true});if(error){done(errorText(error),true);return}moveStudent(st,data,done)};items.unshift(mv);}
  return moreMenu("Autres actions pour "+st.nickname,items);
 }
+/* « ⋯ Classe » de l’en-tête de Ma classe (Lecture et Calcul) : tout ce qui était dans l’ancien onglet « Mes classes » (24/11/2026, demandé par Gabriel) :
+   code des élèves, ajouter un élève, créer une classe, renommer / changer le code / suspendre / supprimer la classe, élèves et classes suspendus. */
+function openClassForm(sub,c){
+ if(sub==="ajout"&&c&&!c.ghosted_at){if(currentRole==="admin")$("studentTeacher").value=c.teacher_id;fillClassSelect(c.id)}
+ activeSubs.eleves=sub;showTab("eleves");window.scrollTo(0,0);
+}
+function classMenu(c){
+ const admin=currentRole==="admin",other=c.teacher_id!==currentUser.id,mk=(t,cls)=>{const b=document.createElement("button");b.type="button";b.className=cls||"secondary";b.textContent=t;if(admin&&other)b.setAttribute("data-admin-action","");return b};
+ const items=[];
+ if(c.access_code){const code=mk("🔑 Code des élèves : "+c.access_code+" (copier)");code.onclick=async()=>{try{await navigator.clipboard.writeText(c.access_code)}catch(e){const ta=document.createElement("textarea");ta.value=c.access_code;ta.style.cssText="position:fixed;opacity:0";document.body.append(ta);ta.select();try{document.execCommand("copy")}catch(e2){}ta.remove()}boardMsg("🔑 Code de la classe « "+c.name+" » copié : "+c.access_code+". Vos élèves le tapent pour se connecter.")};items.push(code)}
+ const add=mk("🧒 Ajouter un élève");add.onclick=()=>openClassForm("ajout",c);items.push(add);
+ const create=mk("📚 Créer une autre classe");create.removeAttribute("data-admin-action");create.onclick=()=>openClassForm("classes");items.push(create);
+ const ren=mk("✏️ Renommer la classe");ren.onclick=()=>renameClass(c,"board");
+ const code2=mk(c.access_code?"🔁 Changer le code de la classe":"🔑 Choisir un code");code2.onclick=()=>changeClassCode(c,"board");
+ const sus=mk("⏸️ Suspendre la classe (plus de connexion)");sus.onclick=()=>manageClass(c,"ghost",[],true);
+ const del=mk("🗑️ Supprimer la classe","danger");del.onclick=()=>manageClass(c,"delete",[],true);
+ items.push(ren,code2);
+ const paused=allStudents.filter(s=>s.class_id===c.id&&s.ghosted_at);
+ if(paused.length){const p=mk("💤 Élèves suspendus ("+paused.length+")");p.onclick=()=>pausedDialog(c);items.push(p)}
+ const pausedClasses=allClasses.filter(x=>x.ghosted_at&&(admin||x.teacher_id===currentUser.id));
+ if(pausedClasses.length){const pc=mk("💤 Classes suspendues ("+pausedClasses.length+")");pc.removeAttribute("data-admin-action");pc.onclick=()=>pausedClassesDialog(pausedClasses);items.push(pc)}
+ items.push(sus,del);
+ const w=moreMenu("Gérer la classe « "+c.name+" »",items);w.classList.add("class-more");w.querySelector(".more-btn").textContent="⋯ Classe";
+ return w;
+}
+/* Petite fenêtre avec une liste (élèves ou classes suspendus) */
+function listDialog(title,fill){
+ const mk=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
+ const ov=mk("div","dlg-ov");ov.setAttribute("role","dialog");ov.setAttribute("aria-modal","true");const box=mk("div","dlg-box");
+ const list=mk("div","dlg-list"),info=mk("p","msg");info.setAttribute("role","status");
+ const close=()=>{document.removeEventListener("keydown",key,true);ov.remove()};const key=e=>{if(e.key==="Escape"){e.stopPropagation();close()}};
+ const no=mk("button","secondary","Fermer");no.type="button";no.onclick=close;
+ box.append(mk("p","dlg-text",title),list,info,no);ov.append(box);document.body.append(ov);document.addEventListener("keydown",key,true);
+ fill(list,(t,e)=>{info.textContent=t;info.classList.toggle("err",!!e)},close);no.focus();
+}
+function pausedDialog(c){
+ listDialog("Élèves suspendus de « "+c.name+" » (ils ne peuvent plus se connecter ; leurs résultats sont gardés) :",(list,say,close)=>{
+  const paint=()=>{list.replaceChildren();const paused=allStudents.filter(s=>s.class_id===c.id&&s.ghosted_at);
+   if(!paused.length){list.textContent="Plus aucun élève suspendu.";return}
+   paused.forEach(st=>{const row=document.createElement("div");row.className="row";const info=document.createElement("div");const b=document.createElement("strong");b.textContent=st.nickname;const d=document.createElement("div");d.className="muted";d.textContent="Suspendu le "+frDate(st.ghosted_at);info.append(b,d);
+    const acts=document.createElement("div");acts.className="managed-class-actions";const mkb=(t,cls)=>{const x=document.createElement("button");x.type="button";x.className=cls||"secondary";x.textContent=t;return x};
+    const re=mkb("✅ Réactiver"),rn=mkb("✏️ Renommer"),dl=mkb("🗑️ Supprimer définitivement","danger"),all=[re,rn,dl];
+    const done=(t,e)=>{say(t,e);if(!e){paint();boardMsg(t)}};
+    re.onclick=()=>manageStudent(st,"unghost",all,done);rn.onclick=()=>renameStudent(st,all,done);dl.onclick=()=>manageStudent(st,"delete",all,done);
+    acts.append(re,moreMenu("Autres actions pour "+st.nickname,[rn,dl]));row.append(info,acts);list.append(row)})};
+  paint();
+ });
+}
+function pausedClassesDialog(classes){
+ listDialog("Classes suspendues (leurs élèves ne peuvent plus se connecter ; tout est gardé) :",(list,say,close)=>{
+  classes.forEach(c=>{const row=document.createElement("div");row.className="row";const b=document.createElement("strong");b.textContent="📚 "+c.name+(c.teacher_id!==currentUser.id?" (autre enseignant)":"");
+   const re=document.createElement("button");re.type="button";re.textContent="✅ Réactiver la classe";re.onclick=async()=>{close();await manageClass(c,"unghost",[],true);};
+   row.append(b,re);list.append(row)});
+ });
+}
 async function renameStudent(st,buttons,done){
  const say=(t,e)=>done?done(t,e):msg("studentsMsg",t,e);
  const name=await dlg("Nouvelle orthographe du prénom « "+st.nickname+" » :",{input:true,value:st.nickname,ok:"Renommer",label:"Prénom de l’élève"});
@@ -2062,7 +2136,8 @@ async function manageStudent(st,action,buttons,done){
  if(!done)studentsNotice=t;
  await refresh();if(done)done(t);
 }
-async function manageClass(c,action,buttons){
+async function manageClass(c,action,buttons,board){
+ const msg=(id,t,e)=>msgTo(board?"board":id,t,e);
  const n=allStudents.filter(s=>s.class_id===c.id).length;
  if(action==="delete"){
   const typed=await dlg("Supprimer définitivement la classe « "+c.name+" » et ses "+n+" "+pl(n,"élève","élèves")+", avec toute leur progression ?\nCette action est irréversible. Pour confirmer, retapez le nom de la classe :",{input:true,ok:"Supprimer",danger:true,label:"Nom de la classe"});
@@ -2073,7 +2148,8 @@ async function manageClass(c,action,buttons){
  const {error}=await client.rpc("manage_class",{p_class:c.id,p_action:action});
  buttons.forEach(b=>b.disabled=false);
  if(error){msg("studentsMsg",errorText(error),true);return;}
- studentsNotice={ghost:"⏸️ La classe « "+c.name+" » est suspendue : ses élèves ne peuvent plus se connecter, leurs données sont gardées.",unghost:"✅ Les élèves de « "+c.name+" » peuvent de nouveau se connecter.",delete:"🗑️ La classe « "+c.name+" » a été supprimée avec ses élèves."}[action];
+ const said={ghost:"⏸️ La classe « "+c.name+" » est suspendue : ses élèves ne peuvent plus se connecter, leurs données sont gardées.",unghost:"✅ Les élèves de « "+c.name+" » peuvent de nouveau se connecter.",delete:"🗑️ La classe « "+c.name+" » a été supprimée avec ses élèves."}[action];
+ if(board)boardMsg(said);else studentsNotice=said;
  await refresh();
 }
 async function manageTeacher(t,action,buttons){

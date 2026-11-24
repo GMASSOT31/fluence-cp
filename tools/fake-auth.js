@@ -13,6 +13,8 @@
     students: [{ id: "s1", nickname: "lea", class_id: "c1", teacher_id: "t1", pin_hash: "x" }, { id: "s2", nickname: "leo", class_id: "c1", teacher_id: "t1", pin_hash: "x" }, { id: "s3", nickname: "Zoé", class_id: "c2", teacher_id: "t2", pin_hash: "x" }],
     progress: { s1: { student_id: "s1", progress: { coins: 3, dictee: { passes: { voy: 1, l: 1 }, done: { voy: true, l: true }, tries: 4 }, hi: { memory: { best: 12 }, catch: { best: 9 }, simon: { best: 5 }, order: { best: 20 } }, results: [{ src: "eval", mclm: 285, ts: 5, k: "s", sound: "l" }, { src: "eval", mclm: 200, ts: 4, k: "s", sound: "l" }, { src: "train", ts: 3 }, { src: "train", ts: 2 }, { src: "train", ts: 1 }], reviews: [], vouchers: [{ id: "v1", label: "Image surprise", icon: "🖼️", done: false }, { id: "v2", label: "Crayon magique", icon: "✏️", done: false }] }, updated_at: "2026-10-20T10:00:00Z", pending_coins: 0, given_vouchers: [] } }, gifts: []
   };
+  /* ?vide=1 : nouvel enseignant sans classe ni élève (Ma classe propose de créer sa classe) */
+  if (/[?&]vide=1/.test(location.search)) { st.classes = (st.classes || []).filter(function (c) { return c.teacher_id !== "t1"; }); st.students = st.students.filter(function (x) { return x.teacher_id !== "t1"; }); }
   /* ?imagiers=1 : trois imagiers ; le 2e est déjà dans la file de la classe cpE (repères « Nouveau » / « Déjà attribué ») */
   if (/[?&]imagiers=1/.test(location.search)) {
     var W = ["chat", "lune", "vélo", "pomme", "robe", "moto"];

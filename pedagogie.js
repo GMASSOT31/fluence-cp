@@ -77,6 +77,14 @@
     return med;
   }
 
+  /* ✏️ discret à côté du prénom (fiche de l'élève, Lecture et Calcul) : corriger une faute d'orthographe du prénom ; le serveur refuse un prénom déjà pris dans la classe */
+  function renameBtn(st, own, done) {
+    if (window.ZooPedaCtx) C = window.ZooPedaCtx();
+    if (!C.renameStudent || !(own || C.currentRole === "admin")) return document.createTextNode("");
+    var b = mk("button", "pb-rename", "✏️"); b.type = "button"; b.title = "Corriger le prénom de " + st.nickname; b.setAttribute("aria-label", b.title);
+    b.onclick = function () { C.renameStudent(st, [b], done); };
+    return b;
+  }
   function myClasses() {
     var own = (C.allClasses || []).filter(function (c) { return !c.ghosted_at && c.teacher_id === C.currentUser.id; });
     if (C.currentRole === "admin") own = own.concat((C.allClasses || []).filter(function (c) { return !c.ghosted_at && c.teacher_id !== C.currentUser.id; }));
@@ -101,7 +109,8 @@
       var empty = mk("div", "pb-empty");
       empty.append(mk("p", null, "Vos élèves apparaîtront ici dès que vous aurez créé votre classe et inscrit vos élèves."));
       var go = mk("button", "primary", "📚 Créer ma classe et mes élèves"); go.type = "button";
-      go.onclick = function () { var b = document.querySelector('[data-sub-btn="classes"]'); if (b) b.click(); else C.showTab("eleves"); };
+      var hasClass = classes.length > 0; if (hasClass) go.textContent = "🧒 Ajouter mes élèves";
+      go.onclick = function () { if (C.openClassForm) C.openClassForm(hasClass ? "ajout" : "classes", hasClass ? classes[0] : null); else C.showTab("eleves"); };
       empty.append(go); box.append(empty); return;
     }
     if (!state.classId || !classes.some(function (c) { return c.id === state.classId; })) state.classId = classes[0].id;
@@ -129,7 +138,9 @@
     var rl = mk("button", "secondary pb-refresh", "↻"); rl.type = "button"; rl.title = "Actualiser les résultats"; rl.setAttribute("aria-label", rl.title);
     rl.onclick = function () { render(); };
     var when = mk("span", "pb-updated", ""); when.setAttribute("aria-live", "polite"); when.setAttribute("aria-label", "Heure de la dernière actualisation");
-    left.append(rl); head.append(when);
+    left.append(rl);
+    if (C.classMenu) left.append(C.classMenu(cls));   /* ⋯ Classe : code, ajouter un élève, créer une classe, renommer… (ancien onglet « Mes classes ») */
+    head.append(when);
     head.append(acts);
     box.append(head, mk("p", "msg", null));
     box.lastChild.id = "pedaMsg"; box.lastChild.setAttribute("role", "status");
@@ -879,6 +890,7 @@
     /* 1. en-tête */
     var head = mk("div", "pb-fhead c-" + r.color);
     var h = mk("h3", null); h.append(mk("span", "pb-dot", st[0]), document.createTextNode(" " + r.s.nickname));
+    h.append(renameBtn(r.s, own, function (text, err) { if (err) { m.textContent = text; m.classList.add("err"); return; } state.flash = { id: r.s.id, text: text, err: false }; render(); }));
     var chips = mk("div", "pb-tags");
     chips.append(mk("span", "pb-tag", st[1]), mk("span", "pb-tag" + (r.inactive ? " warn" : ""), "🕒 " + whenText(r)), mk("span", "pb-tag", "📖 Parcours " + (gs ? "GS" : "CP")));
     if (r.allo) chips.append(mk("span", "pb-tag", "🌍 Apprend le français"));
@@ -1382,5 +1394,5 @@
 
   /* « Mes classes » › « Voir mes élèves » : ouvrir Ma classe sur cette classe */
   function pick(id) { if (id && id !== state.classId) { state.classId = id; state.open = {}; state.filter = "all"; } }
-  window.ZooPeda = { svgWeb: svgWeb, gsSettings: gsSettings, gsCalcSettings: gsCalcSettings, ce1CalcSettings: ce1CalcSettings, trackBox: trackBox, trackBulk: trackBulk, GS_ST: GS_ST, gsAxes: gsAxes, trackOf: trackOf, compactDetails: compactDetails, pick: pick, asgLabel: asgLabel, asgState: asgState, asgStatusText: asgStatusText, render: render, openDetail: openDetail, scrollToStudent: scrollToStudent, tilePairs: TILE_PAIRS, analyse: analyse, classify: classify, axes: axes, drawFiche: drawFiche, drawWeb: drawWeb, refOf: refOf, schoolWeeks: schoolWeeks, YEAR_WEEKS: YEAR_WEEKS, state: state };
+  window.ZooPeda = { renameBtn: renameBtn, svgWeb: svgWeb, gsSettings: gsSettings, gsCalcSettings: gsCalcSettings, ce1CalcSettings: ce1CalcSettings, trackBox: trackBox, trackBulk: trackBulk, GS_ST: GS_ST, gsAxes: gsAxes, trackOf: trackOf, compactDetails: compactDetails, pick: pick, asgLabel: asgLabel, asgState: asgState, asgStatusText: asgStatusText, render: render, openDetail: openDetail, scrollToStudent: scrollToStudent, tilePairs: TILE_PAIRS, analyse: analyse, classify: classify, axes: axes, drawFiche: drawFiche, drawWeb: drawWeb, refOf: refOf, schoolWeeks: schoolWeeks, YEAR_WEEKS: YEAR_WEEKS, state: state };
 })();
