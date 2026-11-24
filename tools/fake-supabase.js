@@ -18,7 +18,10 @@
   /* ?recdec=40|ok|non : une lecture enregistrée en attente (voyelles, syllabes, 60 s) que l'enseignant a validée avec 40 syllabes bien lues, validée sans score, ou fait relire (settings.recDec) */
   var RECDEC = (/[?&]recdec=(\w+)/.exec(location.search) || [])[1];
   if (RECDEC) srv.me.progress.reviews = [{ id: "rvT", sid: srv.me.id, sound: "voy", kind: "s", ts: 1763900000000, secs: 60, tab: 3 }];
-  function recDecOpt() { if (!RECDEC) return undefined; var o = {}; o.rvT = RECDEC === "non" ? { sid: srv.me.id, ok: false, ts: 1 } : RECDEC === "ok" ? { sid: srv.me.id, ok: true, ts: 1 } : { sid: srv.me.id, ok: true, c: Number(RECDEC), ts: 1 }; return o; }
+  /* ?recdec=attente : la lecture attend, aucune décision au démarrage ; window.__recDecLive = "ok" | "40" | "non" simule une décision prise pendant que l'élève est connecté.
+     &rouge=1 : 3 entraînements depuis la dernière lecture validée (rappel rouge « Préviens ton enseignant ») */
+  if (/[?&]rouge=1/.test(location.search)) srv.me.progress.results = (srv.me.progress.results || []).concat([1, 2, 3].map(function (i) { return { id: "tr" + i, sid: srv.me.id, sound: "voy", k: "s", mclm: 30, t: 60, ts: 1763900000000 + i, src: "train" }; }));
+  function recDecOpt() { var RECDEC = window.__recDecLive || (/[?&]recdec=(\w+)/.exec(location.search) || [])[1]; if (!RECDEC || RECDEC === "attente") return undefined; var o = {}; o.rvT = RECDEC === "non" ? { sid: srv.me.id, ok: false, ts: 1 } : RECDEC === "ok" ? { sid: srv.me.id, ok: true, ts: 1 } : { sid: srv.me.id, ok: true, c: Number(RECDEC), ts: 1 }; return o; }
   function gsOpt() { var o = {}; if (!/[?&]gs=1/.test(location.search)) return undefined; o[srv.me.id] = { lecture: "gs" }; return o; }
   function all() { return [{ id: srv.me.id, nickname: srv.me.nickname, avatar: srv.me.progress.avatar, hi: srv.me.progress.hi || {} }].concat(srv.others); }
   function best(game) {
