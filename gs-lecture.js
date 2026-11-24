@@ -8,7 +8,7 @@
    Écran : vue « gs » (#gs-body). Voir docs/parcours-gs/avancement.md. */
 (function () {
   "use strict";
-  var D = window.ZooGSData, X = null, R = null, timers = [], GS_AUDIO_V = "2";
+  var D = window.ZooGSData, X = null, R = null, timers = [], GS_AUDIO_V = "3";
   function ctx() { if (!X) X = window.ZooGSCtx(); return X; }
   function clear() { timers.forEach(clearTimeout); timers = []; }
   function later(f, ms) { timers.push(setTimeout(f, ms)); }
