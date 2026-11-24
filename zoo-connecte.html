@@ -8283,12 +8283,13 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     body.appendChild(card);
     paint();
   }
-  async function saveReview(rv, r) {
+  /* Range le résultat d'une lecture validée (écoutée sur la tablette, ou décidée depuis l'espace enseignant) : médaille, roue, évolution, message */
+  function recordReview(rv, r, src, fromTeacher) {
     var was = isValid(rv.sid, rv.sound, rv.kind), petBefore = petState(rv.sid, rv.sound);
-    data.results.push({ id: uid(), sid: rv.sid, sound: rv.sound, k: rv.kind, n: r.n, e: r.e, t: Math.round(r.t), mclm: r.mclm, ts: rv.ts, reviewId: rv.id, reviewedAt: Date.now(), src: "rec", fraud: r.fraud });
+    data.results.push({ id: uid(), sid: rv.sid, sound: rv.sound, k: rv.kind, n: r.n, e: r.e, t: Math.round(r.t), mclm: r.mclm, ts: rv.ts, reviewId: rv.id, reviewedAt: Date.now(), src: src || "rec", fraud: r.fraud });
     var newly = !was && isValid(rv.sid, rv.sound, rv.kind);
     var thr = data.thr[rv.kind];
-    var note = "Le maître(sse) a écouté ta lecture : " + r.mclm + " " + kindInfo(rv.kind).unit + " par minute.";
+    var note = (src === "adj" || fromTeacher ? "Le maître(sse) a validé ta lecture" : "Le maître(sse) a écouté ta lecture") + (src === "adj" ? "." : " : " + r.mclm + " " + kindInfo(rv.kind).unit + " par minute.");
     if (newly) {
       note += " Étape certifiée 🏅 !";
       if (data.reward) data.wheels.push({ id: uid(), sid: rv.sid, ts: Date.now() });
@@ -8304,11 +8305,34 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     }
     data.notes.push({ sid: rv.sid, text: note });
     removeReview(rv.id);
+    return newly;
+  }
+  async function saveReview(rv, r) {
+    var newly = recordReview(rv, r, "rec");
     closeReviewMedia();
     var saved = !cloudMode || await cloudSettle();
     toast(saved ? (newly ? "Lecture validée et étape certifiée 🏅" : "Lecture validée")
       : "Validation en attente de synchronisation. Garde cette page ouverte.");
     if (ses.ear || ses.role === "teacher") renderEcoute();
+  }
+  /* Décisions prises depuis l'espace enseignant, sans écoute sur la tablette (settings.recDec, 24/11/2026) :
+     ok + nombre de mots/syllabes bien lus → fluence calculée comme à l'écoute ; ok sans nombre → médaille sans score (src "adj", hors courbe) ; refus → relecture demandée */
+  function applyRecDecisions(dec, sid) {
+    if (!dec || typeof dec !== "object") return 0;
+    var n = 0;
+    data.reviews.filter(function (rv) { return rv.sid === sid; }).forEach(function (rv) {
+      var d = dec[rv.id];
+      if (!d || typeof d !== "object" || d.sid !== sid) return;
+      n++;
+      if (d.ok !== true) { data.notes.push({ sid: rv.sid, text: "Le maître(sse) te demande de relire cette étape : " + reviewTitle(rv).toLowerCase() + ". Tu peux t’enregistrer à nouveau." }); removeReview(rv.id); return; }
+      var c = Number(d.c), t = Math.max(1, Math.min(DURATION, Number(rv.secs) || DURATION));
+      if (d.c != null && isFinite(c) && c >= 0 && c <= 300) {
+        var m = Math.round(c / t * 60);
+        recordReview(rv, { n: Math.round(c), e: 0, c: Math.round(c), t: t, mclm: m > MCLM_MAX ? 0 : m, fraud: m > MCLM_MAX ? m : undefined }, "rec", true);
+      } else recordReview(rv, { n: 0, e: 0, c: 0, t: 0, mclm: data.thr[rv.kind] }, "adj");
+    });
+    if (n) save();
+    return n;
   }
   function redoReview(rv) {
     data.notes.push({ sid: rv.sid, text: "Le maître(sse) te demande de relire cette étape : " + reviewTitle(rv).toLowerCase() + ". Tu peux t’enregistrer à nouveau." });
@@ -8740,6 +8764,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       data.sel.sid=st.student_id;data.sel.sound=p.selSound||null;
       if(["s","m","t"].includes(p.selKind))data.sel.kind=p.selKind;
       if(!data.sel.sound)applySuggestion();
+      applyRecDecisions(teacherSettings.recDec, st.student_id);   /* lectures validées ou à refaire depuis l'espace enseignant */
       ses.role="student";ses.sid=st.student_id;ses.viaTeacher=false;ses.unlocked=false;ses.teacherAuth=false;
       /* ?vue=boutique|jeux : ouvre directement la boutique ou la salle d’arcade (liens du Zoo de Calcul vers ces espaces partagés) */
       var wantView=(/[?&]vue=(boutique|jeux)(&|$)/.exec(location.search)||[])[1];
