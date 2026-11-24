@@ -10,7 +10,10 @@
   var LATE = 3, AHEAD = 3, INACTIVE_DAYS = 7, DAY = 864e5;
   var state = { classId: null, filter: "all", rows: [], open: {}, folded: {}, seq: 0, flash: null, focus: null, content: null }, C = {};
   function $(id) { return document.getElementById(id); }
-  window.pedaAllo = window.pedaAllo || [];   /* élèves allophones (réglage enseignant « allo ») */
+  window.pedaAllo = window.pedaAllo || [];
+  /* lectures enregistrées validées ou à refaire depuis la fiche (24/11/2026, demandé par Gabriel) : settings.recDec = { idLecture: {sid, ok, c?, ts} },
+     appliquées par le Zoo de l'élève à sa prochaine connexion (zoo-connecte.html applyRecDecisions), puis retirées ici quand la lecture n'est plus en attente */
+  window.pedaRecDec = window.pedaRecDec || {};   /* élèves allophones (réglage enseignant « allo ») */
 
   function mk(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
   function plur(n, a, b) { return n + " " + (C.pl ? C.pl(n, a, b) : (n > 1 ? b : a)); }
@@ -61,7 +64,7 @@
     var flu = res.filter(function (r) { return !r.void && !r.short && !(Number(r.fraud) > 0) && r.src !== "adj" && r.src !== "train" && Number(r.mclm) > 0; })
       .sort(function (a, b) { return (Number(b.ts) || 0) - (Number(a.ts) || 0); })[0] || null;
     return { s: s, row: row || null, canRec: canRec, p: p, nValid: nValid, total: order.length, cur: cur, err: err, answers: answers, readTries: readTries, blocked: blocked,
-      recs: recs.length, recTabs: recs.map(function (x) { return Number(x.tab) || 0; }).filter(function (n, i, a) { return n && a.indexOf(n) === i; }).sort(function (a, b) { return a - b; }), curSent: curSent, secs: secs, exercises: exercises, successes: successes, series: series, idle: idle, flu: flu, conf: st.conf && typeof st.conf === "object" ? st.conf : {}, measured: Object.keys(days).length > 0,
+      recs: recs.filter(function (x) { return !window.pedaRecDec[x.id]; }).length, recTabs: recs.filter(function (x) { return !window.pedaRecDec[x.id]; }).map(function (x) { return Number(x.tab) || 0; }).filter(function (n, i, a) { return n && a.indexOf(n) === i; }).sort(function (a, b) { return a - b; }), curSent: curSent, secs: secs, exercises: exercises, successes: successes, series: series, idle: idle, flu: flu, conf: st.conf && typeof st.conf === "object" ? st.conf : {}, measured: Object.keys(days).length > 0,
       allo: window.pedaAllo.indexOf(s.id) >= 0, asg: currentAssignment(s.id), remed: p.remed && typeof p.remed === "object" ? p.remed : null };
   }
   function classify(rows) {
@@ -148,6 +151,11 @@
     var rows = studs.map(function (s) { return analyse(s, map[s.id]); });
     classify(rows);
     state.rows = rows; state.cls = cls;
+    /* décisions déjà prises en compte par le Zoo de l'élève (la lecture n'est plus en attente) : on les retire */
+    Object.keys(window.pedaRecDec).forEach(function (id) {
+      var d = window.pedaRecDec[id], row = rows.filter(function (x) { return x.s.id === d.sid; })[0];
+      if (row && !pendingRecs(row.p || {}).some(function (v) { return v.id === id; })) delete window.pedaRecDec[id];
+    });
     state.classVocab = Array.isArray(reads[1].data) ? reads[1].data : [];
     if (C.pdfMake) {
       var fa = mk("button", "secondary"); fa.append(mk("span", "pb-pdf-icon", "PDF"), document.createTextNode(" Araignées de suivi")); fa.type = "button"; fa.title = "Une fiche par élève, avec sa toile des 7 compétences";
@@ -747,7 +755,7 @@
      · 4 actions regroupées · 5 tous les résultats (cartes de studentDetail, carte GS) repliés. Remplace l'onglet « À écouter ». */
   var STATUS = { red: ["🔴", "En difficulté"], yellow: ["🟡", "Avance normalement"], green: ["🟢", "En avance"], idle: ["⚪", "Pas venu depuis " + INACTIVE_DAYS + " jours ou plus"] };
   function pendingRecs(p) {
-    var done = (Array.isArray(p.results) ? p.results : []).filter(function (x) { return x && x.src === "rec"; });
+    var done = (Array.isArray(p.results) ? p.results : []).filter(function (x) { return x && (x.src === "rec" || x.reviewId); });
     return (Array.isArray(p.reviews) ? p.reviews : []).filter(function (v) {
       return v && v.sound && !done.some(function (x) { return x.reviewId ? x.reviewId === v.id : x.sid === v.sid && x.ts === v.ts && x.sound === v.sound && x.k === v.kind; });
     }).sort(function (a, b) { return (Number(a.tab) || 99) - (Number(b.tab) || 99) || (a.ts || 0) - (b.ts || 0); });
@@ -769,6 +777,42 @@
       t.textContent = a.name + (a.v === null ? "" : " " + a.v + " %");
     });
     return svg;
+  }
+  /* Une lecture en attente : à écouter sur la tablette, OU validée / à refaire directement ici (le Zoo de l'élève l'applique à sa prochaine connexion) */
+  function recItem(r, v, own) {
+    var li = mk("li", "pb-now-rec"), d = window.pedaRecDec[v.id], unit = v.kind === "s" ? "syllabes" : "mots", thr = thrOf()[v.kind];
+    li.append(mk("span", null, "🎧 " + (Number(v.tab) ? "📱 Tablette " + v.tab : "📱 Tablette sans numéro") + " · lecture des " + (KN[v.kind] || "syllabes") + " du son « " + soundName(v.sound) + " »" + (v.ts ? " · " + frDate(v.ts) : "") + (d ? "" : " — à écouter sur sa tablette (« 🎧 Mon maître(sse) écoute ») ou à décider ici")));
+    if (!own) return li;
+    var box = mk("div", "pb-recdec");
+    function save(dec) {
+      if (dec) window.pedaRecDec[v.id] = dec; else delete window.pedaRecDec[v.id];
+      var left = (Array.isArray(r.p && r.p.reviews) ? r.p.reviews : []).filter(function (x) { return x && x.sound && !window.pedaRecDec[x.id]; });   /* compteurs « à écouter » à jour sans recharger */
+      r.recs = left.length; r.recTabs = left.map(function (x) { return Number(x.tab) || 0; }).filter(function (n, i, a) { return n && a.indexOf(n) === i; }).sort(function (a, b) { return a - b; });
+      if (C.queueSave) C.queueSave("pedaSave"); draw();
+    }
+    if (d) {
+      box.append(mk("span", "pb-tag " + (d.ok ? "ok" : "warn"), d.ok ? "✅ Validée" + (typeof d.c === "number" ? " · " + d.c + " " + unit + (v.kind === "s" ? " bien lues" : " bien lus") : " sans score") : "↩️ À relire"),
+        mk("small", "muted", " L’élève la verra à sa prochaine connexion. "));
+      var undo = mk("button", "secondary", "Annuler"); undo.type = "button"; undo.onclick = function () { save(null); };
+      box.append(undo); li.append(box); return li;
+    }
+    var okb = mk("button", "primary", "✅ Valider"), no = mk("button", "secondary", "↩️ Faire relire"), form = mk("div", "pb-recform");
+    okb.type = no.type = "button"; form.hidden = true;
+    no.title = "Cette lecture n’est pas la bonne : l’élève devra se réenregistrer";
+    no.onclick = function () { save({ sid: r.s.id, ok: false, ts: Date.now() }); };
+    var inp = mk("input"); inp.type = "number"; inp.min = 0; inp.max = 300; inp.inputMode = "numeric"; inp.id = "recn-" + v.id; inp.placeholder = "facultatif";
+    var lab = mk("label", null, (v.kind === "s" ? "Syllabes bien lues en " : "Mots bien lus en ") + (Number(v.secs) && v.secs < 60 ? v.secs + " s" : "1 minute") + " : "); lab.htmlFor = inp.id;
+    var go = mk("button", "primary", "Valider la lecture"), cancel = mk("button", "secondary", "Annuler"); go.type = cancel.type = "button";
+    form.append(lab, inp, go, cancel,
+      mk("small", "muted pb-rechelp", "Avec un nombre, la fluence est calculée et ajoutée à sa courbe (objectif : " + thr + " " + unit + " par minute) ; la médaille est donnée si l’objectif est atteint. Sans nombre, la médaille est donnée sans score."));
+    okb.onclick = function () { form.hidden = !form.hidden; if (!form.hidden) inp.focus(); };
+    cancel.onclick = function () { form.hidden = true; };
+    go.onclick = function () {
+      var raw = String(inp.value).trim(), n = raw === "" ? null : Math.round(Number(raw));
+      if (n !== null && !(n >= 0 && n <= 300)) { inp.setCustomValidity("Entre 0 et 300"); inp.reportValidity(); return; }
+      save({ sid: r.s.id, ok: true, c: n === null ? undefined : n, ts: Date.now() });
+    };
+    box.append(okb, no); li.append(box, form); return li;
   }
   function studentView(r, rows) {
     var w = mk("div", "pb-fiche"), own = C.currentUser && r.s.teacher_id === C.currentUser.id, st = STATUS[r.color] || STATUS.yellow, gs = trackOf(r.s.id) === "gs";
@@ -816,7 +860,7 @@
     var now = section("📌 Pour " + r.s.nickname + " maintenant", null), items = mk("ul", "pb-now");
     function item(txt, cls) { items.append(mk("li", cls || null, txt)); }
     var recs = pendingRecs(r.p || {});
-    recs.forEach(function (v) { item("🎧 " + (Number(v.tab) ? "📱 Tablette " + v.tab : "📱 Tablette sans numéro") + " · lecture des " + (KN[v.kind] || "syllabes") + " du son « " + soundName(v.sound) + " »" + (v.ts ? " · " + frDate(v.ts) : "") + " — à écouter sur sa tablette (« 🎧 Mon maître(sse) écoute »)", "pb-now-rec"); });
+    recs.forEach(function (v) { items.append(recItem(r, v, own)); });
     if (!recs.length && r.canRec) item("🎙 Peut enregistrer sa lecture pour la médaille (« 🎙 Je m’enregistre » dans son Zoo).");
     if (r.blocked && r.cur) item("⚠️ Bloqué sur le son « " + soundName(r.cur.id) + " »" + (r.err !== null && r.answers >= 6 ? " (" + r.err + " % d’erreurs)" : " (" + r.readTries + " lectures sans réussite)") + " : un exercice peut l’aider.", "pb-now-warn");
     studentConf(r).forEach(function (c) { item("🔀 Confond « " + c[0].replace(" / ", " » et « ") + " » (" + c[1] + " fois)"); });
