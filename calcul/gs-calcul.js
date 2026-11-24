@@ -27,6 +27,7 @@
       ".gc-pen span{position:absolute;line-height:1;transform:translate(-50%,-50%);font-size:2.4rem;pointer-events:none}.gc-pen.build span{pointer-events:auto;cursor:pointer}" +
       ".gc-slots{display:flex;justify-content:center;flex-wrap:wrap;margin:10px 0 2px}.gc-slot{font-family:Fredoka,Figtree,sans-serif;font-weight:700;font-size:2.6rem;width:76px;height:84px;line-height:78px;margin:5px;border:3px dashed #b8c0cc;border-radius:18px;color:#1d6b45}" +
       ".gc-slot.full{border-style:solid;border-color:#2e9b6a;background:#dff3e8}" +
+      ".gc-stairs{flex-wrap:nowrap;align-items:flex-end}.gc-stairs .gc-slot{margin:4px 5px;padding:0}" +
       ".gc-strip{display:flex;flex-wrap:wrap;justify-content:center;margin:6px -3px 12px}.gc-strip span{font-family:Fredoka,Figtree,sans-serif;font-weight:700;font-size:1.3rem;width:38px;height:42px;line-height:42px;margin:3px;border-radius:10px;background:#eef1f6;color:#8a93a3}" +
       ".gc-strip span.seen{background:#dff3e8;color:#1d6b45}.gc-strip span.now{background:#2e9b6a;color:#fff}" +
       ".gc-stars{font-size:2.2rem;letter-spacing:6px}.gc-stars .on{color:#f2b705}.gc-stars span{color:#c9cdd6}.gc-small{margin-top:14px}.gc-small button{font-size:1rem;margin:4px}.gc-hint{font-size:1.6rem;font-weight:700;color:#1d6b45;min-height:1.2em}" +
@@ -251,7 +252,14 @@
     } else if (a === "ordre") {
       var k = 0, err = false, slots = [], row = el("div", "gc-slots"), grid2 = el("div", "gc-grid");
       if (R.aid) { var strip = el("div", "gc-strip"); for (var m = 0; m <= 9; m++) strip.appendChild(el("span", Q.seq.indexOf(m) >= 0 ? "seen" : "", String(m))); card.appendChild(strip); }
-      Q.seq.forEach(function () { var d = el("div", "gc-slot", ""); slots.push(d); row.appendChild(d); });
+      /* cases en escalier (demandé par Gabriel le 24/11/2026) : petite case = petit nombre, case moyenne = nombre du milieu, grande case = grand nombre */
+      row.className = "gc-slots gc-stairs";
+      Q.seq.forEach(function (v, i) {
+        var n = Q.seq.length, f = n > 1 ? 0.72 + 0.6 * i / (n - 1) : 1, d = el("div", "gc-slot", "");
+        d.style.width = Math.round(66 * f) + "px"; d.style.height = Math.round(72 * f) + "px"; d.style.lineHeight = Math.round(72 * f) - 6 + "px"; d.style.fontSize = (2.2 * f).toFixed(2) + "rem";
+        d.setAttribute("aria-label", i === 0 ? "Petite case : le plus petit nombre" : i === n - 1 ? "Grande case : le plus grand nombre" : "Case du milieu");
+        slots.push(d); row.appendChild(d);
+      });
       card.appendChild(row);
       Q.opts.forEach(function (v) {
         var b = btn("gc-num", String(v), function () {
