@@ -164,6 +164,14 @@
     audioLoad();
     C.goTo("gs");
   }
+  /* Aperçu enseignant (Pédagogie › Visualiser) : une série de la 1re étape de l'activité, en entraînement libre (rien n'est validé ni enregistré) */
+  function preview(sid, comp) {
+    var items = pathOf(sid).filter(function (x) { return x.comp === comp; });
+    if (!items.length) return false;
+    var it = items[0], s = D.buildSeries(it.step, cfg(), comp, false);
+    R = { sid: sid, comp: comp, K: D.COMP[comp], step: it.step, free: true, aid: false, qs: s.qs, n: 0, good: 0, answers: [], id: ctx().uid() };
+    audioLoad(); ctx().goTo("gs"); return true;
+  }
   function render() {
     var C = ctx(); clear(); css();
     if (!R) { C.goTo("home"); return; }
@@ -323,5 +331,5 @@
     R = null;
   }
   function stop() { clear(); sayAll.tok = null; audioStop(); R = null; if (X) { X.listenStopVoice(); X.listenFocus(false); } }
-  window.ZooGS = { clean: clean, track: track, home: home, start: start, rituel: rituel, render: render, stop: stop, _run: function () { return R; }, _audio: A };
+  window.ZooGS = { clean: clean, track: track, home: home, start: start, preview: preview, rituel: rituel, render: render, stop: stop, _run: function () { return R; }, _audio: A };
 })();

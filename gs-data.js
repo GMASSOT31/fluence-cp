@@ -195,9 +195,23 @@
     if (comp && COMP[comp] && COMP[comp].act === "ordre") return COMP[comp].court + " · " + s.n + " lettres";
     return (comp && COMP[comp] ? COMP[comp].court + " · " : "") + g + " · " + s.n + " choix";
   }
+  /* Toile d'araignée GS (cahier 10.2–10.3) : un axe par activité PROPOSÉE (les activités désactivées n'apparaissent pas, T12), dans l'ordre du cahier.
+     v = étapes validées ÷ étapes attendues à cette date (frac = semaines d'école écoulées / 36 ; au moins 1 attendue) × 100 ; une série seule ne valide jamais une étape.
+     status : nouveau (rien fait), en_cours, maitrise (toutes validées), difficulte (aide activée sur l'étape en cours de l'activité). */
+  var WEB = [["cap", "Capitales"], ["ordre", "Alphabet"], ["capscript", "Capitales/script"], ["script", "Script"], ["scriptcurs", "Script/cursive"], ["curs", "Cursive"]];
+  function radar(cfg, prenom, st, series, frac) {
+    var items = path(cfg, prenom), f = Math.max(0, Math.min(1, Number(frac) || 0)), ser = Array.isArray(series) ? series : [];
+    return WEB.filter(function (w) { return cfg[w[0]] && cfg[w[0]].on; }).map(function (w) {
+      var id = w[0], its = items.filter(function (x) { return x.comp === id; }), s = st[id] || compState(null);
+      var done = its.filter(function (x) { return s.val[x.step.key]; }).length, total = its.length, exp = total ? Math.max(1, Math.min(total, Math.round(total * f))) : 0;
+      var tried = ser.some(function (x) { return x && (x.c || "cap") === id; });
+      var status = total && done >= total ? "maitrise" : s.aid ? "difficulte" : done || tried ? "en_cours" : "nouveau";
+      return { k: id, name: w[1], nom: COMP[id].nom, done: done, total: total, exp: exp, v: exp ? Math.round(done * 100 / exp) : null, status: status };
+    });
+  }
   /* Une lettre dans une écriture (capitale, script, cursive) : le texte à afficher ; la police est donnée par la classe CSS w-<écriture> */
   function glyph(L, w) { return w === "cap" ? L : L.toLowerCase(); }
   var api = { LETTER_SAY: LETTER_SAY, CONFUS: CONFUS, DEFAULTS: DEFAULTS, COMPS: COMPS, TRACKS: ["gs", "cp", "ce1"], TRACK_READY: { gs: true, cp: true, ce1: false },
-    COMP: COMP, config: config, groupsFor: groupsFor, steps: steps, path: path, lecState: lecState, pathCurrent: pathCurrent, pathSummary: pathSummary, glyph: glyph, buildSeries: buildSeries, compState: compState, current: current, record: record, summary: summary, stepLabel: stepLabel, letters: letters };
+    COMP: COMP, WEB: WEB, radar: radar, config: config, groupsFor: groupsFor, steps: steps, path: path, lecState: lecState, pathCurrent: pathCurrent, pathSummary: pathSummary, glyph: glyph, buildSeries: buildSeries, compState: compState, current: current, record: record, summary: summary, stepLabel: stepLabel, letters: letters };
   root.ZooGSData = api;
 })(typeof window === "undefined" ? module.exports : window);

@@ -309,6 +309,7 @@
       shown.forEach(function (r) {
         var b = mk("button", "pb-kid c-" + r.color); b.type = "button"; b.title = "Voir la fiche de " + r.s.nickname;
         b.append(mk("span", "pb-dot", dots[r.color]), mk("span", "pb-kname", r.s.nickname));
+        if (trackOf(r.s.id) === "gs") { var tg = mk("span", "pb-gs", "GS"); tg.title = "Parcours de lecture : GS (les lettres)"; b.append(tg); }
         b.onclick = function () { openDetail(r.s.id); };
         list.append(b);
       });
@@ -324,6 +325,8 @@
     });
     var legend = mk("p", "muted pb-legend", "🔴 en difficulté (bloqué, ou " + LATE + " sons de retard sur l’élève du milieu de la classe) · 🟡 avance normalement · 🟢 en avance de " + AHEAD + " sons ou plus · ⚪ pas venu depuis " + INACTIVE_DAYS + " jours");
     sec.append(bar, list, legend);
+    var bulk = trackBulk(rows);
+    if (bulk) sec.append(bulk);
     paint();
     return sec;
   }
@@ -470,6 +473,180 @@
     card.append(det);
     return card;
   }
+  function gsSum(r) {
+    var D = window.ZooGSData; if (!D) return null;
+    var g = (r.p && r.p.gs) || {}, items = D.path(D.config(window.pedaGsCfg), r.s.nickname), st = D.lecState(g.lecture), series = Array.isArray(g.series) ? g.series : [];
+    return { D: D, st: st, series: series, sm: D.pathSummary(st, items, series) };
+  }
+  /* ===== Changement de parcours de plusieurs élèves à la fois (cahier 3.2, étape D) : cases à cocher, parcours visé, confirmation.
+     Seulement ses propres élèves ; les élèves non cochés ne changent pas ; aucun résultat effacé (progress.gs et les résultats CP restent). ===== */
+  state.bulk = { sel: {}, to: "gs" };
+  function trackBulk(rows) {
+    var own = (rows || []).filter(function (r) { return C.currentUser && r.s.teacher_id === C.currentUser.id; })
+      .sort(function (a, b) { return String(a.s.nickname).localeCompare(b.s.nickname); });
+    if (!own.length) return null;
+    var B = state.bulk, box = compactDetails("🔀 Changer le parcours de plusieurs élèves", "pb-bulk", state.classId + ":bulk", state.folded);
+    var body = mk("div", "pb-bulk-body"), msg = mk("p", "msg"); msg.setAttribute("role", "status");
+    function paint() {
+      body.replaceChildren();
+      body.append(mk("p", "muted", "Cochez les élèves, choisissez leur parcours de lecture, puis confirmez. Les élèves non cochés ne changent pas. Tous les résultats sont gardés."));
+      var tools = mk("div", "pb-bulk-tools"), all = mk("button", "secondary", "Tout cocher"), none = mk("button", "secondary", "Tout décocher");
+      all.type = none.type = "button";
+      all.onclick = function () { own.forEach(function (r) { B.sel[r.s.id] = true; }); paint(); };
+      none.onclick = function () { B.sel = {}; paint(); };
+      tools.append(all, none); body.append(tools);
+      var grid = mk("div", "pb-bulk-kids");
+      own.forEach(function (r) {
+        var lab = mk("label", "pb-bulk-kid"), cb = mk("input"); cb.type = "checkbox"; cb.checked = !!B.sel[r.s.id];
+        cb.onchange = function () { if (cb.checked) B.sel[r.s.id] = true; else delete B.sel[r.s.id]; count(); };
+        lab.append(cb, mk("span", "pb-kname", r.s.nickname), mk("span", trackOf(r.s.id) === "gs" ? "pb-gs" : "pb-cp", trackOf(r.s.id) === "gs" ? "GS" : "CP"));
+        grid.append(lab);
+      });
+      body.append(grid);
+      var to = mk("div", "pb-track"); to.append(mk("strong", null, "Nouveau parcours de lecture : "));
+      [["gs", "GS"], ["cp", "CP"], ["ce1", "CE1 · à venir"]].forEach(function (o) {
+        var b = mk("button", "pb-trk" + (B.to === o[0] ? " on" : ""), o[1]); b.type = "button"; b.setAttribute("aria-pressed", String(B.to === o[0]));
+        if (o[0] === "ce1") b.disabled = true;
+        b.onclick = function () { B.to = o[0]; paint(); };
+        to.append(b);
+      });
+      to.append(mk("span", "muted pb-trk-note", " Calcul : CP (GS bientôt)"));
+      body.append(to);
+      var go = mk("button", "primary", ""); go.type = "button";
+      var confirmBox = mk("div", "pb-bulk-confirm");
+      function count() { var n = own.filter(function (r) { return B.sel[r.s.id]; }).length; go.textContent = "Passer " + plur(n, "élève", "élèves") + " en " + B.to.toUpperCase() + "…"; go.disabled = !n; confirmBox.replaceChildren(); }
+      go.onclick = function () {
+        var picked = own.filter(function (r) { return B.sel[r.s.id]; }), change = picked.filter(function (r) { return trackOf(r.s.id) !== B.to; }), label = B.to.toUpperCase();
+        confirmBox.replaceChildren();
+        if (!change.length) { confirmBox.append(mk("p", "muted", (picked.length > 1 ? "Ces élèves sont déjà" : "Cet élève est déjà") + " en " + label + ".")); return; }
+        confirmBox.append(mk("p", null, "Passer en " + label + " pour la lecture : " + change.map(function (r) { return r.s.nickname; }).join(", ") + " (" + plur(change.length, "élève", "élèves") + ")." + (picked.length > change.length ? " Déjà en " + label + " : " + picked.filter(function (r) { return change.indexOf(r) < 0; }).map(function (r) { return r.s.nickname; }).join(", ") + "." : "")),
+          mk("p", "muted", "Les autres élèves ne changent pas. " + (change.length > 1 ? "Leurs" : "Ses") + " résultats sont tous gardés : vous pourrez revenir en arrière à tout moment."));
+        var yes = mk("button", "primary", "✅ Oui, appliquer"), no = mk("button", "secondary", "Annuler"); yes.type = no.type = "button";
+        no.onclick = function () { confirmBox.replaceChildren(); };
+        yes.onclick = function () {
+          change.forEach(function (r) {
+            var t = window.pedaTracks[r.s.id] || {};
+            if (B.to === "cp") delete t.lecture; else t.lecture = B.to;
+            if (Object.keys(t).length) window.pedaTracks[r.s.id] = t; else delete window.pedaTracks[r.s.id];
+          });
+          if (C.queueSave) C.queueSave("pedaSave");
+          B.sel = {};
+          state.bulkMsg = "✅ Parcours de lecture " + label + " pour " + change.map(function (r) { return r.s.nickname; }).join(", ") + ". " + (change.length > 1 ? "Leurs" : "Ses") + " résultats sont tous gardés.";
+          draw();
+        };
+        var row = mk("div", "pb-bulk-tools"); row.append(yes, no); confirmBox.append(row);
+        yes.focus();
+      };
+      body.append(go, confirmBox);
+      count();
+    }
+    paint();
+    if (state.bulkMsg) { msg.textContent = state.bulkMsg; state.bulkMsg = null; box.open = true; }
+    box.append(msg, body);
+    return box;
+  }
+  /* ===== Réglages du parcours GS (Pédagogie › Les activités › Du parcours de GS) : settings.gs.lecture (gs-data.js config), enregistrés tout seuls.
+     Rien n'est perdu quand on change : les validations restent rangées par activité et par étape (progress.gs). ===== */
+  function gsSettings(host) {
+    if (window.ZooPedaCtx) C = window.ZooPedaCtx();
+    var D = window.ZooGSData; if (!host) return;
+    host.replaceChildren();
+    if (!D) { host.append(mk("p", "muted", "Réglages indisponibles : actualisez la page.")); return; }
+    var cfg = D.config(window.pedaGsCfg), msg = mk("p", "msg"); msg.setAttribute("role", "status");
+    var save = mk("p", "save-state"); save.id = "gsSave"; save.setAttribute("role", "status");
+    function commit(text) {
+      cfg = D.config({ lecture: cfg });
+      window.pedaGsCfg = { lecture: JSON.parse(JSON.stringify(cfg)) };
+      if (C.queueSave) C.queueSave("gsSave");
+      paint(); msg.textContent = text || "";
+    }
+    function num(label, val, lo, hi, set) {
+      var l = mk("div", "pb-gsnum"), i = mk("input"); i.type = "number"; i.min = lo; i.max = hi; i.value = val; i.inputMode = "numeric"; i.setAttribute("aria-label", label);
+      i.onchange = function () { var v = Math.round(Number(i.value)); set(isFinite(v) && i.value !== "" ? Math.max(lo, Math.min(hi, v)) : val); commit(); };
+      l.append(mk("span", null, label), i); return l;
+    }
+    function paint() {
+      var keep = msg.textContent;
+      host.replaceChildren();
+      host.append(mk("p", "muted", "Pour les élèves en parcours GS : ils reconnaissent les lettres, groupe par groupe, dans les activités cochées. Une étape est validée après les séries réussies d’affilée demandées."));
+      /* 1. prénom */
+      var pr = mk("label", "pb-gscheck"), pc = mk("input"); pc.type = "checkbox"; pc.checked = cfg.prenom;
+      pc.onchange = function () { cfg.prenom = pc.checked; commit(); };
+      pr.append(pc, mk("span", null, "Commencer par les lettres du prénom de l’élève")); host.append(pr);
+      /* 2. groupes de lettres */
+      host.append(mk("h3", null, "Groupes de lettres, dans l’ordre"));
+      var gl = mk("ol", "pb-gsgroups");
+      cfg.groups.forEach(function (g, i) {
+        var li = mk("li"), inp = mk("input"); inp.type = "text"; inp.value = g; inp.maxLength = 26; inp.autocapitalize = "characters"; inp.spellcheck = false;
+        inp.setAttribute("aria-label", "Groupe " + (i + 1));
+        inp.onchange = function () {
+          var l = D.letters(inp.value).join("");
+          if (l.length < 2) { inp.value = g; msg.textContent = "Un groupe compte au moins 2 lettres."; return; }
+          cfg.groups[i] = l;
+          cfg.groups = cfg.groups.map(function (x, j) { if (j === i) return x; return D.letters(x).filter(function (c) { return l.indexOf(c) < 0; }).join(""); });
+          commit("Groupe " + (i + 1) + " enregistré.");
+        };
+        var up = mk("button", "secondary", "↑"), dn = mk("button", "secondary", "↓"), del = mk("button", "secondary", "✕");
+        up.type = dn.type = del.type = "button"; up.title = "Monter"; dn.title = "Descendre"; del.title = "Retirer ce groupe (ses lettres passent à la fin)";
+        up.setAttribute("aria-label", "Monter le groupe " + (i + 1)); dn.setAttribute("aria-label", "Descendre le groupe " + (i + 1)); del.setAttribute("aria-label", "Retirer le groupe " + (i + 1));
+        up.disabled = i === 0; dn.disabled = i === cfg.groups.length - 1; del.disabled = cfg.groups.length < 2;
+        up.onclick = function () { var t = cfg.groups[i - 1]; cfg.groups[i - 1] = cfg.groups[i]; cfg.groups[i] = t; commit(); };
+        dn.onclick = function () { var t = cfg.groups[i + 1]; cfg.groups[i + 1] = cfg.groups[i]; cfg.groups[i] = t; commit(); };
+        del.onclick = function () { cfg.groups.splice(i, 1); commit(); };
+        var line = mk("div"); line.append(inp, up, dn, del); li.append(line); gl.append(li);
+      });
+      host.append(gl);
+      var used = cfg.groups.join(""), rest = Object.keys(D.LETTER_SAY).filter(function (c) { return used.indexOf(c) < 0; });
+      var add = mk("button", "secondary", "+ Ajouter un groupe"); add.type = "button";
+      add.disabled = rest.length < 2;
+      add.onclick = function () { cfg.groups.push(rest.join("")); commit("Groupe ajouté avec les lettres restantes : modifiez-le si besoin."); };
+      host.append(mk("p", "muted", rest.length ? "Lettres vues à la fin : " + rest.join(" ") : "Toutes les lettres sont dans un groupe."), add);
+      /* 3. activités */
+      host.append(mk("h3", null, "Activités"));
+      var acts = mk("div", "pb-gsacts-set");
+      D.COMPS.lecture.forEach(function (k) {
+        var c = cfg[k.id], card = mk("div", "pb-gsact" + (c.on ? "" : " off")), head = mk("label", "pb-gscheck"), cb = mk("input");
+        cb.type = "checkbox"; cb.checked = c.on;
+        cb.onchange = function () {
+          var others = D.COMPS.lecture.some(function (o) { return o.id !== k.id && cfg[o.id].on; });
+          if (!cb.checked && !others) { cb.checked = true; msg.textContent = "Gardez au moins une activité."; return; }
+          c.on = cb.checked; commit();
+        };
+        head.append(cb, mk("strong", null, k.nom)); card.append(head);
+        if (c.on) {
+          var nums = mk("div", "pb-gsnums"), ordre = k.act === "ordre";
+          var pi = mk("input"); pi.type = "text"; pi.value = c.props.join(" "); pi.inputMode = "numeric";
+          pi.onchange = function () { c.props = pi.value.split(/[^0-9]+/).filter(Boolean).map(Number); commit(); };
+          var pl = mk("div", "pb-gsnum"); pi.setAttribute("aria-label", ordre ? "Lettres à ranger" : "Choix proposés"); pl.append(mk("span", null, ordre ? "Lettres à ranger" : "Choix proposés"), pi);
+          pl.title = ordre ? "Nombre de lettres à ranger, un nombre par groupe (de 3 à 8)" : "Une étape par nombre de choix (de 2 à 4)";
+          nums.append(pl,
+            num("Questions", c.questions, 4, 20, function (v) { c.questions = v; }),
+            num("Réussite (%)", c.seuil, 50, 100, function (v) { c.seuil = v; }),
+            num("Séries d’affilée", c.series, 1, 4, function (v) { c.series = v; }));
+          card.append(nums);
+        }
+        acts.append(card);
+      });
+      host.append(acts);
+      var its = D.path(cfg, ""), ns = its.reduce(function (a, x) { return a + cfg[x.comp].series; }, 0);
+      host.append(mk("p", "pb-gssum", "Avec ces réglages : " + its.length + " étapes" + (cfg.prenom ? " (plus celles des lettres du prénom)" : "") + ", soit au moins " + ns + " séries réussies pour finir le parcours."));
+      /* 4. aperçu + valeurs recommandées */
+      var pv = mk("div", "exercise-preview-actions"), sel = mk("select"); sel.setAttribute("aria-label", "Activité à visualiser");
+      D.COMPS.lecture.filter(function (k) { return cfg[k.id].on; }).forEach(function (k) { sel.append(new Option(k.nom, k.id)); });
+      var vb = mk("button", null, "Visualiser"); vb.type = "button";
+      vb.onclick = function () { if (window.ZooExercisePreview) window.ZooExercisePreview("zoo-connecte.html", { type: "gs", sound: sel.value, settings: { gs: { lecture: JSON.parse(JSON.stringify(cfg)) } } }); };
+      pv.append(sel, vb); host.append(pv);
+      var rs = mk("button", "secondary", "↩️ Valeurs recommandées"); rs.type = "button";
+      rs.onclick = function () {
+        window.pedaGsCfg = undefined; cfg = D.config(null);
+        if (C.queueSave) C.queueSave("gsSave");
+        paint(); msg.textContent = "Valeurs recommandées rétablies. Les résultats des élèves sont gardés.";
+      };
+      host.append(rs, msg, save);
+      msg.textContent = keep;
+    }
+    paint();
+  }
   /* ===== Fiche d'un élève (demandée par Gabriel le 23/11/2026) : tout l'écran pour lui, l'essentiel d'abord, le détail sur demande =====
      1 en-tête (statut, parcours, dernière venue) · 2 chiffres clés + toile · 3 « Pour lui maintenant » (lectures à écouter par tablette, alertes, exercice donné)
      · 4 actions regroupées · 5 tous les résultats (cartes de studentDetail, carte GS) repliés. Remplace l'onglet « À écouter ». */
@@ -537,7 +714,8 @@
     tile("⚡", r.flu ? Math.round(Number(r.flu.mclm)) + "/min" : "—", r.flu ? (KN[r.flu.k] || "lecture") + " lus par minute" : "Pas encore de lecture validée");
     tile("⏱️", Math.round((r.secs || 0) / 60) + " min", "Travail sur 7 jours");
     top.append(tiles);
-    if (!gs) { var web = mk("div", "pb-fweb"); web.append(svgWeb(axes(r, Date.now()).list), mk("small", "muted", "Pointillés verts : attendu à cette date")); top.append(web); }
+    var wl = webAxes(r, Date.now()).list;
+    if (wl.length >= 3) { var web = mk("div", "pb-fweb"); web.append(svgWeb(wl), mk("small", "muted", "Pointillés verts : attendu à cette date")); top.append(web); }
     w.append(top);
     /* 3. pour lui maintenant */
     var now = section("📌 Pour " + r.s.nickname + " maintenant", null), items = mk("ul", "pb-now");
@@ -659,6 +837,20 @@
       vocabularyAxis(p, now)
     ] };
   }
+  /* Toile du parcours GS (cahier 10.2) : une branche par activité des lettres proposée, en % des étapes attendues à cette date (gs-data.js radar) */
+  var GS_TIP = { cap: "Reconnaître une capitale entendue", ordre: "Ranger des lettres dans l’ordre de l’alphabet", capscript: "Associer capitale et minuscule",
+    script: "Reconnaître une minuscule entendue", scriptcurs: "Associer minuscule et lettre attachée", curs: "Reconnaître une lettre attachée entendue" };
+  var GS_ST = { nouveau: "pas commencé", en_cours: "en cours", maitrise: "maîtrisé", difficulte: "en difficulté" };
+  function gsAxes(r, now) {
+    var D = window.ZooGSData, g = (r.p && r.p.gs) || {};
+    if (!D) return { flu: [], exp: 0, list: [], gs: true };
+    var cfg = D.config(window.pedaGsCfg), list = D.radar(cfg, r.s.nickname, D.lecState(g.lecture), Array.isArray(g.series) ? g.series : [], schoolWeeks(now) / YEAR_WEEKS);
+    return { flu: [], exp: 0, gs: true, list: list.map(function (a) {
+      return { k: a.k, name: a.name, v: a.v, txt: a.done + "/" + a.total + " étapes · attendu " + a.exp + " · " + GS_ST[a.status], tip: GS_TIP[a.k] || "" };
+    }) };
+  }
+  /* Toile de l'élève selon son parcours : GS (les lettres) ou CP (les sons) */
+  function webAxes(r, now) { return trackOf(r.s.id) === "gs" ? gsAxes(r, now) : axes(r, now); }
   function studentConf(r) {
     var c = {};
     Object.keys(r.conf || {}).forEach(function (k) { var pk = pairKey(k), v = Number(r.conf[k]) || 0; if (pk && v) c[pk] = (c[pk] || 0) + v; });
@@ -699,18 +891,22 @@
 
   /* Dessine une fiche (une page A4) */
   function drawFiche(doc, r, cls, ref, now) {
-    var T = C.pdfText, ax = axes(r, now), W = 210, M = 16;
+    var T = C.pdfText, gs = trackOf(r.s.id) === "gs", ax = webAxes(r, now), W = 210, M = 16;
     doc.setFillColor(55, 36, 101); doc.roundedRect(M, 12, W - 2 * M, 14, 3, 3, "F");
     doc.setTextColor(255); doc.setFont("helvetica", "bold"); doc.setFontSize(15); doc.text("Zoo de Lecture", M + 5, 21.4);
     doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.text(T("Fiche de suivi · " + frDate(now)), W - M - 5, 21.2, { align: "right" });
     doc.setTextColor(20); doc.setFont("helvetica", "bold"); doc.setFontSize(22); doc.text(T(r.s.nickname) || "?", M, 40);
     doc.setFont("helvetica", "normal"); doc.setFontSize(10.5); doc.setTextColor(80);
     doc.text(T("Classe : " + cls.name).slice(0, 70), M, 47);
-    var cur = r.cur ? "Son en cours : « " + soundName(r.cur.id) + " »" : "Tous les sons sont validés";
-    doc.text(T(r.nValid + " " + (r.nValid > 1 ? "sons validés" : "son validé") + " en lecture sur " + r.total + " · " + cur), M, 53);
+    var gsm = gs ? gsSum(r) : null;
+    if (gsm) doc.text(T("Parcours GS · " + gsm.sm.done + " " + (gsm.sm.done > 1 ? "étapes des lettres validées" : "étape des lettres validée") + " sur " + gsm.sm.total + (gsm.sm.item ? " · En cours : " + gsm.D.stepLabel(gsm.sm.item.step, gsm.sm.item.comp).replace(/ ↔ /g, "/") + " (" + gsm.sm.item.step.targets.join(" ") + ")" : " · Toutes les lettres sont validées")).slice(0, 110), M, 53);
+    else {
+      var cur = r.cur ? "Son en cours : « " + soundName(r.cur.id) + " »" : "Tous les sons sont validés";
+      doc.text(T(r.nValid + " " + (r.nValid > 1 ? "sons validés" : "son validé") + " en lecture sur " + r.total + " · " + cur), M, 53);
+    }
 
     /* Toile d'araignée */
-    drawWeb(doc, T, ax.list, ref, W / 2, 108);
+    if (ax.list.length >= 3) drawWeb(doc, T, ax.list, ref, W / 2, 108);
 
     /* légende */
     doc.setLineWidth(0.7); doc.setDrawColor(91, 33, 182); doc.line(M, 61, M + 8, 61);
@@ -725,8 +921,8 @@
       y += 7;
       if (i % 2 === 0) { doc.setFillColor(244, 241, 252); doc.rect(M, y - 4.6, W - 2 * M, 7, "F"); }
       doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(a.v === null ? 150 : 30); doc.text(T(a.name), M + 2, y);
-      doc.setFont("helvetica", "normal"); doc.text(T(a.txt), M + 36, y);
-      doc.setTextColor(120); doc.setFontSize(8.5); doc.text(T(a.tip), M + 86, y);
+      doc.setFont("helvetica", "normal"); doc.text(T(a.txt), M + (gs ? 34 : 36), y);
+      doc.setTextColor(120); doc.setFontSize(8.5); doc.text(T(a.tip), M + (gs ? 104 : 86), y);
     });
 
     /* À travailler + activité, en deux colonnes */
@@ -740,13 +936,17 @@
       return h;
     }
     var work = [];
-    if (r.cur) work.push("Son « " + soundName(r.cur.id) + " »" + (r.blocked ? " : difficulté" + (r.err !== null && r.answers >= 6 ? " (" + r.err + " % d'erreurs)" : " (" + r.readTries + " lectures sans réussite)") : " : en cours"));
-    studentConf(r).forEach(function (c) { work.push("Confond « " + c[0].replace(" / ", " » et « ") + " » (" + c[1] + " fois)"); });
+    if (gsm) {
+      if (gsm.sm.item) work.push(gsm.D.COMP[gsm.sm.item.comp].nom + " : " + gsm.sm.item.step.targets.join(" ") + (gsm.st[gsm.sm.item.comp].aid ? " (aide activée)" : ""));
+      var lastKo = (gsm.series || []).slice(-3).filter(function (x) { return !x.ok; }).length;
+      if (lastKo >= 2) work.push(lastKo + " séries ratées parmi les 3 dernières");
+    } else if (r.cur) work.push("Son « " + soundName(r.cur.id) + " »" + (r.blocked ? " : difficulté" + (r.err !== null && r.answers >= 6 ? " (" + r.err + " % d'erreurs)" : " (" + r.readTries + " lectures sans réussite)") : " : en cours"));
+    if (!gsm) studentConf(r).forEach(function (c) { work.push("Confond « " + c[0].replace(" / ", " » et « ") + " » (" + c[1] + " fois)"); });
     if (!work.length) work.push("Rien de particulier.");
     var days = r.series, act = [
       "Temps de travail : " + Math.round(r.secs / 60) + " min",
-      "Séries d'écoute : " + days[0] + " · de dictée : " + days[1],
-      "Lectures : " + days[2] + " · parties de jeu : " + days[3],
+      gsm ? "Séries des lettres : " + days[0] : "Séries d'écoute : " + days[0] + " · de dictée : " + days[1],
+      gsm ? "Parties de jeu : " + days[3] : "Lectures : " + days[2] + " · parties de jeu : " + days[3],
       r.idle === null ? "Pas encore d'activité" : "Dernière activité : " + (r.idle <= 0 ? "aujourd'hui" : r.idle === 1 ? "hier" : "il y a " + r.idle + " jours")
     ];
     var h1 = box(M, "À travailler", work), h2 = box(x2, "Activité (7 derniers jours)", act);
@@ -763,7 +963,8 @@
       });
     }
     doc.setFontSize(7.5); doc.setTextColor(140);
-    doc.text(T("zoodelecture.fr · 100 % = attendu à cette date : " + ax.exp + " sons sur les " + r.total + " de l’année (semaine " + Math.round(schoolWeeks(now)) + " sur " + YEAR_WEEKS + "). Vitesse : 3 dernières lectures / seuil."), M, 290);
+    if (gsm) doc.text(T("zoodelecture.fr · 100 % = étapes attendues à cette date pour chaque activité des lettres (semaine " + Math.round(schoolWeeks(now)) + " sur " + YEAR_WEEKS + "). Une étape = deux séries réussies."), M, 290);
+    else doc.text(T("zoodelecture.fr · 100 % = attendu à cette date : " + ax.exp + " sons sur les " + r.total + " de l’année (semaine " + Math.round(schoolWeeks(now)) + " sur " + YEAR_WEEKS + "). Vitesse : 3 dernières lectures / seuil."), M, 290);
   }
   function makeFiches(list, cls, btn, file) {
     if (!C.pdfMake) return;
@@ -773,8 +974,8 @@
       ok: "📄 " + (list.length > 1 ? list.length + " fiches de suivi pour « " + cls.name + " »" : "Fiche de suivi de " + list[0].s.nickname) + " : le PDF s’ouvre (sinon, regardez dans vos téléchargements).",
       build: async function (doc) {
         if (C.refreshVocabularyCatalog) await C.refreshVocabularyCatalog().catch(function () {});
-        var ref = classRef(now);
-        list.forEach(function (r, i) { if (i) doc.addPage(); drawFiche(doc, r, cls, ref, now); });
+        var ref = classRef(now, false), refGs = classRef(now, true);
+        list.forEach(function (r, i) { if (i) doc.addPage(); drawFiche(doc, r, cls, trackOf(r.s.id) === "gs" ? refGs : ref, now); });
       } });
   }
   /* Élève moyen de la classe (demandé par Gabriel le 18/11/2026) : sans les absents (pas venus depuis 7 jours ou jamais), puis, pour chaque axe,
@@ -788,8 +989,9 @@
     if (lists.length < 3) return null;
     return lists[0].map(function (a, i) { return trimMean(lists.map(function (l) { return l[i].v; })); });
   }
-  function classRef(now) {
-    return refOf((state.rows || []).filter(function (r) { return !r.inactive; }).map(function (r) { return axes(r, now).list; }));
+  /* élève moyen parmi ceux du même parcours (les toiles GS et CP n'ont pas les mêmes branches) */
+  function classRef(now, gs) {
+    return refOf((state.rows || []).filter(function (r) { return !r.inactive && (trackOf(r.s.id) === "gs") === !!gs; }).map(function (r) { return webAxes(r, now).list; }));
   }
 
 
@@ -997,5 +1199,5 @@
 
   /* « Mes classes » › « Voir mes élèves » : ouvrir Ma classe sur cette classe */
   function pick(id) { if (id && id !== state.classId) { state.classId = id; state.open = {}; state.filter = "all"; } }
-  window.ZooPeda = { svgWeb: svgWeb, compactDetails: compactDetails, pick: pick, asgLabel: asgLabel, asgState: asgState, asgStatusText: asgStatusText, render: render, openDetail: openDetail, scrollToStudent: scrollToStudent, tilePairs: TILE_PAIRS, analyse: analyse, classify: classify, axes: axes, drawFiche: drawFiche, drawWeb: drawWeb, refOf: refOf, schoolWeeks: schoolWeeks, YEAR_WEEKS: YEAR_WEEKS, state: state };
+  window.ZooPeda = { svgWeb: svgWeb, gsSettings: gsSettings, gsAxes: gsAxes, trackOf: trackOf, compactDetails: compactDetails, pick: pick, asgLabel: asgLabel, asgState: asgState, asgStatusText: asgStatusText, render: render, openDetail: openDetail, scrollToStudent: scrollToStudent, tilePairs: TILE_PAIRS, analyse: analyse, classify: classify, axes: axes, drawFiche: drawFiche, drawWeb: drawWeb, refOf: refOf, schoolWeeks: schoolWeeks, YEAR_WEEKS: YEAR_WEEKS, state: state };
 })();

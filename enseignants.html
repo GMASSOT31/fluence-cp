@@ -261,6 +261,19 @@ body.teacher-mode .teacher-header .teacher-nav button.active{background:#1b2433;
 .pb-track{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0;padding:10px 12px;border-radius:14px;background:#f6f3ff;border:1px solid #e3dcf5}
 .pb-trk{padding:8px 14px;border-radius:999px;background:#fff;color:#3c3472;border:1px solid #cfd6e3;font-weight:700}
 .pb-trk.on{background:#3c3472;color:#fff;border-color:#3c3472}.pb-trk:disabled{opacity:.55;cursor:not-allowed}
+.pb-cp{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.78rem;font-weight:800;background:#f1eefb;color:#3c3472}.pb-kid .pb-gs,.pb-bulk-kid .pb-gs,.pb-bulk-kid .pb-cp{margin-left:auto}
+.pb-bulk{margin-top:12px}.pb-bulk-body{padding:4px 2px}.pb-bulk-tools{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.pb-bulk-kids{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:8px 0}
+.pb-bulk-kid{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;background:#fff;border:1px solid #e3e7ef;font-weight:700;cursor:pointer}
+.pb-bulk-kid input{width:22px;height:22px;margin:0;flex:none}.pb-bulk-confirm p{margin:8px 0}
+#gsSettingsBody h3{margin:16px 0 6px;font-size:1rem}.pb-gscheck{display:flex;align-items:center;gap:10px;cursor:pointer}.pb-gscheck input{width:22px;height:22px;margin:0;flex:none}
+.pb-gsgroups{margin:4px 0;padding-left:24px}.pb-gsgroups li{margin:6px 0}.pb-gsgroups li>div{display:flex;align-items:center;gap:4px}
+#gsSettingsBody .pb-gsgroups input{flex:1;min-width:0;max-width:300px;width:auto;margin:0;font-family:Andika,Figtree,sans-serif;font-size:1.1rem;letter-spacing:3px;text-transform:uppercase}
+#gsSettingsBody .pb-gsgroups button{flex:none;min-width:38px;min-height:40px;padding:4px 6px;margin:0}
+.pb-gsacts-set{display:grid;gap:10px}.pb-gsact{padding:10px 12px;border-radius:14px;border:1px solid #e3e7ef;background:#fff}.pb-gsact.off{background:#f6f7fa;color:#7a8394}
+.pb-gsnums{display:flex;flex-wrap:wrap;gap:8px 12px;margin-top:8px;align-items:flex-end}.pb-gsnum{display:flex;flex-direction:column;font-size:.85rem;color:#596173}
+#gsSettingsBody .pb-gsnum input{width:84px;height:42px;min-height:0;margin:2px 0 0;padding:6px 10px;font-size:1rem}#gsSettingsBody .pb-gsnum input[type=text]{width:96px}
+.pb-gssum{font-weight:700;margin:12px 0}
 .pb-gscard{margin:8px 0;padding:12px 14px;border-radius:14px;background:#fff;border:1px solid #cfe9db}.pb-gscard h4{margin:0 0 6px}.pb-gscard ul{margin:6px 0 0;padding-left:18px}
 .pb-asg{display:block;margin-top:3px;color:#7a5a00;font-weight:600}.pb-asg.ok{color:#1d7a4a}
 .pb-assign{margin:-2px 0 6px 18px;padding:12px 14px;border-radius:12px;background:#fffbea;border:1px solid #f1d47a}
@@ -555,6 +568,10 @@ body.teacher-mode .teacher-header .teacher-nav button:is([data-role="admin"],[da
     <span class="activity-arrow" aria-hidden="true"></span>
     <button type="button" data-sub-btn="comprehension"><span class="sp-ico" aria-hidden="true">🧩</span><strong>Je comprends</strong></button>
   </div>
+  <h3 id="gsActivitiesTitle">Du parcours de GS (les lettres)</h3>
+  <div class="sub-picker set-pick" role="group" aria-labelledby="gsActivitiesTitle">
+    <button type="button" data-sub-btn="gslettres"><span class="sp-ico" aria-hidden="true">🔤</span><strong>Les lettres</strong><small>Groupes de lettres, activités, réussite</small></button>
+  </div>
   <h3 id="detachedActivitiesTitle">Activités décrochées du parcours</h3>
   <div class="sub-picker set-pick" role="group" aria-labelledby="detachedActivitiesTitle">
     <button type="button" data-sub-btn="tiles"><span class="sp-ico" aria-hidden="true">🎹</span><strong>Tuiles de son</strong></button>
@@ -609,6 +626,7 @@ body.teacher-mode .teacher-header .teacher-nav button:is([data-role="admin"],[da
 </section>
 <section class="panel feature-card" data-section="reglages" data-sub="phono" id="phonoPreview"><h2>J’entends</h2></section>
 <section class="panel feature-card" data-section="reglages" data-sub="tiles" id="tilesPreview"><h2>Tuiles des sons</h2></section>
+<section class="panel feature-card" data-section="reglages" data-sub="gslettres" id="gsSettingsPanel"><h2>🔤 Parcours de GS : les lettres</h2><div id="gsSettingsBody"></div></section>
 <section class="panel feature-card peda-card" data-section="reglages" data-role="admin" id="exoDefaultsPanel">
   <h2>Partager mes réglages de Lecture</h2>
   <p>Vos réglages servent aussi de modèle lors des nouvelles inscriptions.</p>
@@ -697,7 +715,7 @@ body.teacher-mode .teacher-header .teacher-nav button:is([data-role="admin"],[da
  <h3 style="margin:22px 0 8px">✉️ Messages du formulaire de contact</h3><p class="muted">Écrits sans compte depuis la page Contact du site. Répondez par e-mail.</p><p class="msg" id="ctMsg" role="status"></p><div id="ctList" class="content-list"></div>
 </section>
 </div>
-</section></main><script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=28"><\/script>':'<script src="vendor/supabase.js?v=2.118.0"><\/script>');})();</script><script src="profils.js?v=2"></script><script src="exo-data.js?v=6"></script><script src="gs-data.js?v=2"></script><script src="vocabulaire.js?v=4"></script><script src="vocabulaire-import.js?v=3"></script><script src="vendor/qrcode.js?v=1.4.4"></script><script src="pedagogie.js?v=30"></script><script src="mes-sons.js?v=1"></script><script src="compr-admin.js?v=5"></script><script>
+</section></main><script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=28"><\/script>':'<script src="vendor/supabase.js?v=2.118.0"><\/script>');})();</script><script src="profils.js?v=2"></script><script src="exo-data.js?v=6"></script><script src="gs-data.js?v=3"></script><script src="vocabulaire.js?v=4"></script><script src="vocabulaire-import.js?v=3"></script><script src="vendor/qrcode.js?v=1.4.4"></script><script src="pedagogie.js?v=31"></script><script src="mes-sons.js?v=1"></script><script src="compr-admin.js?v=5"></script><script>
 (function(){
 "use strict";
 /* Retour du lien « Mot de passe oublié » : on lit l’adresse avant que la bibliothèque Supabase ne la nettoie */
@@ -1356,6 +1374,7 @@ function showTab(tab){
   $("comprPreviewAdmin").hidden=currentRole!=="admin";
  }
  if(tab==="reglages"&&activeSubs.reglages==="decroches"&&currentUser)renderVocabularyAssignment();
+ if(tab==="reglages"&&activeSubs.reglages==="gslettres"&&window.ZooPeda)window.ZooPeda.gsSettings($("gsSettingsBody"));
  if(tab==="reglages"&&currentRole==="admin")renderClassPedagogy($("readingClassPedagogy"),"lecture",async()=>{if(savePending)await flushSave();return savePending?{message:"Les réglages n’ont pas encore été enregistrés."}:null;});
  if(tab==="reglages"&&activeSubs.reglages==="comprehension"&&currentRole==="admin"&&currentUser&&window.ZooComprAdmin)window.ZooComprAdmin.open(client,$("comprEditorBody"),cfgSounds,currentUser.id);
  if(tab==="ecouter")renderRecordings();if(tab==="ameliorations"&&currentUser)markRepliesSeen();if(tab==="general"&&activeSubs.general==="boutique"&&currentUser)loadPendingRewards();if(tab==="general"&&activeSubs.general==="messons"&&currentRole==="admin"&&window.ZooMesSons)ZooMesSons.open(client,$("mesSonsBox"));

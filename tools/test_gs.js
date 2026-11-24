@@ -58,4 +58,21 @@ t("ordre : 3 lettres au 1er groupe, 4 puis 5, jamais présentées déjà rangée
   assert.strictEqual(G.buildSeries(o[0], cfg, "ordre", true).qs[0].seq.length, 2);
 });
 t("écritures : capitale, script et cursive", function () { assert.strictEqual(G.glyph("B", "cap"), "B"); assert.strictEqual(G.glyph("B", "curs"), "b"); });
+t("T12 : la toile ne montre que les activités proposées, dans l'ordre du cahier", function () {
+  var c = G.config({ lecture: { curs: { on: false }, scriptcurs: { on: false } } }), r = G.radar(c, "Léo", G.lecState(null), [], 0.5);
+  assert.deepStrictEqual(r.map(function (a) { return a.k; }), ["cap", "ordre", "capscript", "script"]);
+  r.forEach(function (a) { assert.strictEqual(a.v, 0); assert.strictEqual(a.status, "nouveau"); assert.ok(a.exp >= 1 && a.exp <= a.total); });
+});
+t("toile : une seule série réussie ne compte pas, deux séries valident une étape", function () {
+  var st = G.lecState(null), its = G.steps("cap", cfg, "Léo");
+  G.record(st.cap, its, cfg, "cap", 10, 10, false, 1);
+  var a = G.radar(cfg, "Léo", st, [{ c: "cap", ok: true }], 1)[0]; assert.strictEqual(a.done, 0); assert.strictEqual(a.status, "en_cours");
+  G.record(st.cap, its, cfg, "cap", 10, 10, false, 2);
+  a = G.radar(cfg, "Léo", st, [], 1)[0]; assert.strictEqual(a.done, 1); assert.strictEqual(a.v, Math.round(100 / its.length));
+});
+t("T13 : réglages modifiés puis valeurs recommandées", function () {
+  var c = G.config({ lecture: { prenom: false, groups: ["abc", "CDE", "x"], cap: { questions: 99, seuil: 90, series: 3, props: [4, 2, 2, 9] } } });
+  assert.strictEqual(c.prenom, false); assert.deepStrictEqual(c.groups, ["ABC", "DE"]); assert.strictEqual(c.cap.questions, 10); assert.strictEqual(c.cap.seuil, 90); assert.strictEqual(c.cap.series, 3); assert.deepStrictEqual(c.cap.props, [2, 4]);
+  assert.deepStrictEqual(G.config(undefined), G.config(null)); assert.deepStrictEqual(G.config(undefined).groups, G.DEFAULTS.lecture.groups);
+});
 console.log("TOUS LES TESTS GS PASSENT (" + n + ")");
