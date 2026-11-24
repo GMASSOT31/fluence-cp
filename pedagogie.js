@@ -423,7 +423,10 @@
   /* ===== Parcours GS / CP / CE1 (docs/parcours-gs) : réglage settings.tracks[élève] = {lecture:"gs"|"cp"} ; absent = CP ===== */
   window.pedaTracks = window.pedaTracks || {};
   /* dom = "lecture" (défaut) ou "calcul" ; settings.tracks[élève] = {lecture:"gs", calcul:"gs"} ; absent = CP */
-  function trackOf(sid, dom) { var t = window.pedaTracks[sid]; return t && t[dom || "lecture"] === "gs" ? "gs" : "cp"; }
+  /* parcours prêts par matière : le CE1 n'existe pour l'instant qu'en calcul (docs/parcours-ce1) */
+  var READY = { lecture: { gs: true, cp: true }, calcul: { gs: true, cp: true, ce1: true } };
+  function trackOf(sid, dom) { var t = window.pedaTracks[sid], v = t && t[dom || "lecture"]; return v && v !== "cp" && READY[dom || "lecture"][v] ? v : "cp"; }
+  function trkCls(v) { return v === "cp" ? "pb-cp" : v === "ce1" ? "pb-gs pb-ce1" : "pb-gs"; }
   function calcOn() { return !!window.CalcTeacher; }   /* le Zoo de Calcul n'est proposé qu'aux comptes qui y ont accès */
   function setTrack(sid, dom, to) {
     var t = window.pedaTracks[sid] || {};
@@ -438,10 +441,10 @@
     (doms || (calcOn() ? ["lecture", "calcul"] : ["lecture"])).forEach(function (dom) {
       var line = mk("div", "pb-trkline"), cur = trackOf(r.s.id, dom);
       line.append(mk("strong", null, "Parcours de " + DOM_NAME[dom] + " : "));
-      [["gs", "GS"], ["cp", "CP"], ["ce1", "CE1 · à venir"]].forEach(function (o) {
+      [["gs", "GS"], ["cp", "CP"], ["ce1", READY[dom].ce1 ? "CE1" : "CE1 · à venir"]].forEach(function (o) {
         var b = mk("button", "pb-trk" + (cur === o[0] ? " on" : ""), o[1]); b.type = "button";
         b.setAttribute("aria-pressed", String(cur === o[0]));
-        if (o[0] === "ce1" || !own) b.disabled = true;
+        if (!READY[dom][o[0]] || !own) b.disabled = true;
         if (!own) b.title = "Seul l’enseignant de la classe peut changer le parcours";
         b.onclick = function () {
           if (cur === o[0]) return;
@@ -503,7 +506,8 @@
       body.replaceChildren();
       if (!calcOn()) B.dom = "lecture";
       var doms = B.dom === "both" ? ["lecture", "calcul"] : [B.dom], what = B.dom === "both" ? "de lecture et de calcul" : "de " + DOM_NAME[B.dom];
-      function badges(r) { var f = document.createDocumentFragment(); f.append(mk("span", trackOf(r.s.id) === "gs" ? "pb-gs" : "pb-cp", (calcOn() ? "📖 " : "") + trackOf(r.s.id).toUpperCase())); if (calcOn()) f.append(mk("span", trackOf(r.s.id, "calcul") === "gs" ? "pb-gs" : "pb-cp", "🔢 " + trackOf(r.s.id, "calcul").toUpperCase())); return f; }
+      function badges(r) { var f = document.createDocumentFragment(); f.append(mk("span", trkCls(trackOf(r.s.id)), (calcOn() ? "📖 " : "") + trackOf(r.s.id).toUpperCase())); if (calcOn()) f.append(mk("span", trkCls(trackOf(r.s.id, "calcul")), "🔢 " + trackOf(r.s.id, "calcul").toUpperCase())); return f; }
+      if (!doms.every(function (d) { return READY[d][B.to]; })) B.to = "cp";   /* CE1 : seulement pour le calcul */
       function isTo(r) { return doms.every(function (d) { return trackOf(r.s.id, d) === B.to; }); }
       body.append(mk("p", "muted", "Cochez les élèves, choisissez " + (calcOn() ? "la matière et " : "") + "leur parcours, puis confirmez. Les élèves non cochés ne changent pas. Tous les résultats sont gardés."));
       var tools = mk("div", "pb-bulk-tools"), all = mk("button", "secondary", "Tout cocher"), none = mk("button", "secondary", "Tout décocher");
@@ -529,9 +533,9 @@
         body.append(dm);
       }
       var to = mk("div", "pb-track"); to.append(mk("strong", null, "Nouveau parcours " + what + " : "));
-      [["gs", "GS"], ["cp", "CP"], ["ce1", "CE1 · à venir"]].forEach(function (o) {
+      [["gs", "GS"], ["cp", "CP"], ["ce1", B.dom === "calcul" ? "CE1" : "CE1 · calcul seulement"]].forEach(function (o) {
         var b = mk("button", "pb-trk" + (B.to === o[0] ? " on" : ""), o[1]); b.type = "button"; b.setAttribute("aria-pressed", String(B.to === o[0]));
-        if (o[0] === "ce1") b.disabled = true;
+        if (!doms.every(function (d) { return READY[d][o[0]]; })) b.disabled = true;
         b.onclick = function () { B.to = o[0]; paint(); };
         to.append(b);
       });

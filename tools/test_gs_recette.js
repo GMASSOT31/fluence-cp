@@ -150,10 +150,16 @@ function ok15(ok) { return ok ? 1050 : 1650; }
       box = window.ZooPeda.trackBox({ s: { id: st.id, teacher_id: st.teacher_id, nickname: st.nickname } }, function () {}, ["lecture"]);
       [].slice.call(box.querySelectorAll("button")).filter(function (b) { return b.textContent === "CP"; })[0].click();
       var end = (window.pedaTracks[st.id] || {}).lecture || "cp", prog2 = JSON.stringify(window.ZooPeda.state.rows ? (window.ZooPeda.state.rows.filter(function (r) { return r.s.id === st.id; })[0] || {}).p : null);
-      return { was: was, mid: mid, end: end, same: prog === prog2, ce1: box.querySelector("button[disabled]") && /CE1/.test(box.querySelector("button[disabled]").textContent) };
+      /* CE1 : « à venir » en lecture, choisissable en calcul (docs/parcours-ce1) */
+      var cbox = window.ZooPeda.trackBox({ s: { id: st.id, teacher_id: st.teacher_id, nickname: st.nickname } }, function () {}, ["calcul"]);
+      var c1 = [].slice.call(cbox.querySelectorAll("button")).filter(function (b) { return /CE1/.test(b.textContent); })[0];
+      var calcOk = c1 && !c1.disabled; if (calcOk) { c1.click(); calcOk = (window.pedaTracks[st.id] || {}).calcul === "ce1" && window.ZooPeda.trackOf(st.id, "calcul") === "ce1" && window.ZooPeda.trackOf(st.id, "lecture") !== "ce1"; }
+      window.pedaTracks[st.id] = { lecture: "ce1" }; var lecSafe = window.ZooPeda.trackOf(st.id, "lecture") === "cp";
+      delete window.pedaTracks[st.id];
+      return { was: was, mid: mid, end: end, same: prog === prog2, ce1: box.querySelector("button[disabled]") && /CE1 · à venir/.test(box.querySelector("button[disabled]").textContent) && calcOk && lecSafe };
     });
     rec("T04", r4.mid === "gs" && r4.end === "cp" && r4.same, "CP → GS → CP : le parcours revient, les résultats de l’élève ne bougent pas (rien n’est effacé)");
-    rec("T14", !!r4.ce1, "CE1 visible « à venir » et non activable");
+    rec("T14", !!r4.ce1, "CE1 : « à venir » et non activable en lecture, choisissable en calcul");
     var r12 = await e.evaluate(function () {
       var D = window.ZooGSData, l = D.radar(D.config({ lecture: { curs: { on: false } } }), "Léo", D.lecState(null), [], 0.5).map(function (a) { return a.k; });
       var c = D.calcRadar(D.calcConfig({ calcul: { compare: { on: false } } }), {}, [], 0.5).map(function (a) { return a.k; });

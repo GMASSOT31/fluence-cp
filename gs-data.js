@@ -393,7 +393,7 @@
     });
   }
   var api = { LETTER_SAY: LETTER_SAY, NUM_SAY: NUM_SAY, RANGES: RANGES, CCOMP: CCOMP, WEB_CALC: WEB_CALC, calcConfig: calcConfig, calcSteps: calcSteps, calcPath: calcPath, calcState: calcState, calcItem: calcItem,
-    calcCurrent: calcCurrent, calcRecord: calcRecord, calcSummary: calcSummary, calcStepLabel: calcStepLabel, buildCalcSeries: buildCalcSeries, calcRadar: calcRadar, CONFUS: CONFUS, DEFAULTS: DEFAULTS, COMPS: COMPS, TRACKS: ["gs", "cp", "ce1"], TRACK_READY: { gs: true, cp: true, ce1: false },
+    calcCurrent: calcCurrent, calcRecord: calcRecord, calcSummary: calcSummary, calcStepLabel: calcStepLabel, buildCalcSeries: buildCalcSeries, calcRadar: calcRadar, CONFUS: CONFUS, DEFAULTS: DEFAULTS, COMPS: COMPS, TRACKS: ["gs", "cp", "ce1"], TRACK_READY: { lecture: { gs: true, cp: true, ce1: false }, calcul: { gs: true, cp: true, ce1: true } },   /* CE1 : calcul seulement (docs/parcours-ce1) */
     COMP: COMP, WEB: WEB, radar: radar, config: config, groupsFor: groupsFor, steps: steps, path: path, lecState: lecState, pathCurrent: pathCurrent, pathSummary: pathSummary, glyph: glyph, buildSeries: buildSeries, compState: compState, current: current, record: record, summary: summary, stepLabel: stepLabel, letters: letters };
   root.ZooGSData = api;
 })(typeof window === "undefined" ? module.exports : window);
