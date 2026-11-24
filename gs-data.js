@@ -211,7 +211,188 @@
   }
   /* Une lettre dans une écriture (capitale, script, cursive) : le texte à afficher ; la police est donnée par la classe CSS w-<écriture> */
   function glyph(L, w) { return w === "cap" ? L : L.toLowerCase(); }
-  var api = { LETTER_SAY: LETTER_SAY, CONFUS: CONFUS, DEFAULTS: DEFAULTS, COMPS: COMPS, TRACKS: ["gs", "cp", "ce1"], TRACK_READY: { gs: true, cp: true, ce1: false },
+  /* ===================== GS CALCUL (cahier 5.1 à 5.6, étape E) =====================
+     Même règle que les lettres : palier validé après `series` séries réussies D'AFFILÉE (≥ seuil %) sans aide ; 2 séries ratées d'affilée → aide ;
+     une série aidée réussie fait revenir au niveau normal sans valider. Différence : l'état est rangé PAR PALIER et tenu par le SERVEUR
+     (lab_student_submit_round, activité « gs », niveau = clé du palier « chiffres-r1-2 » ; migration 20261209), dans lab_calc_progress.progress :
+     gs = { clé: {r, q, c, h, n, ok, ko, aid, val, last} } · gsh = 60 dernières séries · gsw = roues gagnées (une par série réussie) · gsr = date de la comptine.
+     `calcRecord` reproduit exactement la règle du serveur (affichage immédiat, tests). Paliers numériques obligatoires : 1–3, 1–5, 0–9 (zéro au 3e). */
+  var RANGES = [[1, 3], [1, 5], [0, 9]];
+  DEFAULTS.calcul = {
+    chiffres: { on: true, props: [2, 3, 4], questions: 10, seuil: 80, series: 2 },
+    ordre: { on: true, props: [3, 4], questions: 6, seuil: 80, series: 2 },
+    denombre: { on: true, props: [2, 3, 4], questions: 10, seuil: 80, series: 2 },
+    compare: { on: true, autant: true, questions: 8, seuil: 80, series: 2 },
+    collec: { on: true, questions: 6, seuil: 80, series: 2 }
+  };
+  /* act : « num » = la voix dit un nombre, toucher le chiffre ; « ordre » = toucher les nombres du plus petit au plus grand ; « compte » = combien d'animaux ?
+     « compare » = où y en a-t-il le plus / le moins / autant ; « collec » = mettre n animaux dans l'enclos puis valider. */
+  COMPS.calcul = [
+    { id: "chiffres", nom: "Reconnaître les chiffres", court: "Chiffres", act: "num", mission: "les chiffres" },
+    { id: "ordre", nom: "L’ordre des nombres", court: "Ordre numérique", act: "ordre", mission: "l’ordre des nombres" },
+    { id: "denombre", nom: "Compter une collection", court: "Dénombrement", act: "compte", mission: "compter les animaux" },
+    { id: "compare", nom: "Comparer deux collections", court: "Comparaison", act: "compare", mission: "comparer les collections" },
+    { id: "collec", nom: "Construire une collection", court: "Construction", act: "collec", mission: "remplir l’enclos" }
+  ];
+  var CCOMP = {}; COMPS.calcul.forEach(function (c) { CCOMP[c.id] = c; });
+  var NUM_SAY = ["zéro", "un", "deux", "trois", "quatre", "cinq", "six", "sept", "huit", "neuf", "dix", "onze", "douze", "treize", "quatorze", "quinze", "seize", "dix-sept", "dix-huit", "dix-neuf", "vingt"];
+  var CONFUS_NUM = { 6: [9], 9: [6], 1: [7], 7: [1], 2: [5], 5: [2], 3: [8], 8: [3, 0], 0: [8] };
+  var CALC_ANIMALS = ["🐥", "🐸", "🐢", "🐞", "🐟", "🐰", "🦊", "🐼", "🐷", "🐮"];
+  function calcConfig(own) {
+    var d = clone(DEFAULTS.calcul), o = own && own.calcul && typeof own.calcul === "object" ? own.calcul : {};
+    COMPS.calcul.forEach(function (k) {
+      var id = k.id, c = o[id] && typeof o[id] === "object" ? o[id] : {}, lo = k.act === "ordre" ? 3 : 2, hi = k.act === "ordre" ? 6 : 4;
+      if (typeof c.on === "boolean") d[id].on = c.on;
+      if (d[id].props && Array.isArray(c.props)) { var p = c.props.map(function (n) { return clampInt(n, lo, hi, 0); }).filter(Boolean).sort(function (x, y) { return x - y; }); if (p.length) d[id].props = p.filter(function (n, i) { return p.indexOf(n) === i; }); }
+      if (id === "compare" && typeof c.autant === "boolean") d[id].autant = c.autant;
+      d[id].questions = clampInt(c.questions, 4, 20, d[id].questions);
+      d[id].seuil = clampInt(c.seuil, 50, 100, d[id].seuil);   /* mêmes bornes que le serveur */
+      d[id].series = clampInt(c.series, 1, 4, d[id].series);
+    });
+    if (!COMPS.calcul.some(function (k) { return d[k.id].on; })) d.chiffres.on = true;
+    return d;
+  }
+  function range(lo, hi) { var a = []; for (var i = lo; i <= hi; i++) a.push(i); return a; }
+  /* Paliers d'une activité du calcul ; key = clé du serveur (comp + "-" + palier, au plus 20 caractères) */
+  function calcSteps(comp, cfg) {
+    var c = cfg[comp], act = CCOMP[comp].act, out = [];
+    RANGES.forEach(function (r, ri) {
+      var pool = range(r[0], r[1]), base = comp + "-r" + (ri + 1), last = 0;
+      function add(suffix, n, extra) { var s = { key: base + suffix, comp: comp, range: ri + 1, lo: r[0], hi: r[1], pool: pool, n: n }; for (var k in extra || {}) s[k] = extra[k]; out.push(s); }
+      if (act === "num" || act === "compte" || act === "ordre") {
+        c.props.forEach(function (n) { var m = Math.min(n, pool.length); if (m === last) return; last = m; add("-" + m, m, act === "ordre" ? { consec: true } : null); });
+        if (act === "ordre" && pool.length >= 6) add("-" + last + "x", last, { consec: false });   /* dernier palier : nombres non consécutifs */
+      } else add("", 2, null);
+    });
+    if (comp === "compare" && c.autant) { var r3 = RANGES[1]; out.push({ key: "compare-eq", comp: comp, range: 4, lo: r3[0], hi: r3[1], pool: range(r3[0], r3[1]), n: 2, eq: true }); }   /* « autant » : seulement dans ce palier */
+    return out;
+  }
+  /* Parcours du calcul : pour chaque intervalle 1–3, 1–5, 0–9 : chiffres → ordre → dénombrement → comparaison → construction */
+  function calcPath(cfg) {
+    var lists = {}, out = [];
+    COMPS.calcul.forEach(function (k) { if (cfg[k.id].on) lists[k.id] = calcSteps(k.id, cfg); });
+    for (var g = 1; g <= RANGES.length + 1; g++) COMPS.calcul.forEach(function (k) { (lists[k.id] || []).forEach(function (s) { if (s.range === g) out.push({ comp: k.id, step: s }); }); });
+    return out;
+  }
+  /* État de progress.gs du calcul (venu du serveur) : { clé: {ok, ko, aid, val, r, n, …} } nettoyé */
+  function calcState(p) {
+    p = p && typeof p === "object" && !Array.isArray(p) ? p : {};
+    var o = {};
+    Object.keys(p).forEach(function (k) {
+      var x = p[k]; if (!x || typeof x !== "object" || !/^[a-z]+-[a-z0-9-]{1,14}$/.test(k)) return;
+      o[k] = { r: clampInt(x.r, 0, 1e6, 0), q: clampInt(x.q, 0, 1e7, 0), c: clampInt(x.c, 0, 1e7, 0), h: clampInt(x.h, 0, 1e6, 0), n: clampInt(x.n, 0, 1e6, 0),
+        ok: clampInt(x.ok, 0, 9, 0), ko: clampInt(x.ko, 0, 99, 0), aid: x.aid === true, val: typeof x.val === "string" && x.val ? x.val : null, last: typeof x.last === "string" ? x.last : null };
+    });
+    return o;
+  }
+  function calcItem(st, key) { return st[key] || { r: 0, q: 0, c: 0, h: 0, n: 0, ok: 0, ko: 0, aid: false, val: null, last: null }; }
+  function calcCurrent(st, items) { for (var i = 0; i < items.length; i++) if (!calcItem(st, items[i].step.key).val) return i; return -1; }
+  /* Règle de fin de série (copie exacte de public.lab__gs_round) ; modifie st[key] et renvoie ce qui s'est passé */
+  function calcRecord(st, key, c, good, total, aid, now, helps) {
+    var x = st[key] = clone(calcItem(st, key)), ok = total > 0 && good * 100 >= c.seuil * total, wasAid = x.aid || !!aid, res = { ok: ok, validated: false, aidOn: false, aidOff: false, aid: wasAid };
+    x.r++; x.q += total; x.c += good; x.h += helps || 0; if (ok) x.n++; x.last = now;
+    if (!x.val) {
+      if (wasAid) { if (ok) { x.aid = false; x.ko = 0; res.aidOff = true; } }
+      else if (ok) { x.ko = 0; x.ok++; if (x.ok >= c.series) { x.val = now; x.ok = 0; res.validated = true; } }
+      else { x.ok = 0; x.ko++; if (x.ko >= 2) { x.aid = true; res.aidOn = true; } }
+    }
+    return res;
+  }
+  function calcSummary(st, items, series) {
+    var done = items.filter(function (x) { return calcItem(st, x.step.key).val; }).length, i = calcCurrent(st, items), cur = i >= 0 ? items[i] : null, last = (series || []).slice(-3);
+    var status = done === 0 && !(series || []).length ? "nouveau" : (!cur ? "maitrise" : (calcItem(st, cur.step.key).aid || (last.length >= 2 && last.every(function (x) { return !x.ok; }))) ? "difficulte" : "en_cours");
+    return { done: done, total: items.length, pct: items.length ? Math.round(done * 100 / items.length) : 0, current: i, item: cur, status: status };
+  }
+  function calcStepLabel(s) {
+    var r = s.eq ? "autant" : s.lo + " à " + s.hi, k = CCOMP[s.comp];
+    if (k.act === "ordre") return k.court + " · " + r + " · " + s.n + " nombres" + (s.consec ? "" : " dans le désordre");
+    if (k.act === "num" || k.act === "compte") return k.court + " · " + r + " · " + s.n + " choix";
+    return k.court + " · " + r;
+  }
+  /* Choix : la bonne réponse + des nombres proches (voisins, 6/9…), place variable, jamais deux fois la même cible de suite */
+  function numQs(step, nq, n, rnd) {
+    var targets = [], qs = [], last = -1;
+    while (targets.length < nq) { var round = shuffle(step.pool.slice(), rnd); if (targets.length && round.length > 1 && round[0] === targets[targets.length - 1]) round.push(round.shift()); targets = targets.concat(round); }
+    targets = targets.slice(0, nq);
+    if (step.lo === 0 && targets.indexOf(0) < 0) {   /* palier avec zéro : il est toujours demandé au moins une fois */
+      for (var z = Math.floor(rnd() * targets.length), tries = 0; tries < targets.length; tries++, z = (z + 1) % targets.length) {
+        if (targets[z - 1] !== 0 && targets[z + 1] !== 0 && targets[z] !== 0) { targets[z] = 0; break; }
+      }
+    }
+    targets.forEach(function (t) {
+      var others = step.pool.filter(function (x) { return x !== t; }), near = [t - 1, t + 1].concat(CONFUS_NUM[t] || []).filter(function (x) { return others.indexOf(x) >= 0; }), pick = [];
+      if (n >= 3 && near.length) pick.push(near[Math.floor(rnd() * near.length)]);
+      shuffle(others.filter(function (x) { return pick.indexOf(x) < 0; }), rnd).forEach(function (x) { if (pick.length < n - 1) pick.push(x); });
+      var opts = shuffle(pick.concat([t]), rnd);
+      if (last >= 0 && opts.indexOf(t) === last && opts.length > 1) { var j = (last + 1) % opts.length; opts[last] = opts[j]; opts[j] = t; }
+      last = opts.indexOf(t);
+      qs.push({ t: t, opts: opts });
+    });
+    return qs;
+  }
+  var LAYOUTS = ["ligne", "vrac", "serre", "espace", "de"];
+  function buildCalcSeries(step, cfg, aid, rnd) {
+    rnd = rnd || Math.random;
+    var comp = step.comp, act = CCOMP[comp].act, nq = cfg[comp].questions, qs = [], n = aid ? Math.max(2, step.n - 1) : step.n, prev = "";
+    function animal() { return CALC_ANIMALS[Math.floor(rnd() * CALC_ANIMALS.length)]; }
+    if (act === "num" || act === "compte") {
+      qs = numQs(step, nq, n, rnd);
+      if (act === "compte") qs.forEach(function (q, i) { q.e = animal(); q.lay = aid ? "ligne" : LAYOUTS[(i + Math.floor(rnd() * LAYOUTS.length)) % LAYOUTS.length]; });
+    } else if (act === "ordre") {
+      var len = aid ? Math.max(2, step.n - 1) : step.n;
+      for (var k = 0; k < nq; k++) {
+        var seq, key, tries = 0;
+        do {
+          if (step.consec !== false) { var s0 = step.lo + Math.floor(rnd() * (step.hi - step.lo - len + 2)); seq = range(s0, s0 + len - 1); }
+          else { seq = shuffle(step.pool.slice(), rnd).slice(0, len).sort(function (a, b) { return a - b; }); if (seq[len - 1] - seq[0] === len - 1) seq = null; }
+          key = seq ? seq.join(",") : "";
+        } while ((!seq || key === prev) && ++tries < 20);
+        if (!seq) seq = [step.lo, step.lo + 2, step.hi].slice(0, len);
+        prev = key;
+        var opts = shuffle(seq.slice(), rnd); if (opts.join(",") === seq.join(",")) opts.push(opts.shift());
+        qs.push({ t: seq.join(","), seq: seq, opts: opts });
+      }
+      n = len;
+    } else if (act === "compare") {
+      for (var m = 0; m < nq; m++) {
+        var a, b, ask, t;
+        if (step.eq) {   /* modèle + deux enclos : l'un en a autant, l'autre non */
+          var mod = step.lo + Math.floor(rnd() * (step.hi - step.lo + 1)), other;
+          do { other = step.lo + Math.floor(rnd() * (step.hi - step.lo + 1)); } while (other === mod);
+          t = rnd() < 0.5 ? 0 : 1; a = t === 0 ? mod : other; b = t === 0 ? other : mod;
+          qs.push({ ask: "autant", model: mod, a: a, b: b, t: t, e: animal(), lay: [LAYOUTS[Math.floor(rnd() * 4)], LAYOUTS[Math.floor(rnd() * 4)]] });
+          continue;
+        }
+        var tries2 = 0;
+        do { a = step.lo + Math.floor(rnd() * (step.hi - step.lo + 1)); b = step.lo + Math.floor(rnd() * (step.hi - step.lo + 1)); } while ((a === b || a + "," + b === prev) && ++tries2 < 30);
+        if (a === b) b = a === step.hi ? a - 1 : a + 1;
+        prev = a + "," + b;
+        ask = rnd() < 0.5 ? "plus" : "moins";
+        t = ask === "plus" ? (a > b ? 0 : 1) : (a < b ? 0 : 1);
+        /* pas de réponse « à la surface » : la collection la plus nombreuse est souvent dessinée plus petite ou plus serrée */
+        var bigSide = a > b ? 0 : 1, trick = rnd() < 0.6, sizes = [1, 1];
+        if (!aid && trick) { sizes[bigSide] = 0.8; sizes[1 - bigSide] = 1.15; }
+        qs.push({ ask: ask, a: a, b: b, t: t, e: animal(), sizes: sizes, lay: aid ? ["ligne", "ligne"] : [LAYOUTS[Math.floor(rnd() * 4)], LAYOUTS[Math.floor(rnd() * 4)]] });
+      }
+    } else {   /* construction : chaque nombre de l'intervalle revient, zéro compris au 3e palier */
+      qs = numQs(step, nq, 1, rnd).map(function (q) { return { t: q.t, e: animal() }; });
+    }
+    return { n: n, aid: !!aid, qs: qs };
+  }
+  var WEB_CALC = [["chiffres", "Chiffres"], ["ordre", "Ordre"], ["denombre", "Compter"], ["compare", "Comparer"], ["collec", "Construire"]];
+  /* Toile GS du calcul (cahier 10.2) : une branche par activité proposée, % des paliers attendus à cette date (frac = semaines / 36) */
+  function calcRadar(cfg, st, series, frac) {
+    var items = calcPath(cfg), f = Math.max(0, Math.min(1, Number(frac) || 0)), ser = Array.isArray(series) ? series : [];
+    return WEB_CALC.filter(function (w) { return cfg[w[0]] && cfg[w[0]].on; }).map(function (w) {
+      var id = w[0], its = items.filter(function (x) { return x.comp === id; }), done = its.filter(function (x) { return calcItem(st, x.step.key).val; }).length, total = its.length;
+      var exp = total ? Math.max(1, Math.min(total, Math.round(total * f))) : 0, tried = ser.some(function (x) { return x && String(x.k || "").split("-")[0] === id; });
+      var aidNow = its.some(function (x) { var s = calcItem(st, x.step.key); return s.aid && !s.val; });
+      var status = total && done >= total ? "maitrise" : aidNow ? "difficulte" : done || tried ? "en_cours" : "nouveau";
+      return { k: id, name: w[1], nom: CCOMP[id].nom, done: done, total: total, exp: exp, v: exp ? Math.round(done * 100 / exp) : null, status: status };
+    });
+  }
+  var api = { LETTER_SAY: LETTER_SAY, NUM_SAY: NUM_SAY, RANGES: RANGES, CCOMP: CCOMP, WEB_CALC: WEB_CALC, calcConfig: calcConfig, calcSteps: calcSteps, calcPath: calcPath, calcState: calcState, calcItem: calcItem,
+    calcCurrent: calcCurrent, calcRecord: calcRecord, calcSummary: calcSummary, calcStepLabel: calcStepLabel, buildCalcSeries: buildCalcSeries, calcRadar: calcRadar, CONFUS: CONFUS, DEFAULTS: DEFAULTS, COMPS: COMPS, TRACKS: ["gs", "cp", "ce1"], TRACK_READY: { gs: true, cp: true, ce1: false },
     COMP: COMP, WEB: WEB, radar: radar, config: config, groupsFor: groupsFor, steps: steps, path: path, lecState: lecState, pathCurrent: pathCurrent, pathSummary: pathSummary, glyph: glyph, buildSeries: buildSeries, compState: compState, current: current, record: record, summary: summary, stepLabel: stepLabel, letters: letters };
   root.ZooGSData = api;
 })(typeof window === "undefined" ? module.exports : window);

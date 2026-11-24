@@ -26,7 +26,40 @@
     lab.settings = { levels: { nombres: ["n3", "n1", "n2", "n4"], addition: ["a1", "a2"], soustraction: ["s1"] } };
   }
   if (/[?&]egg=([a-z]+:[a-z0-9]+)/.test(q)) delete lab.me.levels[RegExp.$1];   /* ?all=1&egg=addition:a7 : toutes réussies sauf celle-ci (œuf à faire éclore) */
-  function earnedWheels() { var n = 0; for (var k in lab.me.levels) { var o = lab.me.levels[k].ok || 0; n += o >= 2 ? 2 : o >= 1 ? 1 : 0; } return n; }   /* une roue à la 1re étoile, une à la 2e (migration 20261129) */
+  function earnedWheels() { var n = lab.me.gsw || 0; for (var k in lab.me.levels) { var o = lab.me.levels[k].ok || 0; n += o >= 2 ? 2 : o >= 1 ? 1 : 0; } return n; }
+  /* Parcours GS du calcul (migration 20261209) : ?gs=1 (élève en GS) ; ?gs=aide (aide activée sur le 1er palier) ; ?gs=r3 (les paliers 1–3 et 1–5 validés) ; ?gs=fin (tout validé) ; ?gsrit=1 (comptine déjà vue) */
+  lab.gsMode = opt("gs", ""); lab.me.gs = {}; lab.me.gsh = []; lab.me.gsw = 0; if (/[?&]gsrit=1/.test(q) || (lab.gsMode && lab.gsMode !== "1")) lab.me.gsr = "2026-11-20T08:00:00+00";
+  if (lab.gsMode && window.ZooGSData) {
+    var GD = window.ZooGSData, gp = GD.calcPath(GD.calcConfig(null));
+    if (lab.gsMode === "aide") lab.me.gs[gp[0].step.key] = { r: 2, q: 20, c: 10, ok: 0, ko: 2, aid: true };
+    gp.forEach(function (x) { if (lab.gsMode === "fin" || (lab.gsMode === "r3" && x.step.range < 3)) lab.me.gs[x.step.key] = { r: 2, q: 20, c: 19, n: 2, ok: 0, ko: 0, aid: false, val: "2026-11-20T08:00:00+00" }; });
+  }
+  function gsRich(i) {
+    var GD = window.ZooGSData, gp = GD.calcPath(GD.calcConfig(null)), gs = {}, gsh = [], hist = [], d = function (k) { return new Date(Date.now() - k * 864e5).toISOString().slice(0, 19) + "+00"; };
+    if (i === 2) return {};
+    gp.slice(0, i === 0 ? 9 : 2).forEach(function (x, k) { gs[x.step.key] = { r: 2, q: 20, c: 18, h: 1, n: 2, ok: 0, ko: 0, aid: false, val: d(10 - k) }; gsh.push({ t: d(10 - k), k: x.step.key, c: 9, n: 10, ok: true, aid: false }); });
+    var cur = gp[i === 0 ? 9 : 2].step.key; gs[cur] = i === 1 ? { r: 2, q: 20, c: 8, ok: 0, ko: 2, aid: true } : { r: 1, q: 10, c: 9, n: 1, ok: 1, ko: 0, aid: false };
+    gsh.push({ t: d(1), k: cur, c: i === 1 ? 4 : 9, n: 10, ok: i !== 1, aid: false }); if (i === 1) gsh.push({ t: d(0), k: cur, c: 4, n: 10, ok: false, aid: false });
+    gsh.forEach(function (x) { hist.push({ t: x.t, k: "gs:" + x.k, c: x.c, n: x.n, ok: x.ok }); });
+    return { gs: gs, gsh: gsh, hist: hist.slice(-30), gsw: 5, gsr: d(12) };
+  }
+  function myProg() { return { levels: lab.me.levels, hist: lab.me.hist, nums: lab.me.nums, calcs: lab.me.calcs, gs: lab.me.gs, gsh: lab.me.gsh, gsw: lab.me.gsw, gsr: lab.me.gsr }; }
+  function pgNow() { return new Date().toISOString().slice(0, 19) + "+00"; }
+  /* Copie de public.lab__gs_round : règle des séries d'affilée, aide, une roue par série réussie, pas de pièce */
+  function gsRound(a) {
+    var lvl = a.p_level, s = a.p_stats || {}, now = pgNow();
+    lab.rounds[a.p_round] = 0;
+    if (lvl === "rituel") { lab.me.gsr = now; return mix({ inserted: true, coins: 0, success: false, rituel: now }); }
+    var comp = lvl.split("-")[0];
+    if (["chiffres", "ordre", "denombre", "compare", "collec"].indexOf(comp) < 0 || !/^[a-z]+-[a-z0-9-]{1,14}$/.test(lvl)) { delete lab.rounds[a.p_round]; throw { message: "Données invalides" }; }
+    var c = ((lab.gsCfg || {}).calcul || {})[comp] || {}, pass = c.seuil >= 50 && c.seuil <= 100 ? c.seuil : 80, need = c.series >= 1 && c.series <= 4 ? c.series : 2;
+    var st = {}; st[lvl] = lab.me.gs[lvl]; var res = window.ZooGSData.calcRecord(st, lvl, { seuil: pass, series: need }, a.p_correct, a.p_total, s.aid === true, now, s.helps || 0);
+    lab.me.gs[lvl] = st[lvl]; if (!st[lvl].val) delete st[lvl].val;
+    lab.me.gsh.push({ t: now, k: lvl, c: a.p_correct, n: a.p_total, ok: res.ok, aid: res.aid, th: pass }); lab.me.gsh = lab.me.gsh.slice(-60);
+    lab.me.hist.push({ t: now, k: "gs:" + lvl, c: a.p_correct, n: a.p_total, ok: res.ok });
+    if (res.ok) lab.me.gsw++;
+    return mix({ inserted: true, coins: 0, success: res.ok, validated: res.validated, gs: lab.me.gs[lvl], wheels: wheelsLeft() });
+  }   /* une roue à la 1re étoile, une à la 2e (migration 20261129) */
   function wheelsLeft() { return Math.max(0, earnedWheels() - lab.wheelsUsed); }
   lab.wheelsUsed = earnedWheels() - (/[?&]wheel=1/.test(q) ? 1 : 0);   /* roues déjà gagnées au chargement = considérées comme utilisées (comme la migration) ; ?wheel=1 : une roue à tourner */
   if (/[?&]slice=(\d)/.test(q)) lab.nextSlice = +RegExp.$1;
@@ -53,7 +86,7 @@
       if (!a.p_activity && !a.p_level) { delete lab.assignments[a.p_student]; return null; }
       return lab.assignments[a.p_student] = { activity: a.p_activity, level: a.p_level, assigned_at: new Date().toISOString(), done: false };
     },
-    lab_student_state: function () { needStudent(); return mix({ progress: { levels: lab.me.levels, hist: lab.me.hist, nums: lab.me.nums, calcs: lab.me.calcs }, settings: lab.settings, wheels: wheelsLeft() }); },
+    lab_student_state: function () { needStudent(); return mix({ progress: myProg(), settings: lab.settings, wheels: wheelsLeft() }); },
     lab_student_spin_wheel: function () {
       needStudent(); if (wheelsLeft() <= 0) throw { message: "Aucune roue à tourner" };
       var PLAYS = [1, 0, 2, 1, 0, 3, 1, 2], COINS = [0, 5, 0, 0, 10, 0, 0, 0];   /* mêmes 8 cases que la roue du Zoo de Lecture */
@@ -69,7 +102,7 @@
     },
     student_session_profile: function () { needStudent(); return { student_id: "s1", nickname: /[?&]name=(\w+)/.test(q) ? RegExp.$1 : "Léa" }; },
     student_get_progress_v2: function () { needStudent(); return { progress: { avatar: "🦊", coins: lab.realWallet.coins, credits: lab.realWallet.credits }, version: lab.version }; },
-    student_get_teacher_settings: function () { needStudent(); return opt("nopin", "0") === "1" ? { sfx: true, pinChange: false } : { sfx: true }; },
+    student_get_teacher_settings: function () { needStudent(); var o = opt("nopin", "0") === "1" ? { sfx: true, pinChange: false } : { sfx: true }; if (lab.gsMode) o.tracks = { s1: { calcul: "gs" } }; if (lab.gsCfg) o.gs = lab.gsCfg; return o; },
     student_change_pin: function (a) { needStudent(); return a.p_old_pin === "1234" ? { ok: true } : { ok: false, code: "bad_pin" }; },
     student_claim_coins: function (a) {
       needStudent(); if (!lab.pending) return { claimed: 0, version: lab.version };
@@ -80,6 +113,10 @@
       needStudent();
       if (lab.failOnce) { lab.failOnce = false; throw { message: "Failed to fetch" }; }
       if (lab.lostOnce) { lab.lostOnce = false; lab.lostPending = true; }   /* ?lost=1 : la série est enregistrée mais la réponse se perd */
+      if (a.p_activity === "gs" && /^[a-z0-9_-]{1,20}$/.test(a.p_level) && a.p_total >= 1 && a.p_total <= 20 && a.p_correct >= 0 && a.p_correct <= a.p_total) {
+        if (lab.rounds[a.p_round] !== undefined) return mix({ inserted: false, coins: 0 });
+        var gr = gsRound(a); if (lab.lostPending) { lab.lostPending = false; throw { message: "Failed to fetch" }; } return gr;
+      }
       if (["nombres", "addition", "soustraction"].indexOf(a.p_activity) < 0 || !/^[a-z0-9_-]{1,20}$/.test(a.p_level) || a.p_total < 1 || a.p_total > 20 || a.p_correct < 0 || a.p_correct > a.p_total) throw { message: "Données invalides" };
       if (lab.rounds[a.p_round]) return mix({ inserted: false, coins: 0 });
       var pass = Math.min(Math.max(lab.settings.pass || 80, 50), 100), ok = a.p_correct * 100 >= pass * a.p_total, coins = 0;
@@ -117,6 +154,7 @@
       if (s.levels) { v.levels = {}; ["nombres", "addition", "soustraction"].forEach(function (k) { if (Array.isArray(s.levels[k])) v.levels[k] = s.levels[k].filter(function (x, i, arr) { return /^[a-z0-9_-]{1,20}$/.test(x) && arr.indexOf(x) === i; });   /* ordre conservé (migration 20261116) */ }); }
       lab.settings = v; return v;
     },
+    /* ?gs=… côté enseignant : naim (x0) avance en GS, aya (x1) a l'aide activée, naelle (x2) n'a pas commencé (parcours fixés par settings.tracks dans le test) */
     lab_teacher_results: function () {
       /* même format d’heure que le vrai serveur (to_char … OF) : « 2026-11-18T10:00:00+00 » */
       function pgTs(ms) { return new Date(ms).toISOString().slice(0, 19) + "+00"; }
@@ -126,7 +164,7 @@
                    hist: [{ t: pgTs(Date.now() - 2 * 864e5), k: "nombres:n1", c: 9, n: 10, ok: true }, { t: pgTs(Date.now() - 3600e3), k: "addition:a1", c: 9, n: 10, ok: true }], nums: { "3": 2, "7": 1, "10": 1 }, calcs: { "2+3": 1, "4+1": 2 } };
       return [{ student_id: "s1", nickname: "lea", class_id: "c1", class_name: "CP-A", progress: lab.me.hist.length ? { levels: lab.me.levels, hist: lab.me.hist, nums: lab.me.nums, calcs: lab.me.calcs } : rich },
               { student_id: "s2", nickname: "leo", class_id: "c1", class_name: "CP-A", progress: {} },
-              { student_id: "s3", nickname: "zoe", class_id: "c2", class_name: "CP-B", progress: {} }].concat(["naim","aya","naelle","amelie","nour","imran","adem","asva","ziyed","ines","sami","lina"].map(function (n, i) { return { student_id: "x" + i, nickname: n, class_id: "c1", class_name: "CP-A", progress: rich }; }));
+              { student_id: "s3", nickname: "zoe", class_id: "c2", class_name: "CP-B", progress: {} }].concat(["naim","aya","naelle","amelie","nour","imran","adem","asva","ziyed","ines","sami","lina"].map(function (n, i) { return { student_id: "x" + i, nickname: n, class_id: "c1", class_name: "CP-A", progress: i < 3 && lab.gsMode ? gsRich(i) : rich }; }));
     },
     lab_request_access: function () { if (role === "out") throw err("Accès refusé"); if (!lab.enabled) throw { message: "Laboratoire fermé" }; lab.myRequested = true; return { requested: true, allowed: false }; },
     lab_admin_decline: function (a) { needAdmin(); lab.requests = lab.requests.filter(function (r) { return r.teacher_id !== a.p_teacher; }); return null; },

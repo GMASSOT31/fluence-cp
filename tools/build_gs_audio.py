@@ -3,7 +3,7 @@
 Même voix que les syllabes du Zoo (fr-FR-DeniseNeural, −10 %), mêmes outils que tools/build_audio_sprite.py (réutilisés).
 Il faut : ffmpeg, edge-tts (python3 -m venv /tmp/zoo-venv && /tmp/zoo-venv/bin/pip install edge-tts) et l'accès à speech.platform.bing.com
 (environnement Claude « fluence-cp »). Lancer depuis la racine : /tmp/zoo-venv/bin/python tools/build_gs_audio.py
-Pour changer un texte : modifier CLIPS ci-dessous, relancer, puis augmenter GS_AUDIO_V dans gs-lecture.js.
+Pour changer un texte : modifier CLIPS ci-dessous, relancer, puis augmenter GS_AUDIO_V dans gs-lecture.js et calcul/gs-calcul.js.
 Le lecteur (gs-lecture.js) joue l'enregistrement s'il existe, sinon la voix de l'appareil : le site marche aussi sans ces fichiers."""
 import asyncio, hashlib, importlib.util, json, os, sys, wave, array, subprocess
 
@@ -35,6 +35,26 @@ CLIPS.update({
     "c:roue": "Une roue t’attend. Touche le gros bouton pour la lancer.",
     "c:meme": "Touche la même lettre.",
     "c:ordre": "Range les lettres dans l’ordre de l’alphabet.",
+    # GS Calcul (calcul/gs-calcul.js, étape E) — à fabriquer dans l'environnement qui a accès à speech.platform.bing.com
+    "c:missionc": "Ta mission : jouer avec les nombres. Touche le gros bouton.",
+    "c:ritc": "D’abord, écoute la comptine des nombres. Touche le gros bouton.",
+    "c:finc": "Bravo, tu as tout réussi ! Tu peux t’entraîner encore.",
+    "c:comptine": "Écoute la comptine des nombres !",
+    "c:comptinefin": "Bravo ! Tu as compté jusqu’à vingt.",
+    "c:regarde": "Regarde et écoute bien.",
+    "c:aidec": "Je vais t’aider. Regarde et écoute bien.",
+    "c:zero": "Zéro, c’est quand il n’y a rien : l’enclos est vide.",
+    "c:nombre": "Touche le nombre",
+    "c:combien": "Combien y a-t-il d’animaux ?",
+    "c:ordren": "Touche les nombres du plus petit au plus grand.",
+    "c:plus": "Où y en a-t-il le plus ?",
+    "c:moins": "Où y en a-t-il le moins ?",
+    "c:autant": "Touche l’enclos où il y en a autant.",
+    "c:mets0": "Laisse l’enclos vide : zéro animal. Puis touche le bouton vert.",
+    "c:mets1": "Mets un animal dans l’enclos.",
+    "c:mets": "Mets",
+    "c:animaux": "animaux dans l’enclos.",
+    "c:pasn": "Ce n’est pas ça.",
 })
 
 
