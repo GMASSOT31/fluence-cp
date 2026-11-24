@@ -26,6 +26,10 @@
       .then(function (r) { return r.text().then(function (txt) { var j = null; try { j = txt ? JSON.parse(txt) : null; } catch (e) {} if (!r.ok) throw new Error((j && j.message) || ("HTTP " + r.status)); return j; }); });
   }
   function enabled(act) { return E.missionLevels(act, settings.levels && settings.levels[act]); }
+  /* ===== Parcours CE1 du calcul (docs/parcours-ce1) : settings.tracks[élève].calcul = "ce1" ; étapes cochées dans settings.ce1.calcul.nombres (réglages de l'enseignant) ===== */
+  function isCe1(sid) { return !!(window.ZooPeda && window.ZooPeda.trackOf && window.ZooPeda.trackOf(sid, "calcul") === "ce1"); }
+  function ce1Cfg() { var c = window.pedaCe1Cfg && window.pedaCe1Cfg.calcul; return c && Array.isArray(c.nombres) ? c.nombres : null; }
+  function stepsOf(act, ce1) { return ce1 ? (act === "nombres" ? E.ce1Levels(ce1Cfg()) : []) : enabled(act); }
 
   /* ===== Style : accent vert du calcul (la lecture reste violette) ===== */
   function css() {
@@ -133,26 +137,26 @@
   /* le serveur écrit l’heure « 2026-11-18T10:00:00+00 » : sans « :00 » à la fin, les navigateurs ne savent pas la lire (élèves vus « jamais venus ») */
   function tsOf(v) { var t = Date.parse(v); if (!t && typeof v === "string") t = Date.parse(v.replace(/([+-]\d\d)$/, "$1:00")); return t || 0; }
   function lastTs(p) { var h = Array.isArray(p.hist) && p.hist.length ? p.hist[p.hist.length - 1] : null; return h ? tsOf(h.t) : 0; }
-  function nextStep(levels) {
-    var route = E.mission(settings.levels, levels), best = route.next;
+  function nextStep(levels, ce1) {
+    var route = ce1 ? E.ce1Mission(ce1Cfg(), levels) : E.mission(settings.levels, levels), best = route.next;
     if (!best) return route.blocked ? "Reconnaissance des nombres à compléter" : "toutes faites 🎉";
     var lv = E.levelInfo(best.act, best.id); return ACT[best.act].icon + " " + lv.label;
   }
   /* ===== Ma classe (calcul) : même écran que la lecture — choix de la classe, À faire aujourd’hui, Mes élèves (Tous / En difficulté / En avance / Pas venus), La classe en chiffres ===== */
   var LATE = 3, AHEAD = 3, IDLE_DAYS = 7, DAY = 864e5, view = { classId: null, filter: "all", open: {}, folded: {}, rows: [], focus: null, board: null };
   function median(a) { if (!a.length) return 0; var s = a.slice().sort(function (x, y) { return x - y; }), m = Math.floor(s.length / 2); return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; }
-  function totalSteps() { return Object.keys(ACT).reduce(function (n, a) { return n + enabled(a).length; }, 0); }
+  function totalSteps(ce1) { return Object.keys(ACT).reduce(function (n, a) { return n + stepsOf(a, ce1).length; }, 0); }
   /* Un élève : étapes réussies (dans les étapes proposées), étape où il bloque (3 séries ou plus sans réussite), séries des 7 derniers jours, dernière venue */
   function analyse(s) {
-    var p = s.progress || {}, lv = p.levels || {}, done = 0, won = 0, stuck = null, week = { nombres: 0, addition: 0, soustraction: 0 }, now = Date.now();
+    var p = s.progress || {}, lv = p.levels || {}, done = 0, won = 0, stuck = null, week = { nombres: 0, addition: 0, soustraction: 0 }, now = Date.now(), ce1 = isCe1(s.student_id);
     Object.keys(ACT).forEach(function (a) {
-      enabled(a).forEach(function (id) { var e = lv[a + ":" + id] || {}; if (e.ok >= 1) done++; else if ((e.r || 0) >= 3 && !stuck) stuck = { act: a, id: id, r: e.r }; });
+      stepsOf(a, ce1).forEach(function (id) { var e = lv[a + ":" + id] || {}; if (e.ok >= 1) done++; else if ((e.r || 0) >= 3 && !stuck) stuck = { act: a, id: id, r: e.r }; });
     });
     (Array.isArray(p.hist) ? p.hist : []).forEach(function (h) { var t = tsOf(h && h.t), a = String(h && h.k || "").split(":")[0]; if (t && now - t < 7 * DAY && week[a] != null) { week[a]++; if (h.ok === true) won++; } });
     var ts = lastTs(p), idle = ts ? Math.floor((now - ts) / DAY) : null, gsWeek = 0;
     (Array.isArray(p.hist) ? p.hist : []).forEach(function (h) { var t = tsOf(h && h.t); if (t && now - t < 7 * DAY && String(h.k || "").indexOf("gs:") === 0) { gsWeek++; if (h.ok === true) won++; } });
     var r = { s: s, p: p, lv: lv, done: done, won: won, stuck: stuck, week: week, series: week.nombres + week.addition + week.soustraction, idle: idle, ts: ts,
-             nums: Object.keys(p.nums || {}).length, calcs: Object.keys(p.calcs || {}).length, gsWeek: gsWeek };
+             nums: Object.keys(p.nums || {}).length, calcs: Object.keys(p.calcs || {}).length, gsWeek: gsWeek, ce1: ce1 };
     /* parcours GS (settings.tracks[élève].calcul = "gs") : avancement sur les paliers GS, jamais comparé aux élèves de CP */
     if (window.ZooPeda && window.ZooPeda.trackOf && window.ZooPeda.trackOf(s.student_id, "calcul") === "gs" && window.ZooGSData) {
       var D = window.ZooGSData, its = D.calcPath(D.calcConfig(window.pedaGsCfg)), gst = D.calcState(p.gs), gsh = Array.isArray(p.gsh) ? p.gsh : [];
@@ -162,10 +166,11 @@
     return r;
   }
   function classify(rows) {
-    var med = median(rows.filter(function (r) { return !r.gs; }).map(function (r) { return r.done; }));   /* élève du milieu : parmi les élèves de CP */
+    var med = median(rows.filter(function (r) { return !r.gs && !r.ce1; }).map(function (r) { return r.done; }));   /* élève du milieu : parmi les élèves de CP */
     rows.forEach(function (r) {
       r.inactive = r.idle === null || r.idle >= IDLE_DAYS;
       if (r.gs) { r.late = false; r.ahead = false; r.color = r.inactive ? "idle" : r.gs.sm.status === "difficulte" ? "red" : r.gs.sm.status === "maitrise" ? "green" : "yellow"; return; }
+      if (r.ce1) { r.late = false; r.ahead = false; r.color = r.inactive ? "idle" : r.stuck ? "red" : r.done >= totalSteps(true) ? "green" : "yellow"; return; }   /* CE1 : jamais comparé aux élèves de CP */
       r.late = med - r.done >= LATE; r.ahead = r.done - med >= AHEAD;
       r.color = r.inactive ? "idle" : (r.late || r.stuck ? "red" : (r.ahead ? "green" : "yellow"));
     });
@@ -276,6 +281,7 @@
         var b = el("button", "pb-kid c-" + r.color); b.type = "button"; b.title = "Voir la fiche de " + r.s.nickname;
         b.appendChild(el("span", "pb-dot", { red: "🔴", yellow: "🟡", green: "🟢", idle: "⚪" }[r.color])); b.appendChild(el("span", "pb-kname", r.s.nickname));
         if (r.gs) { var tg = el("span", "pb-gs", "GS"); tg.title = "Parcours de calcul : GS"; b.appendChild(tg); }
+        if (r.ce1) { var tc = el("span", "pb-gs pb-ce1", "CE1"); tc.title = "Parcours de calcul : CE1"; b.appendChild(tc); }
         b.addEventListener("click", function () { openDetail(r.s.student_id); });
         list.appendChild(b);
       });
@@ -341,7 +347,7 @@
     var time = el("div", "pb-time", r.series + " " + pl(r.series, "série", "séries")); time.title = "Séries faites ces 7 derniers jours";
     var prog = el("div", "pb-prog"), bar = el("div", "pb-bar"), fill = el("i"); fill.style.width = (tot ? Math.round(r.done * 100 / tot) : 0) + "%"; bar.appendChild(fill);
     bar.setAttribute("role", "img"); bar.setAttribute("aria-label", r.done + " étapes réussies sur " + tot);
-    var txt = r.idle === null ? "Pas encore commencé" : r.stuck ? "bloqué : " + ACT[r.stuck.act].icon + " " + (E.levelInfo(r.stuck.act, r.stuck.id) || {}).label + " (" + r.stuck.r + " séries sans réussite)" : "prochaine étape : " + nextStep(r.lv);
+    var txt = r.idle === null ? "Pas encore commencé" : r.stuck ? "bloqué : " + ACT[r.stuck.act].icon + " " + (E.levelInfo(r.stuck.act, r.stuck.id) || {}).label + " (" + r.stuck.r + " séries sans réussite)" : "prochaine étape : " + nextStep(r.lv, r.ce1);
     prog.appendChild(bar); prog.appendChild(el("small", "", r.done + " " + pl(r.done, "étape réussie", "étapes réussies") + " sur " + tot + " · " + txt));
     var tags = el("div", "pb-tags"); tags.appendChild(el("span", "pb-tag" + (r.inactive ? " warn" : ""), "🕒 " + whenTxt(r)));
     if (r.series) tags.appendChild(el("span", "pb-tag", "👂 " + r.week.nombres + " · ➕ " + r.week.addition + " · ➖ " + r.week.soustraction));
@@ -379,7 +385,7 @@
   }
   /* Fiche d'un élève (même présentation que la Lecture, 23/11/2026) : en-tête, chiffres clés + toile, « pour lui maintenant », actions, tous les résultats */
   function calcFiche(r, rows) {
-    var w = el("div", "pb-fiche"), tot = totalSteps(), C = ctx(), student = (C.allStudents || []).find(function (s) { return s.id === r.s.student_id; });
+    var w = el("div", "pb-fiche"), tot = totalSteps(r.ce1), C = ctx(), student = (C.allStudents || []).find(function (s) { return s.id === r.s.student_id; });
     var own = view.assignments && student && C.currentUser && student.teacher_id === C.currentUser.id, current = view.assignments ? view.assignments[r.s.student_id] : null;
     var order = rows.slice().sort(function (a, b) { return String(a.s.nickname).localeCompare(b.s.nickname); }), i = order.indexOf(r);
     var nav = el("div", "pb-fnav"), back = el("button", "secondary", "← Toute la classe"); back.type = "button";
@@ -398,10 +404,11 @@
     var top = el("div", "pb-ftop"), tiles = el("div", "pb-tiles pb-ftiles");
     function tile(ico, val, lab) { var d = el("div", "pb-tile"); d.appendChild(el("span", "pb-ico", ico)); d.appendChild(el("b", "", val)); d.appendChild(el("small", "", lab)); tiles.appendChild(d); }
     if (r.gs) { chips.appendChild(el("span", "pb-tag pb-gs", "Parcours GS")); return gsFiche(w, r, rows, top, tiles, tile, own); }
+    if (r.ce1) chips.appendChild(el("span", "pb-tag pb-gs pb-ce1", "Parcours CE1"));
     tile("🐾", r.done + " / " + tot, "Étapes réussies");
-    tile(r.stuck ? "🧱" : "➡️", r.stuck ? "Bloqué" : r.idle === null ? "À commencer" : "En route", r.idle === null ? "Pas encore commencé" : r.stuck ? "Bloqué : " + ACT[r.stuck.act].icon + " " + (E.levelInfo(r.stuck.act, r.stuck.id) || {}).label : "Prochaine étape : " + nextStep(r.lv));
-    tile("📊", String(r.series), "Séries sur 7 jours : 👂 " + r.week.nombres + " · ➕ " + r.week.addition + " · ➖ " + r.week.soustraction);
-    tile("🔢", r.nums + " / 101", "Nombres reconnus du premier coup");
+    tile(r.stuck ? "🧱" : "➡️", r.stuck ? "Bloqué" : r.idle === null ? "À commencer" : "En route", r.idle === null ? "Pas encore commencé" : r.stuck ? "Bloqué : " + ACT[r.stuck.act].icon + " " + (E.levelInfo(r.stuck.act, r.stuck.id) || {}).label : "Prochaine étape : " + nextStep(r.lv, r.ce1));
+    tile("📊", String(r.series), "Séries sur 7 jours : 👂 " + r.week.nombres + (r.ce1 ? "" : " · ➕ " + r.week.addition + " · ➖ " + r.week.soustraction));
+    if (!r.ce1) tile("🔢", r.nums + " / 101", "Nombres reconnus du premier coup");
     top.appendChild(tiles);
     if (window.ZooPeda && window.ZooPeda.svgWeb && window.ZooPeda.schoolWeeks) { var web = el("div", "pb-fweb"); web.appendChild(window.ZooPeda.svgWeb(calcAxes(r).list)); web.appendChild(el("small", "muted", "Pointillés verts : attendu à cette date")); top.appendChild(web); }
     w.appendChild(top);
@@ -424,7 +431,7 @@
     var tb = trackBtn(r);
     if (row.children.length || tb) { acts.appendChild(row); acts.appendChild(slot); if (tb) acts.appendChild(tb); w.appendChild(acts); }
     var all = el("details", "pb-fold pb-fall"); all.appendChild(el("summary", "", "📈 Tous les résultats"));
-    all.appendChild(detailGrid(r.lv)); all.appendChild(chiffres(r)); w.appendChild(all);
+    all.appendChild(detailGrid(r.lv, r.ce1)); all.appendChild(chiffres(r)); w.appendChild(all);
     return w;
   }
   function pdfBtn(r, rows) { var fi = el("button", "secondary", "📄 Fiche de suivi (PDF)"); fi.type = "button"; fi.addEventListener("click", function () { makeFiches([r], (rows[0] && rows[0].s.class_name) || "", fi, "fiche-calcul-" + ((ctx().pdfSlug && ctx().pdfSlug(r.s.nickname)) || "eleve")); }); return fi; }
@@ -526,9 +533,10 @@
   function calcAxes(r) {
     var P = window.ZooPeda, wk = P.schoolWeeks(), lv = r.lv, q = 0, c = 0, h = 0, ms = [], list = [];
     Object.keys(ACT).forEach(function (a) {
-      var ids = enabled(a), done = ids.filter(function (id) { return (lv[a + ":" + id] || {}).ok >= 1; }).length, exp = Math.max(1, Math.round(ids.length * wk / P.YEAR_WEEKS));
+      var ids = stepsOf(a, r.ce1), done = ids.filter(function (id) { return (lv[a + ":" + id] || {}).ok >= 1; }).length, exp = Math.max(1, Math.round(ids.length * wk / P.YEAR_WEEKS));
+      if (!ids.length) return;   /* CE1 : pas encore d'addition ni de soustraction */
       ids.forEach(function (id) { var e = lv[a + ":" + id]; if (!e || !e.q) return; q += e.q; c += e.c || 0; h += (e.h || 0) + (e.rp || 0); if (e.ms > 0) ms.push(e.ms); });
-      list.push({ name: ACT[a].title, v: Math.round(done * 100 / exp), txt: done + " " + pl(done, "étape", "étapes") + " · " + exp + " " + pl(exp, "attendue", "attendues"), tip: ids.length + " étapes dans l’année" });
+      list.push({ name: r.ce1 && a === "nombres" ? "Nombres jusqu’à 1 000" : ACT[a].title, v: Math.round(done * 100 / exp), txt: done + " " + pl(done, "étape", "étapes") + " · " + exp + " " + pl(exp, "attendue", "attendues"), tip: ids.length + " étapes dans l’année" });
     });
     var first = q ? Math.round(c * 100 / q) : null, alone = q ? Math.max(0, 100 - Math.round(h * 100 / q)) : null, med = ms.length ? median(ms) : null;
     list.push({ name: "Du premier coup", v: first === null ? null : Math.round(first * 100 / GOAL.first), txt: first === null ? "pas encore mesuré" : first + " % des réponses", tip: "Objectif : " + GOAL.first + " % de bonnes réponses du premier coup" });
@@ -547,7 +555,7 @@
     doc.setTextColor(20); doc.setFont("helvetica", "bold"); doc.setFontSize(22); doc.text(T(r.s.nickname) || "?", M, 40);
     doc.setFont("helvetica", "normal"); doc.setFontSize(10.5); doc.setTextColor(80);
     doc.text(T("Classe : " + clsName).slice(0, 70), M, 47);
-    doc.text(T(r.done + " " + pl(r.done, "étape réussie", "étapes réussies") + " sur " + totalSteps() + " · prochaine étape : " + nextStep(r.lv)), M, 53);
+    doc.text(T(r.done + " " + pl(r.done, "étape réussie", "étapes réussies") + " sur " + totalSteps(r.ce1) + " · prochaine étape : " + nextStep(r.lv, r.ce1) + (r.ce1 ? " · parcours CE1" : "")), M, 53);
     P.drawWeb(doc, T, ax.list, ref, W / 2, 108);
     doc.setLineWidth(0.7); doc.setDrawColor(91, 33, 182); doc.line(M, 66, M + 8, 66);
     doc.setFontSize(8.5); doc.setTextColor(70); doc.text(T(r.s.nickname), M + 10, 67);
@@ -620,18 +628,20 @@
   function makeFiches(list, clsName, btn, file) {
     var C2 = ctx(); if (!C2.pdfMake || !list.length) return;
     var ref = null, refGs = null;
-    ref = window.ZooPeda.refOf(view.rows.filter(function (r) { return !r.inactive && !r.gs; }).map(function (r) { return calcAxes(r).list; }));   /* sans les absents ni les extrêmes */
+    ref = window.ZooPeda.refOf(view.rows.filter(function (r) { return !r.inactive && !r.gs && !r.ce1; }).map(function (r) { return calcAxes(r).list; }));   /* sans les absents ni les extrêmes */
+    var refCe1 = window.ZooPeda.refOf(view.rows.filter(function (r) { return !r.inactive && r.ce1; }).map(function (r) { return calcAxes(r).list; }));   /* élève moyen parmi ceux du parcours CE1 */
     refGs = window.ZooPeda.refOf(view.rows.filter(function (r) { return !r.inactive && r.gs; }).map(function (r) { return gsAxes(r).list; }));   /* élève moyen parmi ceux du parcours GS */
     C2.pdfMake({ btn: btn, msgId: "calcMsg", wait: "Création de la fiche…", file: file,
       title: list.length > 1 ? "Fiches de calcul de « " + clsName + " »" : "Fiche de calcul de " + list[0].s.nickname,
       ok: "📄 " + (list.length > 1 ? list.length + " fiches de suivi pour « " + clsName + " »" : "Fiche de suivi de " + list[0].s.nickname) + " : le PDF s’ouvre (sinon, regardez dans vos téléchargements).",
-      build: function (doc) { list.forEach(function (r, i) { if (i) doc.addPage(); drawCalcFiche(doc, r, clsName, r.gs ? refGs : ref); }); } });
+      build: function (doc) { list.forEach(function (r, i) { if (i) doc.addPage(); drawCalcFiche(doc, r, clsName, r.gs ? refGs : r.ce1 ? refCe1 : ref); }); } });
   }
   function statusTxt(e) { var s = E.status(e); return s === "mastered" ? "⭐ maîtrisé" : s === "done" ? "✓ réussi" : s === "todo" ? "🕒 à travailler" : "pas encore commencé"; }
-  function detailGrid(lv) {
+  function detailGrid(lv, ce1) {
     var grid = el("div", "pd-grid");
     Object.keys(ACT).forEach(function (a) {
-      var ids = enabled(a), done = ids.filter(function (id) { return (lv[a + ":" + id] || {}).ok >= 1; }), tot = Math.max(1, ids.length);
+      var ids = stepsOf(a, ce1); if (!ids.length) return;
+      ids = ids.slice(); var done = ids.filter(function (id) { return (lv[a + ":" + id] || {}).ok >= 1; }), tot = Math.max(1, ids.length);
       var c = el("div", "pd-card"); c.appendChild(el("h5", "", ACT[a].icon + " " + ACT[a].title));
       var big = el("div", "pd-big", String(done.length)); big.appendChild(el("small", "", " / " + ids.length + " " + pl(ids.length, "étape réussie", "étapes réussies"))); c.appendChild(big);
       var bar = el("div", "pd-bar"), fill = el("i"); fill.style.width = Math.round(done.length * 100 / tot) + "%"; fill.style.background = "#2e9b91"; bar.appendChild(fill); c.appendChild(bar);
@@ -715,15 +725,22 @@
         var open = gsBox.hidden; gsBox.hidden = !open; gsBtn.setAttribute("aria-pressed", String(open));
         if (open) { f.hidden = true; note.hidden = true; Object.keys(controls).forEach(function (a) { controls[a].setAttribute("aria-pressed", "false"); }); if (window.ZooPeda && window.ZooPeda.gsCalcSettings) window.ZooPeda.gsCalcSettings(gsBox); }
       };
-      Object.keys(controls).forEach(function (a) { controls[a].addEventListener("click", function () { gsBox.hidden = true; gsBtn.setAttribute("aria-pressed", "false"); }); });
+      /* Parcours de CE1 (docs/parcours-ce1) : étapes « Écouter jusqu'à 1 000 », settings.ce1.calcul (ZooPeda.ce1CalcSettings) */
+      var ce1Btn = el("button", "secondary", "🎒 Du parcours de CE1"), ce1Box = el("div", "gs-set"); ce1Btn.type = "button"; ce1Btn.setAttribute("aria-pressed", "false"); ce1Box.hidden = true;
+      ce1Btn.onclick = function () {
+        var open = ce1Box.hidden; ce1Box.hidden = !open; ce1Btn.setAttribute("aria-pressed", String(open));
+        if (open) { f.hidden = true; note.hidden = true; gsBox.hidden = true; gsBtn.setAttribute("aria-pressed", "false"); Object.keys(controls).forEach(function (a) { controls[a].setAttribute("aria-pressed", "false"); }); if (window.ZooPeda && window.ZooPeda.ce1CalcSettings) window.ZooPeda.ce1CalcSettings(ce1Box); }
+      };
+      gsBtn.addEventListener("click", function () { ce1Box.hidden = true; ce1Btn.setAttribute("aria-pressed", "false"); });
+      Object.keys(controls).forEach(function (a) { controls[a].addEventListener("click", function () { gsBox.hidden = true; gsBtn.setAttribute("aria-pressed", "false"); ce1Box.hidden = true; ce1Btn.setAttribute("aria-pressed", "false"); }); });
       var detached=el("button","secondary","🎯 Exercices décrochés"), note=el("p","muted","Aucun exercice collectif de Calcul n’est disponible pour le moment.");
       detached.type="button";detached.setAttribute("aria-expanded","false");note.hidden=true;
       detached.onclick=function(){
         note.hidden=!note.hidden;detached.setAttribute("aria-expanded",String(!note.hidden));
         f.hidden=true;Object.keys(controls).forEach(function(a){controls[a].setAttribute("aria-pressed","false");});
       };
-      menu.appendChild(detached);menu.appendChild(gsBtn);content.appendChild(note);content.appendChild(gsBox);
-      detached.addEventListener("click", function () { gsBox.hidden = true; gsBtn.setAttribute("aria-pressed", "false"); });
+      menu.appendChild(detached);menu.appendChild(gsBtn);menu.appendChild(ce1Btn);content.appendChild(note);content.appendChild(gsBox);content.appendChild(ce1Box);
+      detached.addEventListener("click", function () { gsBox.hidden = true; gsBtn.setAttribute("aria-pressed", "false"); ce1Box.hidden = true; ce1Btn.setAttribute("aria-pressed", "false"); });
       f.appendChild(el("p", "muted", "La mission alterne reconnaissance des nombres et calcul. Une première étoile ouvre la suite. Les paliers jusqu’à 5 et jusqu’à 10 font partie du parcours de tous les élèves. Les soustractions s’ouvrent après la reconnaissance des nombres jusqu’à 16. Si vous décochez une étape de reconnaissance, les calculs qui en dépendent attendront que les mêmes nombres soient validés dans une autre étape."));
       function collect() {
         var levels = {}; Object.keys(orders).forEach(function (a) { levels[a] = orders[a].filter(function (id) { return boxes[a][id]; }); if (levels[a].length) levels[a] = levels[a].concat(E.marks(a)); });

@@ -129,5 +129,37 @@ ok(unlocked.replay.some(function (s) { return s.id === "s0"; }) && unlocked.repl
 function missionProgressWithoutHigherNumbers() {
   return Object.fromEntries(["nombres:n0", "nombres:n1", "addition:a0", "addition:a2", "addition:a8", "soustraction:s0", "soustraction:s2"].map(function (key) { return [key, { ok: 1 }]; }));
 }
+
+/* ===== CE1 : nombres jusqu'à 1 000 (docs/parcours-ce1/plan.md) ===== */
+var W3 = { 101: "cent un", 200: "deux cents", 203: "deux cent trois", 230: "deux cent trente", 280: "deux cent quatre-vingts", 371: "trois cent soixante et onze", 999: "neuf cent quatre-vingt-dix-neuf", 1000: "mille" };
+Object.keys(W3).forEach(function (n) { ok(E.words(+n) === W3[n], "words(" + n + ") = " + E.words(+n) + " ≠ " + W3[n]); });
+ok(Array.apply(null, Array(1001)).every(function (_, n) { return /^[a-zéè -]+$/.test(E.words(n)); }), "1 001 nombres en lettres bien formés");
+var ce1Ids = E.CE1.nombres.map(function (l) { return l.id; });
+ok(ce1Ids.join() === "c100,c1,c2,c3,c4,c5,c6,c7,c8,c9,cpos,c1000", "étapes CE1 : " + ce1Ids);
+ok(E.LEVELS.nombres.every(function (l) { return ce1Ids.indexOf(l.id) < 0; }) && E.DEFAULT_LEVELS.nombres.join() === "n1,n2,n3,d20,d30,d40,d50,n4,n5,n6,n7,n8,n9,n10,n11", "le parcours CP ne change pas");
+var rng3 = E.seeded(7);
+E.CE1.nombres.forEach(function (lv) {
+  ok(E.levelInfo("nombres", lv.id) === lv && lv.animal && lv.animal.e, "étape " + lv.id + " connue avec un animal");
+  for (var k = 0; k < 15; k++) {
+    var r = E.makeRound("nombres", lv.id, 10, rng3);
+    r.forEach(function (q) {
+      ok(q.choices.length === 6 && q.choices.indexOf(q.answer) >= 0 && new Set(q.choices).size === 6, lv.id + " : 6 propositions distinctes avec la réponse");
+      ok(q.choices.every(function (c) { return lv.allowed.indexOf(c) >= 0; }), lv.id + " : propositions prises dans l’étape");
+      ok(q.say === E.words(q.answer), lv.id + " : la voix dit le nombre");
+    });
+  }
+});
+var d = E.bigDistractors(203, E.levelInfo("nombres", "c2").allowed, 5, E.seeded(1));
+ok(d.indexOf(230) >= 0, "203 : 230 proposé (erreur de position) : " + d);
+var d2 = E.bigDistractors(235, E.levelInfo("nombres", "c2").allowed, 5, E.seeded(2));
+ok(d2.indexOf(253) >= 0, "235 : 253 proposé (chiffres inversés) : " + d2);
+ok(E.ce1Levels(null).join() === "n10," + ce1Ids.join(), "mission CE1 : révision jusqu’à 99 puis les 12 étapes");
+ok(E.ce1Levels(["c1", "c2", "zz"]).join() === "n10,c1,c2", "étapes cochées par l’enseignant, identifiants inconnus ignorés");
+ok(E.ce1Levels(["c2", "c1"]).join() === "n10,c1,c2", "ordre du programme toujours respecté");
+var pr = {}; ok(E.ce1Mission(null, pr).next.id === "n10", "début : révision jusqu’à 99");
+pr["nombres:n10"] = { ok: 1 }; ok(E.ce1Mission(null, pr).next.id === "c100", "révision déjà réussie (au CP) : pas refaite, on commence par les centaines");
+pr["nombres:c100"] = { ok: 0, r: 2 }; ok(E.ce1Mission(null, pr).next.id === "c100", "un échec ne débloque pas la suite");
+ce1Ids.forEach(function (id) { pr["nombres:" + id] = { ok: 1 }; });
+var endM = E.ce1Mission(null, pr); ok(!endM.next && endM.replay.length === 13 && !endM.blocked, "parcours CE1 terminé : tout se rejoue");
 console.log(fails ? fails + " ÉCHEC(S) sur " + checks + " contrôles" : "TOUS LES CONTRÔLES PASSENT (" + checks + ")");
 process.exit(fails ? 1 : 0);
