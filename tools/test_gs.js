@@ -75,4 +75,56 @@ t("T13 : réglages modifiés puis valeurs recommandées", function () {
   assert.strictEqual(c.prenom, false); assert.deepStrictEqual(c.groups, ["ABC", "DE"]); assert.strictEqual(c.cap.questions, 10); assert.strictEqual(c.cap.seuil, 90); assert.strictEqual(c.cap.series, 3); assert.deepStrictEqual(c.cap.props, [2, 4]);
   assert.deepStrictEqual(G.config(undefined), G.config(null)); assert.deepStrictEqual(G.config(undefined).groups, G.DEFAULTS.lecture.groups);
 });
+/* ===== GS Calcul (étape E) ===== */
+var cc = G.calcConfig(null), cpath = G.calcPath(cc);
+t("calcul : paliers 1–3, 1–5, 0–9 dans l'ordre chiffres → ordre → dénombrement → comparaison → construction", function () {
+  assert.deepStrictEqual(cpath.slice(0, 2).map(function (x) { return x.step.key; }), ["chiffres-r1-2", "chiffres-r1-3"]);
+  var r1 = cpath.filter(function (x) { return x.step.range === 1; }).map(function (x) { return x.comp; });
+  assert.deepStrictEqual(r1.filter(function (c, i) { return r1.indexOf(c) === i; }), ["chiffres", "ordre", "denombre", "compare", "collec"]);
+  assert.ok(cpath.every(function (x) { return x.step.key.length <= 20 && /^[a-z]+-[a-z0-9-]{1,14}$/.test(x.step.key); }));
+  assert.strictEqual(new Set(cpath.map(function (x) { return x.step.key; })).size, cpath.length);
+  assert.strictEqual(cpath[cpath.length - 1].step.key, "compare-eq");   /* « autant » : un palier prévu, à la fin */
+  assert.ok(cpath.some(function (x) { return x.step.key === "ordre-r3-4x" && x.step.consec === false; }));
+});
+t("calcul : le zéro n'arrive qu'au 3e palier et y est toujours demandé", function () {
+  cpath.forEach(function (x) { if (x.step.range < 3 || x.step.eq) assert.ok(x.step.lo >= 1); });
+  ["chiffres-r3-4", "denombre-r3-4", "collec-r3"].forEach(function (k) {
+    var s = cpath.filter(function (x) { return x.step.key === k; })[0].step;
+    assert.ok(G.buildCalcSeries(s, cc, false).qs.some(function (q) { return q.t === 0; }), k);
+  });
+});
+t("calcul : séries justes (bonne réponse proposée, choix distincts, ordre jamais rangé, comparaisons jamais égales)", function () {
+  for (var k = 0; k < 40; k++) cpath.forEach(function (x) {
+    var s = G.buildCalcSeries(x.step, cc, k % 3 === 0), a = G.CCOMP[x.comp].act;
+    assert.strictEqual(s.qs.length, cc[x.comp].questions);
+    s.qs.forEach(function (q) {
+      if (a === "num" || a === "compte") { assert.ok(q.opts.indexOf(q.t) >= 0); assert.strictEqual(new Set(q.opts).size, q.opts.length); assert.ok(q.opts.every(function (v) { return v >= x.step.lo && v <= x.step.hi; })); }
+      if (a === "ordre") { assert.notStrictEqual(q.opts.join(","), q.seq.join(",")); q.seq.forEach(function (v, i) { if (i) assert.ok(v > q.seq[i - 1]); }); if (x.step.consec === false) assert.ok(q.seq[q.seq.length - 1] - q.seq[0] > q.seq.length - 1); }
+      if (a === "compare") { assert.notStrictEqual(q.a, q.b); if (q.ask === "autant") assert.strictEqual([q.a, q.b][q.t], q.model); else assert.strictEqual([q.a, q.b][q.t], q.ask === "plus" ? Math.max(q.a, q.b) : Math.min(q.a, q.b)); }
+      if (a === "collec") assert.ok(q.t >= x.step.lo && q.t <= x.step.hi);
+    });
+  });
+});
+t("calcul T07/T08/T09 : même règle que le serveur", function () {
+  var st = {}, key = "chiffres-r1-2", c = cc.chiffres;
+  var r = G.calcRecord(st, key, c, 8, 10, false, "t1"); assert.ok(r.ok && !r.validated);
+  r = G.calcRecord(st, key, c, 9, 10, false, "t2"); assert.ok(r.validated); assert.strictEqual(st[key].val, "t2");
+  assert.strictEqual(G.calcCurrent(st, cpath), 1);
+  var k2 = "chiffres-r1-3"; G.calcRecord(st, k2, c, 9, 10, false, "t3"); G.calcRecord(st, k2, c, 6, 10, false, "t4"); assert.ok(!st[k2].val && st[k2].ok === 0);
+  r = G.calcRecord(st, k2, c, 5, 10, false, "t5"); assert.ok(r.aidOn && st[k2].aid);
+  r = G.calcRecord(st, k2, c, 10, 10, false, "t6"); assert.ok(r.aid && r.aidOff && !r.validated && !st[k2].aid && st[k2].ok === 0);   /* l'aide ne valide jamais */
+  assert.strictEqual(G.buildCalcSeries(cpath[1].step, cc, true).n, 2);
+});
+t("calcul T12 : la toile ne montre que les activités proposées ; une série seule ne compte pas", function () {
+  var c2 = G.calcConfig({ calcul: { compare: { on: false } } }), r = G.calcRadar(c2, {}, [], 0.5);
+  assert.deepStrictEqual(r.map(function (a) { return a.k; }), ["chiffres", "ordre", "denombre", "collec"]);
+  var st = {}; G.calcRecord(st, "chiffres-r1-2", c2.chiffres, 10, 10, false, "x");
+  assert.strictEqual(G.calcRadar(c2, st, [{ k: "chiffres-r1-2", ok: true }], 1)[0].done, 0);
+});
+t("calcul T13 : réglages bornés, valeurs recommandées", function () {
+  var c = G.calcConfig({ calcul: { chiffres: { questions: 2, seuil: 30, series: 9, props: [9, 3] }, compare: { autant: false } } });
+  assert.strictEqual(c.chiffres.questions, 10); assert.strictEqual(c.chiffres.seuil, 80); assert.strictEqual(c.chiffres.series, 2); assert.deepStrictEqual(c.chiffres.props, [3]);
+  assert.ok(G.calcPath(c).every(function (x) { return !x.step.eq; }));
+  assert.deepStrictEqual(G.calcConfig(undefined), G.calcConfig({ lecture: {} }));
+});
 console.log("TOUS LES TESTS GS PASSENT (" + n + ")");

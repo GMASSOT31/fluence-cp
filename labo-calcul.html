@@ -39,6 +39,7 @@
   .panel-nav.nombres-cta .pn-sub { color: #4c1d95; }
   .panel-nav.nombres-cta[aria-current="page"] { background: #5b21b6; border-color: #5b21b6; color: #fff; } .panel-nav.nombres-cta[aria-current="page"] .pn-sub { color: #fff; }
   body.mode-student .bottom-nav [data-go="boutique"], body.mode-student .bottom-nav [data-go="cartes"], body.mode-student .bottom-nav [data-go="reconnues"], body.mode-student .bottom-nav [data-go="progres"] { display: none; }
+  body.gs-track [data-go="cartes"], body.gs-track [data-go="reconnues"], body.gs-track [data-go="progres"] { display: none !important; }   /* parcours GS : ces écrans sont ceux du CP */
   #panel-right .panel-nav.big.nombres-cta { font-size: 1.12rem; padding: 20px 14px; }
   @media (max-width: 880px) { body.calc #panel-left { display: none; } }
   .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(30px); opacity: 0; pointer-events: none; z-index: 70; background: #1b2433; color: #fff; padding: 12px 18px; border-radius: 14px; font-weight: 700; transition: opacity .2s, transform .2s; max-width: 90vw; text-align: center; }
@@ -309,11 +310,14 @@ body.mode-student #zoo-top-stats .zoo-top-stat.wallet-raised{display:flex}
 <div class="confetti" id="confetti" aria-hidden="true"></div>
 
 <script src="labo-config.js?v=2"></script>
+<script src="gs-data.js?v=4"></script>
 <script src="vendor/supabase.js?v=2.118.0"></script>
 <script src="vendor/supabase-lite.js?v=1"></script>
 <script src="calcul/engine.js?v=8"></script>
 <script src="calcul/zoo-effects.js?v=2"></script>
 <script src="calcul/voice.js?v=2"></script>
+<script src="vendor/howler.core.min.js?v=2.2.4"></script>
+<script src="calcul/gs-calcul.js?v=1"></script>
 <script>
 (function () {
   "use strict";
@@ -326,6 +330,7 @@ body.mode-student #zoo-top-stats .zoo-top-stat.wallet-raised{display:flex}
     addition: { icon: "➕", title: "Addition", sub: "Je calcule des additions", say: "Je calcule des additions." },
     soustraction: { icon: "➖", title: "Soustraction", sub: "Je calcule des soustractions", say: "Je calcule des soustractions." }
   };
+  var GSC = window.ZooGSCalc && window.ZooGSData ? window.ZooGSCalc : null;
   var ANIMALS = ["🐥", "🦁", "🐸", "🐘", "🦒", "🐼", "🐢", "🦊"];
 
   function $(id) { return document.getElementById(id); }
@@ -374,6 +379,9 @@ body.mode-student #zoo-top-stats .zoo-top-stat.wallet-raised{display:flex}
         if (p && p.avatarStyle && Array.isArray(p.avatarStyle.owned) && p.avatarStyle.owned.indexOf(p.avatarStyle.active) >= 0) renderAvatarStyle(p.avatarStyle.active);
         if (p) { S.coins = Math.max(0, Math.floor(Number(p.coins) || 0)); S.credits = Math.max(0, Math.floor(Number(p.credits) || 0)); }
         S.assignment = r[4];
+        /* parcours GS du calcul (settings.tracks[élève].calcul = "gs", choisi par l'enseignant) : l'accueil et les séries sont ceux de calcul/gs-calcul.js */
+        S.teacher = r[3] || {}; S.sid = r[1] && r[1].student_id;
+        if (GSC) { GSC.load(r[0].progress, S.teacher, S.sid); document.body.classList.toggle("gs-track", GSC.active()); }
         start();
       });
     }).catch(function () { gate("Un petit souci de connexion. Réessaie dans un instant.", { href: "labo-calcul.html", label: "Réessayer" }); });
@@ -458,12 +466,14 @@ body.mode-student #zoo-top-stats .zoo-top-stat.wallet-raised{display:flex}
   /* Parcours en cours : ÉCOUTER (violet), Addition (orange) ou Soustraction (rose) ; il change dès que l'élève entre dans une activité */
   function setPath(a) { document.body.setAttribute("data-path", a); }
   function goTo(v) {
-    if (previewExercise) { V.stop(); startRound(previewExercise.act,previewExercise.id); return; }
+    if (previewExercise) { V.stop(); if (previewExercise.act !== "gs") { startRound(previewExercise.act,previewExercise.id); return; } if (v !== "gs") { GSC.start(previewExercise.id); return; } }
+    if (GSC && v !== "gs") GSC.stop();
     if (v === "cartes") setPath("nombres");
     V.stop(); R = null; view = v; document.body.classList.remove("listen-focus", "zoo-playing", "zoo-view");
     var me = $("me-menu"); me.hidden = true; $("bn-me").setAttribute("aria-expanded", "false");
     var box = $("view"); clear(box);
     ({ home: home,
+       gs: function (b) { GSC.render(b); },
        boutique: function (b) { zooFrame(b, "boutique"); }, jeux: function (b) { zooFrame(b, "jeux"); }, cartes: numsView, reconnues: calcsView, progres: progressView, roue: function () { wheelScreen(function () { goTo("home"); }); } })[v](box);
     addNextBar(v); renderPanels(); window.scrollTo(0, 0); claimGifts();
     if (v === "home") refreshAssignment().then(function (changed) {
@@ -507,6 +517,7 @@ body.mode-student #zoo-top-stats .zoo-top-stat.wallet-raised{display:flex}
 
   /* ===== Accueil : une seule prochaine action bien visible, consigne lue à voix haute ===== */
   function home(box) {
+    if (GSC && GSC.active()) { GSC.home(box); return; }
     var route = mission(), step = route.next, card = el("div", "card home-hero");
     var title = step || route.blocked ? "🎯 Ma mission" : "🎉 Parcours terminé !";
     card.appendChild(el("h2", "", title));
@@ -1119,6 +1130,10 @@ body.mode-student #zoo-top-stats .zoo-top-stat.wallet-raised{display:flex}
     });
     inputs.old.focus();
   }
+  var gsCtx = { el: el, clear: clear, V: V, rpc: rpc, uuid: uuid, preview: false, goTo: goTo, setPath: setPath, renderPanels: renderPanels,
+    view: function () { return $("view"); }, token: function () { return token; }, sid: function () { return S.sid; }, teacher: function () { return S.teacher; },
+    settings: function () { return S.settings; }, sfx: function () { return true; }, wheels: function () { return S.wheels; }, setWheels: function (n) { S.wheels = Math.max(0, Math.floor(Number(n) || 0)); } };
+  if (GSC) GSC.init(gsCtx);
   $("btn-pin-left").addEventListener("click", openPinDialog); $("me-pin").addEventListener("click", openPinDialog);
   function lecture() { location.href = "zoo-connecte.html"; }
   $("me-lecture").addEventListener("click", lecture);
@@ -1128,11 +1143,12 @@ body.mode-student #zoo-top-stats .zoo-top-stat.wallet-raised{display:flex}
       if (event.source!==window.parent || event.origin!==location.origin || !event.data || !event.data.zooExercisePreview) return;
       var preview=event.data.zooExercisePreview;
       window.parent.postMessage({zooExercisePreviewStarted:true},location.origin);
-      if (!E.levelInfo(preview.act,preview.id)) { gate("Cette étape n’est pas disponible."); return; }
+      var gsPrev = preview.act === "gs" && GSC && window.ZooGSData.CCOMP[preview.id];
+      if (!gsPrev && !E.levelInfo(preview.act,preview.id)) { gate("Cette étape n’est pas disponible."); return; }
       window.removeEventListener("message",receive);
       previewExercise=preview;S.settings=preview.settings||{};
       document.body.classList.add("exercise-preview-mode");
-      startRound(preview.act,preview.id);
+      if (gsPrev) { gsCtx.preview = true; GSC.preview(preview.id, preview.settings || {}); } else startRound(preview.act,preview.id);
     });
     window.parent.postMessage({zooExercisePreviewReady:true},location.origin);
   } else boot();

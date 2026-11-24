@@ -149,14 +149,24 @@
       enabled(a).forEach(function (id) { var e = lv[a + ":" + id] || {}; if (e.ok >= 1) done++; else if ((e.r || 0) >= 3 && !stuck) stuck = { act: a, id: id, r: e.r }; });
     });
     (Array.isArray(p.hist) ? p.hist : []).forEach(function (h) { var t = tsOf(h && h.t), a = String(h && h.k || "").split(":")[0]; if (t && now - t < 7 * DAY && week[a] != null) { week[a]++; if (h.ok === true) won++; } });
-    var ts = lastTs(p), idle = ts ? Math.floor((now - ts) / DAY) : null;
-    return { s: s, lv: lv, done: done, won: won, stuck: stuck, week: week, series: week.nombres + week.addition + week.soustraction, idle: idle, ts: ts,
-             nums: Object.keys(p.nums || {}).length, calcs: Object.keys(p.calcs || {}).length };
+    var ts = lastTs(p), idle = ts ? Math.floor((now - ts) / DAY) : null, gsWeek = 0;
+    (Array.isArray(p.hist) ? p.hist : []).forEach(function (h) { var t = tsOf(h && h.t); if (t && now - t < 7 * DAY && String(h.k || "").indexOf("gs:") === 0) { gsWeek++; if (h.ok === true) won++; } });
+    var r = { s: s, p: p, lv: lv, done: done, won: won, stuck: stuck, week: week, series: week.nombres + week.addition + week.soustraction, idle: idle, ts: ts,
+             nums: Object.keys(p.nums || {}).length, calcs: Object.keys(p.calcs || {}).length, gsWeek: gsWeek };
+    /* parcours GS (settings.tracks[élève].calcul = "gs") : avancement sur les paliers GS, jamais comparé aux élèves de CP */
+    if (window.ZooPeda && window.ZooPeda.trackOf && window.ZooPeda.trackOf(s.student_id, "calcul") === "gs" && window.ZooGSData) {
+      var D = window.ZooGSData, its = D.calcPath(D.calcConfig(window.pedaGsCfg)), gst = D.calcState(p.gs), gsh = Array.isArray(p.gsh) ? p.gsh : [];
+      r.gs = { items: its, st: gst, gsh: gsh, sm: D.calcSummary(gst, its, gsh) };
+      r.done = r.gs.sm.done; r.stuck = null; r.series = gsWeek;
+    }
+    return r;
   }
   function classify(rows) {
-    var med = median(rows.map(function (r) { return r.done; }));
+    var med = median(rows.filter(function (r) { return !r.gs; }).map(function (r) { return r.done; }));   /* élève du milieu : parmi les élèves de CP */
     rows.forEach(function (r) {
-      r.inactive = r.idle === null || r.idle >= IDLE_DAYS; r.late = med - r.done >= LATE; r.ahead = r.done - med >= AHEAD;
+      r.inactive = r.idle === null || r.idle >= IDLE_DAYS;
+      if (r.gs) { r.late = false; r.ahead = false; r.color = r.inactive ? "idle" : r.gs.sm.status === "difficulte" ? "red" : r.gs.sm.status === "maitrise" ? "green" : "yellow"; return; }
+      r.late = med - r.done >= LATE; r.ahead = r.done - med >= AHEAD;
       r.color = r.inactive ? "idle" : (r.late || r.stuck ? "red" : (r.ahead ? "green" : "yellow"));
     });
     return med;
@@ -237,6 +247,8 @@
     });
     var late = rows.filter(function (r) { return r.late && !r.stuck && !r.inactive; });
     if (late.length) card("a-block", "🐢 " + late.length + " " + pl(late.length, "élève a", "élèves ont") + " " + LATE + " étapes de retard ou plus", late, "Par rapport à l’élève du milieu de la classe.");
+    var gsAid = rows.filter(function (r) { return r.gs && !r.inactive && r.gs.sm.status === "difficulte"; });
+    if (gsAid.length) card("a-block", "🤝 Parcours de GS : aide activée", gsAid, "Deux séries ratées d’affilée : le Zoo propose moins de choix et un exemple. Un petit moment avec l’élève peut aider.");
     var idle = rows.filter(function (r) { return r.inactive; });
     if (idle.length) card("a-idle", "💤 " + idle.length + " " + pl(idle.length, "élève n’est pas venu", "élèves ne sont pas venus") + " depuis " + IDLE_DAYS + " jours ou plus", idle);
     var assigned = rows.filter(function (r) { var a = (view.assignments || {})[r.s.student_id]; return a && !a.done; });
@@ -263,6 +275,7 @@
       shown.forEach(function (r) {
         var b = el("button", "pb-kid c-" + r.color); b.type = "button"; b.title = "Voir la fiche de " + r.s.nickname;
         b.appendChild(el("span", "pb-dot", { red: "🔴", yellow: "🟡", green: "🟢", idle: "⚪" }[r.color])); b.appendChild(el("span", "pb-kname", r.s.nickname));
+        if (r.gs) { var tg = el("span", "pb-gs", "GS"); tg.title = "Parcours de calcul : GS"; b.appendChild(tg); }
         b.addEventListener("click", function () { openDetail(r.s.student_id); });
         list.appendChild(b);
       });
@@ -275,7 +288,15 @@
     });
     sec.appendChild(bar);
     sec.appendChild(el("p", "muted pb-legend", "🔴 en difficulté (bloqué sur une étape, ou " + LATE + " étapes de retard sur l’élève du milieu de la classe) · 🟡 avance normalement · 🟢 en avance de " + AHEAD + " étapes ou plus · ⚪ pas venu depuis " + IDLE_DAYS + " jours"));
-    sec.appendChild(list); paint(); return sec;
+    sec.appendChild(list); paint();
+    /* changement de parcours de plusieurs élèves (même volet que la Lecture, matière « Calcul seul » proposée) */
+    if (window.ZooPeda && window.ZooPeda.trackBulk) {
+      if (!view.bulkInit) { view.bulkInit = true; if (window.ZooPeda.state && window.ZooPeda.state.bulk) window.ZooPeda.state.bulk.dom = "calcul"; }
+      var C = ctx(), bulk = window.ZooPeda.trackBulk(rows.map(function (r) { var st = (C.allStudents || []).find(function (x) { return x.id === r.s.student_id; }) || {}; return { s: { id: r.s.student_id, teacher_id: st.teacher_id, nickname: r.s.nickname } }; }),
+        function () { paintBoard(); }, "calc:" + view.classId);
+      if (bulk) sec.appendChild(bulk);
+    }
+    return sec;
   }
   function whenTxt(r) { return r.idle === null ? "jamais venu" : r.idle <= 0 ? "aujourd’hui" : r.idle === 1 ? "hier" : "il y a " + r.idle + " jours"; }
   function assignmentEditor(r, current) {
@@ -376,6 +397,7 @@
     head.appendChild(h); head.appendChild(chips); w.appendChild(head);
     var top = el("div", "pb-ftop"), tiles = el("div", "pb-tiles pb-ftiles");
     function tile(ico, val, lab) { var d = el("div", "pb-tile"); d.appendChild(el("span", "pb-ico", ico)); d.appendChild(el("b", "", val)); d.appendChild(el("small", "", lab)); tiles.appendChild(d); }
+    if (r.gs) { chips.appendChild(el("span", "pb-tag pb-gs", "Parcours GS")); return gsFiche(w, r, rows, top, tiles, tile, own); }
     tile("🐾", r.done + " / " + tot, "Étapes réussies");
     tile(r.stuck ? "🧱" : "➡️", r.stuck ? "Bloqué" : r.idle === null ? "À commencer" : "En route", r.idle === null ? "Pas encore commencé" : r.stuck ? "Bloqué : " + ACT[r.stuck.act].icon + " " + (E.levelInfo(r.stuck.act, r.stuck.id) || {}).label : "Prochaine étape : " + nextStep(r.lv));
     tile("📊", String(r.series), "Séries sur 7 jours : 👂 " + r.week.nombres + " · ➕ " + r.week.addition + " · ➖ " + r.week.soustraction);
@@ -398,11 +420,81 @@
       asb.addEventListener("click", function () { if (slot.firstChild) { clear(slot); return; } slot.appendChild(assignmentEditor(r, current)); });
       row.appendChild(asb);
     }
-    if (ficheOK()) { var fi = el("button", "secondary", "📄 Fiche de suivi (PDF)"); fi.type = "button"; fi.addEventListener("click", function () { makeFiches([r], (rows[0] && rows[0].s.class_name) || "", fi, "fiche-calcul-" + ((ctx().pdfSlug && ctx().pdfSlug(r.s.nickname)) || "eleve")); }); row.appendChild(fi); }
-    if (row.children.length) { acts.appendChild(row); acts.appendChild(slot); w.appendChild(acts); }
+    if (ficheOK()) row.appendChild(pdfBtn(r, rows));
+    var tb = trackBtn(r);
+    if (row.children.length || tb) { acts.appendChild(row); acts.appendChild(slot); if (tb) acts.appendChild(tb); w.appendChild(acts); }
     var all = el("details", "pb-fold pb-fall"); all.appendChild(el("summary", "", "📈 Tous les résultats"));
     all.appendChild(detailGrid(r.lv)); all.appendChild(chiffres(r)); w.appendChild(all);
     return w;
+  }
+  function pdfBtn(r, rows) { var fi = el("button", "secondary", "📄 Fiche de suivi (PDF)"); fi.type = "button"; fi.addEventListener("click", function () { makeFiches([r], (rows[0] && rows[0].s.class_name) || "", fi, "fiche-calcul-" + ((ctx().pdfSlug && ctx().pdfSlug(r.s.nickname)) || "eleve")); }); return fi; }
+  /* Choix du parcours de calcul (GS / CP / CE1 à venir) de l'élève, comme dans la fiche de Lecture */
+  function trackBtn(r) {
+    var C = ctx(), st = (C.allStudents || []).find(function (x) { return x.id === r.s.student_id; });
+    if (!st || !window.ZooPeda || !window.ZooPeda.trackBox) return null;
+    var wrap = el("div"), msg = el("p", "msg"); msg.setAttribute("role", "status");
+    wrap.appendChild(window.ZooPeda.trackBox({ s: { id: st.id, teacher_id: st.teacher_id, nickname: st.nickname } }, function (text) { view.flash = text; paintBoard(); }, ["calcul"]));
+    if (view.flash) { msg.textContent = view.flash; view.flash = null; } wrap.appendChild(msg);
+    return wrap;
+  }
+  /* ===== Parcours GS du calcul (étape E) : fiche de l'élève ===== */
+  var GS_ST = { nouveau: "pas commencé", en_cours: "en cours", maitrise: "maîtrisé", difficulte: "en difficulté" };
+  var GS_TIP = { chiffres: "Trouver le chiffre entendu", ordre: "Ranger des nombres du plus petit au plus grand", denombre: "Compter une collection d’animaux", compare: "Où y en a-t-il le plus / le moins ?", collec: "Mettre n animaux dans l’enclos" };
+  function gsCfg() { return window.ZooGSData.calcConfig(window.pedaGsCfg); }
+  function gsAxes(r) {
+    var D = window.ZooGSData, wk = window.ZooPeda.schoolWeeks();
+    return { wk: wk, list: D.calcRadar(gsCfg(), r.gs.st, r.gs.gsh, wk / window.ZooPeda.YEAR_WEEKS).map(function (a) {
+      return { k: a.k, name: a.name, v: a.v, txt: a.done + "/" + a.total + " étapes · attendu " + a.exp + " · " + GS_ST[a.status], tip: GS_TIP[a.k] || "" };
+    }) };
+  }
+  function gsDate(v) { var t = tsOf(v); return t ? new Date(t).toLocaleDateString("fr-FR") : ""; }
+  function gsFiche(w, r, rows, top, tiles, tile, own) {
+    var D = window.ZooGSData, G = r.gs, sm = G.sm, cur = sm.item, cs = cur ? D.calcItem(G.st, cur.step.key) : null, cfg = gsCfg();
+    tile("🐾", sm.done + " / " + sm.total, "Étapes validées (parcours GS)");
+    tile(sm.status === "difficulte" ? "🤝" : "➡️", cur ? (cs.aid ? "Aide" : "En route") : "Terminé", cur ? "En cours : " + D.calcStepLabel(cur.step) : "Toutes les étapes sont validées");
+    tile("📊", String(r.gsWeek), "Séries sur 7 jours");
+    tile("🎵", G.gsh.length || r.p.gsr ? "Vue" : "—", "Comptine des nombres" + (r.p.gsr ? " (le " + gsDate(r.p.gsr) + ")" : ""));
+    top.appendChild(tiles);
+    if (window.ZooPeda.svgWeb) { var web = el("div", "pb-fweb"); web.appendChild(window.ZooPeda.svgWeb(gsAxes(r).list)); web.appendChild(el("small", "muted", "Pointillés verts : attendu à cette date")); top.appendChild(web); }
+    w.appendChild(top);
+    var now = section("📌 Pour " + r.s.nickname + " maintenant"), items = el("ul", "pb-now");
+    function item(t, c) { items.appendChild(el("li", c || "", t)); }
+    if (cs && cs.aid) item("🤝 Aide activée sur « " + D.calcStepLabel(cur.step) + " » (deux séries ratées d’affilée) : un petit moment avec l’élève peut aider.", "pb-now-warn");
+    else if (cur && cs.ok) item("⭐ " + cs.ok + " série réussie sur " + cfg[cur.comp].series + " pour valider « " + D.calcStepLabel(cur.step) + " ».");
+    if (r.inactive) item("💤 Pas venu depuis " + (r.idle === null ? "le début" : r.idle + " jours"), "pb-now-warn");
+    if (!items.children.length) item("✅ Rien de particulier pour le moment.", "pb-now-ok");
+    now.appendChild(items); w.appendChild(now);
+    var acts = section("⚡ Actions"), row = el("div", "pb-factions");
+    if (ficheOK()) row.appendChild(pdfBtn(r, rows));
+    acts.appendChild(row); var tb = trackBtn(r); if (tb) acts.appendChild(tb); w.appendChild(acts);
+    var all = el("details", "pb-fold pb-fall"); all.appendChild(el("summary", "", "📈 Tous les résultats"));
+    all.appendChild(gsCard(r)); w.appendChild(all);
+    return w;
+  }
+  function gsCard(r) {
+    var D = window.ZooGSData, G = r.gs, card = el("div", "pb-gscard");
+    card.appendChild(el("h4", "", "🔢 Les nombres (parcours GS)"));
+    card.appendChild(el("p", "", G.sm.done + " " + pl(G.sm.done, "étape validée", "étapes validées") + " sur " + G.sm.total + " · " + GS_ST[G.sm.status]));
+    var bar = el("div", "pb-bar"), fill = el("i"); fill.style.width = G.sm.pct + "%"; bar.appendChild(fill); card.appendChild(bar);
+    var ul = el("ul", "pb-gsacts");
+    D.COMPS.calcul.forEach(function (k) {
+      var its = G.items.filter(function (x) { return x.comp === k.id; }); if (!its.length) return;
+      var n = its.filter(function (x) { return D.calcItem(G.st, x.step.key).val; }).length, q = 0, c = 0, h = 0;
+      its.forEach(function (x) { var e = D.calcItem(G.st, x.step.key); q += e.q; c += e.c; h += e.h; });
+      ul.appendChild(el("li", "", (n === its.length ? "✅ " : n ? "🟡 " : "⚪ ") + k.nom + " : " + n + " / " + its.length + (q ? " · " + Math.round(c * 100 / q) + " % de réussite" + (h ? " · " + h + " " + pl(h, "réécoute", "réécoutes") : "") : "")));
+    });
+    card.appendChild(ul);
+    var det = el("details", "pb-gsdet"); det.appendChild(el("summary", "", "Voir le détail"));
+    var vals = G.items.filter(function (x) { return D.calcItem(G.st, x.step.key).val; });
+    if (vals.length) { var u1 = el("ul"); vals.forEach(function (x) { u1.appendChild(el("li", "", "✅ " + D.calcStepLabel(x.step) + " — " + gsDate(D.calcItem(G.st, x.step.key).val))); }); det.appendChild(u1); }
+    var last = G.gsh.slice(-8).reverse();
+    if (last.length) {
+      var u2 = el("ul");
+      last.forEach(function (x) { var it = G.items.filter(function (y) { return y.step.key === x.k; })[0]; u2.appendChild(el("li", "", (x.ok ? "✓ " : "✗ ") + (it ? D.calcStepLabel(it.step) : x.k) + " · " + x.c + "/" + x.n + (x.aid ? " avec aide" : "") + (x.t ? " — " + gsDate(x.t) : ""))); });
+      det.appendChild(el("p", "muted", "Dernières séries :")); det.appendChild(u2);
+    } else det.appendChild(el("p", "muted", "Aucune série pour l’instant."));
+    card.appendChild(det);
+    return card;
   }
   function chiffres(r) {
     var w = el("div"); w.appendChild(el("div", "pd-foot", "En chiffres :")); var chips = el("div", "pd-chips");
@@ -417,7 +509,8 @@
     var active = rows.filter(function (r) { return r.series > 0; });
     var nums = active.length ? Math.round(active.reduce(function (a, r) { return a + r.nums; }, 0) / active.length) : null;
     var mean = active.length ? Math.round(10 * active.reduce(function (a, r) { return a + r.won; }, 0) / active.length) / 10 : null;
-    [["📊", String(w.nombres + w.addition + w.soustraction), "Séries faites : 👂 " + w.nombres + " écouter · ➕ " + w.addition + " addition · ➖ " + w.soustraction + " soustraction"],
+    var gsW = rows.reduce(function (n, r) { return n + (r.gsWeek || 0); }, 0);
+    [["📊", String(w.nombres + w.addition + w.soustraction + gsW), "Séries faites : 👂 " + w.nombres + " écouter · ➕ " + w.addition + " addition · ➖ " + w.soustraction + " soustraction" + (gsW ? " · 🧒 " + gsW + " parcours GS" : "")],
      ["🏅", mean === null ? "—" : mean.toLocaleString("fr-FR"), "Exercices réussis en moyenne par élève actif"],
      ["🔢", nums === null ? "—" : String(nums), "Nombres reconnus en moyenne par élève actif (sur 101)"],
      ["💤", String(rows.filter(function (r) { return r.inactive; }).length), "Élèves pas venus depuis " + IDLE_DAYS + " jours ou plus"]
@@ -445,6 +538,7 @@
   }
   function ascii(t) { var T = ctx().pdfText; return T ? T(t) : String(t); }
   function drawCalcFiche(doc, r, clsName, ref) {
+    if (r.gs) { drawGsFiche(doc, r, clsName, ref); return; }
     var P = window.ZooPeda, ax = calcAxes(r), W = 210, M = 16, T = ascii, now = new Date(), y;
     var dd = ("0" + now.getDate()).slice(-2) + "/" + ("0" + (now.getMonth() + 1)).slice(-2) + "/" + now.getFullYear();
     doc.setFillColor(7, 95, 93); doc.roundedRect(M, 12, W - 2 * M, 14, 3, 3, "F");
@@ -483,14 +577,55 @@
     doc.setFontSize(7.5); doc.setTextColor(140);
     doc.text(T("zoodelecture.fr · 100 % = attendu à cette date (semaine " + Math.round(ax.wk) + " sur " + P.YEAR_WEEKS + ") ou objectif indiqué. Bord de la toile : 150 %."), M, 290);
   }
+  /* Fiche PDF d'un élève en parcours GS : même en-tête et même toile, branches du cahier 10.2 */
+  function drawGsFiche(doc, r, clsName, ref) {
+    var P = window.ZooPeda, D = window.ZooGSData, ax = gsAxes(r), sm = r.gs.sm, W = 210, M = 16, T = ascii, now = new Date(), y;
+    var dd = ("0" + now.getDate()).slice(-2) + "/" + ("0" + (now.getMonth() + 1)).slice(-2) + "/" + now.getFullYear();
+    doc.setFillColor(7, 95, 93); doc.roundedRect(M, 12, W - 2 * M, 14, 3, 3, "F");
+    doc.setTextColor(255); doc.setFont("helvetica", "bold"); doc.setFontSize(15); doc.text("Zoo de Calcul", M + 5, 21.4);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.text(T("Fiche de suivi · parcours GS · " + dd), W - M - 5, 21.2, { align: "right" });
+    doc.setTextColor(20); doc.setFont("helvetica", "bold"); doc.setFontSize(22); doc.text(T(r.s.nickname) || "?", M, 40);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10.5); doc.setTextColor(80);
+    doc.text(T("Classe : " + clsName).slice(0, 70), M, 47);
+    doc.text(T(sm.done + " " + pl(sm.done, "étape validée", "étapes validées") + " sur " + sm.total + (sm.item ? " · en cours : " + D.calcStepLabel(sm.item.step) : " · parcours terminé")), M, 53);
+    P.drawWeb(doc, T, ax.list, ref, W / 2, 108);
+    doc.setLineWidth(0.7); doc.setDrawColor(91, 33, 182); doc.line(M, 66, M + 8, 66);
+    doc.setFontSize(8.5); doc.setTextColor(70); doc.text(T(r.s.nickname), M + 10, 67);
+    if (ref) { doc.setLineWidth(0.4); doc.setDrawColor(150); doc.setLineDashPattern([1.2, 1.2], 0); doc.line(M, 71, M + 8, 71); doc.setLineDashPattern([], 0); doc.text(T("Élève moyen du parcours GS"), M + 10, 72); }
+    doc.setLineWidth(0.7); doc.setDrawColor(46, 155, 100); doc.line(M, 76, M + 8, 76); doc.text(T("Attendu à cette date (semaine " + Math.round(ax.wk) + " sur " + P.YEAR_WEEKS + ")"), M + 10, 77);
+    y = 170; doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.setTextColor(30); doc.text(T("Les compétences du parcours GS"), M, y); y += 2;
+    ax.list.forEach(function (a, i) {
+      y += 7; if (i % 2 === 0) { doc.setFillColor(226, 246, 242); doc.rect(M, y - 4.6, W - 2 * M, 7, "F"); }
+      doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(30); doc.text(T(a.name), M + 2, y);
+      doc.setFont("helvetica", "normal"); doc.text(T(a.txt), M + 40, y); doc.setTextColor(120); doc.setFontSize(8.5); doc.text(T(a.tip), M + 112, y);
+    });
+    y += 12; var colW = (W - 2 * M - 6) / 2, y0 = y;
+    function box(x, title, lines) {
+      var hh = 9 + lines.length * 5.6 + 2; doc.setDrawColor(220); doc.setLineWidth(0.3); doc.roundedRect(x, y0 - 5, colW, hh, 2.5, 2.5, "S");
+      doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(7, 95, 93); doc.text(T(title), x + 4, y0 + 1);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(9.5); doc.setTextColor(50);
+      lines.forEach(function (t, j) { doc.text(doc.splitTextToSize(T(t), colW - 8)[0], x + 4, y0 + 7.5 + j * 5.6); });
+    }
+    var work = [];
+    if (sm.item && D.calcItem(r.gs.st, sm.item.step.key).aid) work.push("Aide activée : " + D.calcStepLabel(sm.item.step));
+    else if (sm.item) work.push("En cours : " + D.calcStepLabel(sm.item.step));
+    ax.list.forEach(function (a) { if (a.v !== null && a.v < 100) work.push(a.name + " : " + a.txt.split(" · ")[0]); });
+    if (!work.length) work.push("Rien de particulier.");
+    var last = r.gs.gsh.slice(-20), okN = last.filter(function (x) { return x.ok; }).length;
+    var act = ["Séries sur 7 jours : " + r.gsWeek, last.length ? "Dernières séries : " + okN + " réussies sur " + last.length : "Pas encore de série", r.idle === null ? "Pas encore d'activité" : "Dernière activité : " + whenTxt(r)];
+    box(M, "À travailler", work.slice(0, 4)); box(M + colW + 6, "Activité", act);
+    doc.setFontSize(7.5); doc.setTextColor(140);
+    doc.text(T("zoodelecture.fr · 100 % = étapes attendues à cette date (semaine " + Math.round(ax.wk) + " sur " + P.YEAR_WEEKS + "). Une étape = séries réussies d'affilée, sans aide. Bord : 150 %."), M, 290);
+  }
   function makeFiches(list, clsName, btn, file) {
     var C2 = ctx(); if (!C2.pdfMake || !list.length) return;
-    var ref = null;
-    ref = window.ZooPeda.refOf(view.rows.filter(function (r) { return !r.inactive; }).map(function (r) { return calcAxes(r).list; }));   /* sans les absents ni les extrêmes */
+    var ref = null, refGs = null;
+    ref = window.ZooPeda.refOf(view.rows.filter(function (r) { return !r.inactive && !r.gs; }).map(function (r) { return calcAxes(r).list; }));   /* sans les absents ni les extrêmes */
+    refGs = window.ZooPeda.refOf(view.rows.filter(function (r) { return !r.inactive && r.gs; }).map(function (r) { return gsAxes(r).list; }));   /* élève moyen parmi ceux du parcours GS */
     C2.pdfMake({ btn: btn, msgId: "calcMsg", wait: "Création de la fiche…", file: file,
       title: list.length > 1 ? "Fiches de calcul de « " + clsName + " »" : "Fiche de calcul de " + list[0].s.nickname,
       ok: "📄 " + (list.length > 1 ? list.length + " fiches de suivi pour « " + clsName + " »" : "Fiche de suivi de " + list[0].s.nickname) + " : le PDF s’ouvre (sinon, regardez dans vos téléchargements).",
-      build: function (doc) { list.forEach(function (r, i) { if (i) doc.addPage(); drawCalcFiche(doc, r, clsName, ref); }); } });
+      build: function (doc) { list.forEach(function (r, i) { if (i) doc.addPage(); drawCalcFiche(doc, r, clsName, r.gs ? refGs : ref); }); } });
   }
   function statusTxt(e) { var s = E.status(e); return s === "mastered" ? "⭐ maîtrisé" : s === "done" ? "✓ réussi" : s === "todo" ? "🕒 à travailler" : "pas encore commencé"; }
   function detailGrid(lv) {
@@ -574,13 +709,21 @@
         preview.onclick=function(){window.ZooExercisePreview("labo-calcul.html",{act:a,id:select.value,settings:collect()});};
         row.appendChild(select);row.appendChild(preview);activities[a].appendChild(row);
       });
+      /* Parcours de GS (étape E) : réglages settings.gs.calcul, enregistrés avec les réglages de lecture (ZooPeda.gsCalcSettings) */
+      var gsBtn = el("button", "secondary", "🧒 Du parcours de GS"), gsBox = el("div", "gs-set"); gsBtn.type = "button"; gsBtn.setAttribute("aria-pressed", "false"); gsBox.hidden = true;
+      gsBtn.onclick = function () {
+        var open = gsBox.hidden; gsBox.hidden = !open; gsBtn.setAttribute("aria-pressed", String(open));
+        if (open) { f.hidden = true; note.hidden = true; Object.keys(controls).forEach(function (a) { controls[a].setAttribute("aria-pressed", "false"); }); if (window.ZooPeda && window.ZooPeda.gsCalcSettings) window.ZooPeda.gsCalcSettings(gsBox); }
+      };
+      Object.keys(controls).forEach(function (a) { controls[a].addEventListener("click", function () { gsBox.hidden = true; gsBtn.setAttribute("aria-pressed", "false"); }); });
       var detached=el("button","secondary","🎯 Exercices décrochés"), note=el("p","muted","Aucun exercice collectif de Calcul n’est disponible pour le moment.");
       detached.type="button";detached.setAttribute("aria-expanded","false");note.hidden=true;
       detached.onclick=function(){
         note.hidden=!note.hidden;detached.setAttribute("aria-expanded",String(!note.hidden));
         f.hidden=true;Object.keys(controls).forEach(function(a){controls[a].setAttribute("aria-pressed","false");});
       };
-      menu.appendChild(detached);content.appendChild(note);
+      menu.appendChild(detached);menu.appendChild(gsBtn);content.appendChild(note);content.appendChild(gsBox);
+      detached.addEventListener("click", function () { gsBox.hidden = true; gsBtn.setAttribute("aria-pressed", "false"); });
       f.appendChild(el("p", "muted", "La mission alterne reconnaissance des nombres et calcul. Une première étoile ouvre la suite. Les paliers jusqu’à 5 et jusqu’à 10 font partie du parcours de tous les élèves. Les soustractions s’ouvrent après la reconnaissance des nombres jusqu’à 16. Si vous décochez une étape de reconnaissance, les calculs qui en dépendent attendront que les mêmes nombres soient validés dans une autre étape."));
       function collect() {
         var levels = {}; Object.keys(orders).forEach(function (a) { levels[a] = orders[a].filter(function (id) { return boxes[a][id]; }); if (levels[a].length) levels[a] = levels[a].concat(E.marks(a)); });

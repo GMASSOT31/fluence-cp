@@ -422,27 +422,38 @@
   }
   /* ===== Parcours GS / CP / CE1 (docs/parcours-gs) : réglage settings.tracks[élève] = {lecture:"gs"|"cp"} ; absent = CP ===== */
   window.pedaTracks = window.pedaTracks || {};
-  function trackOf(sid) { var t = window.pedaTracks[sid]; return t && t.lecture === "gs" ? "gs" : "cp"; }
-  function trackBox(r) {
-    var box = mk("div", "pb-track"), own = C.currentUser && r.s.teacher_id === C.currentUser.id, cur = trackOf(r.s.id);
-    box.append(mk("strong", null, "Parcours de lecture : "));
-    [["gs", "GS"], ["cp", "CP"], ["ce1", "CE1 · à venir"]].forEach(function (o) {
-      var b = mk("button", "pb-trk" + (cur === o[0] ? " on" : ""), o[1]); b.type = "button";
-      b.setAttribute("aria-pressed", String(cur === o[0]));
-      if (o[0] === "ce1" || !own) b.disabled = true;
-      if (!own) b.title = "Seul l’enseignant de la classe peut changer le parcours";
-      b.onclick = function () {
-        if (cur === o[0]) return;
-        var t = window.pedaTracks[r.s.id] || {};
-        if (o[0] === "cp") delete t.lecture; else t.lecture = o[0];
-        if (Object.keys(t).length) window.pedaTracks[r.s.id] = t; else delete window.pedaTracks[r.s.id];
-        if (C.queueSave) C.queueSave("pedaSave");
-        state.flash = { id: r.s.id, text: "Parcours de lecture de " + r.s.nickname + " : " + o[1] + ". Ses résultats sont tous gardés.", err: false };
-        render();
-      };
-      box.append(b);
+  /* dom = "lecture" (défaut) ou "calcul" ; settings.tracks[élève] = {lecture:"gs", calcul:"gs"} ; absent = CP */
+  function trackOf(sid, dom) { var t = window.pedaTracks[sid]; return t && t[dom || "lecture"] === "gs" ? "gs" : "cp"; }
+  function calcOn() { return !!window.CalcTeacher; }   /* le Zoo de Calcul n'est proposé qu'aux comptes qui y ont accès */
+  function setTrack(sid, dom, to) {
+    var t = window.pedaTracks[sid] || {};
+    if (to === "cp") delete t[dom]; else t[dom] = to;
+    if (Object.keys(t).length) window.pedaTracks[sid] = t; else delete window.pedaTracks[sid];
+  }
+  var DOM_NAME = { lecture: "lecture", calcul: "calcul" };
+  /* Choix du parcours d'un élève (fiche Lecture et fiche Calcul). after : redessin (sinon celui de Ma classe Lecture) ; doms : domaines montrés */
+  function trackBox(r, after, doms) {
+    if (window.ZooPedaCtx) C = window.ZooPedaCtx();
+    var box = mk("div", "pb-track pb-track2"), own = C.currentUser && r.s.teacher_id === C.currentUser.id;
+    (doms || (calcOn() ? ["lecture", "calcul"] : ["lecture"])).forEach(function (dom) {
+      var line = mk("div", "pb-trkline"), cur = trackOf(r.s.id, dom);
+      line.append(mk("strong", null, "Parcours de " + DOM_NAME[dom] + " : "));
+      [["gs", "GS"], ["cp", "CP"], ["ce1", "CE1 · à venir"]].forEach(function (o) {
+        var b = mk("button", "pb-trk" + (cur === o[0] ? " on" : ""), o[1]); b.type = "button";
+        b.setAttribute("aria-pressed", String(cur === o[0]));
+        if (o[0] === "ce1" || !own) b.disabled = true;
+        if (!own) b.title = "Seul l’enseignant de la classe peut changer le parcours";
+        b.onclick = function () {
+          if (cur === o[0]) return;
+          setTrack(r.s.id, dom, o[0]);
+          if (C.queueSave) C.queueSave("pedaSave");
+          var text = "Parcours de " + DOM_NAME[dom] + " de " + r.s.nickname + " : " + o[1] + ". Ses résultats sont tous gardés.";
+          if (after) after(text); else { state.flash = { id: r.s.id, text: text, err: false }; render(); }
+        };
+        line.append(b);
+      });
+      box.append(line);
     });
-    box.append(mk("span", "muted pb-trk-note", " Calcul : CP (GS bientôt)"));
     return box;
   }
   /* Suivi GS « Les lettres » : paliers validés, palier en cours, aide, dernières séries */
@@ -480,16 +491,21 @@
   }
   /* ===== Changement de parcours de plusieurs élèves à la fois (cahier 3.2, étape D) : cases à cocher, parcours visé, confirmation.
      Seulement ses propres élèves ; les élèves non cochés ne changent pas ; aucun résultat effacé (progress.gs et les résultats CP restent). ===== */
-  state.bulk = { sel: {}, to: "gs" };
-  function trackBulk(rows) {
+  state.bulk = { sel: {}, to: "gs", dom: "lecture" };
+  function trackBulk(rows, afterBulk, scope) {
+    if (window.ZooPedaCtx) C = window.ZooPedaCtx();
     var own = (rows || []).filter(function (r) { return C.currentUser && r.s.teacher_id === C.currentUser.id; })
       .sort(function (a, b) { return String(a.s.nickname).localeCompare(b.s.nickname); });
     if (!own.length) return null;
-    var B = state.bulk, box = compactDetails("🔀 Changer le parcours de plusieurs élèves", "pb-bulk", state.classId + ":bulk", state.folded);
+    var B = state.bulk, box = compactDetails("🔀 Changer le parcours de plusieurs élèves", "pb-bulk", (scope || state.classId) + ":bulk", state.folded);
     var body = mk("div", "pb-bulk-body"), msg = mk("p", "msg"); msg.setAttribute("role", "status");
     function paint() {
       body.replaceChildren();
-      body.append(mk("p", "muted", "Cochez les élèves, choisissez leur parcours de lecture, puis confirmez. Les élèves non cochés ne changent pas. Tous les résultats sont gardés."));
+      if (!calcOn()) B.dom = "lecture";
+      var doms = B.dom === "both" ? ["lecture", "calcul"] : [B.dom], what = B.dom === "both" ? "de lecture et de calcul" : "de " + DOM_NAME[B.dom];
+      function badges(r) { var f = document.createDocumentFragment(); f.append(mk("span", trackOf(r.s.id) === "gs" ? "pb-gs" : "pb-cp", (calcOn() ? "📖 " : "") + trackOf(r.s.id).toUpperCase())); if (calcOn()) f.append(mk("span", trackOf(r.s.id, "calcul") === "gs" ? "pb-gs" : "pb-cp", "🔢 " + trackOf(r.s.id, "calcul").toUpperCase())); return f; }
+      function isTo(r) { return doms.every(function (d) { return trackOf(r.s.id, d) === B.to; }); }
+      body.append(mk("p", "muted", "Cochez les élèves, choisissez " + (calcOn() ? "la matière et " : "") + "leur parcours, puis confirmez. Les élèves non cochés ne changent pas. Tous les résultats sont gardés."));
       var tools = mk("div", "pb-bulk-tools"), all = mk("button", "secondary", "Tout cocher"), none = mk("button", "secondary", "Tout décocher");
       all.type = none.type = "button";
       all.onclick = function () { own.forEach(function (r) { B.sel[r.s.id] = true; }); paint(); };
@@ -499,40 +515,44 @@
       own.forEach(function (r) {
         var lab = mk("label", "pb-bulk-kid"), cb = mk("input"); cb.type = "checkbox"; cb.checked = !!B.sel[r.s.id];
         cb.onchange = function () { if (cb.checked) B.sel[r.s.id] = true; else delete B.sel[r.s.id]; count(); };
-        lab.append(cb, mk("span", "pb-kname", r.s.nickname), mk("span", trackOf(r.s.id) === "gs" ? "pb-gs" : "pb-cp", trackOf(r.s.id) === "gs" ? "GS" : "CP"));
+        lab.append(cb, mk("span", "pb-kname", r.s.nickname), badges(r));
         grid.append(lab);
       });
       body.append(grid);
-      var to = mk("div", "pb-track"); to.append(mk("strong", null, "Nouveau parcours de lecture : "));
+      if (calcOn()) {
+        var dm = mk("div", "pb-track"); dm.append(mk("strong", null, "Matière : "));
+        [["lecture", "Lecture seule"], ["calcul", "Calcul seul"], ["both", "Les deux"]].forEach(function (o) {
+          var b = mk("button", "pb-trk" + (B.dom === o[0] ? " on" : ""), o[1]); b.type = "button"; b.setAttribute("aria-pressed", String(B.dom === o[0]));
+          b.onclick = function () { B.dom = o[0]; paint(); };
+          dm.append(b);
+        });
+        body.append(dm);
+      }
+      var to = mk("div", "pb-track"); to.append(mk("strong", null, "Nouveau parcours " + what + " : "));
       [["gs", "GS"], ["cp", "CP"], ["ce1", "CE1 · à venir"]].forEach(function (o) {
         var b = mk("button", "pb-trk" + (B.to === o[0] ? " on" : ""), o[1]); b.type = "button"; b.setAttribute("aria-pressed", String(B.to === o[0]));
         if (o[0] === "ce1") b.disabled = true;
         b.onclick = function () { B.to = o[0]; paint(); };
         to.append(b);
       });
-      to.append(mk("span", "muted pb-trk-note", " Calcul : CP (GS bientôt)"));
       body.append(to);
       var go = mk("button", "primary", ""); go.type = "button";
       var confirmBox = mk("div", "pb-bulk-confirm");
       function count() { var n = own.filter(function (r) { return B.sel[r.s.id]; }).length; go.textContent = "Passer " + plur(n, "élève", "élèves") + " en " + B.to.toUpperCase() + "…"; go.disabled = !n; confirmBox.replaceChildren(); }
       go.onclick = function () {
-        var picked = own.filter(function (r) { return B.sel[r.s.id]; }), change = picked.filter(function (r) { return trackOf(r.s.id) !== B.to; }), label = B.to.toUpperCase();
+        var picked = own.filter(function (r) { return B.sel[r.s.id]; }), change = picked.filter(function (r) { return !isTo(r); }), label = B.to.toUpperCase();
         confirmBox.replaceChildren();
         if (!change.length) { confirmBox.append(mk("p", "muted", (picked.length > 1 ? "Ces élèves sont déjà" : "Cet élève est déjà") + " en " + label + ".")); return; }
-        confirmBox.append(mk("p", null, "Passer en " + label + " pour la lecture : " + change.map(function (r) { return r.s.nickname; }).join(", ") + " (" + plur(change.length, "élève", "élèves") + ")." + (picked.length > change.length ? " Déjà en " + label + " : " + picked.filter(function (r) { return change.indexOf(r) < 0; }).map(function (r) { return r.s.nickname; }).join(", ") + "." : "")),
+        confirmBox.append(mk("p", null, "Passer en " + label + " pour " + (B.dom === "both" ? "la lecture et le calcul" : B.dom === "lecture" ? "la lecture" : "le calcul") + " : " + change.map(function (r) { return r.s.nickname; }).join(", ") + " (" + plur(change.length, "élève", "élèves") + ")." + (picked.length > change.length ? " Déjà en " + label + " : " + picked.filter(function (r) { return change.indexOf(r) < 0; }).map(function (r) { return r.s.nickname; }).join(", ") + "." : "")),
           mk("p", "muted", "Les autres élèves ne changent pas. " + (change.length > 1 ? "Leurs" : "Ses") + " résultats sont tous gardés : vous pourrez revenir en arrière à tout moment."));
         var yes = mk("button", "primary", "✅ Oui, appliquer"), no = mk("button", "secondary", "Annuler"); yes.type = no.type = "button";
         no.onclick = function () { confirmBox.replaceChildren(); };
         yes.onclick = function () {
-          change.forEach(function (r) {
-            var t = window.pedaTracks[r.s.id] || {};
-            if (B.to === "cp") delete t.lecture; else t.lecture = B.to;
-            if (Object.keys(t).length) window.pedaTracks[r.s.id] = t; else delete window.pedaTracks[r.s.id];
-          });
+          change.forEach(function (r) { doms.forEach(function (d) { setTrack(r.s.id, d, B.to); }); });
           if (C.queueSave) C.queueSave("pedaSave");
           B.sel = {};
-          state.bulkMsg = "✅ Parcours de lecture " + label + " pour " + change.map(function (r) { return r.s.nickname; }).join(", ") + ". " + (change.length > 1 ? "Leurs" : "Ses") + " résultats sont tous gardés.";
-          draw();
+          state.bulkMsg = "✅ Parcours " + what + " " + label + " pour " + change.map(function (r) { return r.s.nickname; }).join(", ") + ". " + (change.length > 1 ? "Leurs" : "Ses") + " résultats sont tous gardés.";
+          if (afterBulk) afterBulk(); else draw();
         };
         var row = mk("div", "pb-bulk-tools"); row.append(yes, no); confirmBox.append(row);
         yes.focus();
@@ -547,6 +567,77 @@
   }
   /* ===== Réglages du parcours GS (Pédagogie › Les activités › Du parcours de GS) : settings.gs.lecture (gs-data.js config), enregistrés tout seuls.
      Rien n'est perdu quand on change : les validations restent rangées par activité et par étape (progress.gs). ===== */
+  /* settings.gs = {lecture, calcul} : on ne remplace que la partie modifiée (la Lecture ne doit jamais effacer les réglages du Calcul, et inversement) */
+  function gsPut(dom, val) {
+    var g = window.pedaGsCfg && typeof window.pedaGsCfg === "object" ? JSON.parse(JSON.stringify(window.pedaGsCfg)) : {};
+    if (val) g[dom] = val; else delete g[dom];
+    window.pedaGsCfg = Object.keys(g).length ? g : undefined;
+  }
+  /* ===== Réglages du parcours GS du CALCUL (Pédagogie du Calcul › Les exercices › « Du parcours de GS ») : settings.gs.calcul, enregistrés tout seuls.
+     Le serveur lit le seuil et le nombre de séries d'affilée de ces réglages (migration 20261209). ===== */
+  function gsCalcSettings(host) {
+    if (window.ZooPedaCtx) C = window.ZooPedaCtx();
+    var D = window.ZooGSData; if (!host) return;
+    host.replaceChildren();
+    if (!D || !D.calcConfig) { host.append(mk("p", "muted", "Réglages indisponibles : actualisez la page.")); return; }
+    var cfg = D.calcConfig(window.pedaGsCfg), msg = mk("p", "msg"); msg.setAttribute("role", "status");
+    var save = mk("p", "save-state"); save.id = "gsCalcSave"; save.setAttribute("role", "status");
+    function commit(text) { cfg = D.calcConfig({ calcul: cfg }); gsPut("calcul", JSON.parse(JSON.stringify(cfg))); if (C.queueSave) C.queueSave("gsCalcSave"); paint(); msg.textContent = text || ""; }
+    function num(label, val, lo, hi, set) {
+      var l = mk("div", "pb-gsnum"), i = mk("input"); i.type = "number"; i.min = lo; i.max = hi; i.value = val; i.inputMode = "numeric"; i.setAttribute("aria-label", label);
+      i.onchange = function () { var v = Math.round(Number(i.value)); set(isFinite(v) && i.value !== "" ? Math.max(lo, Math.min(hi, v)) : val); commit(); };
+      l.append(mk("span", null, label), i); return l;
+    }
+    function paint() {
+      var keep = msg.textContent;
+      host.replaceChildren();
+      host.append(mk("p", "muted", "Pour les élèves en parcours GS de calcul. Les nombres arrivent par étapes : de 1 à 3, de 1 à 5, puis de 0 à 9 (le zéro est présenté avec un exemple). Pour chaque étape : les chiffres, l’ordre, compter, comparer, puis construire une collection. Une étape est validée après les séries réussies d’affilée demandées ; après deux séries ratées, l’aide s’active (une série aidée ne valide jamais)."));
+      var acts = mk("div", "pb-gsacts-set");
+      D.COMPS.calcul.forEach(function (k) {
+        var c = cfg[k.id], card = mk("div", "pb-gsact" + (c.on ? "" : " off")), head = mk("label", "pb-gscheck"), cb = mk("input");
+        cb.type = "checkbox"; cb.checked = c.on;
+        cb.onchange = function () {
+          var others = D.COMPS.calcul.some(function (o) { return o.id !== k.id && cfg[o.id].on; });
+          if (!cb.checked && !others) { cb.checked = true; msg.textContent = "Gardez au moins une activité."; return; }
+          c.on = cb.checked; commit();
+        };
+        head.append(cb, mk("strong", null, k.nom)); card.append(head);
+        if (c.on) {
+          var nums = mk("div", "pb-gsnums");
+          if (c.props) {
+            var ordre = k.act === "ordre", pi = mk("input"), pl2 = mk("div", "pb-gsnum"), lab = ordre ? "Nombres à ranger" : "Choix proposés";
+            pi.type = "text"; pi.value = c.props.join(" "); pi.inputMode = "numeric"; pi.setAttribute("aria-label", lab);
+            pi.onchange = function () { c.props = pi.value.split(/[^0-9]+/).filter(Boolean).map(Number); commit(); };
+            pl2.title = ordre ? "Une étape par longueur (de 3 à 6 nombres)" : "Une étape par nombre de choix (de 2 à 4)";
+            pl2.append(mk("span", null, lab), pi); nums.append(pl2);
+          }
+          nums.append(num("Questions", c.questions, 4, 20, function (v) { c.questions = v; }),
+            num("Réussite (%)", c.seuil, 50, 100, function (v) { c.seuil = v; }),
+            num("Séries d’affilée", c.series, 1, 4, function (v) { c.series = v; }));
+          card.append(nums);
+          if (k.id === "compare") {
+            var al = mk("label", "pb-gscheck"), ac = mk("input"); ac.type = "checkbox"; ac.checked = c.autant;
+            ac.onchange = function () { c.autant = ac.checked; commit(); };
+            al.append(ac, mk("span", null, "Ajouter une dernière étape « autant » (de 1 à 5)")); card.append(al);
+          }
+        }
+        acts.append(card);
+      });
+      host.append(acts);
+      var its = D.calcPath(cfg), ns = its.reduce(function (a, x) { return a + cfg[x.comp].series; }, 0);
+      host.append(mk("p", "pb-gssum", "Avec ces réglages : " + its.length + " étapes, soit au moins " + ns + " séries réussies pour finir le parcours."));
+      var pv = mk("div", "exercise-preview-actions"), sel = mk("select"); sel.setAttribute("aria-label", "Activité à visualiser");
+      D.COMPS.calcul.filter(function (k) { return cfg[k.id].on; }).forEach(function (k) { sel.append(new Option(k.nom, k.id)); });
+      var vb = mk("button", null, "Visualiser"); vb.type = "button";
+      vb.onclick = function () { if (window.ZooExercisePreview) window.ZooExercisePreview("labo-calcul.html", { act: "gs", id: sel.value, settings: { gs: { calcul: JSON.parse(JSON.stringify(cfg)) } } }); };
+      pv.append(sel, vb); host.append(pv);
+      var rs = mk("button", "secondary", "↩️ Valeurs recommandées"); rs.type = "button";
+      rs.onclick = function () { gsPut("calcul", null); cfg = D.calcConfig(null); if (C.queueSave) C.queueSave("gsCalcSave"); paint(); msg.textContent = "Valeurs recommandées rétablies. Les résultats des élèves sont gardés."; };
+      host.append(rs, msg, save);
+      msg.textContent = keep;
+    }
+    paint();
+  }
   function gsSettings(host) {
     if (window.ZooPedaCtx) C = window.ZooPedaCtx();
     var D = window.ZooGSData; if (!host) return;
@@ -556,7 +647,7 @@
     var save = mk("p", "save-state"); save.id = "gsSave"; save.setAttribute("role", "status");
     function commit(text) {
       cfg = D.config({ lecture: cfg });
-      window.pedaGsCfg = { lecture: JSON.parse(JSON.stringify(cfg)) };
+      gsPut("lecture", JSON.parse(JSON.stringify(cfg)));
       if (C.queueSave) C.queueSave("gsSave");
       paint(); msg.textContent = text || "";
     }
@@ -638,7 +729,7 @@
       pv.append(sel, vb); host.append(pv);
       var rs = mk("button", "secondary", "↩️ Valeurs recommandées"); rs.type = "button";
       rs.onclick = function () {
-        window.pedaGsCfg = undefined; cfg = D.config(null);
+        gsPut("lecture", null); cfg = D.config(null);
         if (C.queueSave) C.queueSave("gsSave");
         paint(); msg.textContent = "Valeurs recommandées rétablies. Les résultats des élèves sont gardés.";
       };
@@ -1199,5 +1290,5 @@
 
   /* « Mes classes » › « Voir mes élèves » : ouvrir Ma classe sur cette classe */
   function pick(id) { if (id && id !== state.classId) { state.classId = id; state.open = {}; state.filter = "all"; } }
-  window.ZooPeda = { svgWeb: svgWeb, gsSettings: gsSettings, gsAxes: gsAxes, trackOf: trackOf, compactDetails: compactDetails, pick: pick, asgLabel: asgLabel, asgState: asgState, asgStatusText: asgStatusText, render: render, openDetail: openDetail, scrollToStudent: scrollToStudent, tilePairs: TILE_PAIRS, analyse: analyse, classify: classify, axes: axes, drawFiche: drawFiche, drawWeb: drawWeb, refOf: refOf, schoolWeeks: schoolWeeks, YEAR_WEEKS: YEAR_WEEKS, state: state };
+  window.ZooPeda = { svgWeb: svgWeb, gsSettings: gsSettings, gsCalcSettings: gsCalcSettings, trackBox: trackBox, trackBulk: trackBulk, GS_ST: GS_ST, gsAxes: gsAxes, trackOf: trackOf, compactDetails: compactDetails, pick: pick, asgLabel: asgLabel, asgState: asgState, asgStatusText: asgStatusText, render: render, openDetail: openDetail, scrollToStudent: scrollToStudent, tilePairs: TILE_PAIRS, analyse: analyse, classify: classify, axes: axes, drawFiche: drawFiche, drawWeb: drawWeb, refOf: refOf, schoolWeeks: schoolWeeks, YEAR_WEEKS: YEAR_WEEKS, state: state };
 })();
