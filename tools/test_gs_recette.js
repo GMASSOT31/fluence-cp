@@ -121,7 +121,8 @@ function ok15(ok) { return ok ? 1050 : 1650; }
     var stop = await q.evaluate(function () { return { calls: __lab.calls.filter(function (c) { return c === "lab_student_submit_round"; }).length, gs: __lab.me.gs, home: /Ma mission/.test(document.getElementById("view").textContent) }; });
     rec("T18", stop.calls === 0 && !Object.keys(stop.gs).length && stop.home, "arrêt en cours de série : rien n’est enregistré, les acquis restent, retour à la mission");
     /* T15 : aucun choix de parcours ni de récompense côté élève */
-    var noTrack = !/Parcours|GS|CP/.test(await txt(q, "body")) && !/Parcours/.test(await txt(p, "body"));
+    var vis = function (x) { return x.evaluate(function () { return document.body.innerText; }); };   /* texte visible seulement (pas le code des scripts) */
+    var noTrack = !/Parcours|\bGS\b|\bCP\b|CE1/.test(await vis(q)) && !/Parcours|\bGS\b|CE1/.test(await vis(p));
     rec("T15", noTrack, "aucun écran élève ne propose de changer de parcours (le parcours vient des réglages de l’enseignant ; serveur : une roue par série, pièces et roues décidées par le serveur en Calcul)");
     /* Lecture GS : une série jouée de bout en bout (contrôle de non-régression de l'étape C) */
     p = await page(b, "zoo-test.html?gs=1");
