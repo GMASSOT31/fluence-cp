@@ -15,6 +15,10 @@
     return o;
   }
   /* ?gs=1 : l'élève est en parcours GS en lecture (réglage enseignant settings.tracks) */
+  /* ?recdec=40|ok|non : une lecture enregistrée en attente (voyelles, syllabes, 60 s) que l'enseignant a validée avec 40 syllabes bien lues, validée sans score, ou fait relire (settings.recDec) */
+  var RECDEC = (/[?&]recdec=(\w+)/.exec(location.search) || [])[1];
+  if (RECDEC) srv.me.progress.reviews = [{ id: "rvT", sid: srv.me.id, sound: "voy", kind: "s", ts: 1763900000000, secs: 60, tab: 3 }];
+  function recDecOpt() { if (!RECDEC) return undefined; var o = {}; o.rvT = RECDEC === "non" ? { sid: srv.me.id, ok: false, ts: 1 } : RECDEC === "ok" ? { sid: srv.me.id, ok: true, ts: 1 } : { sid: srv.me.id, ok: true, c: Number(RECDEC), ts: 1 }; return o; }
   function gsOpt() { var o = {}; if (!/[?&]gs=1/.test(location.search)) return undefined; o[srv.me.id] = { lecture: "gs" }; return o; }
   function all() { return [{ id: srv.me.id, nickname: srv.me.nickname, avatar: srv.me.progress.avatar, hi: srv.me.progress.hi || {} }].concat(srv.others); }
   function best(game) {
@@ -40,7 +44,7 @@
       if (a.p_old_pin !== srv.pin) { srv.pinFails = (srv.pinFails || 0) + 1; return { ok: false, code: "bad_old" }; }
       srv.pin = a.p_new_pin; srv.pinFails = 0; return { ok: true };
     },
-    student_get_teacher_settings: function () { return { rewards: /recompenses=1/.test(location.search) ? [{ id: "r1", label: "Gomme tous", price: 5, icon: "🎁" }, { id: "r2", label: "Bonbon ma classe", price: 6, icon: "🍭", to: { t: "class", id: "c1" } }, { id: "r3", label: "Autre classe", price: 7, icon: "📚", to: { t: "class", id: "c2" } }, { id: "r4", label: "Pour moi", price: 8, icon: "⭐", to: { t: "student", id: srv.me.id } }, { id: "r5", label: "Pour un autre", price: 9, icon: "🧸", to: { t: "student", id: "zzz" } }] : undefined, listenCfg: /ecoute=1/.test(location.search) ? { questions: 5, maxErrors: 1, passes: 2, coins: 2, items: { voy: ["fu", "fo", "Ou!"], l: { syl: ["la", "lu"], words: ["lune"] } } } : undefined, dictee: /dictee=1/.test(location.search) ? { syl: 2, words: 1, items: { voy: { syl: ["a", "o", "Ou!"], words: ["moto"] } } } : undefined, pinChange: !/sanspin/.test(location.search), reward: true, maxPlays: /illimite/.test(location.search) ? 0 : 50, wheelPrice: /prix4/.test(location.search) ? 4 : 7, evalCode: !/sanscode/.test(location.search), assign: remedOpt(), tracks: gsOpt() }; },
+    student_get_teacher_settings: function () { return { rewards: /recompenses=1/.test(location.search) ? [{ id: "r1", label: "Gomme tous", price: 5, icon: "🎁" }, { id: "r2", label: "Bonbon ma classe", price: 6, icon: "🍭", to: { t: "class", id: "c1" } }, { id: "r3", label: "Autre classe", price: 7, icon: "📚", to: { t: "class", id: "c2" } }, { id: "r4", label: "Pour moi", price: 8, icon: "⭐", to: { t: "student", id: srv.me.id } }, { id: "r5", label: "Pour un autre", price: 9, icon: "🧸", to: { t: "student", id: "zzz" } }] : undefined, listenCfg: /ecoute=1/.test(location.search) ? { questions: 5, maxErrors: 1, passes: 2, coins: 2, items: { voy: ["fu", "fo", "Ou!"], l: { syl: ["la", "lu"], words: ["lune"] } } } : undefined, dictee: /dictee=1/.test(location.search) ? { syl: 2, words: 1, items: { voy: { syl: ["a", "o", "Ou!"], words: ["moto"] } } } : undefined, pinChange: !/sanspin/.test(location.search), reward: true, maxPlays: /illimite/.test(location.search) ? 0 : 50, wheelPrice: /prix4/.test(location.search) ? 4 : 7, evalCode: !/sanscode/.test(location.search), assign: remedOpt(), tracks: gsOpt(), recDec: recDecOpt() }; },
     student_get_class_records: function () {
       var r = {}; Object.keys(MODES).forEach(function (g) { var b = best(g); if (b) { delete b.ts; r[g] = b; } });
       return { classSize: all().length, records: all().length < 2 ? {} : r };
