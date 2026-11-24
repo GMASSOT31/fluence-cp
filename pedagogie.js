@@ -650,6 +650,50 @@
     }
     paint();
   }
+  /* ===== Réglages du parcours CE1 du CALCUL (Pédagogie du Calcul › Les exercices › « Du parcours de CE1 ») : settings.ce1.calcul.nombres = étapes cochées
+     (absent = toutes) ; la révision « jusqu'à 99 » est toujours proposée (déjà réussie au CP = pas refaite). Enregistré tout seul (docs/parcours-ce1). ===== */
+  function ce1CalcSettings(host) {
+    if (window.ZooPedaCtx) C = window.ZooPedaCtx();
+    var E = window.CalcEngine; if (!host) return;
+    host.replaceChildren();
+    if (!E || !E.CE1) { host.append(mk("p", "muted", "Réglages indisponibles : actualisez la page.")); return; }
+    var all = E.CE1.nombres.map(function (l) { return l.id; }), msg = mk("p", "msg"), save = mk("p", "save-state"); msg.setAttribute("role", "status"); save.id = "ce1CalcSave"; save.setAttribute("role", "status");
+    function cur() { var c = window.pedaCe1Cfg && window.pedaCe1Cfg.calcul && window.pedaCe1Cfg.calcul.nombres; c = Array.isArray(c) ? c.filter(function (id) { return all.indexOf(id) >= 0; }) : []; return c.length ? c : all.slice(); }
+    function put(list) {
+      var c = window.pedaCe1Cfg || {};
+      if (!list || list.length === all.length) delete c.calcul; else c.calcul = { nombres: list };
+      window.pedaCe1Cfg = Object.keys(c).length ? c : undefined;
+      if (C.queueSave) C.queueSave("ce1CalcSave");
+    }
+    function paint() {
+      var keep = msg.textContent, on = cur();
+      host.replaceChildren();
+      host.append(mk("p", "muted", "Pour les élèves en parcours CE1 de calcul. 👂 Écouter jusqu’à 1 000 : la voix dit un nombre, l’élève touche son écriture en chiffres parmi 6. Programme de CE1 : « La centaine est abordée dès le début de la période 1 » ; « Au plus tard en période 2, les élèves travaillent avec des quantités et des nombres allant jusqu’à mille. » Les additions, soustractions et tables de multiplication du CE1 arrivent ensuite."));
+      var ol = mk("ol", "calc-order"), rev = E.levelInfo("nombres", E.CE1.review), li0 = mk("li", "calc-step"), l0 = mk("label"), c0 = mk("input");
+      c0.type = "checkbox"; c0.checked = true; c0.disabled = true; l0.append(c0, document.createTextNode(" " + rev.animal.e + " Révision : " + rev.label + " (toujours proposée, sautée si déjà réussie au CP)")); li0.append(l0); ol.append(li0);
+      E.CE1.nombres.forEach(function (lv) {
+        var li = mk("li", "calc-step"), lab = mk("label"), cb = mk("input"); cb.type = "checkbox"; cb.checked = on.indexOf(lv.id) >= 0;
+        cb.onchange = function () {
+          var next = all.filter(function (id) { return id === lv.id ? cb.checked : on.indexOf(id) >= 0; });
+          if (!next.length) { cb.checked = true; msg.textContent = "Gardez au moins une étape."; return; }
+          put(next); msg.textContent = ""; paint();
+        };
+        lab.append(cb, document.createTextNode(" " + lv.animal.e + " " + lv.label)); li.append(lab); ol.append(li);
+      });
+      host.append(mk("h4", null, "👂 Écouter jusqu’à 1 000 — étapes proposées"), ol);
+      host.append(mk("p", "pb-gssum", "Avec ces réglages : " + (on.length + 1) + " étapes. Une étoile (une série réussie) ouvre l’étape suivante ; l’ordre suit toujours le programme."));
+      var pv = mk("div", "exercise-preview-actions"), sel = mk("select"); sel.setAttribute("aria-label", "Étape à visualiser");
+      on.forEach(function (id) { sel.append(new Option(E.levelInfo("nombres", id).label, id)); });
+      var vb = mk("button", null, "Visualiser"); vb.type = "button";
+      vb.onclick = function () { if (window.ZooExercisePreview) window.ZooExercisePreview("labo-calcul.html", { act: "nombres", id: sel.value, settings: { questions: 10, pass: 80, voice: true } }); };
+      pv.append(sel, vb); host.append(pv);
+      var rs = mk("button", "secondary", "↩️ Toutes les étapes"); rs.type = "button";
+      rs.onclick = function () { put(null); paint(); msg.textContent = "Toutes les étapes sont proposées. Les résultats des élèves sont gardés."; };
+      host.append(rs, msg, save);
+      msg.textContent = keep;
+    }
+    paint();
+  }
   function gsSettings(host) {
     if (window.ZooPedaCtx) C = window.ZooPedaCtx();
     var D = window.ZooGSData; if (!host) return;
@@ -1338,5 +1382,5 @@
 
   /* « Mes classes » › « Voir mes élèves » : ouvrir Ma classe sur cette classe */
   function pick(id) { if (id && id !== state.classId) { state.classId = id; state.open = {}; state.filter = "all"; } }
-  window.ZooPeda = { svgWeb: svgWeb, gsSettings: gsSettings, gsCalcSettings: gsCalcSettings, trackBox: trackBox, trackBulk: trackBulk, GS_ST: GS_ST, gsAxes: gsAxes, trackOf: trackOf, compactDetails: compactDetails, pick: pick, asgLabel: asgLabel, asgState: asgState, asgStatusText: asgStatusText, render: render, openDetail: openDetail, scrollToStudent: scrollToStudent, tilePairs: TILE_PAIRS, analyse: analyse, classify: classify, axes: axes, drawFiche: drawFiche, drawWeb: drawWeb, refOf: refOf, schoolWeeks: schoolWeeks, YEAR_WEEKS: YEAR_WEEKS, state: state };
+  window.ZooPeda = { svgWeb: svgWeb, gsSettings: gsSettings, gsCalcSettings: gsCalcSettings, ce1CalcSettings: ce1CalcSettings, trackBox: trackBox, trackBulk: trackBulk, GS_ST: GS_ST, gsAxes: gsAxes, trackOf: trackOf, compactDetails: compactDetails, pick: pick, asgLabel: asgLabel, asgState: asgState, asgStatusText: asgStatusText, render: render, openDetail: openDetail, scrollToStudent: scrollToStudent, tilePairs: TILE_PAIRS, analyse: analyse, classify: classify, axes: axes, drawFiche: drawFiche, drawWeb: drawWeb, refOf: refOf, schoolWeeks: schoolWeeks, YEAR_WEEKS: YEAR_WEEKS, state: state };
 })();

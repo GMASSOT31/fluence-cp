@@ -43,6 +43,9 @@
     gsh.forEach(function (x) { hist.push({ t: x.t, k: "gs:" + x.k, c: x.c, n: x.n, ok: x.ok }); });
     return { gs: gs, gsh: gsh, hist: hist.slice(-30), gsw: 5, gsr: d(12) };
   }
+  /* Parcours CE1 du calcul (docs/parcours-ce1) : ?ce1=1 (élève en CE1) ; ?ce1=rev (révision « jusqu'à 99 » déjà réussie au CP) ; ?ce1=c3 (révision + centaines + 100–199 + 200–299 réussies) */
+  lab.ce1Mode = opt("ce1", "");
+  if (lab.ce1Mode && lab.ce1Mode !== "1") ["n10"].concat(lab.ce1Mode === "c3" ? ["c100", "c1", "c2"] : []).forEach(function (id) { lab.me.levels["nombres:" + id] = { r: 2, q: 20, c: 18, ok: 2 }; });
   function myProg() { return { levels: lab.me.levels, hist: lab.me.hist, nums: lab.me.nums, calcs: lab.me.calcs, gs: lab.me.gs, gsh: lab.me.gsh, gsw: lab.me.gsw, gsr: lab.me.gsr }; }
   function pgNow() { return new Date().toISOString().slice(0, 19) + "+00"; }
   /* Copie de public.lab__gs_round : règle des séries d'affilée, aide, une roue par série réussie, pas de pièce */
@@ -102,7 +105,7 @@
     },
     student_session_profile: function () { needStudent(); return { student_id: "s1", nickname: /[?&]name=(\w+)/.test(q) ? RegExp.$1 : "Léa" }; },
     student_get_progress_v2: function () { needStudent(); return { progress: { avatar: "🦊", coins: lab.realWallet.coins, credits: lab.realWallet.credits }, version: lab.version }; },
-    student_get_teacher_settings: function () { needStudent(); var o = opt("nopin", "0") === "1" ? { sfx: true, pinChange: false } : { sfx: true }; if (lab.gsMode) o.tracks = { s1: { calcul: "gs" } }; if (lab.gsCfg) o.gs = lab.gsCfg; return o; },
+    student_get_teacher_settings: function () { needStudent(); var o = opt("nopin", "0") === "1" ? { sfx: true, pinChange: false } : { sfx: true }; if (lab.gsMode) o.tracks = { s1: { calcul: "gs" } }; if (lab.ce1Mode) o.tracks = { s1: { calcul: "ce1" } }; if (lab.gsCfg) o.gs = lab.gsCfg; return o; },
     student_change_pin: function (a) { needStudent(); return a.p_old_pin === "1234" ? { ok: true } : { ok: false, code: "bad_pin" }; },
     student_claim_coins: function (a) {
       needStudent(); if (!lab.pending) return { claimed: 0, version: lab.version };

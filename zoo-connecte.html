@@ -1324,7 +1324,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
 .vocab-word{display:block;font-size:1.6rem;margin:12px}
 .vocab-answers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:10px auto}
 .vocab-answers .vocab-answer{min-width:0;margin:0;padding:4px;background:#f4edff}
-.vocab-answer .vocab-picture{font-size:1.75rem;font-size:clamp(1.35rem,6vw,3rem);white-space:nowrap}
+.vocab-answer .vocab-picture{font-size:1.75rem;font-size:max(1.35rem, min(6vw, 3rem));white-space:nowrap}
 .vocab-answer.vocab-correct{outline:3px solid #18865b;opacity:1}
 .vocab-feedback{min-height:1.4em}
 </style>

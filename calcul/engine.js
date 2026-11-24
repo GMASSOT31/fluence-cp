@@ -7,7 +7,10 @@
   var UNITS = ["zéro", "un", "deux", "trois", "quatre", "cinq", "six", "sept", "huit", "neuf", "dix", "onze", "douze", "treize", "quatorze", "quinze", "seize", "dix-sept", "dix-huit", "dix-neuf"];
   var TENS = ["", "", "vingt", "trente", "quarante", "cinquante", "soixante"];
   function words(n) {
-    if (n < 0 || n > 100 || n !== Math.floor(n)) throw new Error("nombre hors 0–100 : " + n);
+    if (n < 0 || n > 1000 || n !== Math.floor(n)) throw new Error("nombre hors 0–1000 : " + n);
+    /* CE1 (jusqu'à 1 000) : « deux cents », « deux cent trois », « mille » */
+    if (n === 1000) return "mille";
+    if (n > 100) { var h = Math.floor(n / 100), r = n % 100, c = h === 1 ? "cent" : UNITS[h] + " cent" + (r ? "" : "s"); return r ? c + " " + words(r) : c; }
     if (n < 20) return UNITS[n];
     if (n === 100) return "cent";
     if (n === 80) return "quatre-vingts";
@@ -103,6 +106,61 @@
     lv.allowed = lv.pool.filter(function (v, i) { return lv.pool.indexOf(v) === i; }).sort(function (a, b) { return a - b; });
     lv.choices = Math.min(6, lv.allowed.length);
   });
+
+  /* ===== CE1 : reconnaître un nombre entendu jusqu'à 1 000 (docs/parcours-ce1/plan.md) =====
+     Programme de CE1 (BO n° 41 du 31/10/2024) : « La centaine est abordée dès le début de la période 1 » ; « L'élève sait écrire en chiffres un nombre dicté ».
+     Propositions : erreurs de position (203 / 230 / 2003 impossible ici), ±100, ±10, ±1, même fin dans une autre centaine ; toujours prises dans l'étape. */
+  function bigDistractors(n, allowed, k, rng) {
+    var cap = 1000, h = Math.floor(n / 100), t = Math.floor(n / 10) % 10, u = n % 10, g1 = [], g2 = [], g3 = [], g4 = [], g5 = [], i;
+    if (n < 1000) {
+      add(g1, h * 100 + u * 10 + t, cap, n);               /* dizaines et unités inversées : 235 → 253 */
+      add(g1, t * 100 + h * 10 + u, cap, n); add(g1, u * 100 + t * 10 + h, cap, n);   /* centaines déplacées */
+      if (!t && u) add(g1, h * 100 + u * 10, cap, n);      /* deux cent trois → 230 */
+      if (t && !u) add(g1, h * 100 + t, cap, n);           /* deux cent trente → 203 */
+      if (t === 7 || t === 9) add(g1, n - 10, cap, n);     /* soixante-dix, quatre-vingt-dix */
+    }
+    add(g2, n - 100, cap, n); add(g2, n + 100, cap, n); add(g2, n - 10, cap, n); add(g2, n + 10, cap, n);
+    add(g3, n - 1, cap, n); add(g3, n + 1, cap, n); add(g3, n - 2, cap, n); add(g3, n + 2, cap, n);
+    for (i = 0; i <= 9; i++) add(g4, i * 100 + n % 100, cap, n);
+    allowed.forEach(function (v) { add(g5, v, cap, n); });
+    function inLevel(v) { return allowed.indexOf(v) >= 0; }
+    var groups = [shuffle(g1.filter(inLevel), rng), shuffle(g2.filter(inLevel), rng), shuffle(g3.filter(inLevel), rng), shuffle(g4.filter(inLevel), rng), shuffle(g5, rng)];
+    var order = [0, 1, 0, 2, 1, 3, 4], out = [], guard = 0;
+    while (out.length < k && guard++ < 500) {
+      var g = groups[order[guard % order.length]];
+      while (g.length && out.indexOf(g[0]) >= 0) g.shift();
+      if (g.length) out.push(g.shift());
+    }
+    return out;
+  }
+  /* Identifiants nouveaux (jamais renumérotés) ; l'activité reste « nombres » côté serveur (aucune migration) */
+  var CE1_ANIMALS = [["🐨", "le koala"], ["🐼", "le panda"], ["🐒", "le singe"], ["🦜", "le perroquet"], ["🦚", "le paon"], ["🦝", "le raton laveur"],
+    ["🦡", "le blaireau"], ["🐐", "la chèvre"], ["🐃", "le buffle"], ["🐅", "le tigre"], ["🦇", "la chauve-souris"], ["🐫", "le dromadaire"]];
+  var CE1_NOMBRES = [{ id: "c100", label: "Les centaines : 100, 200… 1 000", pool: range(1, 10).map(function (i) { return i * 100; }) }];
+  range(1, 9).forEach(function (h) { CE1_NOMBRES.push({ id: "c" + h, label: h * 100 + " à " + (h * 100 + 99), pool: range(h * 100, h * 100 + 99) }); });
+  CE1_NOMBRES.push({ id: "cpos", label: "203 ou 230 ? 405 ou 450 ?", pool: [203, 230, 302, 320, 405, 450, 504, 540, 607, 670, 706, 760, 809, 890, 908, 980, 106, 160, 601, 610] });
+  CE1_NOMBRES.push({ id: "c1000", label: "Tous les nombres jusqu’à 1 000", pool: range(0, 1000) });
+  CE1_NOMBRES.forEach(function (lv, i) {
+    lv.allowed = lv.pool.filter(function (v, j) { return lv.pool.indexOf(v) === j; }).sort(function (a, b) { return a - b; });
+    lv.choices = Math.min(6, lv.allowed.length); lv.ce1 = true;
+    lv.animal = { e: CE1_ANIMALS[i][0], nom: CE1_ANIMALS[i][1], kmh: null };
+  });
+  /* Mission CE1 : révision « tous les nombres jusqu'à 99 » (étape CP n10 : déjà réussie = pas refaite), puis les étapes CE1 cochées par l'enseignant
+     (settings.ce1.calcul.nombres = liste d'identifiants ; absente ou vide = toutes). L'ordre reste toujours celui du programme. */
+  var CE1_REVIEW = "n10";
+  function ce1Levels(enabled) {
+    var on = Array.isArray(enabled) ? enabled.filter(function (id) { return CE1_NOMBRES.some(function (l) { return l.id === id; }); }) : [];
+    return [CE1_REVIEW].concat(CE1_NOMBRES.filter(function (l) { return !on.length || on.indexOf(l.id) >= 0; }).map(function (l) { return l.id; }));
+  }
+  function ce1Mission(enabled, progress) {
+    progress = progress || {};
+    var next = null, replay = [];
+    ce1Levels(enabled).forEach(function (id) {
+      var step = { act: "nombres", id: id };
+      if ((progress["nombres:" + id] || {}).ok >= 1) replay.push(step); else if (!next) next = step;
+    });
+    return { next: next, replay: replay, blocked: false };
+  }
 
   /* ===== Niveaux : calculer ===== */
   /* aid : see = les animaux sont dessinés · mental = il faut calculer dans sa tête (la bande des nombres reste disponible) */
@@ -276,6 +334,7 @@
   function levelInfo(activity, id) {
     var list = LEVELS[activity] || [], i;
     for (i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
+    if (activity === "nombres") for (i = 0; i < CE1_NOMBRES.length; i++) if (CE1_NOMBRES[i].id === id) return CE1_NOMBRES[i];
     return null;
   }
 
@@ -304,7 +363,7 @@
   function nombresQuestion(level, rng, avoid) {
     var n = pick(level.pool, rng), tries = 0;
     while (avoid && avoid.indexOf(n) >= 0 && tries++ < 20) n = pick(level.pool, rng);
-    var choices = shuffle([n].concat(numberDistractors(n, level.allowed, level.choices - 1, rng)), rng);
+    var choices = shuffle([n].concat((level.ce1 ? bigDistractors : numberDistractors)(n, level.allowed, level.choices - 1, rng)), rng);
     return { type: "nombres", level: level.id, answer: n, choices: choices, say: words(n), key: "n" + n };
   }
   function calcQuestion(op, level, rng, avoid) {
@@ -346,6 +405,7 @@
   root.CalcEngine = {
     words: words, seeded: seeded, shuffle: shuffle, numberDistractors: numberDistractors, calcDistractors: calcDistractors,
     mission: mission, missionLevels: missionLevels, isRequired: isRequired,
+    CE1: { nombres: CE1_NOMBRES, review: CE1_REVIEW }, ce1Levels: ce1Levels, ce1Mission: ce1Mission, bigDistractors: bigDistractors,
     LEVELS: LEVELS, DEFAULT_LEVELS: DEFAULT_LEVELS, levelInfo: levelInfo, levelsOf: levelsOf, marks: marks, animalOf: animalOf, visibleLevels: visibleLevels, topAnimal: topAnimal, makeRound: makeRound, suggestLevel: suggestLevel, status: status
   };
   if (typeof module !== "undefined" && module.exports) module.exports = root.CalcEngine;

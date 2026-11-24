@@ -39,7 +39,8 @@
   .panel-nav.nombres-cta .pn-sub { color: #4c1d95; }
   .panel-nav.nombres-cta[aria-current="page"] { background: #5b21b6; border-color: #5b21b6; color: #fff; } .panel-nav.nombres-cta[aria-current="page"] .pn-sub { color: #fff; }
   body.mode-student .bottom-nav [data-go="boutique"], body.mode-student .bottom-nav [data-go="cartes"], body.mode-student .bottom-nav [data-go="reconnues"], body.mode-student .bottom-nav [data-go="progres"] { display: none; }
-  body.gs-track [data-go="cartes"], body.gs-track [data-go="reconnues"], body.gs-track [data-go="progres"] { display: none !important; }   /* parcours GS : ces écrans sont ceux du CP */
+  body.gs-track [data-go="cartes"], body.gs-track [data-go="reconnues"], body.gs-track [data-go="progres"] { display: none !important; }
+  body.ce1-track [data-go="reconnues"] { display: none !important; }   /* parcours CE1 : pas encore de calculs */   /* parcours GS : ces écrans sont ceux du CP */
   #panel-right .panel-nav.big.nombres-cta { font-size: 1.12rem; padding: 20px 14px; }
   @media (max-width: 880px) { body.calc #panel-left { display: none; } }
   .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(30px); opacity: 0; pointer-events: none; z-index: 70; background: #1b2433; color: #fff; padding: 12px 18px; border-radius: 14px; font-weight: 700; transition: opacity .2s, transform .2s; max-width: 90vw; text-align: center; }
@@ -313,7 +314,7 @@ body.mode-student #zoo-top-stats .zoo-top-stat.wallet-raised{display:flex}
 <script src="gs-data.js?v=6"></script>
 <script src="vendor/supabase.js?v=2.118.0"></script>
 <script src="vendor/supabase-lite.js?v=1"></script>
-<script src="calcul/engine.js?v=8"></script>
+<script src="calcul/engine.js?v=9"></script>
 <script src="calcul/zoo-effects.js?v=2"></script>
 <script src="calcul/voice.js?v=2"></script>
 <script src="vendor/howler.core.min.js?v=2.2.4"></script>
@@ -382,6 +383,9 @@ body.mode-student #zoo-top-stats .zoo-top-stat.wallet-raised{display:flex}
         /* parcours GS du calcul (settings.tracks[élève].calcul = "gs", choisi par l'enseignant) : l'accueil et les séries sont ceux de calcul/gs-calcul.js */
         S.teacher = r[3] || {}; S.sid = r[1] && r[1].student_id;
         if (GSC) { GSC.load(r[0].progress, S.teacher, S.sid); document.body.classList.toggle("gs-track", GSC.active()); }
+        /* parcours CE1 du calcul (settings.tracks[élève].calcul = "ce1") : mêmes écrans, étapes CE1 (nombres jusqu'à 1 000) ; docs/parcours-ce1 */
+        var tr = S.teacher.tracks && S.sid && S.teacher.tracks[S.sid];
+        S.ce1 = !!(tr && tr.calcul === "ce1" && !(GSC && GSC.active())); document.body.classList.toggle("ce1-track", S.ce1);
         start();
       });
     }).catch(function () { gate("Un petit souci de connexion. Réessaie dans un instant.", { href: "labo-calcul.html", label: "Réessayer" }); });
@@ -391,7 +395,9 @@ body.mode-student #zoo-top-stats .zoo-top-stat.wallet-raised{display:flex}
     S.levels = p.levels || {}; S.nums = p.nums || {}; S.calcs = p.calcs || {};
     S.settings = st.settings || {}; S.wheels = Math.max(0, Math.floor(Number(st.wheels) || 0));
   }
+  function ce1Cfg() { var c = S.teacher && S.teacher.ce1 && S.teacher.ce1.calcul; return c && Array.isArray(c.nombres) ? c.nombres : null; }
   function enabledLevels(act) {
+    if (S.ce1) return act === "nombres" ? E.ce1Levels(ce1Cfg()) : [];
     return E.missionLevels(act, S.settings.levels && S.settings.levels[act]);
   }
 
@@ -405,7 +411,7 @@ body.mode-student #zoo-top-stats .zoo-top-stat.wallet-raised{display:flex}
   function numsCount() { return Object.keys(S.nums).length; }
   function calcsCount() { return Object.keys(S.calcs).length; }
   function mission() {
-    var route = E.mission(S.settings.levels, S.levels), a = S.assignment;
+    var route = S.ce1 ? E.ce1Mission(ce1Cfg(), S.levels) : E.mission(S.settings.levels, S.levels), a = S.assignment;
     if (a && !a.done && E.levelInfo(a.activity, a.level)) {
       route.next = { act: a.activity, id: a.level, assigned: true };
     }
@@ -752,7 +758,7 @@ body.mode-student #zoo-top-stats .zoo-top-stat.wallet-raised{display:flex}
           mistakes++; firstTry = false; b.classList.add("bad"); b.disabled = true; msg.className = "msg bad";
           /* 1re erreur : encouragement ; 2e : l'aide complète (avec le résultat) ; 3e : la bonne réponse est colorée */
           if (mistakes === 2) {
-            if (isNumber) { var n10 = q.answer >= 10 && q.answer < 100 ? " → " + (q.answer - q.answer % 10) + (q.answer % 10 ? " + " + q.answer % 10 : "") : ""; msg.textContent = "Écoute encore : « " + q.say + " »" + n10; R.replays++; }
+            if (isNumber) { var n10 = q.answer >= 10 && q.answer < 100 ? " → " + (q.answer - q.answer % 10) + (q.answer % 10 ? " + " + q.answer % 10 : "") : q.answer > 100 && q.answer < 1000 ? " → " + [q.answer - q.answer % 100, q.answer % 100 - q.answer % 10, q.answer % 10].filter(function (x) { return x; }).join(" + ") : ""; msg.textContent = "Écoute encore : « " + q.say + " »" + n10; R.replays++; }
             else if (openHelp && split(q)) { msg.textContent = "Regarde l’aide, elle te montre comment faire 🧩"; openHelp(true, true, "Pas tout à fait. Regarde l’aide, elle te montre comment faire. "); }
             else { msg.textContent = "Pas tout à fait. Essaie encore 💪"; tell("Pas tout à fait. Essaie encore.", null); }
           } else if (mistakes >= 3) {
@@ -1014,6 +1020,7 @@ body.mode-student #zoo-top-stats .zoo-top-stat.wallet-raised{display:flex}
     card.appendChild(el("p", "muted", "✓ Réussi : une série avec au moins " + Math.min(Math.max(parseInt(S.settings.pass, 10) || 80, 50), 100) + " % de bonnes réponses du premier coup. ⭐ Maîtrisé : deux séries réussies. Une aide ou une erreur ne compte pas comme « du premier coup »."));
     var route = mission();
     ["nombres", "addition", "soustraction"].forEach(function (act) {
+      if (!enabledLevels(act).length) return;   /* parcours CE1 : seulement les nombres pour l'instant */
       card.appendChild(el("h2", "", ACT[act].icon + " " + ACT[act].title));
       enabledLevels(act).filter(function (id) { return canPlay(route, act, id); }).forEach(function (id) {
         var lv = E.levelInfo(act, id), e = S.levels[act + ":" + id], row = el("div", "prog-row");
