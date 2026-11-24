@@ -19,15 +19,16 @@
     curs: { E: "L", L: "EB", B: "LF", F: "B", A: "OD", O: "A", N: "MU", U: "NI", R: "S", S: "R", I: "U" } };
   /* Progression par défaut (choisie le 23/11/2026 d'après eduscol : partir des lettres du prénom, travailler nom/forme en aller-retour,
      séparer les lettres proches b/d/p/q, m/n, n/u, t/d ; lettres rares h k q w x y z en dernier). Modifiable par l'enseignant (settings.gs). */
+  /* 24/11/2026, choisi par Gabriel (réglage « A ») : 2 puis 4 choix (le niveau « 3 choix » est sauté) → lettres 53 étapes, nombres 23 ; avant : 73 et 29 */
   var DEFAULTS = {
     lecture: {
       prenom: true,                      /* 1er groupe = lettres du prénom de l'élève (si au moins 2 lettres différentes) */
       groups: ["AIORLS", "EUMTFB", "PNCVJZ", "DGQKHYXW"],
-      cap: { on: true, props: [2, 3, 4], questions: 10, seuil: 80, series: 2 },
-      capscript: { on: true, props: [2, 3, 4], questions: 10, seuil: 80, series: 2 },
-      script: { on: true, props: [2, 3, 4], questions: 10, seuil: 80, series: 2 },
-      scriptcurs: { on: true, props: [2, 3, 4], questions: 10, seuil: 80, series: 2 },
-      curs: { on: true, props: [2, 3, 4], questions: 10, seuil: 80, series: 2 },
+      cap: { on: true, props: [2, 4], questions: 10, seuil: 80, series: 2 },
+      capscript: { on: true, props: [2, 4], questions: 10, seuil: 80, series: 2 },
+      script: { on: true, props: [2, 4], questions: 10, seuil: 80, series: 2 },
+      scriptcurs: { on: true, props: [2, 4], questions: 10, seuil: 80, series: 2 },
+      curs: { on: true, props: [2, 4], questions: 10, seuil: 80, series: 2 },
       ordre: { on: true, props: [3, 4, 5], questions: 6, seuil: 80, series: 2 }
     }
   };
@@ -219,9 +220,9 @@
      `calcRecord` reproduit exactement la règle du serveur (affichage immédiat, tests). Paliers numériques obligatoires : 1–3, 1–5, 0–9 (zéro au 3e). */
   var RANGES = [[1, 3], [1, 5], [0, 9]];
   DEFAULTS.calcul = {
-    chiffres: { on: true, props: [2, 3, 4], questions: 10, seuil: 80, series: 2 },
-    ordre: { on: true, props: [3, 4], questions: 6, seuil: 80, series: 2 },
-    denombre: { on: true, props: [2, 3, 4], questions: 10, seuil: 80, series: 2 },
+    chiffres: { on: true, props: [2, 4], questions: 10, seuil: 80, series: 2 },
+    ordre: { on: true, props: [3], questions: 6, seuil: 80, series: 2 },
+    denombre: { on: true, props: [2, 4], questions: 10, seuil: 80, series: 2 },
     compare: { on: true, autant: true, questions: 8, seuil: 80, series: 2 },
     collec: { on: true, questions: 6, seuil: 80, series: 2 }
   };
