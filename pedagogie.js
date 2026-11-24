@@ -243,7 +243,21 @@
       var byTab = {};
       recs.forEach(function (r) { (r.recTabs.length ? r.recTabs : [0]).forEach(function (t) { (byTab[t] = byTab[t] || []).push(r.s.nickname); }); });
       var where = Object.keys(byTab).sort(function (a, b) { return (Number(a) || 99) - (Number(b) || 99); }).map(function (t) { return (Number(t) ? "📱 Tablette " + t : "📱 Sans numéro") + " : " + byTab[t].join(", "); }).join(" · ");
-      card("a-rec", "🎧 " + plur(nRec, "lecture à écouter", "lectures à écouter") + " pour la médaille", recs, where + " — sur la tablette de l’élève : « 🎧 Mon maître(sse) écoute ».");
+      /* valider ou faire relire ici, sans ouvrir chaque fiche (24/11/2026, demandé par Gabriel) : mêmes lignes que dans la fiche (recItem) */
+      var mine = recs.filter(function (r) { return C.currentUser && r.s.teacher_id === C.currentUser.id; }), panel = null;
+      if (mine.length) {
+        panel = mk("div", "pb-recpanel"); var tg = mk("button", "secondary", state.recOpen ? "▲ Masquer" : "✅ Valider ou faire relire ici"); tg.type = "button";
+        tg.setAttribute("aria-expanded", String(!!state.recOpen));
+        var ul = mk("ul", "pb-now"); ul.hidden = !state.recOpen;
+        mine.forEach(function (r) {
+          pendingRecs(r.p || {}).filter(function (v) { return !window.pedaRecDec[v.id]; }).forEach(function (v) {
+            var li = recItem(r, v, true); li.firstChild.textContent = "👤 " + r.s.nickname + " · " + li.firstChild.textContent.replace(/ — à écouter.*$/, ""); ul.append(li);
+          });
+        });
+        tg.onclick = function () { state.recOpen = !state.recOpen; ul.hidden = !state.recOpen; tg.textContent = state.recOpen ? "▲ Masquer" : "✅ Valider ou faire relire ici"; tg.setAttribute("aria-expanded", String(state.recOpen)); };
+        panel.append(tg, ul);
+      }
+      card("a-rec", "🎧 " + plur(nRec, "lecture à écouter", "lectures à écouter") + " pour la médaille", recs, where + " — sur la tablette de l’élève : « 🎧 Mon maître(sse) écoute »" + (mine.length ? ", ou décidez ici." : "."), panel);
     }
     /* élèves bloqués, regroupés par son */
     var bySound = {};
@@ -855,10 +869,10 @@
     okb.type = no.type = "button"; form.hidden = true;
     no.title = "Cette lecture n’est pas la bonne : l’élève devra se réenregistrer";
     no.onclick = function () { save({ sid: r.s.id, ok: false, ts: Date.now() }); };
-    var inp = mk("input"); inp.type = "number"; inp.min = 0; inp.max = 300; inp.inputMode = "numeric"; inp.id = "recn-" + v.id; inp.placeholder = "facultatif";
-    var lab = mk("label", null, (v.kind === "s" ? "Syllabes bien lues en " : "Mots bien lus en ") + (Number(v.secs) && v.secs < 60 ? v.secs + " s" : "1 minute") + " : "); lab.htmlFor = inp.id;
+    var inp = mk("input"); inp.type = "number"; inp.min = 0; inp.max = 300; inp.inputMode = "numeric"; inp.id = "recn-" + v.id;
+    var lab = mk("label", null, (v.kind === "s" ? "Syllabes bien lues en " : "Mots bien lus en ") + (Number(v.secs) && v.secs < 60 ? v.secs + " s" : "1 minute") + " (facultatif) : "); lab.className = "pb-reclab"; lab.append(inp);   /* champ dans son titre (pas de « for ») : le titre reste visible sur téléphone */
     var go = mk("button", "primary", "Valider la lecture"), cancel = mk("button", "secondary", "Annuler"); go.type = cancel.type = "button";
-    form.append(lab, inp, go, cancel,
+    form.append(lab, go, cancel,
       mk("small", "muted pb-rechelp", "Avec un nombre, la fluence est calculée et ajoutée à sa courbe (objectif : " + thr + " " + unit + " par minute) ; la médaille est donnée si l’objectif est atteint. Sans nombre, la médaille est donnée sans score."));
     okb.onclick = function () { form.hidden = !form.hidden; if (!form.hidden) inp.focus(); };
     cancel.onclick = function () { form.hidden = true; };
