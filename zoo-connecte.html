@@ -2544,6 +2544,15 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
         if(!$("v-home").hidden)renderHome();
         toast("🏅 Ton maître(sse) a changé ton niveau : tu es au niveau "+readLevel(cloudStudentId)+" !");
       }
+      /* Lectures validées (ou à refaire) depuis l’espace enseignant pendant que l’élève est connecté : appliquées tout de suite,
+         sans attendre la prochaine connexion (le rappel rouge et « 🎧 Mon maître(sse) écoute » disparaissent) */
+      if(data.reviews.some(function(x){return x.sid===cloudStudentId;})){
+        var ts=await cloudClient.rpc("student_get_teacher_settings",{p_token:cloudToken});
+        if(!ts.error&&ts.data&&applyRecDecisions(ts.data.recDec,cloudStudentId)){
+          renderPanels();
+          if(!$("v-home").hidden)renderHome();
+        }
+      }
     }catch(e){
       if(String(e.message||"").includes("SYNC_CONFLICT"))showSyncConflict(cloudSnapshot());
       else console.warn("Cadeau du maître(sse)",e);
@@ -5832,8 +5841,11 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   function dayMark(sid, k) { if (previewMode) return; try { var o = dayGet(sid); o[k] = 1; localStorage.setItem("zoo_day_" + sid, JSON.stringify(o)); } catch (e) {} }
   function readingReminder(sid, onlyAlert) {
     var readings = data.results.filter(function (r) { return r.sid === sid && !r.void && !r.short && !r.fraud && r.src !== "adj"; });
-    var lastReview = readings.reduce(function (last, r) {
-      return r.src === "train" ? last : Math.max(last, Number(r.reviewedAt || r.ts) || 0);
+    /* dernière lecture validée par le maître(sse), y compris une validation sans nombre de mots (« adj » depuis la fiche de l’élève) :
+       après elle, le rappel rouge s’éteint (demandé par Gabriel le 24/11/2026) */
+    var lastReview = data.results.reduce(function (last, r) {
+      if (r.sid !== sid || r.void || r.src === "train" || (r.src === "adj" && !r.reviewId)) return last;
+      return Math.max(last, Number(r.reviewedAt || r.ts) || 0);
     }, 0);
     var recent = readings.filter(function (r) { return r.src === "train" && Number(r.ts) > lastReview; });
     var alert = recent.length >= 3, waiting = recCount(sid);
