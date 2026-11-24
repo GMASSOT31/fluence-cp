@@ -8,7 +8,7 @@ t("groupes : prénom d'abord, puis les groupes sans doublon, 26 lettres", functi
   assert.strictEqual(all.length, 26); assert.strictEqual(new Set(all).size, 26);
 });
 t("prénom d'une seule lettre : pas de groupe prénom", function () { assert.notStrictEqual(G.groupsFor(cfg, "Aa")[0].id, "prenom"); });
-t("paliers : groupe × 2, 3, 4 propositions", function () { assert.strictEqual(list[0].key, "prenom-2"); assert.strictEqual(list[1].n, 3); assert.strictEqual(list.length, G.groupsFor(cfg, "Léo").length * 3 - 1); assert.deepStrictEqual(list.slice(0, 3).map(function (s) { return s.key; }), ["prenom-2", "prenom-3", "g1-2"]); });
+t("paliers : groupe × 2 puis 4 propositions (réglage par défaut A, 24/11/2026)", function () { assert.strictEqual(list[0].key, "prenom-2"); assert.strictEqual(list[1].n, 3); assert.strictEqual(list.length, G.groupsFor(cfg, "Léo").length * 2); assert.deepStrictEqual(list.slice(0, 3).map(function (s) { return s.key; }), ["prenom-2", "prenom-3", "g1-2"]); });
 t("série : 10 questions, bonne réponse toujours proposée, jamais deux fois la même lettre de suite, propositions distinctes", function () {
   for (var k = 0; k < 50; k++) {
     var s = G.buildSeries(list[2], cfg, "cap", false);
@@ -19,7 +19,7 @@ t("série : 10 questions, bonne réponse toujours proposée, jamais deux fois la
     });
   }
 });
-t("aide : une proposition de moins (au moins 2)", function () { assert.strictEqual(G.buildSeries(list[4], cfg, "cap", true).n, list[4].n - 1); assert.strictEqual(G.buildSeries(list[0], cfg, "cap", true).n, 2); });
+t("aide : une proposition de moins (au moins 2)", function () { assert.strictEqual(G.buildSeries(list[3], cfg, "cap", true).n, list[3].n - 1); assert.strictEqual(G.buildSeries(list[0], cfg, "cap", true).n, 2); });
 t("T07 : une seule série à 80 % ne valide pas", function () { var st = G.compState(null); var r = G.record(st, list, cfg, "cap", 8, 10, false, 1); assert.ok(r.ok && !r.validated); assert.strictEqual(st.ok, 1); });
 t("T08 : deux séries réussies d'affilée valident et ouvrent le palier suivant", function () {
   var st = G.compState(null); G.record(st, list, cfg, "cap", 8, 10, false, 1); var r = G.record(st, list, cfg, "cap", 9, 10, false, 2);
@@ -84,7 +84,7 @@ t("calcul : paliers 1–3, 1–5, 0–9 dans l'ordre chiffres → ordre → dén
   assert.ok(cpath.every(function (x) { return x.step.key.length <= 20 && /^[a-z]+-[a-z0-9-]{1,14}$/.test(x.step.key); }));
   assert.strictEqual(new Set(cpath.map(function (x) { return x.step.key; })).size, cpath.length);
   assert.strictEqual(cpath[cpath.length - 1].step.key, "compare-eq");   /* « autant » : un palier prévu, à la fin */
-  assert.ok(cpath.some(function (x) { return x.step.key === "ordre-r3-4x" && x.step.consec === false; }));
+  assert.ok(cpath.some(function (x) { return x.step.key === "ordre-r3-3x" && x.step.consec === false; }));
 });
 t("calcul : le zéro n'arrive qu'au 3e palier et y est toujours demandé", function () {
   cpath.forEach(function (x) { if (x.step.range < 3 || x.step.eq) assert.ok(x.step.lo >= 1); });
