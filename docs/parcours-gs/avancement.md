@@ -46,6 +46,7 @@ Palier = groupe de lettres × nombre de propositions (2, 3, 4 ; un petit groupe 
 6. **CE1** : visible « À venir », désactivé dans le sélecteur.
 
 ## Journal
+- 24/11/2026 — Claude : GS Calcul, « ranger les nombres » : cases en escalier (petite = plus petit nombre, moyenne, grande = plus grand), demandé par Gabriel (`calcul/gs-calcul.js` v3).
 - 24/11/2026 — Claude : étape F, recette automatique T01–T18 (`tools/test_gs_recette.js`), tous les critères testables passent.
 - 24/11/2026 — Claude : étape E faite (GS Calcul : moteur, migration 20261209, écran élève, réglages, suivi et toile).
 - 24/11/2026 — Claude : étape D faite (changement collectif, réglages GS, toile GS).
