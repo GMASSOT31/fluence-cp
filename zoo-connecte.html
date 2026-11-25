@@ -130,6 +130,9 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   .w.err { background: var(--bad-bg); color: var(--bad); text-decoration: underline wavy; text-underline-offset: 6px; }
   .w.stop { box-shadow: inset 0 -5px 0 var(--ok); }
   .w.after { opacity: 0.3; }
+  .w.sugg { outline: 3px dashed #e08a00; outline-offset: -3px; background: #fff4e0; }
+  .rv-auto { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 8px 0; }
+  .rv-auto .hint { margin: 0; }
 
   .result { text-align: center; }
   .result .big { font-size: max(2.4rem, min(9vw, 3.4rem)); font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
@@ -1846,6 +1849,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
 <script src="vocabulaire.js?v=4"></script>
 <script src="vendor/howler.core.min.js?v=2.2.4"></script>
 <script src="audio-lecture.js?v=3"></script>
+<script src="aide-ecoute.js?v=1"></script>
 <script>/* Anciens iPad (iOS 12 et avant) : le navigateur ne connaît pas les événements « pointer » → les jeux au doigt (Serpent, Oiseau, Tuiles, Tour, Safari) ne réagissaient pas. On les traduit en événements tactiles (ou souris sur un vieil ordinateur). Rien ne change sur les appareils récents. */
 (function () {
   if (window.PointerEvent || !window.EventTarget) return;
@@ -2283,6 +2287,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     lock: true,
     reward: true,
     sfx: true,
+    aideEcoute: false, /* essai de l’aide automatique à l’écoute (aide-ecoute.js), activé par l’admin seulement */
     pinChange: true,   /* l’élève peut changer son code secret : réglage du maître(sse), lu à la connexion */
     music: true,   /* musique de la salle de jeux : réglage du maître(sse), lu à la connexion */
     allowRec: false,  /* décochée par défaut ; le maître(sse) peut l’activer (réglages péda) */
@@ -8064,7 +8069,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   }
 
   /* ---------- Côté maître(sse) : écouter, noter, valider ---------- */
-  var RV = { id: null, words: [], breaks: {}, errs: {}, endIdx: -1, mode: "err", url: null, rate: 1, result: null };
+  var RV = { id: null, words: [], breaks: {}, errs: {}, sugg: {}, auto: "", endIdx: -1, mode: "err", url: null, rate: 1, result: null };
   function updateRecBadge() {
     var n = data.reviews.length, b = $("badge-rec");
     b.hidden = n === 0; b.textContent = n ? String(n) : "";
@@ -8158,7 +8163,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     audioGet(id).then(function (blob) {
       if (!blob) { toast("Cette lecture n’est pas sur cette tablette : elle a été enregistrée sur une autre. Écoutez-la sur celle-ci, ou supprimez la ligne."); return; }
       closeReviewMedia();
-      RV = { id: id, words: items.words, breaks: items.breaks, errs: {}, endIdx: -1, mode: "err", url: URL.createObjectURL(blob), rate: 1, result: null };
+      RV = { id: id, words: items.words, breaks: items.breaks, errs: {}, sugg: {}, auto: "", endIdx: -1, mode: "err", url: URL.createObjectURL(blob), rate: 1, result: null };
       renderEcoute();
     }, function () { toast("Impossible de lire l’enregistrement."); });
   }
@@ -8168,6 +8173,49 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var c = Math.max(0, n - e), t = Math.max(1, Math.min(DURATION, rv.secs));
     var m = Math.round(c / t * 60);
     return { n: n, e: e, c: c, t: t, mclm: m > MCLM_MAX ? 0 : m, fraud: m > MCLM_MAX ? m : undefined };
+  }
+  /* Aide automatique à l'écoute (prototype, aide-ecoute.js) : seulement si l'admin l'a activée et si l'appareil le permet (jamais sur iOS 12).
+     Tout reste sur la tablette ; l'aide PRÉ-REMPLIT le dernier mot lu et entoure les mots douteux, le maître(sse) vérifie et valide. */
+  function aideOK() {
+    try { return data.aideEcoute === true && !!window.ZooAideEcoute && ZooAideEcoute.supported(); } catch (e) { return false; }
+  }
+  function aideBox(rv, paint, textBox) {
+    var box = el("div", "rv-auto");
+    var b = el("button", "secondary small", "🤖 Proposer automatiquement"); b.type = "button"; b.id = "rv-auto";
+    var m = el("p", "hint", RV.auto || "Essai : l’aide écoute l’enregistrement sur cette tablette et propose un résultat à vérifier.");
+    m.setAttribute("role", "status");
+    box.appendChild(b); box.appendChild(m);
+    b.addEventListener("click", function () {
+      var id = RV.id, words = RV.words.slice();
+      b.disabled = true;
+      m.textContent = "Préparation de l’aide… (la première fois, environ 45 Mo à télécharger, ensuite gardés sur la tablette)";
+      audioGet(id).then(function (blob) {
+        if (!blob) throw new Error("absent");
+        return ZooAideEcoute.propose(blob, words, { onStep: function (st, p) {
+          if (RV.id !== id) return;
+          if (st === "decode") m.textContent = "Préparation de l’enregistrement…";
+          if (st === "listen") m.textContent = "L’aide écoute la lecture… " + Math.round(p * 100) + " %";
+        } });
+      }).then(function (res) {
+        if (RV.id !== id) return;
+        b.disabled = false;
+        if (!res.matched || res.endIdx < 0) { RV.auto = "L’aide n’a reconnu aucun mot de cet exercice. Notez la lecture comme d’habitude."; m.textContent = RV.auto; return; }
+        /* syllabes : trop de fausses alertes aux essais (25/11/2026) → seulement le dernier mot lu */
+        var syl = rv.kind === "s", errs = syl ? [] : res.errs;
+        RV.endIdx = res.endIdx; RV.sugg = {};
+        errs.forEach(function (i) { if (!RV.errs[i]) RV.sugg[i] = true; });
+        RV.result = null;
+        var hors = syl ? " Pour les syllabes, l’aide ne repère pas les erreurs : écoutez-les." : res.unknown.length ? " L’aide ne connaît pas " + nb(res.unknown.length, "mot", "mots") + " (" + res.unknown.slice(0, 4).map(function (i) { return q(RV.words[i]); }).join(", ") + ") : vérifiez-les à l’oreille." : "";
+        RV.auto = "🤖 Proposition à vérifier : dernier mot lu placé sur " + q(RV.words[res.endIdx]) + (syl ? "." : errs.length ? ", " + nb(errs.length, "mot douteux entouré", "mots douteux entourés") + " en orange : touchez ceux qui sont vraiment faux." : ", aucun mot douteux.") + hors + " Corrigez si besoin, puis « Voir le résultat ».";
+        m.textContent = RV.auto;
+        if (textBox.isConnected) paint();
+      }).catch(function () {
+        if (RV.id !== id) return;
+        b.disabled = false;
+        m.textContent = "L’aide n’a pas pu écouter cette lecture sur cet appareil. Notez-la comme d’habitude.";
+      });
+    });
+    return box;
   }
   function renderReview(body) {
     var rv = data.reviews.filter(function (r) { return r.id === RV.id; })[0];
@@ -8235,20 +8283,24 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
         nodes[i].classList.toggle("err", !!RV.errs[i]);
         nodes[i].classList.toggle("stop", i === RV.endIdx);
         nodes[i].classList.toggle("after", RV.endIdx >= 0 && i > RV.endIdx);
+        nodes[i].classList.toggle("sugg", !!RV.sugg[i] && !RV.errs[i] && (RV.endIdx < 0 || i <= RV.endIdx));
       }
-      var e = 0, k; for (k in RV.errs) { if (RV.errs[k]) e++; }
-      count.textContent = "Erreurs marquées : " + e + (RV.endIdx >= 0 ? ". Dernier mot lu : n°" + (RV.endIdx + 1) + "." : ". Dernier mot lu : à choisir.");
+      var e = 0, k, sg = 0; for (k in RV.errs) { if (RV.errs[k]) e++; }
+      for (k in RV.sugg) { if (RV.sugg[k] && !RV.errs[k] && (RV.endIdx < 0 || parseInt(k, 10) <= RV.endIdx)) sg++; }
+      count.textContent = "Erreurs marquées : " + e + (RV.endIdx >= 0 ? ". Dernier mot lu : n°" + (RV.endIdx + 1) + "." : ". Dernier mot lu : à choisir.") + (sg ? " " + nb(sg, "mot", "mots") + " à vérifier (pointillés orange)." : "");
       show1.disabled = RV.endIdx < 0;
     }
     textBox.addEventListener("click", function (ev) {
       var b = ev.target.closest(".w");
       if (!b) return;
       var i = parseInt(b.getAttribute("data-i"), 10);
-      if (RV.mode === "err") { if (RV.errs[i]) delete RV.errs[i]; else RV.errs[i] = true; }
+      /* un mot proposé par l'aide (pointillés) devient une erreur quand on le touche ; le retoucher l'efface */
+      if (RV.mode === "err") { if (RV.errs[i]) delete RV.errs[i]; else RV.errs[i] = true; delete RV.sugg[i]; }
       else RV.endIdx = i;
       RV.result = null; resultBox.hidden = true;
       paint();
     });
+    if (aideOK()) card.appendChild(aideBox(rv, function () { resultBox.hidden = true; paint(); }, textBox));
     card.appendChild(textBox);
     var count = el("p", "muted");
     card.appendChild(count);
@@ -8724,6 +8776,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       if(typeof teacherSettings.sfx==="boolean")data.sfx=teacherSettings.sfx;
       if(typeof teacherSettings.music==="boolean")data.music=teacherSettings.music;
       if(typeof teacherSettings.pinChange==="boolean")data.pinChange=teacherSettings.pinChange;
+      data.aideEcoute=teacherSettings.aideEcoute===true;   /* essai de l’aide automatique à l’écoute (réglage admin) */
       if(typeof teacherSettings.allowRec==="boolean")data.allowRec=teacherSettings.allowRec;
       if(Number.isInteger(teacherSettings.maxPlays)&&teacherSettings.maxPlays>=0&&teacherSettings.maxPlays<=500)data.maxPlays=teacherSettings.maxPlays;
       if(Array.isArray(teacherSettings.sounds)&&teacherSettings.sounds.length)data.sounds=withVoy2(teacherSettings.sounds.filter(function(s){return s&&typeof s.id==="string"&&typeof s.label==="string";}));

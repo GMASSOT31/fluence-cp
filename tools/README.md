@@ -43,3 +43,8 @@ Puis ouvrir dans le navigateur :
 - `python3 -m venv /tmp/zoo-venv && /tmp/zoo-venv/bin/pip install edge-tts` (une fois), puis depuis la racine : `/tmp/zoo-venv/bin/python -I tools/build_audio_sprite.py`.
 - Il faut `node`, `ffmpeg` et l'accès à `speech.platform.bing.com`. Le script lit la liste dans `exo-data.js` (`tools/audio_liste.js`) et dans `SONS_CP`, contrôle chaque son (durée + nombre de syllabes entendues), refait les sons suspects avec `HOMOPHONES`, puis écrit le fichier unique et sa carte.
 - Écouter le résultat : `test-syllabes.html` (« 🎙 Voix du Zoo »). Corriger un son : `DENISE_FIX` dans le script, relancer, augmenter `?v=` de `audio-lecture.js` dans zoo-connecte.html et test-syllabes (via `tools/make_test_syllabes.py`).
+
+## Aide automatique à l'écoute (`aide-ecoute.js`, prototype)
+- Écran : `zoo-test.html?aide=1` (réglage admin allumé + une lecture du texte « l » en attente, id `rvA` ; ranger un son dans IndexedDB `fluence-cp-audio` / `rec` avant d'ouvrir « Écouter et noter »), `?aide=0` = même lecture, réglage éteint (pas de bouton).
+- Mesure : `python3 -I tools/aide_ecoute_audio.py DOSSIER` (voix de synthèse edge-tts : adulte fluide, voix d'enfant mot à mot, arrêts, mots faux, répétitions, bruit de classe ; vérité dans `DOSSIER/cas.json`), puis `node tools/aide_ecoute_mesure.js DOSSIER` (Chromium + vrai modèle, page `tools/aide-ecoute-banc.html`) → tableau : dernier mot lu exact / à 1 ou 2 mots près, erreurs trouvées, fausses alertes. Le dossier de sons reste hors du dépôt.
+- Ce sont des voix de synthèse : sur de vraies lectures d'enfants, les résultats seront moins bons. Seul un essai en classe dira si l'aide fait gagner du temps.
