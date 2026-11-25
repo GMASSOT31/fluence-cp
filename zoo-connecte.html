@@ -1849,7 +1849,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
 <script src="vocabulaire.js?v=4"></script>
 <script src="vendor/howler.core.min.js?v=2.2.4"></script>
 <script src="audio-lecture.js?v=3"></script>
-<script src="aide-ecoute.js?v=1"></script>
+<script src="aide-ecoute.js?v=2"></script>
 <script>/* Anciens iPad (iOS 12 et avant) : le navigateur ne connaît pas les événements « pointer » → les jeux au doigt (Serpent, Oiseau, Tuiles, Tour, Safari) ne réagissaient pas. On les traduit en événements tactiles (ou souris sur un vieil ordinateur). Rien ne change sur les appareils récents. */
 (function () {
   if (window.PointerEvent || !window.EventTarget) return;
@@ -8184,8 +8184,9 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   }
   /* Aide automatique à l'écoute (prototype, aide-ecoute.js) : seulement si l'admin l'a activée et si l'appareil le permet (jamais sur iOS 12).
      Tout reste sur la tablette ; l'aide PRÉ-REMPLIT le dernier mot lu et entoure les mots douteux, le maître(sse) vérifie et valide. */
-  function aideOK() {
-    try { return data.aideEcoute === true && !!window.ZooAideEcoute && ZooAideEcoute.supported(); } catch (e) { return false; }
+  /* mode "demande" : bouton de l'écoute, permis aussi sur les anciens iPad (iOS 12, essai) ; sans mode : calcul automatique, tablettes récentes seulement */
+  function aideOK(mode) {
+    try { return data.aideEcoute === true && !!window.ZooAideEcoute && ZooAideEcoute.supported(mode); } catch (e) { return false; }
   }
   /* Fluence calculée par la tablette juste après l'enregistrement (25/11/2026, choix de Gabriel : « auto + vérification en 1 geste »).
      Le son reste sur la tablette ; seul le résultat (rv.auto) part avec la lecture. L'enseignant le valide d'un geste (espace enseignant ou écoute). */
@@ -8217,7 +8218,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     b.addEventListener("click", function () {
       var id = RV.id, words = RV.words.slice();
       b.disabled = true;
-      m.textContent = "Préparation de l’aide… (la première fois, environ 45 Mo à télécharger, ensuite gardés sur la tablette)";
+      var vieux = ZooAideEcoute.ancien();
+      m.textContent = "Préparation de l’aide… (la première fois, environ 45 Mo à télécharger, ensuite gardés sur la tablette)" + (vieux ? ". Sur cet iPad ancien, cela peut prendre une minute ou plus : laissez l’écran ouvert." : "");
       audioGet(id).then(function (blob) {
         if (!blob) throw new Error("absent");
         return ZooAideEcoute.propose(blob, words, { onStep: function (st, p) {
@@ -8241,7 +8243,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       }).catch(function () {
         if (RV.id !== id) return;
         b.disabled = false;
-        m.textContent = "L’aide n’a pas pu écouter cette lecture sur cet appareil. Notez-la comme d’habitude.";
+        m.textContent = "L’aide n’a pas pu écouter cette lecture sur cet appareil" + (ZooAideEcoute.ancien() ? " (iPad trop ancien ou mémoire insuffisante)" : "") + ". Notez-la comme d’habitude.";
       });
     });
     return box;
@@ -8329,7 +8331,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       RV.result = null; resultBox.hidden = true;
       paint();
     });
-    if (aideOK()) card.appendChild(aideBox(rv, function () { resultBox.hidden = true; paint(); }, textBox));
+    if (aideOK("demande")) card.appendChild(aideBox(rv, function () { resultBox.hidden = true; paint(); }, textBox));
     card.appendChild(textBox);
     var count = el("p", "muted");
     card.appendChild(count);
