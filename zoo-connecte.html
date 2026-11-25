@@ -8032,6 +8032,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
         data.reviews.push({ id: id, sid: S.sid, sound: S.sound, kind: S.kind, ts: Date.now(), secs: secs, tab: tabNum() || undefined }); statDay(S.sid, 3);
         ses.unlocked = false;   /* un mot de passe = un enregistrement */
         save();
+        autoAnalyse(id);
         setPhase("recdone");
       });
     }).catch(function () {
@@ -8164,6 +8165,13 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       if (!blob) { toast("Cette lecture n’est pas sur cette tablette : elle a été enregistrée sur une autre. Écoutez-la sur celle-ci, ou supprimez la ligne."); return; }
       closeReviewMedia();
       RV = { id: id, words: items.words, breaks: items.breaks, errs: {}, sugg: {}, auto: "", endIdx: -1, mode: "err", url: URL.createObjectURL(blob), rate: 1, result: null };
+      /* calcul déjà fait par la tablette après l'enregistrement : pré-rempli, à vérifier */
+      var a = rv.auto;
+      if (a && a.v === 1 && a.end >= 0 && a.end < items.words.length) {
+        RV.endIdx = a.end;
+        (a.errs || []).forEach(function (i) { if (i <= a.end) RV.sugg[i] = true; });
+        RV.auto = "🤖 Calcul de la tablette : " + a.c + " " + kindInfo(rv.kind).unit + " bien lus, " + a.mclm + " par minute. Dernier mot lu et mots douteux (orange) pré-remplis : vérifiez, puis « Voir le résultat ».";
+      }
       renderEcoute();
     }, function () { toast("Impossible de lire l’enregistrement."); });
   }
@@ -8178,6 +8186,27 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
      Tout reste sur la tablette ; l'aide PRÉ-REMPLIT le dernier mot lu et entoure les mots douteux, le maître(sse) vérifie et valide. */
   function aideOK() {
     try { return data.aideEcoute === true && !!window.ZooAideEcoute && ZooAideEcoute.supported(); } catch (e) { return false; }
+  }
+  /* Fluence calculée par la tablette juste après l'enregistrement (25/11/2026, choix de Gabriel : « auto + vérification en 1 geste »).
+     Le son reste sur la tablette ; seul le résultat (rv.auto) part avec la lecture. L'enseignant le valide d'un geste (espace enseignant ou écoute). */
+  function autoAnalyse(id) {
+    if (!aideOK()) return;
+    setTimeout(function () {
+      var rv = data.reviews.filter(function (r) { return r.id === id; })[0];
+      if (!rv || rv.auto) return;
+      var words = parseItems(contentOf(rv.sound, rv.kind)).words;
+      audioGet(id).then(function (blob) {
+        if (!blob) throw new Error("absent");
+        return ZooAideEcoute.propose(blob, words);
+      }).then(function (res) {
+        var r2 = data.reviews.filter(function (r) { return r.id === id; })[0];
+        if (!r2 || r2.auto || !res.matched || res.endIdx < 0) return;
+        var errs = r2.kind === "s" ? [] : res.errs.slice(0, 60);
+        var n = res.endIdx + 1, c = Math.max(0, n - errs.length), t = Math.max(1, Math.min(DURATION, Number(r2.secs) || DURATION)), m = Math.round(c / t * 60);
+        r2.auto = { v: 1, end: res.endIdx, errs: errs, n: n, c: c, mclm: m > MCLM_MAX ? 0 : m, at: Date.now() };
+        save();
+      }).catch(function () {});
+    }, 1500);
   }
   function aideBox(rv, paint, textBox) {
     var box = el("div", "rv-auto");
