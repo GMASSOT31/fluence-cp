@@ -95,6 +95,20 @@
     if (/^[^aeiouyéèêàâîôû]+e$/.test(w)) a.push(w.slice(0, -1) + "eu", w.slice(0, -1) + "eux");
     return a;
   }
+  /* Lectures fautives plausibles d'un mot (voyelle ou consonne confondue : « fiche » → « fuche », « bon » → « ban », « dé » → « bé »).
+     Ajoutées à la grammaire comme mots possibles : sans elles, un mot mal lu est « tiré » vers le bon mot. */
+  var VG = ["ou", "on", "an", "in", "oi", "eu", "a", "e", "i", "o", "u", "é", "è"];
+  var CS = { b: "dp", d: "bt", p: "bt", t: "dp", f: "v", v: "f", s: "z", z: "s", m: "n", n: "m", j: "ch", g: "j", l: "r", r: "l", ch: "j" };
+  function voisins(w, voc) {
+    var out = {}, re = /ou|on|an|in|oi|eu|ch|[aeiouéè]|[bdptfvszmnjglr]/g, mm;
+    while ((mm = re.exec(w))) {
+      var a = mm[0], i = mm.index, rest = w.slice(i + a.length), pre = w.slice(0, i);
+      var rep = VG.indexOf(a) >= 0 ? VG : (CS[a] ? (a === "j" ? ["ch"] : CS[a].split("")) : []);
+      if (a === "ch") rep = ["j", "s"];
+      rep.forEach(function (b) { if (b !== a && voc[pre + b + rest]) out[pre + b + rest] = 1; });
+    }
+    return Object.keys(out).filter(function (x) { return x !== w; }).slice(0, 8);
+  }
   /* Chaque mot du texte → une ou plusieurs « unités » reconnaissables (« l'âne » reste entier s'il est connu, sinon « l' » + « âne ») */
   function units(words, voc) {
     var out = [];
@@ -105,7 +119,8 @@
       if (!voc[w] && /['-]/.test(w)) parts = w.replace(/'/g, "'|").split(/[|-]/).filter(Boolean);
       parts.forEach(function (p) {
         var keys = alts(p).filter(function (k) { return voc[k]; });
-        out.push({ ti: ti, keys: keys, ph: keys.map(phon) });
+        /* un mot d'une seule lettre (« a », « y ») dit seul est très mal reconnu : il n'est jamais proposé comme erreur */
+        out.push({ ti: ti, keys: keys, ph: keys.map(phon), tiny: p.replace(/'/g, "").length < 2, near: keys.length ? voisins(keys[0], voc) : [] });
       });
     });
     return out;
@@ -204,14 +219,14 @@
      words = mots affichés au maître(sse) (RV.words). Renvoie des indices de ces mots. */
   function proposeFrom(words, heard, voc) {
     var U = units(words, voc);
-    var K = U.filter(function (u) { return u.keys.length; });
+    var K = U.filter(function (u) { return u.keys.length && !u.tiny; });
     var A = align(K, heard);
     var last = -1, doubt = {}, matched = 0;
     K.forEach(function (u, k) { if (A.st[k] === 1) { last = Math.max(last, u.ti); matched++; } });
     /* mots que le modèle ne connaît pas : ni proposés ni jugés (« non vérifiés ») */
     var unknown = {};
-    U.forEach(function (u) { if (!u.keys.length && u.ti <= last) unknown[u.ti] = true; });
-    K.forEach(function (u, k) { if (u.ti <= last && A.st[k] === 2) doubt[u.ti] = true; });
+    U.forEach(function (u) { if (!u.keys.length && !u.tiny && u.ti <= last) unknown[u.ti] = true; });
+    K.forEach(function (u, k) { if (u.ti <= last && A.st[k] === 2 && !u.tiny) doubt[u.ti] = true; });
     /* un signe seul (« ! », « – ») juste après le dernier mot lu est compté avec lui */
     while (last >= 0 && last + 1 < words.length && !clean(words[last + 1])) last++;
     var errs = Object.keys(doubt).map(Number).sort(function (a, b) { return a - b; });
@@ -235,17 +250,22 @@
       return decode(blob).then(function (samples) {
         var voc = mv[1], U = units(words, voc), g = {};
         U.forEach(function (u) { u.keys.forEach(function (k) { g[k] = 1; }); });
+        var near = {};
+        if (opts.near !== false) U.forEach(function (u) { u.near.forEach(function (k) { if (!g[k]) near[k] = 1; }); });
         /* suites de 2 à N mots dans l'ordre du texte : la machine préfère alors « a lu » à « ali » ; les mots seuls restent possibles (erreurs, sauts) */
         var K = U.filter(function (u) { return u.keys.length; }), N = opts.ngram == null ? 3 : opts.ngram, i, n;
         for (n = 2; n <= N; n++) for (i = 0; i + n <= K.length; i++) {
           g[K.slice(i, i + n).map(function (u) { return u.keys[0]; }).join(" ")] = 1;
         }
-        var grammar = Object.keys(g);
+        var grammar = Object.keys(g).concat(Object.keys(near).slice(0, 400));
         if (!grammar.length) throw new Error("aucun mot connu");
         grammar.push("[unk]");
         step("listen", 0);
         return recognize(mv[0], samples, grammar, function (p) { step("listen", p); }).then(function (heard) {
-          var res = proposeFrom(words, heard.filter(function (h) { return h.w !== "[unk]"; }), voc);
+          /* mots entendus trop brefs ou trop incertains : souvent une autre voix (classe bruyante) → écartés */
+          var minC = opts.minConf == null ? 0.5 : opts.minConf, minD = opts.minDur == null ? 0.12 : opts.minDur;
+          var res = proposeFrom(words, heard.filter(function (h) { return h.w !== "[unk]" && h.c >= minC && h.e - h.s >= minD; }), voc);
+          if (opts.raw) res.raw = heard;
           res.ms = Date.now() - t0;
           res.secs = samples.length / 16000;
           return res;

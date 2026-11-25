@@ -8200,11 +8200,13 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
         if (RV.id !== id) return;
         b.disabled = false;
         if (!res.matched || res.endIdx < 0) { RV.auto = "L’aide n’a reconnu aucun mot de cet exercice. Notez la lecture comme d’habitude."; m.textContent = RV.auto; return; }
+        /* syllabes : trop de fausses alertes aux essais (25/11/2026) → seulement le dernier mot lu */
+        var syl = rv.kind === "s", errs = syl ? [] : res.errs;
         RV.endIdx = res.endIdx; RV.sugg = {};
-        res.errs.forEach(function (i) { if (!RV.errs[i]) RV.sugg[i] = true; });
+        errs.forEach(function (i) { if (!RV.errs[i]) RV.sugg[i] = true; });
         RV.result = null;
-        var hors = res.unknown.length ? " L’aide ne connaît pas " + nb(res.unknown.length, "mot", "mots") + " (" + res.unknown.slice(0, 4).map(function (i) { return q(RV.words[i]); }).join(", ") + ") : vérifiez-les à l’oreille." : "";
-        RV.auto = "🤖 Proposition à vérifier : dernier mot lu placé sur " + q(RV.words[res.endIdx]) + (res.errs.length ? ", " + nb(res.errs.length, "mot douteux entouré", "mots douteux entourés") + " en orange : touchez ceux qui sont vraiment faux." : ", aucun mot douteux.") + hors + " Corrigez si besoin, puis « Voir le résultat ».";
+        var hors = syl ? " Pour les syllabes, l’aide ne repère pas les erreurs : écoutez-les." : res.unknown.length ? " L’aide ne connaît pas " + nb(res.unknown.length, "mot", "mots") + " (" + res.unknown.slice(0, 4).map(function (i) { return q(RV.words[i]); }).join(", ") + ") : vérifiez-les à l’oreille." : "";
+        RV.auto = "🤖 Proposition à vérifier : dernier mot lu placé sur " + q(RV.words[res.endIdx]) + (syl ? "." : errs.length ? ", " + nb(errs.length, "mot douteux entouré", "mots douteux entourés") + " en orange : touchez ceux qui sont vraiment faux." : ", aucun mot douteux.") + hors + " Corrigez si besoin, puis « Voir le résultat ».";
         m.textContent = RV.auto;
         if (textBox.isConnected) paint();
       }).catch(function () {

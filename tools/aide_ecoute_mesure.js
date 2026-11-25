@@ -6,6 +6,8 @@
 const http = require("http"), fs = require("fs"), path = require("path");
 const { chromium } = require("playwright");
 const ROOT = path.resolve(__dirname, ".."), DIR = path.resolve(process.argv[2] || "aide-ecoute-cas");
+/* AIDE_OPTS='{"ngram":1,"near":false,"minConf":0}' pour comparer des réglages */
+const OPTS = JSON.parse(process.env.AIDE_OPTS || "{}");
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".txt": "text/plain; charset=utf-8", ".gz": "application/gzip", ".webm": "audio/webm", ".json": "application/json" };
 
 const srv = http.createServer((req, res) => {
@@ -30,9 +32,10 @@ const srv = http.createServer((req, res) => {
   if (!ok) { console.error("Appareil non pris en charge"); process.exit(1); }
   const out = [];
   for (const c of cas) {
+    c.opts = OPTS;
     const r = await page.evaluate(async (c) => {
       const b = await (await fetch("/cas/" + encodeURIComponent(c.f))).blob();
-      try { return await window.ZooAideEcoute.propose(b, c.words); } catch (e) { return { error: String(e && e.message || e) }; }
+      try { return await window.ZooAideEcoute.propose(b, c.words, Object.assign({ raw: true }, c.opts)); } catch (e) { return { error: String(e && e.message || e) }; }
     }, c);
     const row = { f: c.f, k: c.k, type: c.type, voix: c.voix, n: c.words.length, end: c.end, errs: c.errs, got: r };
     if (!r.error) {
