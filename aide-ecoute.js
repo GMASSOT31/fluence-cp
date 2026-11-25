@@ -17,9 +17,22 @@
 
   function url(p) { try { return new URL(p, BASE || location.href).href; } catch (e) { return p; } }
 
-  /* L'appareil peut-il le faire ? Jamais sur iOS < 14 (Safari ne sait pas dériver EventTarget, ni assez de mémoire) */
-  function supported() {
+  /* L'appareil peut-il le faire ?
+     supported()          : calcul automatique après l'enregistrement → tablettes récentes seulement (iOS 14 et plus).
+     supported("demande") : bouton « Proposer automatiquement » de l'écoute → aussi les anciens iPad (iOS 11 à 13, essai du 25/11/2026 :
+                            EventTarget remplacé, son décodé et ramené à 16 kHz à la main). Risque : mémoire (1 Go) → la page peut se recharger. */
+  function ancien() {
+    var ios = /(iPhone|iPad|iPod).* OS (\d+)_/.exec(navigator.userAgent);
+    return !!ios && parseInt(ios[2], 10) < 14;
+  }
+  function supported(mode) {
     try {
+      if (mode === "demande" && ancien()) {
+        var AC0 = window.AudioContext || window.webkitAudioContext, v = /(iPhone|iPad|iPod).* OS (\d+)_/.exec(navigator.userAgent);
+        return parseInt(v[2], 10) >= 11 && typeof WebAssembly === "object" && typeof WebAssembly.instantiate === "function" &&
+          !!window.Worker && !!AC0 && !!window.fetch && !!window.Promise && !!window.indexedDB && !!window.FileReader &&
+          typeof Float32Array.prototype.map === "function" && typeof window.TextDecoder === "function";
+      }
       var AC = window.AudioContext || window.webkitAudioContext;
       var OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
       if (typeof WebAssembly !== "object" || typeof WebAssembly.instantiate !== "function") return false;
@@ -42,8 +55,25 @@
       document.head.appendChild(s);
     });
   }
+  /* Safari < 14 : « new EventTarget() » impossible, or vosk-browser en dérive ses objets → petit remplaçant (anciens iPad seulement) */
+  function etFix() {
+    try { new EventTarget(); return; } catch (e) {}
+    var ET = function () { this.__l = {}; };
+    ET.prototype.addEventListener = function (t, f) { if (f) (this.__l[t] = this.__l[t] || []).push(f); };
+    ET.prototype.removeEventListener = function (t, f) { var a = this.__l[t]; if (a) this.__l[t] = a.filter(function (x) { return x !== f; }); };
+    ET.prototype.dispatchEvent = function (ev) {
+      var self = this;
+      (this.__l[ev.type] || []).slice().forEach(function (f) {
+        try { if (typeof f === "function") f.call(self, ev); else if (f && f.handleEvent) f.handleEvent(ev); }
+        catch (er) { setTimeout(function () { throw er; }, 0); }
+      });
+      return true;
+    };
+    window.EventTarget = ET;
+  }
   function vosk() {
     if (window.Vosk) return Promise.resolve(window.Vosk);
+    etFix();
     if (!voskP) voskP = loadScript(url("vendor/vosk/vosk.js?v=" + V)).then(function () {
       if (!window.Vosk) throw new Error("vosk");
       return window.Vosk;
@@ -127,24 +157,47 @@
   }
 
   /* ---------- Son : décoder puis passer à 16 kHz mono ---------- */
+  /* ramène le son à 16 kHz « à la main » (moyenne par paquets) : anciens Safari, qui refusent un rendu hors ligne à 16 kHz */
+  function to16k(ab) {
+    var x = ab.getChannelData(0), r = ab.sampleRate / 16000, n = Math.floor(x.length / r), out = new Float32Array(n), i, j, a, b, sum;
+    for (i = 0; i < n; i++) {
+      a = Math.floor(i * r); b = Math.max(a + 1, Math.floor((i + 1) * r)); sum = 0;
+      for (j = a; j < b && j < x.length; j++) sum += x[j];
+      out[i] = sum / (b - a);
+    }
+    return out;
+  }
+  function readBlob(blob) {
+    if (blob.arrayBuffer) return blob.arrayBuffer();
+    return new Promise(function (ok, ko) {
+      var fr = new FileReader();
+      fr.onload = function () { ok(fr.result); };
+      fr.onerror = function () { ko(fr.error); };
+      fr.readAsArrayBuffer(blob);
+    });
+  }
   function decode(blob) {
     var AC = window.AudioContext || window.webkitAudioContext;
     var OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
-    return blob.arrayBuffer().then(function (buf) {
+    return readBlob(blob).then(function (buf) {
       var ctx = new AC();
       return new Promise(function (ok, ko) {
         ctx.decodeAudioData(buf, ok, ko);
       }).then(function (ab) {
-        try { ctx.close(); } catch (e) {}
-        var len = Math.max(1, Math.ceil(ab.duration * 16000));
-        var off = new OAC(1, len, 16000);
-        var src = off.createBufferSource();
-        src.buffer = ab; src.connect(off.destination); src.start(0);
-        return new Promise(function (ok, ko) {
-          off.oncomplete = function (e) { ok(e.renderedBuffer.getChannelData(0)); };
-          var p = off.startRendering();
-          if (p && p.then) p.then(function (b) { ok(b.getChannelData(0)); }, ko);
-        });
+        try { if (ctx.close) ctx.close(); } catch (e) {}
+        if (ab.sampleRate === 16000) return ab.getChannelData(0);
+        if (!OAC || ancien()) return to16k(ab);
+        try {
+          var len = Math.max(1, Math.ceil(ab.duration * 16000));
+          var off = new OAC(1, len, 16000);
+          var src = off.createBufferSource();
+          src.buffer = ab; src.connect(off.destination); src.start(0);
+          return new Promise(function (ok, ko) {
+            off.oncomplete = function (e) { ok(e.renderedBuffer.getChannelData(0)); };
+            var p = off.startRendering();
+            if (p && p.then) p.then(function (b) { ok(b.getChannelData(0)); }, ko);
+          }).then(null, function () { return to16k(ab); });
+        } catch (e) { return to16k(ab); }
       });
     });
   }
@@ -276,6 +329,7 @@
 
   window.ZooAideEcoute = {
     supported: supported,
+    ancien: ancien,
     propose: propose,
     /* pour les tests : */
     _units: units, _align: align, _proposeFrom: proposeFrom, _vocab: vocab, _clean: clean
