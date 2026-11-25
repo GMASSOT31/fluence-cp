@@ -865,11 +865,20 @@
       var undo = mk("button", "secondary", "Annuler"); undo.type = "button"; undo.onclick = function () { save(null); };
       box.append(undo); li.append(box); return li;
     }
-    var okb = mk("button", "primary", "✅ Valider"), no = mk("button", "secondary", "↩️ Faire relire"), form = mk("div", "pb-recform");
+    /* fluence calculée par la tablette après l'enregistrement (v.auto, aide-ecoute.js) : validation en un geste */
+    var a = v.auto && typeof v.auto.c === "number" && v.auto.c >= 0 && v.auto.c <= 300 ? v.auto : null, quick = null;
+    if (a) {
+      var mpm = Number(a.mclm) || 0, secs = Number(v.secs) && v.secs < 60 ? v.secs + " s" : "1 minute";
+      li.append(mk("div", "pb-recauto", "🤖 Calcul de la tablette : " + a.c + " " + unit + (v.kind === "s" ? " bien lues" : " bien lus") + " en " + secs + " → " + mpm + " par minute (objectif " + thr + "). " + (mpm >= thr ? "Médaille si vous validez." : "Objectif pas atteint.") + " Proposition à vérifier si la classe était bruyante."));
+      quick = mk("button", "primary", "✅ Valider " + mpm + " par minute"); quick.type = "button";
+      quick.onclick = function () { save({ sid: r.s.id, ok: true, c: a.c, auto: 1, ts: Date.now() }); };
+    }
+    var okb = mk("button", a ? "secondary" : "primary", a ? "✏️ Corriger" : "✅ Valider"), no = mk("button", "secondary", "↩️ Faire relire"), form = mk("div", "pb-recform");
     okb.type = no.type = "button"; form.hidden = true;
     no.title = "Cette lecture n’est pas la bonne : l’élève devra se réenregistrer";
     no.onclick = function () { save({ sid: r.s.id, ok: false, ts: Date.now() }); };
     var inp = mk("input"); inp.type = "number"; inp.min = 0; inp.max = 300; inp.inputMode = "numeric"; inp.id = "recn-" + v.id;
+    if (a) inp.value = String(a.c);
     var lab = mk("label", null, (v.kind === "s" ? "Syllabes bien lues en " : "Mots bien lus en ") + (Number(v.secs) && v.secs < 60 ? v.secs + " s" : "1 minute") + " (facultatif) : "); lab.className = "pb-reclab"; lab.append(inp);   /* champ dans son titre (pas de « for ») : le titre reste visible sur téléphone */
     var go = mk("button", "primary", "Valider la lecture"), cancel = mk("button", "secondary", "Annuler"); go.type = cancel.type = "button";
     form.append(lab, go, cancel,
@@ -881,6 +890,7 @@
       if (n !== null && !(n >= 0 && n <= 300)) { inp.setCustomValidity("Entre 0 et 300"); inp.reportValidity(); return; }
       save({ sid: r.s.id, ok: true, c: n === null ? undefined : n, ts: Date.now() });
     };
+    if (quick) box.append(quick);
     box.append(okb, no); li.append(box, form); return li;
   }
   function studentView(r, rows) {
