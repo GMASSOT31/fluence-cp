@@ -63,7 +63,7 @@
     var canRec = !!cur && !curSent && res.some(function (r) { return r.sound === cur.id && r.src === "train" && !r.void && !r.short && !(Number(r.fraud) > 0) && thr[r.k] && (Number(r.mclm) || 0) >= thr[r.k]; });
     var flu = res.filter(function (r) { return !r.void && !r.short && !(Number(r.fraud) > 0) && r.src !== "adj" && r.src !== "train" && Number(r.mclm) > 0; })
       .sort(function (a, b) { return (Number(b.ts) || 0) - (Number(a.ts) || 0); })[0] || null;
-    return { s: s, row: row || null, canRec: canRec, p: p, nValid: nValid, total: order.length, cur: cur, err: err, answers: answers, readTries: readTries, blocked: blocked,
+    return { s: s, row: row || null, canRec: canRec, p: p, certified: cert, nValid: nValid, total: order.length, cur: cur, err: err, answers: answers, readTries: readTries, blocked: blocked,
       recs: recs.filter(function (x) { return !window.pedaRecDec[x.id]; }).length, recTabs: recs.filter(function (x) { return !window.pedaRecDec[x.id]; }).map(function (x) { return Number(x.tab) || 0; }).filter(function (n, i, a) { return n && a.indexOf(n) === i; }).sort(function (a, b) { return a - b; }), curSent: curSent, secs: secs, exercises: exercises, successes: successes, series: series, idle: idle, flu: flu, conf: st.conf && typeof st.conf === "object" ? st.conf : {}, measured: Object.keys(days).length > 0,
       allo: window.pedaAllo.indexOf(s.id) >= 0, asg: currentAssignment(s.id), remed: p.remed && typeof p.remed === "object" ? p.remed : null };
   }
@@ -1087,20 +1087,39 @@
       txt: target ? completed + " sur " + target + " corpus attendus" : "aucun corpus disponible",
       tip: "Corpus terminés sur l’objectif à cette date" };
   }
+  function phonoAxis(r, now, lp) {
+    var order = C.cfgSounds || [], X = exo(), p = r.p;
+    var listening = p.listen || {}, phono = p.phono || {}, certified = r.certified || {};
+    var rIndex = order.findIndex(function (sound) { return sound.id === "r"; });
+    var offered = 0, cleared = 0;
+    order.forEach(function (sound, index) {
+      var id = sound.id;
+      if (!X.phonoOffered(id, order)) return;
+      offered++;
+      var direct = (phono.done && phono.done[id]) || (phono.passes && Number(phono.passes[id]) >= 1);
+      var heard = (listening.done && listening.done[id]) ||
+        (listening.passes && Number(listening.passes[id]) >= lp + (rIndex >= 0 && index >= rIndex ? 1 : 0));
+      if (direct || heard || certified[id]) cleared++;
+    });
+    var target = offered ? expected(offered, now) : 0;
+    return { k: "phono", name: "Phonologie", v: target && (cleared || p.phono) ? Math.round(cleared * 100 / target) : null,
+      txt: !target || (!cleared && !p.phono) ? "pas encore mesuré" : plur(cleared, "son", "sons") + " · " + target + " attendus",
+      tip: "Étapes « J’entends » réussies ou considérées comme acquises dans le parcours" };
+  }
   function axes(r, now) {
     var p = r.p, tot = Math.max(1, r.total), thr = thrOf();
     var lp = Number(C.listenPasses) || 2, dp = Number(C.dicteePasses) || 1;
     var nL = doneCount(p.listen, function (i, ir) { return lp + (ir >= 0 && i >= ir ? 1 : 0); });
     var nD = doneCount(p.dictee, function () { return dp; });
     var opt = function (o) { return o && typeof o === "object" && o.done && typeof o.done === "object" ? doneCount(o, null) : null; };
-    var nP = opt(p.phono), nC = opt(p.compr);
+    var nC = opt(p.compr);
     var flu = (Array.isArray(p.results) ? p.results : []).filter(function (x) { return x && !x.void && !x.short && !(Number(x.fraud) > 0) && x.src !== "adj" && x.src !== "train" && Number(x.mclm) > 0 && thr[x.k]; })
       .sort(function (a, b) { return (Number(b.ts) || 0) - (Number(a.ts) || 0); });
     var last3 = flu.slice(0, 3), sp = last3.length ? Math.round(last3.reduce(function (a, x) { return a + Math.min(1, Number(x.mclm) / thr[x.k]); }, 0) * 100 / last3.length) : null;
     var exp = expected(tot, now), pct = function (n) { return n === null ? null : Math.round(n * 100 / exp); };
     var sons = function (n) { return n === null ? "pas encore mesuré" : n + " " + (n > 1 ? "sons" : "son") + " · " + exp + " attendus"; };
     return { flu: flu, exp: exp, list: [
-      { k: "phono", name: "Phonologie", v: pct(nP), txt: sons(nP), tip: "Entendre un son dans un mot" },
+      phonoAxis(r, now, lp),
       { k: "ecoute", name: "Écoute", v: pct(nL), txt: sons(nL), tip: "Reconnaître l'écriture d'un son entendu" },
       { k: "dictee", name: "Dictée", v: pct(nD), txt: sons(nD), tip: "Écrire un son, une syllabe, un mot entendus" },
       { k: "lecture", name: "Lecture", v: pct(r.nValid), txt: sons(r.nValid), tip: "Lecture validée par l'enseignant" },
