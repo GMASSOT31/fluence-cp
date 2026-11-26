@@ -2,6 +2,11 @@
 
 À lire avec `cahier-des-charges.md` (la demande de Gabriel) et `CLAUDE.md` (règles du projet). **Ce fichier est tenu à jour à chaque étape** : Claude ou Codex doit pouvoir reprendre à tout moment. Dernière mise à jour : 26/11/2026 (Claude) : étapes A à F (partie automatique) faites ; reste l’essai réel avec Gabriel (voir étape F).
 
+## Défi des lettres en entrée de GS Lecture (26/11/2026)
+- Le nouveau parcours commence par 26 choix rapides parmi quatre capitales. On peut répondre « Je ne sais pas » ou faire une pause. À la fin, une roue récompense la participation, même avec zéro bonne réponse, si les récompenses sont actives.
+- `progress.gs.diagnostic` conserve les réponses, la fin du défi et la prochaine vérification. Les capitales reconnues sortent provisoirement des séries. Une vérification au démarrage de séries ultérieures confirme une lettre ou la remet au programme. Les paliers restants de capitales centrés sur quelques lettres ont des séries plus courtes. Les autres activités gardent leur parcours et les élèves déjà engagés gardent leur progression.
+- Tests : `node tools/test_gs.js`, `python3 tools/build_test_pages.py && node tools/test_gs_recette.js`. Le test navigateur vérifie notamment la roue à 0/26.
+
 ## Où en est-on ?
 - [x] Phase 0 — audit (constats ci-dessous).
 - [x] **Étape A — prototype « Capitales » (GS Lecture)** — fait le 23/11/2026, branche `claude/parcours-gs-capitales` (PR à valider par Gabriel). Fichiers : `gs-data.js` (définitions + moteur, `node tools/test_gs.js`), `gs-lecture.js` (écran élève, vue `v-gs`, accueil GS dans `renderHome`, contexte `window.ZooGSCtx` de zoo-connecte.html), `pedagogie.js` (`trackBox` choix du parcours dans Détails, `gsCard` suivi, pastille « GS » sur la ligne), `enseignants.html` (`window.pedaTracks`, `window.pedaGsCfg`, `collectSettings` garde `tracks` et `gs`). Tests : `zoo-test.html?gs=1` (élève GS), `enseignants-test.html?teacher=1&pedago=1&gs=1` (Alya en GS avec aide). **Limites connues** : voix de l'appareil pour les noms de lettres ; panneaux de gauche et compteurs du bandeau restent ceux du CP (« Mes cartes lues », N0/E0) ; pas encore d'éditeur des réglages GS (défauts de gs-data.js) ; choix du parcours seulement pour ses propres élèves (pas pour l'admin sur la classe d'un autre).

@@ -57,7 +57,7 @@ function ok15(ok) { return ok ? 1050 : 1650; }
 (async function () {
   var srv = cp.spawn("python3", ["-m", "http.server", String(PORT), "--bind", "127.0.0.1", "--directory", path.join(ROOT, "tools", "test-site")], { stdio: "ignore" });
   await sleep(800);
-  var b = await pw.chromium.launch(), p, t;
+  var b = await pw.chromium.launch({ executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE }), p, t;
   try {
     /* T01 + T16 : un élève de CP (Lecture et Calcul) retrouve son accueil habituel */
     p = await page(b, "zoo-test.html");
@@ -68,13 +68,13 @@ function ok15(ok) { return ok ? 1050 : 1650; }
     rec("T16", /Écouter/.test(t) && !(await q.evaluate(function () { return document.body.classList.contains("gs-track"); })) && !p.errs.length && !q.errs.length, "CP du Calcul : mission habituelle (Écouter), aucune erreur de page");
     /* T02 : GS en lecture et CP en calcul pour le même élève */
     p = await page(b, "zoo-test.html?gs=1");
-    rec("T02", /comptine des lettres/i.test(await txt(p, "#home-body")) && /Écouter/.test(t), "lecture en GS (comptine des lettres) pendant que le calcul reste en CP");
-    /* T05 : comptine à la 1re séance, puis petit bouton facultatif (lecture et calcul) */
+    rec("T02", /défi des lettres/i.test(await txt(p, "#home-body")) && /Écouter/.test(t), "lecture en GS (défi des lettres) pendant que le calcul reste en CP");
+    /* T05 : en Calcul, la comptine est proposée avant les exercices. */
     q = await page(b, "labo-calcul-test.html?gs=1");
     var first = /La comptine des nombres/.test(await txt(q, ".home-next"));
     await clickText(q, "button", "Plus tard"); await sleep(700);
     var after = await txt(q);
-    rec("T05", first && /Je joue avec les nombres/.test(after) && /comptine des nombres/.test(after) && /comptine des lettres/i.test(await txt(p, "#home-body")), "1re séance : comptine en grosse action ; ensuite petit bouton facultatif");
+    rec("T05", first && /Je joue avec les nombres/.test(after) && /comptine des nombres/.test(after), "Calcul : comptine en grosse action, puis petit bouton facultatif");
     /* T06 + T17 : consignes orales (🔊) ; tablette tactile sans « pointer events » (anciens iPad) */
     var tab = await page(b, "labo-calcul-test.html?gs=1&gsrit=1", { ctx: { viewport: { width: 1024, height: 768 }, hasTouch: true, isMobile: true }, noPointer: true });
     await tab.tap(".home-next"); await sleep(400);
@@ -124,8 +124,22 @@ function ok15(ok) { return ok ? 1050 : 1650; }
     var vis = function (x) { return x.evaluate(function () { return document.body.innerText; }); };   /* texte visible seulement (pas le code des scripts) */
     var noTrack = !/Parcours|\bGS\b|\bCP\b|CE1/.test(await vis(q)) && !/Parcours|\bGS\b|CE1/.test(await vis(p));
     rec("T15", noTrack, "aucun écran élève ne propose de changer de parcours (le parcours vient des réglages de l’enseignant ; serveur : une roue par série, pièces et roues décidées par le serveur en Calcul)");
-    /* Lecture GS : une série jouée de bout en bout (contrôle de non-régression de l'étape C) */
+    /* Lecture GS : le défi récompense l’effort, puis une série ordinaire reste jouable. */
     p = await page(b, "zoo-test.html?gs=1");
+    await clickText(p, "button", "Le défi des lettres");
+    await p.locator("#gs-body button").filter({hasText:"Je ne sais pas"}).first().waitFor();
+    for (var letter = 0; letter < 26; letter++) await clickText(p, "button", "Je ne sais pas");
+    var trial = await p.evaluate(function () {
+      var sid = __t.ses.sid, d = __t.data.gs[sid].diagnostic;
+      return { done: d.done, hits: Object.values(d.answers).filter(Boolean).length,
+        wheels: __t.pendingWheels(sid).filter(function (w) { return w.id === "gs:diagnostic:" + sid; }).length };
+    });
+    rec("Diagnostic GS", trial.done && !trial.hits && trial.wheels === 1, "un tour de roue même sans bonne réponse");
+    await p.evaluate(function () {
+      var sid = __t.ses.sid;
+      __t.data.wheels = __t.data.wheels.filter(function (w) { return w.id !== "gs:diagnostic:" + sid; });
+      __t.show("home");
+    });
     await clickText(p, "button", "Plus tard"); await sleep(500); await clickText(p, "button", "Je joue avec les lettres"); await sleep(600);
     if (await p.$("text=À moi de jouer")) { await clickText(p, "button", "À moi de jouer"); await sleep(300); }
     await lecSerie(p, 10);

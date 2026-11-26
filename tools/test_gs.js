@@ -127,4 +127,22 @@ t("calcul T13 : réglages bornés, valeurs recommandées", function () {
   assert.ok(G.calcPath(c).every(function (x) { return !x.step.eq; }));
   assert.deepStrictEqual(G.calcConfig(undefined), G.calcConfig({ lecture: {} }));
 });
+
+t("défi des capitales : quatre choix, une seule cible et parcours adapté uniquement en capitales", function () {
+  var alphabet = Object.keys(G.LETTER_SAY), answers = {};
+  alphabet.forEach(function (letter) {
+    var q = G.diagnosticQuestion(letter);
+    assert.strictEqual(new Set(q.opts).size, 4);
+    assert(q.opts.indexOf(letter) >= 0);
+    answers[letter] = 1;
+  });
+  var all = G.diagnosticState({done:true, answers:answers}), path = G.path(cfg, "Léo");
+  assert.deepStrictEqual(G.path(cfg, "Léo", all), path.filter(function (x) { return x.comp !== "cap"; }));
+  all.answers.E = 0;
+  var caps = G.path(cfg, "Léo", all).filter(function (x) { return x.comp === "cap"; });
+  assert(caps.length && caps.every(function (x) { return x.step.targets.join("") === "E"; }));
+  assert.strictEqual(G.buildSeries(caps[0].step, cfg, "cap", false).qs.length, 4);
+  delete answers.E;
+  assert.strictEqual(G.diagnosticState({done:true, answers:answers}).done, false);
+});
 console.log("TOUS LES TESTS GS PASSENT (" + n + ")");

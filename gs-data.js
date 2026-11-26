@@ -104,7 +104,7 @@
      (une lettre « proche » parmi eux dès 3 propositions) ; place de la bonne réponse variable. aid = moins de propositions. */
   function buildSeries(step, cfg, comp, aid, rnd) {
     rnd = rnd || Math.random;
-    var nq = cfg[comp].questions, n = aid ? Math.max(2, step.n - 1) : step.n, targets = [], last = null, qs = [], K = COMP[comp] || COMP.cap;
+    var nq = step.focused ? Math.min(cfg[comp].questions, Math.max(4, step.targets.length * 2)) : cfg[comp].questions, n = aid ? Math.max(2, step.n - 1) : step.n, targets = [], last = null, qs = [], K = COMP[comp] || COMP.cap;
     if (K.act === "ordre") return buildOrder(step, nq, aid ? Math.max(2, step.n - 1) : step.n, rnd, aid);
     while (targets.length < nq) {
       var round = shuffle(step.targets.slice(), rnd);
@@ -144,11 +144,33 @@
   }
   /* Parcours complet de l'élève : pour chaque groupe, les paliers de chaque activité active dans l'ordre de COMPS (4.8).
      Chaque élément = { comp, step } ; le palier en cours est le premier non validé (validations rangées par activité). */
-  function path(cfg, prenom) {
+  function path(cfg, prenom, diagnostic) {
     var lists = {}, out = [], ng = groupsFor(cfg, prenom).length;
     COMPS.lecture.forEach(function (k) { if (cfg[k.id].on) lists[k.id] = steps(k.id, cfg, prenom); });
     for (var g = 1; g <= ng; g++) COMPS.lecture.forEach(function (k) { (lists[k.id] || []).forEach(function (s) { if (s.group === g) out.push({ comp: k.id, step: s }); }); });
-    return out;
+    if (!diagnostic || !diagnostic.done) return out;
+    return out.filter(function (item) {
+      if (item.comp !== "cap") return true;
+      var targets = item.step.targets.filter(function (L) { return !diagnostic.answers[L]; });
+      if (targets.length !== item.step.targets.length) {
+        item.step.focused = true; item.step.targets = targets;
+      }
+      return targets.length > 0;
+    });
+  }
+  function diagnosticState(raw) {
+    raw = raw && typeof raw === "object" ? raw : {};
+    var answers = {};
+    Object.keys(LETTER_SAY).forEach(function (letter) {
+      var n = raw.answers && raw.answers[letter];
+      if (n === 0 || n === 1 || n === 2) answers[letter] = n;
+    });
+    var done = raw.done === true && Object.keys(answers).length === Object.keys(LETTER_SAY).length;
+    return {answers:answers, done:done, check:done && raw.check === true};
+  }
+  function diagnosticQuestion(letter) {
+    var alphabet = Object.keys(LETTER_SAY);
+    return buildSeries({n:4, targets:[letter], pool:alphabet}, {cap:{questions:1}}, "cap", false).qs[0];
   }
   function lecState(lec) { lec = lec && typeof lec === "object" ? lec : {}; var o = {}; COMPS.lecture.forEach(function (k) { o[k.id] = compState(lec[k.id]); }); return o; }
   function pathCurrent(st, items) { for (var i = 0; i < items.length; i++) if (!(st[items[i].comp] && st[items[i].comp].val[items[i].step.key])) return i; return -1; }
@@ -200,8 +222,8 @@
      v = étapes validées ÷ étapes attendues à cette date (frac = semaines d'école écoulées / 36 ; au moins 1 attendue) × 100 ; une série seule ne valide jamais une étape.
      status : nouveau (rien fait), en_cours, maitrise (toutes validées), difficulte (aide activée sur l'étape en cours de l'activité). */
   var WEB = [["cap", "Capitales"], ["ordre", "Alphabet"], ["capscript", "Capitales/script"], ["script", "Script"], ["scriptcurs", "Script/cursive"], ["curs", "Cursive"]];
-  function radar(cfg, prenom, st, series, frac) {
-    var items = path(cfg, prenom), f = Math.max(0, Math.min(1, Number(frac) || 0)), ser = Array.isArray(series) ? series : [];
+  function radar(cfg, prenom, st, series, frac, diagnostic) {
+    var items = path(cfg, prenom, diagnostic), f = Math.max(0, Math.min(1, Number(frac) || 0)), ser = Array.isArray(series) ? series : [];
     return WEB.filter(function (w) { return cfg[w[0]] && cfg[w[0]].on; }).map(function (w) {
       var id = w[0], its = items.filter(function (x) { return x.comp === id; }), s = st[id] || compState(null);
       var done = its.filter(function (x) { return s.val[x.step.key]; }).length, total = its.length, exp = total ? Math.max(1, Math.min(total, Math.round(total * f))) : 0;
@@ -394,6 +416,6 @@
   }
   var api = { LETTER_SAY: LETTER_SAY, NUM_SAY: NUM_SAY, RANGES: RANGES, CCOMP: CCOMP, WEB_CALC: WEB_CALC, calcConfig: calcConfig, calcSteps: calcSteps, calcPath: calcPath, calcState: calcState, calcItem: calcItem,
     calcCurrent: calcCurrent, calcRecord: calcRecord, calcSummary: calcSummary, calcStepLabel: calcStepLabel, buildCalcSeries: buildCalcSeries, calcRadar: calcRadar, CONFUS: CONFUS, DEFAULTS: DEFAULTS, COMPS: COMPS, TRACKS: ["gs", "cp", "ce1"], TRACK_READY: { lecture: { gs: true, cp: true, ce1: false }, calcul: { gs: true, cp: true, ce1: true } },   /* CE1 : calcul seulement (docs/parcours-ce1) */
-    COMP: COMP, WEB: WEB, radar: radar, config: config, groupsFor: groupsFor, steps: steps, path: path, lecState: lecState, pathCurrent: pathCurrent, pathSummary: pathSummary, glyph: glyph, buildSeries: buildSeries, compState: compState, current: current, record: record, summary: summary, stepLabel: stepLabel, letters: letters };
+    COMP: COMP, WEB: WEB, diagnosticState: diagnosticState, diagnosticQuestion: diagnosticQuestion, radar: radar, config: config, groupsFor: groupsFor, steps: steps, path: path, lecState: lecState, pathCurrent: pathCurrent, pathSummary: pathSummary, glyph: glyph, buildSeries: buildSeries, compState: compState, current: current, record: record, summary: summary, stepLabel: stepLabel, letters: letters };
   root.ZooGSData = api;
 })(typeof window === "undefined" ? module.exports : window);
