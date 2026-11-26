@@ -184,7 +184,7 @@
     var r = state.focus && rows.find(function (x) { return x.s.id === state.focus; });
     if (r) { c.append(studentView(r, rows)); return; }
     state.focus = null;
-    c.append(rhythm(rows), todo(rows), matrix(rows));
+    c.append(rhythm(rows), todo(rows, state.cls), matrix(rows));
   }
 
   /* Nom d’élève cliquable : ouvre son détail sous sa ligne */
@@ -227,7 +227,7 @@
   }
 
   /* 1. À faire aujourd’hui : lectures à écouter, élèves bloqués, exercices donnés pas encore faits, confusions, inactifs */
-  function todo(rows) {
+  function todo(rows, cls) {
     var sec = section("📌 À faire aujourd’hui", null);
     var grid = mk("div", "pb-alerts"), n = 0, groups = {};
     function card(cls, title, list, tip, btn) {
@@ -293,12 +293,19 @@
       reminders.forEach(function (reminder) { review.append(vocabularyReminderCard(reminder)); });
       grid.append(review); n++;
     }
-    [["a-asg","🎯 Exercices donnés"], ["a-conf","🔀 Confusions"], ["a-rec","🎧 Lectures à écouter"],
+    [["a-asg","🎯 Exercices donnés"], ["a-vocab","Attribution collective de corpus"], ["a-conf","🔀 Confusions"], ["a-rec","🎧 Lectures à écouter"],
      ["a-block","⚠️ Élèves bloqués"], ["a-idle","💤 En sommeil"]].forEach(function (group) {
-      if (!groups[group[0]]) return;
+      var collective = group[0] === "a-vocab";
+      if (collective ? !cls || !C.renderVocabularyAssignment : !groups[group[0]]) return;
       var key = state.classId + ":" + group[0];
       var fold = compactDetails(group[1], "pb-alert-group", key, state.folded);
-      groups[group[0]].forEach(function (c) { fold.append(c); });
+      if (collective) {
+        fold.append(C.renderVocabularyAssignment(cls, function (id, assigned) {
+          if (state.classId !== cls.id) return;
+          state.classVocab = (state.classVocab || []).filter(function (book) { return book !== id; });
+          if (assigned) state.classVocab.push(id);
+        }));
+      } else groups[group[0]].forEach(function (c) { fold.append(c); });
       grid.append(fold);
     });
     if (!n) grid.append(mk("p", "pb-calm", "✅ Rien d’urgent aujourd’hui."));
