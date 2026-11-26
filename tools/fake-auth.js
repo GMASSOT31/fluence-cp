@@ -144,6 +144,23 @@
         var prefix = a.p_class + ":";
         return Promise.resolve({data: Array.from(st.vocabQueue || []).filter(function (key) { return key.indexOf(prefix) === 0; }).map(function (key) { return key.slice(prefix.length); }), error: null});
       }
+      if (name === "teacher_remove_class_vocabulary") {
+        var owner = st.classes.find(function (item) { return item.id === a.p_class; });
+        if (!owner || (owner.teacher_id !== st.user.id && st.teachers[0].role !== "admin")) return Promise.resolve({data:null,error:{message:"Accès refusé"}});
+        var assignment = a.p_class + ":" + a.p_corpus;
+        if (!st.vocabQueue || !st.vocabQueue.has(assignment)) return Promise.resolve({data:false,error:null});
+        st.vocabExclusions = st.vocabExclusions || new Set();
+        if (a.p_student) {
+          if (!st.students.some(function (s) { return s.id === a.p_student && s.class_id === a.p_class && !s.ghosted_at; })) return Promise.resolve({data:null,error:{message:"Cet élève ne fait pas partie de cette classe"}});
+          var exclusion = assignment + ":" + a.p_student;
+          if (st.vocabExclusions.has(exclusion)) return Promise.resolve({data:false,error:null});
+          st.vocabExclusions.add(exclusion);
+        } else {
+          st.vocabQueue.delete(assignment);
+          st.vocabExclusions.forEach(function (key) { if (key.indexOf(assignment + ":") === 0) st.vocabExclusions.delete(key); });
+        }
+        return Promise.resolve({data:true,error:null});
+      }
       if (name === "teacher_queue_vocabulary") {
         var c = st.classes.find(function (item) { return item.id === a.p_class; });
         if (!c || (c.teacher_id !== st.user.id && st.teachers[0].role !== "admin")) return Promise.resolve({ data: null, error: { message: "Accès refusé" } });

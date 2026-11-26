@@ -1136,7 +1136,7 @@ function vocabularyEditor(book){
 }
 function renderVocabularyAssignment(){
  if($("readingDetached").refreshPreview)$("readingDetached").refreshPreview();
- const host=$("vocabAssign");host.replaceChildren();
+ const host=$("vocabAssign"), previous=host.querySelector("select")?.value;host.replaceChildren();
  const admin=currentRole==="admin";
  $("vocabImport").hidden=!admin;
  const classes=document.createElement("select"), corpora=document.createElement("select"), status=document.createElement("p");
@@ -1148,12 +1148,53 @@ function renderVocabularyAssignment(){
  });
  corpora.append(new Option("Choisir un imagier",""));
  ZooVocabulary.catalog.forEach(book=>corpora.append(new Option(book.title+" · "+book.words.length+" mots",book.id)));
+ if([...classes.options].some(o=>o.value===previous))classes.value=previous;
+ const manage=document.createElement("details"), manageTitle=document.createElement("summary"), list=document.createElement("div");
+ manageTitle.textContent="Retirer un corpus attribué";manage.append(manageTitle,list);
+ let listVersion=0;
+ async function loadAssigned(){
+  const version=++listVersion, id=classes.value;
+  list.textContent=id?"Chargement…":"Choisissez d’abord une classe.";
+  if(!id)return;
+  try{
+   const {data,error}=await client.rpc("teacher_class_vocabulary",{p_class:id});
+   if(version!==listVersion)return;
+   if(error)throw error;
+   const books=(data||[]).map(x=>ZooVocabulary.get(x)).filter(Boolean);
+   list.replaceChildren();
+   if(!books.length){list.textContent="Aucun corpus attribué à cette classe.";return;}
+   const assigned=document.createElement("select"), target=document.createElement("select"), remove=document.createElement("button");
+   assigned.setAttribute("aria-label","Corpus attribué à retirer");target.setAttribute("aria-label","Retirer pour");
+   books.forEach(book=>assigned.append(new Option(book.title,book.id)));
+   target.append(new Option("Toute la classe",""));
+   allStudents.filter(s=>s.class_id===id&&!s.ghosted_at)
+     .sort((a,b)=>a.nickname.localeCompare(b.nickname,"fr"))
+     .forEach(s=>target.append(new Option(s.nickname,s.id)));
+   remove.type="button";remove.className="secondary";remove.textContent="Retirer";
+   const controls=document.createElement("div");controls.className="actions";controls.append(assigned,target,remove);list.append(controls);
+   remove.onclick=async()=>{
+    const book=ZooVocabulary.get(assigned.value), student=target.value||null;
+    const who=student?target.options[target.selectedIndex].textContent:"toute la classe";
+    remove.disabled=true;
+    try{
+     if(!await dlg("Retirer « "+book.title+" » pour "+who+" ? Les réussites déjà enregistrées sont conservées.",{ok:"Retirer le corpus"}))return;
+     const {data,error}=await client.rpc("teacher_remove_class_vocabulary",{p_class:id,p_corpus:book.id,p_student:student});
+     if(error)throw error;
+     if(version!==listVersion)return;
+     status.textContent=data?"✓ Corpus retiré pour "+who+".":"Ce corpus est déjà retiré pour "+who+".";
+     if(!student||!data)await loadAssigned();
+    }catch(error){if(version===listVersion)status.textContent=errorText(error);}
+    finally{remove.disabled=false;}
+   };
+  }catch(error){if(version===listVersion)list.textContent=errorText(error);}
+ }
+ manage.addEventListener("toggle",()=>{if(manage.open)loadAssigned();});
  const give=document.createElement("button");give.type="button";give.textContent="Donner à toute la classe";
  status.setAttribute("role","status");
  const description=document.createElement("p");description.className="muted";
  description.textContent=ZooVocabulary.catalog.length?"Chaque élève termine d’abord l’exercice qu’il a déjà commencé ou reçu. Pour un seul élève, utilisez Ma classe.":"Aucun corpus disponible. Les imagiers apparaîtront ici après leur import.";
  function change(){give.disabled=!classes.value||!corpora.value;status.textContent="";}
- classes.onchange=corpora.onchange=change;change();
+ classes.onchange=()=>{change();if(manage.open)loadAssigned();};corpora.onchange=change;change();
  give.onclick=async()=>{
   const id=classes.value, book=ZooVocabulary.get(corpora.value), label=classes.options[classes.selectedIndex].textContent;
   if(!book||!id)return;
@@ -1163,11 +1204,12 @@ function renderVocabularyAssignment(){
    const {data,error}=await client.rpc("teacher_queue_vocabulary",{p_class:id,p_corpus:book.id});
    if(error)throw error;
    status.textContent=data?"✓ "+book.title+" attribué à la classe.":"Ce corpus figure déjà dans la liste de cette classe.";
+   if(manage.open)await loadAssigned();
   }catch(error){status.textContent=errorText(error);}
   finally{give.disabled=classes.disabled=corpora.disabled=false;}
  };
  const fields=document.createElement("div");fields.className="actions";fields.append(classes,corpora,give);
- host.append(description,fields,status);
+ host.append(description,fields,manage,status);
 }
 const vocabImport=(()=>{
  let groups=[], urls=[], busy=false, started=false;
