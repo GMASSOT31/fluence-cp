@@ -186,7 +186,11 @@
     var r = state.focus && rows.find(function (x) { return x.s.id === state.focus; });
     if (r) { c.append(studentView(r, rows)); return; }
     state.focus = null;
-    c.append(rhythm(rows), todo(rows, state.cls), matrix(rows));
+    var criteria = {};
+    var alerts = todo(rows, criteria);
+    c.append(matrix(rows, criteria));
+    if (state.cls && C.renderVocabularyAssignment) c.append(classCorpus(state.cls));
+    c.append(alerts, rhythm(rows));
   }
 
   /* Nom d’élève cliquable : ouvre son détail sous sa ligne */
@@ -229,7 +233,7 @@
   }
 
   /* 1. À faire aujourd’hui : lectures à écouter, élèves bloqués, exercices donnés pas encore faits, confusions, inactifs */
-  function todo(rows, cls) {
+  function todo(rows, criteria) {
     var sec = section("📌 À faire aujourd’hui", null);
     var grid = mk("div", "pb-alerts"), n = 0, groups = {};
     function card(cls, title, list, tip, btn) {
@@ -238,6 +242,7 @@
       if (btn) c.append(btn);
       if (!groups[cls]) groups[cls] = [];
       groups[cls].push(c); n++;
+      recordCriterion(criteria, cls, list);
     }
     /* lectures enregistrées à écouter */
     var recs = rows.filter(function (r) { return r.recs > 0; }), nRec = recs.reduce(function (a, r) { return a + r.recs; }, 0);
@@ -291,23 +296,18 @@
     if (idle.length) card("a-idle", "💤 " + plur(idle.length, "élève n’est pas venu", "élèves ne sont pas venus") + " depuis " + INACTIVE_DAYS + " jours ou plus", idle, null);
     var reminders = vocabularyReminders(rows);
     if (reminders.length) {
+      recordCriterion(criteria, "a-review", reminders.map(function (item) { return item.r; }));
       var review = compactDetails("🗓️ Vocabulaire à réviser · " + reminders.length, "pb-alert-group", state.classId + ":vocab-review", state.folded);
       reminders.forEach(function (reminder) { review.append(vocabularyReminderCard(reminder)); });
       grid.append(review); n++;
     }
-    [["a-asg","🎯 Exercices donnés"], ["a-vocab","Attribution collective de corpus"], ["a-conf","🔀 Confusions"], ["a-rec","🎧 Lectures à écouter"],
-     ["a-block","⚠️ Élèves bloqués"], ["a-idle","💤 En sommeil"]].forEach(function (group) {
-      var collective = group[0] === "a-vocab";
-      if (collective ? !cls || !C.renderVocabularyAssignment : !groups[group[0]]) return;
+    [["a-asg","exercice donné à suivre","exercices donnés à suivre"], ["a-conf","élève confond des sons","élèves confondent des sons"],
+     ["a-rec","lecture à écouter","lectures à écouter"], ["a-block","élève bloqué","élèves bloqués"], ["a-idle","élève en sommeil","élèves en sommeil"]].forEach(function (group) {
+      if (!groups[group[0]]) return;
       var key = state.classId + ":" + group[0];
-      var fold = compactDetails(group[1], "pb-alert-group", key, state.folded);
-      if (collective) {
-        fold.append(C.renderVocabularyAssignment(cls, function (id, assigned) {
-          if (state.classId !== cls.id) return;
-          state.classVocab = (state.classVocab || []).filter(function (book) { return book !== id; });
-          if (assigned) state.classVocab.push(id);
-        }));
-      } else groups[group[0]].forEach(function (c) { fold.append(c); });
+      var count = group[0] === "a-rec" ? nRec : criteria[group[0]].size;
+      var fold = compactDetails(plur(count, group[1], group[2]), "pb-alert-group", key, state.folded);
+      groups[group[0]].forEach(function (c) { fold.append(c); });
       grid.append(fold);
     });
     if (!n) grid.append(mk("p", "pb-calm", "✅ Rien d’urgent aujourd’hui."));
@@ -334,16 +334,42 @@
     return sec;
   }
 
-  /* 2. Mes élèves : une ligne par élève, le détail s’ouvre sous la ligne */
-  var FILTERS = [["all", "Tous"], ["late", "En difficulté"], ["ahead", "En avance"], ["idle", "Pas venus"], ["allo", "Apprennent le français"]];
+  function classCorpus(cls) {
+    var fold = compactDetails("📚 Corpus de la classe", "pb-class-corpus", cls.id + ":a-vocab", state.folded);
+    fold.append(C.renderVocabularyAssignment(cls, function (id, assigned) {
+      if (state.classId !== cls.id) return;
+      state.classVocab = (state.classVocab || []).filter(function (book) { return book !== id; });
+      if (assigned) state.classVocab.push(id);
+    }));
+    return fold;
+  }
+  function recordCriterion(criteria, key, rows) {
+    var set = criteria[key] || (criteria[key] = new Set());
+    rows.forEach(function (row) { set.add(row); });
+  }
+  function studentFilter(sec, rows, filters, current, keep, onChange) {
+    var label = mk("label", "pb-filter-control", "Filtrer par"), select = mk("select");
+    filters.forEach(function (f) {
+      var n = rows.filter(function (r) { return keep(r, f[0]); }).length;
+      select.append(new Option(f[1] + " (" + n + ")", f[0]));
+    });
+    select.value = current;
+    select.onchange = function () { onChange(select.value); };
+    label.append(select);
+    sec.querySelector(".pb-h").append(label);
+  }
+  var FILTERS = [["all", "Tous les élèves"], ["late", "En difficulté"], ["ahead", "En avance"], ["idle", "Pas venus"], ["allo", "Apprennent le français"],
+    ["a-asg", "Exercices donnés"], ["a-conf", "Confusions"], ["a-rec", "Lectures à écouter"], ["a-block", "Élèves bloqués"], ["a-review", "Vocabulaire à réviser"]];
   function keep(r, f) { return f === "all" || (f === "late" && r.color === "red") || (f === "ahead" && r.ahead && !r.inactive) || (f === "idle" && r.inactive) || (f === "allo" && r.allo); }
-  function matrix(rows) {
-    var sec = compactDetails("🧒 Les élèves · " + rows.length, "pb-sec pb-students", state.classId + ":students", state.folded);
-    var bar = mk("div", "pb-filters"); bar.setAttribute("role", "group"); bar.setAttribute("aria-label", "Filtrer les élèves");
+  function matrix(rows, criteria) {
+    var sec = section("🧒 Les élèves · " + rows.length, null);
+    sec.classList.add("pb-students");
+    function matches(r, f) { return keep(r, f) || (criteria[f] && criteria[f].has(r)); }
+    studentFilter(sec, rows, FILTERS, state.filter, matches, function (value) { state.filter = value; paint(); });
     var list = mk("div", "pb-kids");
     function paint() {
       list.replaceChildren();
-      var shown = rows.filter(function (r) { return keep(r, state.filter); });
+      var shown = rows.filter(function (r) { return matches(r, state.filter); });
       var rank = { red: 0, yellow: 1, green: 2, idle: 3 };
       shown.sort(function (a, b) { return String(a.s.nickname).localeCompare(b.s.nickname); });
       if (!shown.length) list.append(mk("p", "muted", "Aucun élève dans ce filtre."));
@@ -355,18 +381,10 @@
         b.onclick = function () { openDetail(r.s.id); };
         list.append(b);
       });
-      Array.prototype.forEach.call(bar.children, function (b) { var on = b.dataset.f === state.filter; b.classList.toggle("active", on); b.setAttribute("aria-pressed", String(on)); });
     }
     state.paint = paint;
-    FILTERS.forEach(function (f) {
-      var n = rows.filter(function (r) { return keep(r, f[0]); }).length;
-      if (f[0] === "allo" && !n) return;   /* filtre affiché seulement s’il sert */
-      var b = mk("button", "pb-filter", f[1] + " (" + n + ")"); b.type = "button"; b.dataset.f = f[0];
-      b.onclick = function () { state.filter = f[0]; paint(); };
-      bar.append(b);
-    });
     var legend = mk("p", "muted pb-legend", "🔴 en difficulté (bloqué, ou " + LATE + " sons de retard sur l’élève du milieu de la classe) · 🟡 avance normalement · 🟢 en avance de " + AHEAD + " sons ou plus · ⚪ pas venu depuis " + INACTIVE_DAYS + " jours");
-    sec.append(bar, list, legend);
+    sec.append(list, legend);
     var bulk = trackBulk(rows);
     if (bulk) sec.append(bulk);
     paint();
@@ -1427,5 +1445,5 @@
 
   /* « Mes classes » › « Voir mes élèves » : ouvrir Ma classe sur cette classe */
   function pick(id) { if (id && id !== state.classId) { state.classId = id; state.open = {}; state.filter = "all"; } }
-  window.ZooPeda = { renameBtn: renameBtn, svgWeb: svgWeb, gsSettings: gsSettings, gsCalcSettings: gsCalcSettings, ce1CalcSettings: ce1CalcSettings, trackBox: trackBox, trackBulk: trackBulk, GS_ST: GS_ST, gsAxes: gsAxes, trackOf: trackOf, compactDetails: compactDetails, pick: pick, asgLabel: asgLabel, asgState: asgState, asgStatusText: asgStatusText, render: render, openDetail: openDetail, scrollToStudent: scrollToStudent, tilePairs: TILE_PAIRS, analyse: analyse, classify: classify, axes: axes, drawFiche: drawFiche, drawWeb: drawWeb, refOf: refOf, schoolWeeks: schoolWeeks, YEAR_WEEKS: YEAR_WEEKS, state: state };
+  window.ZooPeda = { renameBtn: renameBtn, svgWeb: svgWeb, gsSettings: gsSettings, gsCalcSettings: gsCalcSettings, ce1CalcSettings: ce1CalcSettings, trackBox: trackBox, trackBulk: trackBulk, GS_ST: GS_ST, gsAxes: gsAxes, trackOf: trackOf, compactDetails: compactDetails, studentFilter: studentFilter, recordCriterion: recordCriterion, pick: pick, asgLabel: asgLabel, asgState: asgState, asgStatusText: asgStatusText, render: render, openDetail: openDetail, scrollToStudent: scrollToStudent, tilePairs: TILE_PAIRS, analyse: analyse, classify: classify, axes: axes, drawFiche: drawFiche, drawWeb: drawWeb, refOf: refOf, schoolWeeks: schoolWeeks, YEAR_WEEKS: YEAR_WEEKS, state: state };
 })();
