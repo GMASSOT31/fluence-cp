@@ -17,6 +17,8 @@
 
 - **Diagnostic GS Lecture** : au début du parcours, « Le défi des lettres » fait reconnaître les 26 capitales à l’oreille, une fois chacune, avec quatre choix et « Je ne sais pas ». La pause conserve les réponses. Un tour de roue à la fin quel que soit le score si les récompenses sont actives. Une lettre reconnue est provisoirement retirée des séries de capitales. Une vérification ponctuelle peut la confirmer ou la remettre au programme. Les autres écritures et compétences gardent leurs propres étapes, et les élèves ayant déjà commencé le parcours poursuivent leurs séances. L’état est dans `progress.gs.diagnostic`, sans migration.
 
+- **Araignées et rythme annuel** : 100 % représente l’objectif de la date de la fiche. Les parcours GS et CE1 calculent les étapes attendues sur le parcours activé. En Calcul, les objectifs de justesse, de rapidité et d’autonomie se rapprochent de la cible annuelle au fil de l’année. L’axe Vocabulaire en Lecture (CP et GS) compte les mots distincts du catalogue actualisé et les réponses justes des blocs réussis, mémorisées dans `progress.remed.vocabWords`. Les anciens corpus terminés comptent en entier faute de détail. Aucune migration.
+
 ## 1. Objectif
 Appli web de fluence de lecture pour des classes de CP, en ligne sur https://zoodelecture.fr
 - **Élève** (eleve.html → zoo-connecte.html) : lecture d'1 minute par son et par niveau (syllabes, mots, texte), en entraînement ou évaluation ; exercice d'écoute « J'écoute » ; animaux qui éclosent et grandissent ; pièces, roue, 8 jeux, boutique.

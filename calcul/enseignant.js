@@ -450,8 +450,8 @@
   var GS_ST = { nouveau: "pas commencé", en_cours: "en cours", maitrise: "maîtrisé", difficulte: "en difficulté" };
   var GS_TIP = { chiffres: "Trouver le chiffre entendu", ordre: "Ranger des nombres du plus petit au plus grand", denombre: "Compter une collection d’animaux", compare: "Où y en a-t-il le plus / le moins ?", collec: "Mettre n animaux dans l’enclos" };
   function gsCfg() { return window.ZooGSData.calcConfig(window.pedaGsCfg); }
-  function gsAxes(r) {
-    var D = window.ZooGSData, wk = window.ZooPeda.schoolWeeks();
+  function gsAxes(r, now) {
+    var D = window.ZooGSData, wk = window.ZooPeda.schoolWeeks(now);
     return { wk: wk, list: D.calcRadar(gsCfg(), r.gs.st, r.gs.gsh, wk / window.ZooPeda.YEAR_WEEKS).map(function (a) {
       return { k: a.k, name: a.name, v: a.v, txt: a.done + "/" + a.total + " étapes · attendu " + a.exp + " · " + GS_ST[a.status], tip: GS_TIP[a.k] || "" };
     }) };
@@ -532,24 +532,28 @@
   var GOAL = { first: 80, ms: 5000, alone: 90 };
   function ctx() { return window.ZooPedaCtx ? window.ZooPedaCtx() : {}; }
   function ficheOK() { return !!(window.ZooPeda && window.ZooPeda.drawWeb && ctx().pdfMake); }
-  function calcAxes(r) {
-    var P = window.ZooPeda, wk = P.schoolWeeks(), lv = r.lv, q = 0, c = 0, h = 0, ms = [], list = [];
+  function calcAxes(r, now) {
+    var P = window.ZooPeda, wk = P.schoolWeeks(now), lv = r.lv, q = 0, c = 0, h = 0, ms = [], list = [];
     Object.keys(ACT).forEach(function (a) {
-      var ids = stepsOf(a, r.ce1), done = ids.filter(function (id) { return (lv[a + ":" + id] || {}).ok >= 1; }).length, exp = Math.max(1, Math.round(ids.length * wk / P.YEAR_WEEKS));
+      var ids = stepsOf(a, r.ce1), done = ids.filter(function (id) { return (lv[a + ":" + id] || {}).ok >= 1; }).length, exp = P.expected(ids.length, now);
       if (!ids.length) return;   /* CE1 : pas encore d'addition ni de soustraction */
       ids.forEach(function (id) { var e = lv[a + ":" + id]; if (!e || !e.q) return; q += e.q; c += e.c || 0; h += (e.h || 0) + (e.rp || 0); if (e.ms > 0) ms.push(e.ms); });
       list.push({ name: r.ce1 && a === "nombres" ? "Nombres jusqu’à 1 000" : ACT[a].title, v: Math.round(done * 100 / exp), txt: done + " " + pl(done, "étape", "étapes") + " · " + exp + " " + pl(exp, "attendue", "attendues"), tip: ids.length + " étapes dans l’année" });
     });
     var first = q ? Math.round(c * 100 / q) : null, alone = q ? Math.max(0, 100 - Math.round(h * 100 / q)) : null, med = ms.length ? median(ms) : null;
-    list.push({ name: "Du premier coup", v: first === null ? null : Math.round(first * 100 / GOAL.first), txt: first === null ? "pas encore mesuré" : first + " % des réponses", tip: "Objectif : " + GOAL.first + " % de bonnes réponses du premier coup" });
-    list.push({ name: "Rapidité", v: med === null ? null : Math.round(GOAL.ms * 100 / med), txt: med === null ? "pas encore mesuré" : String(Math.round(med / 100) / 10).replace(".", ",") + " s par réponse", tip: "Objectif : " + GOAL.ms / 1000 + " s par réponse ou moins" });
-    list.push({ name: "Sans aide", v: alone === null ? null : Math.round(alone * 100 / GOAL.alone), txt: alone === null ? "pas encore mesuré" : alone + " % sans aide", tip: "Sans « Je m’aide » ni réécoute ; objectif " + GOAL.alone + " %" });
+    var fraction = wk / P.YEAR_WEEKS;
+    var firstGoal = Math.max(1, Math.round(GOAL.first * fraction));
+    var aloneGoal = Math.max(1, Math.round(GOAL.alone * fraction));
+    var timeGoal = Math.round(GOAL.ms / fraction / 100) * 100;
+    list.push({ name: "Du premier coup", v: first === null ? null : Math.round(first * 100 / firstGoal), txt: first === null ? "pas encore mesuré" : first + " % des réponses", tip: "Objectif à cette date : " + firstGoal + " % de bonnes réponses du premier coup" });
+    list.push({ name: "Rapidité", v: med === null ? null : Math.round(timeGoal * 100 / med), txt: med === null ? "pas encore mesuré" : String(Math.round(med / 100) / 10).replace(".", ",") + " s par réponse", tip: "Objectif à cette date : " + String(timeGoal / 1000).replace(".", ",") + " s par réponse ou moins" });
+    list.push({ name: "Sans aide", v: alone === null ? null : Math.round(alone * 100 / aloneGoal), txt: alone === null ? "pas encore mesuré" : alone + " % sans aide", tip: "Objectif à cette date : " + aloneGoal + " %" });
     return { list: list, wk: wk };
   }
   function ascii(t) { var T = ctx().pdfText; return T ? T(t) : String(t); }
-  function drawCalcFiche(doc, r, clsName, ref) {
-    if (r.gs) { drawGsFiche(doc, r, clsName, ref); return; }
-    var P = window.ZooPeda, ax = calcAxes(r), W = 210, M = 16, T = ascii, now = new Date(), y;
+  function drawCalcFiche(doc, r, clsName, ref, date) {
+    if (r.gs) { drawGsFiche(doc, r, clsName, ref, date); return; }
+    var P = window.ZooPeda, ax = calcAxes(r, date), W = 210, M = 16, T = ascii, now = new Date(date), y;
     var dd = ("0" + now.getDate()).slice(-2) + "/" + ("0" + (now.getMonth() + 1)).slice(-2) + "/" + now.getFullYear();
     doc.setFillColor(7, 95, 93); doc.roundedRect(M, 12, W - 2 * M, 14, 3, 3, "F");
     doc.setTextColor(255); doc.setFont("helvetica", "bold"); doc.setFontSize(15); doc.text("Zoo de Calcul", M + 5, 21.4);
@@ -588,8 +592,8 @@
     doc.text(T("zoodelecture.fr · 100 % = attendu à cette date (semaine " + Math.round(ax.wk) + " sur " + P.YEAR_WEEKS + ") ou objectif indiqué. Bord de la toile : 150 %."), M, 290);
   }
   /* Fiche PDF d'un élève en parcours GS : même en-tête et même toile, branches du cahier 10.2 */
-  function drawGsFiche(doc, r, clsName, ref) {
-    var P = window.ZooPeda, D = window.ZooGSData, ax = gsAxes(r), sm = r.gs.sm, W = 210, M = 16, T = ascii, now = new Date(), y;
+  function drawGsFiche(doc, r, clsName, ref, date) {
+    var P = window.ZooPeda, D = window.ZooGSData, ax = gsAxes(r, date), sm = r.gs.sm, W = 210, M = 16, T = ascii, now = new Date(date), y;
     var dd = ("0" + now.getDate()).slice(-2) + "/" + ("0" + (now.getMonth() + 1)).slice(-2) + "/" + now.getFullYear();
     doc.setFillColor(7, 95, 93); doc.roundedRect(M, 12, W - 2 * M, 14, 3, 3, "F");
     doc.setTextColor(255); doc.setFont("helvetica", "bold"); doc.setFontSize(15); doc.text("Zoo de Calcul", M + 5, 21.4);
@@ -629,14 +633,14 @@
   }
   function makeFiches(list, clsName, btn, file) {
     var C2 = ctx(); if (!C2.pdfMake || !list.length) return;
-    var ref = null, refGs = null;
-    ref = window.ZooPeda.refOf(view.rows.filter(function (r) { return !r.inactive && !r.gs && !r.ce1; }).map(function (r) { return calcAxes(r).list; }));   /* sans les absents ni les extrêmes */
-    var refCe1 = window.ZooPeda.refOf(view.rows.filter(function (r) { return !r.inactive && r.ce1; }).map(function (r) { return calcAxes(r).list; }));   /* élève moyen parmi ceux du parcours CE1 */
-    refGs = window.ZooPeda.refOf(view.rows.filter(function (r) { return !r.inactive && r.gs; }).map(function (r) { return gsAxes(r).list; }));   /* élève moyen parmi ceux du parcours GS */
+    var ref = null, refGs = null, date = Date.now();
+    ref = window.ZooPeda.refOf(view.rows.filter(function (r) { return !r.inactive && !r.gs && !r.ce1; }).map(function (r) { return calcAxes(r, date).list; }));   /* sans les absents ni les extrêmes */
+    var refCe1 = window.ZooPeda.refOf(view.rows.filter(function (r) { return !r.inactive && r.ce1; }).map(function (r) { return calcAxes(r, date).list; }));   /* élève moyen parmi ceux du parcours CE1 */
+    refGs = window.ZooPeda.refOf(view.rows.filter(function (r) { return !r.inactive && r.gs; }).map(function (r) { return gsAxes(r, date).list; }));   /* élève moyen parmi ceux du parcours GS */
     C2.pdfMake({ btn: btn, msgId: "calcMsg", wait: "Création de la fiche…", file: file,
       title: list.length > 1 ? "Fiches de calcul de « " + clsName + " »" : "Fiche de calcul de " + list[0].s.nickname,
       ok: "📄 " + (list.length > 1 ? list.length + " fiches de suivi pour « " + clsName + " »" : "Fiche de suivi de " + list[0].s.nickname) + " : le PDF s’ouvre (sinon, regardez dans vos téléchargements).",
-      build: function (doc) { list.forEach(function (r, i) { if (i) doc.addPage(); drawCalcFiche(doc, r, clsName, r.gs ? refGs : r.ce1 ? refCe1 : ref); }); } });
+      build: function (doc) { list.forEach(function (r, i) { if (i) doc.addPage(); drawCalcFiche(doc, r, clsName, r.gs ? refGs : r.ce1 ? refCe1 : ref, date); }); } });
   }
   function statusTxt(e) { var s = E.status(e); return s === "mastered" ? "⭐ maîtrisé" : s === "done" ? "✓ réussi" : s === "todo" ? "🕒 à travailler" : "pas encore commencé"; }
   function detailGrid(lv, ce1) {
@@ -843,7 +847,7 @@
     pickClass: function (id) {
       if (id !== view.classId) { view.classId = id; view.open = {}; view.filter = "all"; }
     },
-    _fiche: { draw: function (d, r, n, f) { drawCalcFiche(d, r, n, f); }, view: view },
+    _fiche: { draw: function (d, r, n, f) { drawCalcFiche(d, r, n, f, Date.now()); }, view: view },
     init: function (a) {
       if (document.getElementById("calc-teacher-css") || !E || !C.url) return;
       role = a && a.role === "admin" ? "admin" : "teacher"; css();

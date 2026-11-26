@@ -2,8 +2,9 @@
 (function (root) {
   "use strict";
   var catalog = [];
-  var api = { catalog: catalog, get: get, blocks: blocks, load: load, reviewHistory: reviewHistory, reviewDue: reviewDue };
+  var api = { catalog: catalog, get: get, wordKey: wordKey, blocks: blocks, load: load, reviewHistory: reviewHistory, reviewDue: reviewDue };
   function get(id) { return catalog.filter(function (book) { return book.id === id; })[0] || null; }
+  function wordKey(word) { return String(word).trim().toLowerCase().normalize("NFC").replace(/’/g, "'").replace(/\s+/g, " "); }
   function blocks(book) {
     var result = [];
     for (var i = 0; i < book.words.length; i += 6) {
