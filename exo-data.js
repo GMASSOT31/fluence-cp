@@ -238,6 +238,15 @@
   var PHONO_SOLO = { voy: 1 };   /* voyelles : l’image piège n’exclut que la voyelle demandée */
   function phonoKey(id) { var t = PHONO_SOUNDS[id]; return t ? t.map(function (x) { return x[0]; }).join(",") : ""; }
   function phonoShuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  function phonoOffered(id, order) {
+    var key = phonoKey(id);
+    if (!key || LISTEN_SKIP[id]) return false;
+    for (var i = 0; i < order.length; i++) {
+      if (order[i].id === id) return true;
+      if (phonoKey(order[i].id) === key) return false;
+    }
+    return true;
+  }
   function phonoHas(p, code) { return p[2].indexOf(code) >= 0; }
   /* n questions pour un son : { code, say, show, good: [image, mot, sons], opts: 3 images mélangées } */
   function phonoBuild(id, n) {
@@ -337,7 +346,7 @@
     LISTEN_ITEMS: LISTEN_ITEMS, LISTEN_SKIP: LISTEN_SKIP, SYL_VOWELS: SYL_VOWELS, SYL_E_WORDS: SYL_E_WORDS, LISTEN_SYL_CONS: LISTEN_SYL_CONS,
     LISTEN_SYL_VOW: LISTEN_SYL_VOW, SYL_NO_INVERSE: SYL_NO_INVERSE, SYL_SAY_FIX: SYL_SAY_FIX, LISTEN_WORDS: LISTEN_WORDS,
     wordsFor: wordsFor, sylConsAll: sylConsAll, sylConsByG: sylConsByG, sylOK: sylOK, sylVowSay: sylVowSay, sylSay: sylSay, exoAuto: exoAuto,
-    PHONO_PICS: PHONO_PICS, PHONO_SOUNDS: PHONO_SOUNDS, phonoKey: phonoKey, phonoBuild: phonoBuild,
+    PHONO_PICS: PHONO_PICS, PHONO_SOUNDS: PHONO_SOUNDS, phonoKey: phonoKey, phonoOffered: phonoOffered, phonoBuild: phonoBuild,
     COMPR_PICS: COMPR_PICS, comprWords: comprWords, comprHas: comprHas, comprBuild: comprBuild
   };
 })();

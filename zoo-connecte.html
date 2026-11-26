@@ -1843,7 +1843,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   }catch(e){}
 })();
 </script>
-<script src="exo-data.js?v=6"></script>
+<script src="exo-data.js?v=7"></script>
 <script src="gs-data.js?v=7"></script>
 <script src="gs-lecture.js?v=7"></script>
 <script src="vocabulaire.js?v=4"></script>
@@ -4859,12 +4859,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   function phonoMine(sid) { if (!data.phono[sid]) data.phono[sid] = listenClean(null); return data.phono[sid]; }
   function phonoDone(sid, id) { var P = phonoMine(sid); return !!P.done[id] || (P.passes[id] || 0) >= 1; }
   /* Un son a son étape « J’entends » s’il a des images, et si aucun son placé avant lui dans l’ordre de l’enseignant ne fait déjà entendre la même chose (en après an, ph après f…) */
-  function phonoHas(id) {
-    var k = phonoKey(id);
-    if (!k || LISTEN_SKIP[id]) return false;
-    for (var i = 0; i < data.sounds.length; i++) { if (data.sounds[i].id === id) return true; if (phonoKey(data.sounds[i].id) === k) return false; }
-    return true;
-  }
+  function phonoHas(id) { return ZooExo.phonoOffered(id, data.sounds); }
   /* ce que la voix dit du son (« on », « feu »…) — nom distinct de phonoSay plus bas (deux fonctions du même nom : la 2e écrasait la 1re, d’où « le son undefined ») */
   function phonoName(id) { var t = (ZooExo.PHONO_SOUNDS || {})[id]; return t ? t.map(function (x) { return x[1]; }).join(", ") : id; }
   function phonoClear() { PH.timers.forEach(clearTimeout); PH.timers = []; }
