@@ -276,7 +276,7 @@
     });
     /* exercices donnés, pas encore réussis */
     var asg = rows.filter(function (r) { return r.asg && !asgState(r.asg, r.remed).ok; });
-    if (asg.length) card("a-asg", "🎯 " + plur(asg.length, "exercice donné pas encore réussi", "exercices donnés pas encore réussis"), asg, null);
+    recordCriterion(criteria, "a-asg", asg);
     /* confusions fréquentes dans la classe (écoute, dictée, tuiles) */
     var conf = {};
     rows.forEach(function (r) {
@@ -292,8 +292,6 @@
     }).filter(function (c) { return c.who.length; }).sort(function (a, b) { return b.who.length - a.who.length || b.total - a.total; }).slice(0, 3).forEach(function (c) {
       card("a-conf", "🔀 Confondent « " + c.k.replace(" / ", " » et « ") + " »", c.who, "Au moins 2 fois. Un exercice « Tuiles des sons » peut aider (« Donner un exercice »).");
     });
-    var idle = rows.filter(function (r) { return r.inactive; });
-    if (idle.length) card("a-idle", "💤 " + plur(idle.length, "élève n’est pas venu", "élèves ne sont pas venus") + " depuis " + INACTIVE_DAYS + " jours ou plus", idle, null);
     var reminders = vocabularyReminders(rows);
     if (reminders.length) {
       recordCriterion(criteria, "a-review", reminders.map(function (item) { return item.r; }));
@@ -301,8 +299,8 @@
       reminders.forEach(function (reminder) { review.append(vocabularyReminderCard(reminder)); });
       grid.append(review); n++;
     }
-    [["a-asg","exercice donné à suivre","exercices donnés à suivre"], ["a-conf","élève confond des sons","élèves confondent des sons"],
-     ["a-rec","lecture à écouter","lectures à écouter"], ["a-block","élève bloqué","élèves bloqués"], ["a-idle","élève en sommeil","élèves en sommeil"]].forEach(function (group) {
+    [["a-conf","élève confond des sons","élèves confondent des sons"],
+     ["a-rec","lecture à écouter","lectures à écouter"], ["a-block","élève bloqué","élèves bloqués"]].forEach(function (group) {
       if (!groups[group[0]]) return;
       var key = state.classId + ":" + group[0];
       var count = group[0] === "a-rec" ? nRec : criteria[group[0]].size;
@@ -554,68 +552,91 @@
   }
   /* ===== Changement de parcours de plusieurs élèves à la fois (cahier 3.2, étape D) : cases à cocher, parcours visé, confirmation.
      Seulement ses propres élèves ; les élèves non cochés ne changent pas ; aucun résultat effacé (progress.gs et les résultats CP restent). ===== */
-  state.bulk = { sel: {}, to: "gs", dom: "lecture" };
+  state.bulk = { sel: {}, to: "gs", scope: null };
   function trackBulk(rows, afterBulk, scope) {
     if (window.ZooPedaCtx) C = window.ZooPedaCtx();
     var own = (rows || []).filter(function (r) { return C.currentUser && r.s.teacher_id === C.currentUser.id; })
       .sort(function (a, b) { return String(a.s.nickname).localeCompare(b.s.nickname); });
     if (!own.length) return null;
-    var B = state.bulk, box = compactDetails("🔀 Changer le parcours de plusieurs élèves", "pb-bulk", (scope || state.classId) + ":bulk", state.folded);
+    var B = state.bulk, key = scope || state.classId;
+    if (B.scope !== key) { B.scope = key; B.sel = {}; }
+    var box = compactDetails("🔀 Changer le parcours de plusieurs élèves", "pb-bulk", key + ":bulk", state.folded);
     var body = mk("div", "pb-bulk-body"), msg = mk("p", "msg"); msg.setAttribute("role", "status");
     function paint() {
       body.replaceChildren();
-      if (!calcOn()) B.dom = "lecture";
-      var doms = B.dom === "both" ? ["lecture", "calcul"] : [B.dom], what = B.dom === "both" ? "de lecture et de calcul" : "de " + DOM_NAME[B.dom];
-      function badges(r) { var f = document.createDocumentFragment(); f.append(mk("span", trkCls(trackOf(r.s.id)), (calcOn() ? "📖 " : "") + trackOf(r.s.id).toUpperCase())); if (calcOn()) f.append(mk("span", trkCls(trackOf(r.s.id, "calcul")), "🔢 " + trackOf(r.s.id, "calcul").toUpperCase())); return f; }
-      if (!doms.every(function (d) { return READY[d][B.to]; })) B.to = "cp";   /* CE1 : seulement pour le calcul */
-      function isTo(r) { return doms.every(function (d) { return trackOf(r.s.id, d) === B.to; }); }
-      body.append(mk("p", "muted", "Cochez les élèves, choisissez " + (calcOn() ? "la matière et " : "") + "leur parcours, puis confirmez. Les élèves non cochés ne changent pas. Tous les résultats sont gardés."));
-      var tools = mk("div", "pb-bulk-tools"), all = mk("button", "secondary", "Tout cocher"), none = mk("button", "secondary", "Tout décocher");
-      all.type = none.type = "button";
-      all.onclick = function () { own.forEach(function (r) { B.sel[r.s.id] = true; }); paint(); };
-      none.onclick = function () { B.sel = {}; paint(); };
-      tools.append(all, none); body.append(tools);
+      var doms = calcOn() ? ["lecture", "calcul"] : ["lecture"];
+      function cellKey(r, d) { return r.s.id + ":" + d; }
+      function selections() {
+        var picked = [];
+        own.forEach(function (r) {
+          doms.forEach(function (d) { if (B.sel[cellKey(r, d)]) picked.push({ student: r, domain: d }); });
+        });
+        return picked;
+      }
+      var tools = mk("div", "pb-bulk-tools"), none = mk("button", "secondary", "Tout décocher");
+      doms.forEach(function (d) {
+        var all = mk("button", "secondary", "Tout cocher en " + DOM_NAME[d]); all.type = "button";
+        all.onclick = function () { own.forEach(function (r) { B.sel[cellKey(r, d)] = true; }); paint(); };
+        tools.append(all);
+      });
+      none.type = "button"; none.onclick = function () { B.sel = {}; paint(); };
+      tools.append(none);
+      body.append(mk("p", "muted", "Cochez " + (doms.length === 2 ? "Lecture ou Calcul pour chaque élève" : "les élèves") + ", puis choisissez le nouveau parcours. Les résultats sont conservés."), tools);
       var grid = mk("div", "pb-bulk-kids");
       own.forEach(function (r) {
-        var lab = mk("label", "pb-bulk-kid"), cb = mk("input"); cb.type = "checkbox"; cb.checked = !!B.sel[r.s.id];
-        cb.onchange = function () { if (cb.checked) B.sel[r.s.id] = true; else delete B.sel[r.s.id]; count(); };
-        lab.append(cb, mk("span", "pb-kname", r.s.nickname), badges(r));
-        grid.append(lab);
+        var card = mk("div", "pb-bulk-kid"), fields = mk("div", "pb-bulk-subjects");
+        card.append(mk("strong", "pb-kname", r.s.nickname), fields);
+        doms.forEach(function (d) {
+          var lab = mk("label", "pb-bulk-subject"), cb = mk("input"), id = cellKey(r, d), track = trackOf(r.s.id, d);
+          var subject = d === "lecture" ? "Lecture" : "Calcul";
+          cb.type = "checkbox"; cb.checked = !!B.sel[id];
+          cb.setAttribute("aria-label", subject + " — " + r.s.nickname);
+          cb.onchange = function () { if (cb.checked) B.sel[id] = true; else delete B.sel[id]; count(); };
+          lab.append(cb, mk("span", null, subject), mk("span", trkCls(track), track.toUpperCase()));
+          fields.append(lab);
+        });
+        grid.append(card);
       });
       body.append(grid);
-      if (calcOn()) {
-        var dm = mk("div", "pb-track"); dm.append(mk("strong", null, "Matière : "));
-        [["lecture", "Lecture seule"], ["calcul", "Calcul seul"], ["both", "Les deux"]].forEach(function (o) {
-          var b = mk("button", "pb-trk" + (B.dom === o[0] ? " on" : ""), o[1]); b.type = "button"; b.setAttribute("aria-pressed", String(B.dom === o[0]));
-          b.onclick = function () { B.dom = o[0]; paint(); };
-          dm.append(b);
-        });
-        body.append(dm);
-      }
-      var to = mk("div", "pb-track"); to.append(mk("strong", null, "Nouveau parcours " + what + " : "));
-      [["gs", "GS"], ["cp", "CP"], ["ce1", B.dom === "calcul" ? "CE1" : "CE1 · calcul seulement"]].forEach(function (o) {
-        var b = mk("button", "pb-trk" + (B.to === o[0] ? " on" : ""), o[1]); b.type = "button"; b.setAttribute("aria-pressed", String(B.to === o[0]));
-        if (!doms.every(function (d) { return READY[d][o[0]]; })) b.disabled = true;
-        b.onclick = function () { B.to = o[0]; paint(); };
-        to.append(b);
+      var to = mk("div", "pb-track"), targets = {};
+      to.append(mk("strong", null, "Nouveau parcours"));
+      [["gs", "GS"], ["cp", "CP"], ["ce1", "CE1 · Calcul"]].forEach(function (o) {
+        var b = mk("button", "pb-trk", o[1]); b.type = "button";
+        b.onclick = function () { B.to = o[0]; count(); };
+        targets[o[0]] = b; to.append(b);
       });
       body.append(to);
       var go = mk("button", "primary", ""); go.type = "button";
       var confirmBox = mk("div", "pb-bulk-confirm");
-      function count() { var n = own.filter(function (r) { return B.sel[r.s.id]; }).length; go.textContent = "Passer " + plur(n, "élève", "élèves") + " en " + B.to.toUpperCase() + "…"; go.disabled = !n; confirmBox.replaceChildren(); }
+      function count() {
+        var picked = selections(), eligible = picked.length ? picked.map(function (item) { return item.domain; }) : doms;
+        if (!eligible.every(function (d) { return READY[d][B.to]; })) B.to = "cp";
+        Object.keys(targets).forEach(function (level) {
+          var button = targets[level], on = level === B.to;
+          button.disabled = !eligible.every(function (d) { return READY[d][level]; });
+          button.classList.toggle("on", on); button.setAttribute("aria-pressed", String(on));
+        });
+        var n = new Set(picked.map(function (item) { return item.student.s.id; })).size;
+        go.textContent = "Passer " + plur(n, "élève", "élèves") + " en " + B.to.toUpperCase() + "…";
+        go.disabled = !n; confirmBox.replaceChildren();
+      }
       go.onclick = function () {
-        var picked = own.filter(function (r) { return B.sel[r.s.id]; }), change = picked.filter(function (r) { return !isTo(r); }), label = B.to.toUpperCase();
+        var level = B.to, label = level.toUpperCase();
+        var changes = selections().filter(function (item) { return trackOf(item.student.s.id, item.domain) !== level; });
         confirmBox.replaceChildren();
-        if (!change.length) { confirmBox.append(mk("p", "muted", (picked.length > 1 ? "Ces élèves sont déjà" : "Cet élève est déjà") + " en " + label + ".")); return; }
-        confirmBox.append(mk("p", null, "Passer en " + label + " pour " + (B.dom === "both" ? "la lecture et le calcul" : B.dom === "lecture" ? "la lecture" : "le calcul") + " : " + change.map(function (r) { return r.s.nickname; }).join(", ") + " (" + plur(change.length, "élève", "élèves") + ")." + (picked.length > change.length ? " Déjà en " + label + " : " + picked.filter(function (r) { return change.indexOf(r) < 0; }).map(function (r) { return r.s.nickname; }).join(", ") + "." : "")),
-          mk("p", "muted", "Les autres élèves ne changent pas. " + (change.length > 1 ? "Leurs" : "Ses") + " résultats sont tous gardés : vous pourrez revenir en arrière à tout moment."));
+        if (!changes.length) { confirmBox.append(mk("p", "muted", "Les parcours cochés sont déjà en " + label + ".")); return; }
+        var summary = doms.map(function (d) {
+          var names = changes.filter(function (item) { return item.domain === d; }).map(function (item) { return item.student.s.nickname; });
+          return names.length ? DOM_NAME[d] + " : " + names.join(", ") : "";
+        }).filter(Boolean).join(" · ");
+        confirmBox.append(mk("p", null, "Passer en " + label + " — " + summary + "."));
         var yes = mk("button", "primary", "✅ Oui, appliquer"), no = mk("button", "secondary", "Annuler"); yes.type = no.type = "button";
         no.onclick = function () { confirmBox.replaceChildren(); };
         yes.onclick = function () {
-          change.forEach(function (r) { doms.forEach(function (d) { setTrack(r.s.id, d, B.to); }); });
+          changes.forEach(function (item) { setTrack(item.student.s.id, item.domain, level); });
           if (C.queueSave) C.queueSave("pedaSave");
           B.sel = {};
-          state.bulkMsg = "✅ Parcours " + what + " " + label + " pour " + change.map(function (r) { return r.s.nickname; }).join(", ") + ". " + (change.length > 1 ? "Leurs" : "Ses") + " résultats sont tous gardés.";
+          state.bulkMsg = "✅ Parcours " + label + " appliqué — " + summary + ".";
           if (afterBulk) afterBulk(); else draw();
         };
         var row = mk("div", "pb-bulk-tools"); row.append(yes, no); confirmBox.append(row);

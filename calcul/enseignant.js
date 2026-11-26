@@ -296,9 +296,8 @@
     view.paint = paint;
     sec.appendChild(el("p", "muted pb-legend", "🔴 en difficulté (bloqué sur une étape, ou " + LATE + " étapes de retard sur l’élève du milieu de la classe) · 🟡 avance normalement · 🟢 en avance de " + AHEAD + " étapes ou plus · ⚪ pas venu depuis " + IDLE_DAYS + " jours"));
     sec.appendChild(list); paint();
-    /* changement de parcours de plusieurs élèves (même volet que la Lecture, matière « Calcul seul » proposée) */
+    /* changement de parcours de plusieurs élèves (même volet que la Lecture) */
     if (window.ZooPeda && window.ZooPeda.trackBulk) {
-      if (!view.bulkInit) { view.bulkInit = true; if (window.ZooPeda.state && window.ZooPeda.state.bulk) window.ZooPeda.state.bulk.dom = "calcul"; }
       var C = ctx(), bulk = window.ZooPeda.trackBulk(rows.map(function (r) { var st = (C.allStudents || []).find(function (x) { return x.id === r.s.student_id; }) || {}; return { s: { id: r.s.student_id, teacher_id: st.teacher_id, nickname: r.s.nickname } }; }),
         function () { paintBoard(); }, "calc:" + view.classId);
       if (bulk) sec.appendChild(bulk);
