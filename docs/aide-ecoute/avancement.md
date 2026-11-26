@@ -1,5 +1,7 @@
 # Aide automatique à l'écoute — avancement et passation
 
+**État au 26/11/2026.** Mise en ligne vérifiée de la lecture CP en un passage (#398). Il reste à vérifier la fiabilité de la mesure automatique en classe. La PR #385 de Claude sur le rappel rouge reste ouverte.
+
 À lire avec `mesures.md` (résultats chiffrés et limites) et `CLAUDE.md` (règles du projet, §6 « Médaille = lecture enregistrée » et « Valider une lecture depuis la fiche »). Tenu à jour à chaque étape. Dernière mise à jour : 26/11/2026 (Claude).
 
 ## Mission Lecture CP en un seul passage

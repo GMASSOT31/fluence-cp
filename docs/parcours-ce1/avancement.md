@@ -1,5 +1,7 @@
 # Parcours CE1 — avancement et passation
 
+**État au 26/11/2026.** Mise en ligne vérifiée de la toile annuelle du CE1 Calcul (#399). Les attentes dépendent des étapes activées et de la date. Le CE1 Lecture reste à venir.
+
 
 - **Araignées et rythme annuel** : 100 % représente l’objectif de la date de la fiche. Les parcours GS et CE1 calculent les étapes attendues sur le parcours activé. En Calcul, les objectifs de justesse, de rapidité et d’autonomie se rapprochent de la cible annuelle au fil de l’année. L’axe Vocabulaire en Lecture (CP et GS) compte les mots distincts du catalogue actualisé et les réponses justes des blocs réussis, mémorisées dans `progress.remed.vocabWords`. Les anciens corpus terminés comptent en entier faute de détail. Aucune migration.
 À lire avec `plan.md` (repères officiels cités) et `../parcours-gs/avancement.md` (même architecture). Tenu à jour à chaque étape.
