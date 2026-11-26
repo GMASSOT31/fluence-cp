@@ -89,25 +89,88 @@
     var series = Array.isArray(p.series) ? p.series.filter(function (x) { return x && typeof x.id === "string"; }).slice(-60) : [];
     var rw = Array.isArray(p.rw) ? p.rw.filter(function (x) { return typeof x === "string"; }).slice(-100) : [];
     var rit = {}; if (p.rituel && typeof p.rituel.lecture === "number") rit.lecture = p.rituel.lecture;
-    return { lecture: D.lecState(lec), series: series, rw: rw, rituel: rit };
+    return { lecture: D.lecState(lec), series: series, rw: rw, rituel: rit, diagnostic: D.diagnosticState(p.diagnostic) };
   }
   function mine(sid) { var d = ctx().data; d.gs = d.gs || {}; if (!d.gs[sid]) d.gs[sid] = clean(null); return d.gs[sid]; }
   function track(sid, dom) { var t = ctx().data.tracks && ctx().data.tracks[sid]; return t && t[dom] === "gs" ? "gs" : "cp"; }
   function cfg() { return D.config(ctx().data.gsCfg); }
-  function pathOf(sid) { var st = ctx().studentById(sid); return D.path(cfg(), st ? st.name : ""); }
-  function stepList(sid, comp) { var st = ctx().studentById(sid); return D.steps(comp, cfg(), st ? st.name : ""); }
+  function pathOf(sid, preview) { var st = ctx().studentById(sid); return D.path(cfg(), st ? st.name : "", preview ? null : mine(sid).diagnostic); }
+  function diagnosticNeeded(G) {
+    return !G.diagnostic.done && (Object.keys(G.diagnostic.answers).length || !G.series.length && !G.rituel.lecture);
+  }
+  function diagnostic(sid, review) {
+    var C = ctx(), G = mine(sid);
+    var letters = Object.keys(D.LETTER_SAY).filter(function (L) {
+      return review ? G.diagnostic.answers[L] === 1 : !Object.prototype.hasOwnProperty.call(G.diagnostic.answers,L);
+    });
+    if (!letters.length && review) { G.diagnostic.check = false; return false; }
+    R = { diagnostic: true, sid: sid, review: review, letters: letters };
+    audioLoad(); C.goTo("gs"); return true;
+  }
+  function diagnosticQuestion() {
+    var C = ctx(), run = R, sid = run.sid, G = mine(sid), d = G.diagnostic, body = C.$("gs-body");
+    clear(); body.innerHTML = "";
+    if (!run.letters.length) {
+      R = null; d.done = true; d.check = true;
+      var wheel = C.data.reward && G.rw.indexOf("diagnostic") < 0;
+      if (wheel) {
+        G.rw.push("diagnostic"); G.rw = G.rw.slice(-100);
+        C.data.wheels.push({id:"gs:diagnostic:" + sid, sid:sid, ts:Date.now()});
+      }
+      C.save(); C.renderPanels(); C.listenFocus(false);
+      var done = C.el("div","card listen-card");
+      done.appendChild(C.el("h2","","Bravo, tu as fait le défi des lettres !"));
+      var next = C.el("button","primary big-btn go-next",wheel ? "🎡 Lance ta roue !" : "Continuer");
+      next.type = "button";
+      next.onclick = function () { if (wheel) C.openWheel(sid,"Bravo pour ton effort !"); else C.goTo("home"); };
+      done.appendChild(next); body.appendChild(done);
+      C.listenSpeak(wheel ? "Bravo pour ton effort ! Tu as gagné un tour de roue." : "Bravo pour ton effort !");
+      return;
+    }
+    var card = C.el("div","card listen-card"), top = C.el("div","listen-top"), L = run.letters[Math.floor(Math.random()*run.letters.length)];
+    run.target = L;
+    var q = D.diagnosticQuestion(L), replied = false;
+    top.appendChild(C.el("span","listen-count",run.review ? "Une lettre à revoir" : (Object.keys(d.answers).length + 1) + " sur " + Object.keys(D.LETTER_SAY).length));
+    var stopBtn = C.el("button","secondary","Faire une pause"); stopBtn.type = "button";
+    stopBtn.onclick = function () { stop(); C.goTo("home"); }; top.appendChild(stopBtn); card.appendChild(top);
+    var listen = C.el("button","listen-play","🔊 Écouter"); listen.type = "button";
+    function prompt() { if (R === run && !replied) sayAll([["c:touche","Touche la lettre"],letterPart(L)]); }
+    listen.onclick = prompt; card.appendChild(listen);
+    card.appendChild(C.el("p","instruction","Touche la lettre que tu entends."));
+    var grid = C.el("div","gs-grid"), skip = C.el("button","secondary","Je ne sais pas"); skip.type = "button";
+    function answer(good) {
+      if (replied || R !== run) return;
+      replied = true; clear(); sayAll.tok = null; audioStop(); C.listenStopVoice();
+      d.answers[L] = good ? (run.review ? 2 : 1) : 0;
+      if (run.review) {
+        d.check = false; R = null;
+        if (!good) {
+          G.lecture.cap.ok = 0; G.lecture.cap.ko = 0; G.lecture.cap.aid = false;
+        }
+        C.save(); start(sid); return;
+      }
+      run.letters.splice(run.letters.indexOf(L),1);
+      if (run.letters.length) C.save();
+      diagnosticQuestion();
+    }
+    q.opts.forEach(function (letter) { var b = letBtn(letter,"cap"); b.onclick = function () { answer(letter === L); }; grid.appendChild(b); });
+    skip.onclick = function () { answer(false); };
+    card.appendChild(grid); card.appendChild(skip); body.appendChild(card);
+    later(prompt,120);
+  }
   /* ---------- accueil GS : une seule grande action ---------- */
   function home(body, sid, st) {
-    var C = ctx(), G = mine(sid), items = pathOf(sid), i = D.pathCurrent(G.lecture, items), wheels = C.data.reward ? C.pendingWheels(sid).length : 0, first = !G.rituel.lecture;
+    var C = ctx(), G = mine(sid), items = pathOf(sid), i = D.pathCurrent(G.lecture, items), wheels = C.data.reward ? C.pendingWheels(sid).length : 0, first = !G.rituel.lecture, testing = diagnosticNeeded(G);
     css(); audioLoad();
     var card = C.el("div", "card home-hero");
     card.appendChild(C.el("h2", "", "Bonjour " + st.name + " !"));
     var key, text, btn, go;
-    if (wheels) { btn = "🎡 Lance ta roue !"; key = "c:roue"; text = "Une roue t’attend. Touche le gros bouton pour la lancer."; go = function () { C.openWheel(sid); }; }
+    if (testing) { btn = "🔤 Le défi des lettres"; key = null; text = "Écoute le nom de la lettre, puis touche-la."; go = function () { diagnostic(sid, false); }; }
+    else if (wheels) { btn = "🎡 Lance ta roue !"; key = "c:roue"; text = "Une roue t’attend. Touche le gros bouton pour la lancer."; go = function () { C.openWheel(sid); }; }
     else if (first) { btn = "🎵 La comptine des lettres"; key = "c:rituel"; text = "D’abord, écoute la comptine des lettres. Touche le gros bouton."; go = function () { rituel(sid); }; }
     else if (i < 0) { btn = "🔤 Je m’entraîne avec les lettres"; key = "c:fini"; text = "Bravo, tu connais toutes les lettres ! Tu peux t’entraîner encore."; go = function () { start(sid); }; }
     else { btn = "🔤 Je joue avec les lettres"; key = "c:mission"; text = "Ta mission : reconnaître les lettres. Touche le gros bouton."; go = function () { start(sid); }; }
-    card.appendChild(C.el("p", "instruction", i < 0 ? "Tu connais toutes les lettres ! ⭐" : "Ma mission : " + D.COMP[items[i].comp].mission));
+    card.appendChild(C.el("p", "instruction", testing ? "Ma mission : le défi des lettres" : i < 0 ? "Tu connais toutes les lettres ! ⭐" : "Ma mission : " + D.COMP[items[i].comp].mission));
     var b = C.el("button", "primary big-btn go-next", btn); b.type = "button";
     b.addEventListener("click", function () { C.listenStopVoice(); audioStop(); go(); });
     var hear = C.el("button", "listen-play", "🔊"); hear.type = "button"; hear.setAttribute("aria-label", "Écouter la consigne");
@@ -115,8 +178,8 @@
     var row = C.el("div", "row"); row.appendChild(b); row.appendChild(hear);
     card.appendChild(row);
     var small = C.el("div", "gs-small");
-    if (first && !wheels) { var skip = C.el("button", "secondary", "Plus tard"); skip.type = "button"; skip.addEventListener("click", function () { G.rituel.lecture = Date.now(); C.save(); C.goTo("home"); }); small.appendChild(skip); }
-    else if (!first) { var rb = C.el("button", "secondary", "🎵 La comptine des lettres"); rb.type = "button"; rb.addEventListener("click", function () { rituel(sid); }); small.appendChild(rb); }
+    if (!testing && first && !wheels) { var skip = C.el("button", "secondary", "Plus tard"); skip.type = "button"; skip.addEventListener("click", function () { G.rituel.lecture = Date.now(); C.save(); C.goTo("home"); }); small.appendChild(skip); }
+    else if (!testing && !first) { var rb = C.el("button", "secondary", "🎵 La comptine des lettres"); rb.type = "button"; rb.addEventListener("click", function () { rituel(sid); }); small.appendChild(rb); }
     if (small.children.length) card.appendChild(small);
     body.appendChild(card);
   }
@@ -157,7 +220,11 @@
   }
   /* ---------- une série ---------- */
   function start(sid) {
-    var C = ctx(), G = mine(sid), items = pathOf(sid), i = D.pathCurrent(G.lecture, items), free = i < 0;
+    var C = ctx(), G = mine(sid);
+    if (diagnosticNeeded(G)) { diagnostic(sid, false); return; }
+    if (G.diagnostic.check && diagnostic(sid, true)) return;
+    var items = pathOf(sid), i = D.pathCurrent(G.lecture, items), free = i < 0;
+    if (!items.length) items = pathOf(sid,true);
     if (!items.length) return;
     var it = free ? items[Math.floor(Math.random() * items.length)] : items[i], comp = it.comp, step = it.step, aid = !free && G.lecture[comp].aid;   /* tout validé : entraînement libre sur une étape au hasard */
     var s = D.buildSeries(step, cfg(), comp, aid);
@@ -167,7 +234,7 @@
   }
   /* Aperçu enseignant (Pédagogie › Visualiser) : une série de la 1re étape de l'activité, en entraînement libre (rien n'est validé ni enregistré) */
   function preview(sid, comp) {
-    var items = pathOf(sid).filter(function (x) { return x.comp === comp; });
+    var items = pathOf(sid, true).filter(function (x) { return x.comp === comp; });
     if (!items.length) return false;
     var it = items[0], s = D.buildSeries(it.step, cfg(), comp, false);
     R = { sid: sid, comp: comp, K: D.COMP[comp], step: it.step, free: true, aid: false, qs: s.qs, n: 0, good: 0, answers: [], id: ctx().uid() };
@@ -177,6 +244,7 @@
     var C = ctx(); clear(); css();
     if (!R) { C.goTo("home"); return; }
     if (R.rituel) { renderRituel(); return; }
+    if (R.diagnostic) { C.listenFocus(true); diagnosticQuestion(); return; }
     C.listenFocus(true);
     if (R.aid && !R.demoDone) { demo(); return; }
     question();
@@ -304,7 +372,7 @@
     later(function () { sayLetter(Q); }, 300);
   }
   function end() {
-    var C = ctx(), sid = R.sid, G = mine(sid), comp = R.comp, list = stepList(sid, comp), c = cfg(), now = Date.now(), body = C.$("gs-body");
+    var C = ctx(), sid = R.sid, G = mine(sid), comp = R.comp, list = pathOf(sid).filter(function (item) { return item.comp === comp; }).map(function (item) { return item.step; }), c = cfg(), now = Date.now(), body = C.$("gs-body");
     var res = R.free ? { ok: R.good * 100 >= c[comp].seuil * R.qs.length, validated: false } : D.record(G.lecture[comp], list, c, comp, R.good, R.qs.length, R.aid, now);
     G.series.push({ id: R.id, c: comp, k: R.step.key, q: R.qs.length, g: R.good, th: c[comp].seuil, aid: R.aid, ts: now, ok: res.ok, a: R.answers.join(" ") });
     G.series = G.series.slice(-60);
@@ -313,6 +381,7 @@
       G.rw.push(R.id); G.rw = G.rw.slice(-100);
       C.data.wheels.push({ id: "gs:" + R.id, sid: sid, ts: now }); wheel = true;
     }
+    if (G.diagnostic.done) G.diagnostic.check = true;
     C.statDay(sid, 1); C.statExercise(sid, res.ok);
     C.save(); C.renderPanels();
     C.listenFocus(false);

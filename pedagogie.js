@@ -521,10 +521,15 @@
   function gsCard(r) {
     var D = window.ZooGSData, card = mk("div", "pb-gscard"), g = (r.p && r.p.gs) || {};
     if (!D) return card;
-    var cfg = D.config(window.pedaGsCfg), items = D.path(cfg, r.s.nickname), st = D.lecState(g.lecture);
+    var diagnostic = D.diagnosticState(g.diagnostic);
+    var cfg = D.config(window.pedaGsCfg), items = D.path(cfg, r.s.nickname, diagnostic), st = D.lecState(g.lecture);
     var series = Array.isArray(g.series) ? g.series.filter(function (x) { return x && D.COMP[x.c || "cap"]; }) : [], sm = D.pathSummary(st, items, series), cur = sm.item;
     var label = { nouveau: "pas encore commencé", en_cours: "en cours", maitrise: "toutes les lettres sont validées", difficulte: "en difficulté" }[sm.status];
     card.append(mk("h4", null, "🔤 Les lettres (parcours GS)"));
+    if (diagnostic.done) {
+      var recognized = Object.keys(diagnostic.answers).filter(function (letter) { return diagnostic.answers[letter] > 0; });
+      card.append(mk("p", "muted", "Défi terminé · " + plur(recognized.length, "majuscule repérée", "majuscules repérées")));
+    }
     card.append(mk("p", null, sm.done + " étape" + (sm.done > 1 ? "s" : "") + " validée" + (sm.done > 1 ? "s" : "") + " sur " + sm.total + " · " + label));
     var bar = mk("div", "pb-bar"), fill = mk("i"); fill.style.width = sm.pct + "%"; bar.append(fill); card.append(bar);
     if (cur) { var cs = st[cur.comp]; card.append(mk("p", "muted", "En cours : " + D.stepLabel(cur.step, cur.comp) + " (" + cur.step.targets.join(" ") + ")" + (cs.ok ? " · " + cs.ok + " série réussie sur " + cfg[cur.comp].series : "") + (cs.aid ? " · 🤝 aide activée" : ""))); }
@@ -547,7 +552,7 @@
   }
   function gsSum(r) {
     var D = window.ZooGSData; if (!D) return null;
-    var g = (r.p && r.p.gs) || {}, items = D.path(D.config(window.pedaGsCfg), r.s.nickname), st = D.lecState(g.lecture), series = Array.isArray(g.series) ? g.series : [];
+    var g = (r.p && r.p.gs) || {}, items = D.path(D.config(window.pedaGsCfg), r.s.nickname, D.diagnosticState(g.diagnostic)), st = D.lecState(g.lecture), series = Array.isArray(g.series) ? g.series : [];
     return { D: D, st: st, series: series, sm: D.pathSummary(st, items, series) };
   }
   /* ===== Changement de parcours de plusieurs élèves à la fois (cahier 3.2, étape D) : cases à cocher, parcours visé, confirmation.
@@ -971,7 +976,7 @@
     var top = mk("div", "pb-ftop"), tiles = mk("div", "pb-tiles pb-ftiles");
     function tile(ico, val, lab) { var d = mk("div", "pb-tile"); d.append(mk("span", "pb-ico", ico), mk("b", null, val), mk("small", null, lab)); tiles.append(d); }
     if (gs && window.ZooGSData) {
-      var D = window.ZooGSData, g = (r.p && r.p.gs) || {}, gl = D.path(D.config(window.pedaGsCfg), r.s.nickname), gst = D.lecState(g.lecture), sm = D.pathSummary(gst, gl, g.series || []), gc = sm.item;
+      var D = window.ZooGSData, g = (r.p && r.p.gs) || {}, gl = D.path(D.config(window.pedaGsCfg), r.s.nickname, D.diagnosticState(g.diagnostic)), gst = D.lecState(g.lecture), sm = D.pathSummary(gst, gl, g.series || []), gc = sm.item;
       tile("🔤", sm.done + " / " + sm.total, "Étapes des lettres validées");
       tile("🎯", gc ? gc.step.targets.join(" ") : "✓", gc ? D.COMP[gc.comp].court + (gst[gc.comp].aid ? " · aide" : "") : "Toutes les lettres");
     } else {
@@ -1111,7 +1116,7 @@
   function gsAxes(r, now) {
     var D = window.ZooGSData, g = (r.p && r.p.gs) || {};
     if (!D) return { flu: [], exp: 0, list: [], gs: true };
-    var cfg = D.config(window.pedaGsCfg), list = D.radar(cfg, r.s.nickname, D.lecState(g.lecture), Array.isArray(g.series) ? g.series : [], schoolWeeks(now) / YEAR_WEEKS);
+    var cfg = D.config(window.pedaGsCfg), list = D.radar(cfg, r.s.nickname, D.lecState(g.lecture), Array.isArray(g.series) ? g.series : [], schoolWeeks(now) / YEAR_WEEKS, D.diagnosticState(g.diagnostic));
     return { flu: [], exp: 0, gs: true, list: list.map(function (a) {
       return { k: a.k, name: a.name, v: a.v, txt: a.done + "/" + a.total + " étapes · attendu " + a.exp + " · " + GS_ST[a.status], tip: GS_TIP[a.k] || "" };
     }) };
