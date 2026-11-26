@@ -487,6 +487,8 @@ body.teacher-mode .teacher-header .teacher-nav button:is([data-role="admin"],[da
 .pb-scope .pb-alerts{grid-template-columns:1fr;gap:5px}
 .pb-fold>summary{min-height:40px;box-sizing:border-box;padding:9px 10px;cursor:pointer;font-weight:800}
 .pb-alert-group{background:#fff7e7;border:1px solid #ead49b;border-radius:10px}
+#vocabAssign{padding:0 10px 10px}
+#vocabAssign select{max-width:100%;min-width:0}
 .pb-alert-group .pb-alert{margin:4px 6px 6px}
 .pb-students{border:1px solid #cfc2ee;border-radius:12px;padding:0 7px 5px;background:#fff}
 .pb-students>summary{color:#2f2457}
@@ -585,8 +587,7 @@ body.teacher-mode .teacher-header .teacher-nav button:is([data-role="admin"],[da
 </details>
 <section class="panel feature-card" data-section="reglages" data-sub="decroches" id="readingDetached">
   <h2>Corpus de mots</h2>
-  <p class="muted">L’exercice donné passe en tête de la mission de l’élève. À la fin, il reprend son parcours de lecture là où il en était.</p>
-  <div id="vocabAssign"></div>
+  <p class="muted">Pour donner ou retirer un corpus, ouvrez « Attribution collective de corpus » dans Ma classe.</p>
   <section class="panel" data-admin-surface id="vocabImport" hidden>
     <span class="admin-scope-label">Administration</span>
     <details id="vocabLibrary">
@@ -721,7 +722,7 @@ body.teacher-mode .teacher-header .teacher-nav button:is([data-role="admin"],[da
  <h3 style="margin:22px 0 8px">✉️ Messages du formulaire de contact</h3><p class="muted">Écrits sans compte depuis la page Contact du site. Répondez par e-mail.</p><p class="msg" id="ctMsg" role="status"></p><div id="ctList" class="content-list"></div>
 </section>
 </div>
-</section></main><script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=28"><\/script>':'<script src="vendor/supabase.js?v=2.118.0"><\/script>');})();</script><script src="profils.js?v=2"></script><script src="exo-data.js?v=6"></script><script src="gs-data.js?v=6"></script><script src="vocabulaire.js?v=4"></script><script src="vocabulaire-import.js?v=3"></script><script src="vendor/qrcode.js?v=1.4.4"></script><script src="pedagogie.js?v=38"></script><script src="mes-sons.js?v=1"></script><script src="compr-admin.js?v=5"></script><script>
+</section></main><script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=28"><\/script>':'<script src="vendor/supabase.js?v=2.118.0"><\/script>');})();</script><script src="profils.js?v=2"></script><script src="exo-data.js?v=6"></script><script src="gs-data.js?v=6"></script><script src="vocabulaire.js?v=4"></script><script src="vocabulaire-import.js?v=3"></script><script src="vendor/qrcode.js?v=1.4.4"></script><script src="pedagogie.js?v=39"></script><script src="mes-sons.js?v=1"></script><script src="compr-admin.js?v=5"></script><script>
 (function(){
 "use strict";
 /* Retour du lien « Mot de passe oublié » : on lit l’adresse avant que la bibliothèque Supabase ne la nettoie */
@@ -1127,35 +1128,25 @@ function vocabularyEditor(book){
     });
     const catalogBook=ZooVocabulary.get(book.id);
     if(catalogBook&&catalogBook!==book)Object.assign(catalogBook,book);
-    renderVocabularyAssignment();status.textContent="✓ Modifications enregistrées.";
+    $("readingDetached").refreshPreview();status.textContent="✓ Modifications enregistrées.";
    }catch(error){status.textContent=error.code==="23505"?"Un autre corpus porte déjà ce nom.":errorText(error);}
    finally{fields.disabled=false;}
   };
  });
  return row;
 }
-function renderVocabularyAssignment(){
- if($("readingDetached").refreshPreview)$("readingDetached").refreshPreview();
- const host=$("vocabAssign"), previous=host.querySelector("select")?.value;host.replaceChildren();
- const admin=currentRole==="admin";
- $("vocabImport").hidden=!admin;
- const classes=document.createElement("select"), corpora=document.createElement("select"), status=document.createElement("p");
- classes.setAttribute("aria-label","Classe entière");corpora.setAttribute("aria-label","Imagier");
- classes.append(new Option("Choisir une classe",""));
- allClasses.filter(c=>!c.ghosted_at&&(admin||c.teacher_id===currentUser.id)).forEach(c=>{
-  const owner=[...$("classTeacher").options].find(o=>o.value===c.teacher_id);
-  classes.append(new Option(c.name+(admin&&owner?" · "+owner.textContent:""),c.id));
- });
+function renderVocabularyAssignment(cls,onChange){
+ const host=document.createElement("div"), corpora=document.createElement("select"), status=document.createElement("p");
+ host.id="vocabAssign";corpora.setAttribute("aria-label","Imagier");
+ const id=cls.id;
  corpora.append(new Option("Choisir un imagier",""));
  ZooVocabulary.catalog.forEach(book=>corpora.append(new Option(book.title+" · "+book.words.length+" mots",book.id)));
- if([...classes.options].some(o=>o.value===previous))classes.value=previous;
  const manage=document.createElement("details"), manageTitle=document.createElement("summary"), list=document.createElement("div");
  manageTitle.textContent="Retirer un corpus attribué";manage.append(manageTitle,list);
  let listVersion=0;
  async function loadAssigned(){
-  const version=++listVersion, id=classes.value;
-  list.textContent=id?"Chargement…":"Choisissez d’abord une classe.";
-  if(!id)return;
+  const version=++listVersion;
+  list.textContent="Chargement…";
   try{
    const {data,error}=await client.rpc("teacher_class_vocabulary",{p_class:id});
    if(version!==listVersion)return;
@@ -1182,7 +1173,8 @@ function renderVocabularyAssignment(){
      if(error)throw error;
      if(version!==listVersion)return;
      status.textContent=data?"✓ Corpus retiré pour "+who+".":"Ce corpus est déjà retiré pour "+who+".";
-     if(!student||!data)await loadAssigned();
+     if(!student){onChange(book.id,false);await loadAssigned();}
+     else if(!data)await loadAssigned();
     }catch(error){if(version===listVersion)status.textContent=errorText(error);}
     finally{remove.disabled=false;}
    };
@@ -1192,24 +1184,26 @@ function renderVocabularyAssignment(){
  const give=document.createElement("button");give.type="button";give.textContent="Donner à toute la classe";
  status.setAttribute("role","status");
  const description=document.createElement("p");description.className="muted";
- description.textContent=ZooVocabulary.catalog.length?"Chaque élève termine d’abord l’exercice qu’il a déjà commencé ou reçu. Pour un seul élève, utilisez Ma classe.":"Aucun corpus disponible. Les imagiers apparaîtront ici après leur import.";
- function change(){give.disabled=!classes.value||!corpora.value;status.textContent="";}
- classes.onchange=()=>{change();if(manage.open)loadAssigned();};corpora.onchange=change;change();
+ description.textContent=ZooVocabulary.catalog.length?"Chaque élève termine d’abord l’exercice qu’il a déjà commencé ou reçu. ":"Aucun corpus disponible. Les imagiers apparaîtront ici après leur import.";
+ function change(){give.disabled=!corpora.value;status.textContent="";}
+ corpora.onchange=change;change();
  give.onclick=async()=>{
-  const id=classes.value, book=ZooVocabulary.get(corpora.value), label=classes.options[classes.selectedIndex].textContent;
+  const book=ZooVocabulary.get(corpora.value);
   if(!book||!id)return;
-  give.disabled=classes.disabled=corpora.disabled=true;
+  give.disabled=corpora.disabled=true;
   try{
-   if(!await dlg("Donner « "+book.title+" » à toute la classe « "+label+" » ?",{ok:"Donner à la classe"}))return;
+   if(!await dlg("Donner « "+book.title+" » à toute la classe « "+cls.name+" » ?",{ok:"Donner à la classe"}))return;
    const {data,error}=await client.rpc("teacher_queue_vocabulary",{p_class:id,p_corpus:book.id});
    if(error)throw error;
    status.textContent=data?"✓ "+book.title+" attribué à la classe.":"Ce corpus figure déjà dans la liste de cette classe.";
+   onChange(book.id,true);
    if(manage.open)await loadAssigned();
   }catch(error){status.textContent=errorText(error);}
-  finally{give.disabled=classes.disabled=corpora.disabled=false;}
+  finally{give.disabled=corpora.disabled=false;}
  };
- const fields=document.createElement("div");fields.className="actions";fields.append(classes,corpora,give);
+ const fields=document.createElement("div");fields.className="actions";fields.append(corpora,give);
  host.append(description,fields,manage,status);
+ return host;
 }
 const vocabImport=(()=>{
  let groups=[], urls=[], busy=false, started=false;
@@ -1303,11 +1297,11 @@ const vocabImport=(()=>{
    }
    await refreshVocabularyCatalog();
    clear();input.value="";title.value="";
-   renderVocabularyAssignment();
+   $("readingDetached").refreshPreview();
    status.textContent="✓ "+names.join(", ")+" disponible"+(names.length>1?"s":"")+" pour l’attribution.";
   }catch(error){
    status.textContent=(started?"Certains corpus sont déjà enregistrés. Réessayez pour terminer. ":"")+errorText(error);
-   if(started)await refreshVocabularyCatalog().then(renderVocabularyAssignment).catch(()=>{});
+   if(started)await refreshVocabularyCatalog().then(()=>$("readingDetached").refreshPreview()).catch(()=>{});
   }finally{busy=false;buttons();}
  };
  buttons();
@@ -1324,7 +1318,7 @@ $("addReward").onclick=()=>{const label=$("rewardName").value.trim(),price=Numbe
 async function loadPendingRewards(){const {data,error}=await client.from("student_progress").select("student_id,progress,given_vouchers").eq("teacher_id",currentUser.id);const box=$("pendingRewards");box.replaceChildren();if(error){box.textContent=errorText(error);return;}let count=0;(data||[]).forEach(row=>{const given=Array.isArray(row.given_vouchers)?row.given_vouchers:[];(row.progress?.vouchers||[]).filter(v=>!v.done&&!given.includes(v.id)).forEach(v=>{count++;const div=document.createElement("div");div.className="row";const name=allStudents.find(s=>s.id===row.student_id)?.nickname||"Élève";const label=document.createElement("span");label.textContent=(v.icon||"🎁")+" "+name+" : "+v.label;const done=document.createElement("button");done.type="button";done.textContent="✅ Remis";done.title="La récompense a été donnée : le bon disparaît du Zoo de l’élève";done.onclick=async()=>{done.disabled=true;const {error}=await client.rpc("teacher_give_voucher",{p_student:row.student_id,p_voucher:String(v.id)});if(error){done.disabled=false;msg("settingsMsg",errorText(error),true);return;}await loadPendingRewards();};div.append(label,done);box.append(div)})});if(!count)box.textContent="Aucune récompense à remettre.";}
 
 /* Pont vers pedagogie.js (tableau de bord) : ce script est fermé, on lui donne ce dont il a besoin */
-window.ZooPedaCtx=()=>({refreshVocabularyCatalog,studentDetail,studentActions,classMenu,renameStudent,openClassForm,refresh,client,currentUser,currentRole,allStudents,allClasses,cfgSounds,voy2Fix,pl,showTab,printLoginCards,queueSave,pdfMake,pdfText,pdfSlug,listenPasses:listenPassesCfg,dicteePasses:cfgDictee.passes});
+window.ZooPedaCtx=()=>({refreshVocabularyCatalog,renderVocabularyAssignment,studentDetail,studentActions,classMenu,renameStudent,openClassForm,refresh,client,currentUser,currentRole,allStudents,allClasses,cfgSounds,voy2Fix,pl,showTab,printLoginCards,queueSave,pdfMake,pdfText,pdfSlug,listenPasses:listenPassesCfg,dicteePasses:cfgDictee.passes});
 /* L’aperçu reçoit uniquement le contenu pédagogique, dans un cadre sans session élève. */
 window.ZooExercisePreview=function(path,payload){
  const dialog=document.createElement("dialog"), header=document.createElement("div"), close=document.createElement("button"), frame=document.createElement("iframe");
@@ -1435,7 +1429,7 @@ function showTab(tab){
   if(exercise&&exercise.refreshPreview)exercise.refreshPreview();
   $("comprPreviewAdmin").hidden=currentRole!=="admin";
  }
- if(tab==="reglages"&&activeSubs.reglages==="decroches"&&currentUser)renderVocabularyAssignment();
+ if(tab==="reglages"&&activeSubs.reglages==="decroches")$("vocabImport").hidden=currentRole!=="admin";
  if(tab==="reglages"&&activeSubs.reglages==="gslettres"&&window.ZooPeda)window.ZooPeda.gsSettings($("gsSettingsBody"));
  if(tab==="reglages"&&currentRole==="admin")renderClassPedagogy($("readingClassPedagogy"),"lecture",async()=>{if(savePending)await flushSave();return savePending?{message:"Les réglages n’ont pas encore été enregistrés."}:null;});
  if(tab==="reglages"&&activeSubs.reglages==="comprehension"&&currentRole==="admin"&&currentUser&&window.ZooComprAdmin)window.ZooComprAdmin.open(client,$("comprEditorBody"),cfgSounds,currentUser.id);
