@@ -2,6 +2,13 @@
 
 À lire avec `mesures.md` (résultats chiffrés et limites) et `CLAUDE.md` (règles du projet, §6 « Médaille = lecture enregistrée » et « Valider une lecture depuis la fiche »). Tenu à jour à chaque étape. Dernière mise à jour : 26/11/2026 (Claude).
 
+## Mission Lecture CP en un seul passage
+
+- La fin du chronomètre ou « J’ai fini » mémorise le niveau dans `progress.readOnce` et ouvre la suite. La disponibilité du micro, la reconnaissance et l’objectif de fluence ne conditionnent pas l’avancement.
+- Le micro est demandé au démarrage si l’appareil permet la reconnaissance locale. Le son est transitoire en mémoire. Le Zoo utilise les données locales de l’exercice pour estimer la fluence et ne conserve ni ne transmet le fichier audio de la mission. Le mode séparé « Je m’enregistre » reste protégé par le mot de passe enseignant.
+- Un score automatique exploitable (`src: "auto"`) entre dans la courbe. Sans mesure exploitable ou sous l’objectif, une entrée `reviews[].single` apparaît dans « Ma classe › À faire aujourd’hui » et dans la fiche de l’élève. La mesure en direct saisie par l’enseignant remplace le score éventuel à la prochaine connexion élève (`settings.recDec[id].mclm`, même identifiant de passage). Aucune migration.
+- Le fonctionnement du micro sur un ancien appareil et la fiabilité de la reconnaissance avec des voix d’enfants restent à vérifier en classe.
+
 ## Demande de Gabriel (25/11/2026)
 Aider l'enseignant à écouter les lectures enregistrées, **100 % sur l'appareil** : le son ne quitte jamais la tablette, aucune voix d'élève hébergée. Choix successifs de Gabriel (boîtes de dialogue) :
 1. Prototype : l'aide **pré-remplit**, l'enseignant valide toujours.
