@@ -729,7 +729,7 @@ body.teacher-mode .teacher-header .teacher-nav button:is([data-role="admin"],[da
  <h3 style="margin:22px 0 8px">✉️ Messages du formulaire de contact</h3><p class="muted">Écrits sans compte depuis la page Contact du site. Répondez par e-mail.</p><p class="msg" id="ctMsg" role="status"></p><div id="ctList" class="content-list"></div>
 </section>
 </div>
-</section></main><script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=28"><\/script>':'<script src="vendor/supabase.js?v=2.118.0"><\/script>');})();</script><script src="profils.js?v=2"></script><script src="exo-data.js?v=7"></script><script src="gs-data.js?v=7"></script><script src="vocabulaire.js?v=4"></script><script src="vocabulaire-import.js?v=3"></script><script src="vendor/qrcode.js?v=1.4.4"></script><script src="pedagogie.js?v=44"></script><script src="mes-sons.js?v=1"></script><script src="compr-admin.js?v=5"></script><script>
+</section></main><script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=28"><\/script>':'<script src="vendor/supabase.js?v=2.118.0"><\/script>');})();</script><script src="profils.js?v=2"></script><script src="exo-data.js?v=7"></script><script src="gs-data.js?v=7"></script><script src="vocabulaire.js?v=4"></script><script src="vocabulaire-import.js?v=3"></script><script src="vendor/qrcode.js?v=1.4.4"></script><script src="pedagogie.js?v=45"></script><script src="mes-sons.js?v=1"></script><script src="compr-admin.js?v=5"></script><script>
 (function(){
 "use strict";
 /* Retour du lien « Mot de passe oublié » : on lit l’adresse avant que la bibliothèque Supabase ne la nettoie */
@@ -1325,7 +1325,7 @@ $("addReward").onclick=()=>{const label=$("rewardName").value.trim(),price=Numbe
 async function loadPendingRewards(){const {data,error}=await client.from("student_progress").select("student_id,progress,given_vouchers").eq("teacher_id",currentUser.id);const box=$("pendingRewards");box.replaceChildren();if(error){box.textContent=errorText(error);return;}let count=0;(data||[]).forEach(row=>{const given=Array.isArray(row.given_vouchers)?row.given_vouchers:[];(row.progress?.vouchers||[]).filter(v=>!v.done&&!given.includes(v.id)).forEach(v=>{count++;const div=document.createElement("div");div.className="row";const name=allStudents.find(s=>s.id===row.student_id)?.nickname||"Élève";const label=document.createElement("span");label.textContent=(v.icon||"🎁")+" "+name+" : "+v.label;const done=document.createElement("button");done.type="button";done.textContent="✅ Remis";done.title="La récompense a été donnée : le bon disparaît du Zoo de l’élève";done.onclick=async()=>{done.disabled=true;const {error}=await client.rpc("teacher_give_voucher",{p_student:row.student_id,p_voucher:String(v.id)});if(error){done.disabled=false;msg("settingsMsg",errorText(error),true);return;}await loadPendingRewards();};div.append(label,done);box.append(div)})});if(!count)box.textContent="Aucune récompense à remettre.";}
 
 /* Pont vers pedagogie.js (tableau de bord) : ce script est fermé, on lui donne ce dont il a besoin */
-window.ZooPedaCtx=()=>({refreshVocabularyCatalog,renderVocabularyAssignment,studentDetail,studentActions,classMenu,renameStudent,openClassForm,refresh,client,currentUser,currentRole,allStudents,allClasses,cfgSounds,voy2Fix,pl,showTab,printLoginCards,queueSave,pdfMake,pdfText,pdfSlug,listenPasses:listenPassesCfg,dicteePasses:cfgDictee.passes});
+window.ZooPedaCtx=()=>({refreshVocabularyCatalog,renderVocabularyAssignment,studentDetail,studentActions,classMenu,renameStudent,openClassForm,refresh,client,currentUser,currentRole,allStudents,allClasses,cfgSounds,hasReading:(id,k)=>!!String(cfgTexts[k+":"+id]||ORIGINAL_TEXTS[k+":"+id]||"").trim(),voy2Fix,pl,showTab,printLoginCards,queueSave,pdfMake,pdfText,pdfSlug,listenPasses:listenPassesCfg,dicteePasses:cfgDictee.passes});
 /* L’aperçu reçoit uniquement le contenu pédagogique, dans un cadre sans session élève. */
 window.ZooExercisePreview=function(path,payload){
  const dialog=document.createElement("dialog"), header=document.createElement("div"), close=document.createElement("button"), frame=document.createElement("iframe");
@@ -1493,7 +1493,7 @@ function validatedRecordings(progress){
 }
 function pendingRecordings(progress){
  const validated=validatedRecordings(progress);
- return (Array.isArray(progress?.reviews)?progress.reviews:[]).filter(review=>review&&!validated.some(result=>
+ return (Array.isArray(progress?.reviews)?progress.reviews:[]).filter(review=>review&&!review.single&&!validated.some(result=>
   result.reviewId ? result.reviewId===review.id :
    result.sid===review.sid&&result.ts===review.ts&&result.sound===review.sound&&result.k===review.kind));
 }
