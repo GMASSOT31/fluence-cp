@@ -1,6 +1,6 @@
 # Parcours GS / CP / CE1 — avancement et passation
 
-À lire avec `cahier-des-charges.md` (la demande de Gabriel) et `CLAUDE.md` (règles du projet). **Ce fichier est tenu à jour à chaque étape** : Claude ou Codex doit pouvoir reprendre à tout moment. Dernière mise à jour : 24/11/2026 (Claude), étape E.
+À lire avec `cahier-des-charges.md` (la demande de Gabriel) et `CLAUDE.md` (règles du projet). **Ce fichier est tenu à jour à chaque étape** : Claude ou Codex doit pouvoir reprendre à tout moment. Dernière mise à jour : 26/11/2026 (Claude) : étapes A à F (partie automatique) faites ; reste l’essai réel avec Gabriel (voir étape F).
 
 ## Où en est-on ?
 - [x] Phase 0 — audit (constats ci-dessous).
