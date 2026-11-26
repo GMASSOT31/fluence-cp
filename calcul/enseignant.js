@@ -225,7 +225,8 @@
     var fr = view.focus && rows.filter(function (x) { return x.s.student_id === view.focus; })[0];
     if (fr) { board.appendChild(calcFiche(fr, rows)); return; }
     view.focus = null;
-    board.appendChild(figuresCalc(rows)); board.appendChild(todoCalc(rows)); board.appendChild(listCalc(rows));
+    var criteria = {}, alerts = todoCalc(rows, criteria);
+    board.appendChild(listCalc(rows, criteria)); board.appendChild(alerts); board.appendChild(figuresCalc(rows));
     board.querySelector(".pb-students").appendChild(legend());
   }
   function nameBtns(list) {
@@ -245,9 +246,10 @@
     var line = document.querySelector('#calcProgress .pb-row[data-sid="' + id + '"]'); if (window.ZooPeda) window.ZooPeda.scrollToStudent(line);
   }
   /* 1. À faire aujourd’hui : élèves bloqués (par étape), élèves en retard, élèves absents */
-  function todoCalc(rows) {
+  function plurAlert(n, group) { return n + " " + pl(n, group[1], group[2]); }
+  function todoCalc(rows, criteria) {
     var sec = section("📌 À faire aujourd’hui"), grid = el("div", "pb-alerts"), n = 0, groups = {};
-    function card(cls, title, list, tip) { var c = el("div", "pb-alert " + cls); c.appendChild(el("strong", "", title)); c.appendChild(nameBtns(list)); if (tip) c.appendChild(el("small", "pb-tip", tip)); if (!groups[cls]) groups[cls] = []; groups[cls].push(c); n++; }
+    function card(cls, title, list, tip) { var c = el("div", "pb-alert " + cls); c.appendChild(el("strong", "", title)); c.appendChild(nameBtns(list)); if (tip) c.appendChild(el("small", "pb-tip", tip)); if (!groups[cls]) groups[cls] = []; groups[cls].push(c); n++; window.ZooPeda.recordCriterion(criteria, cls, list); }
     var by = {}; rows.filter(function (r) { return r.stuck && !r.inactive; }).forEach(function (r) { var k = r.stuck.act + ":" + r.stuck.id; (by[k] = by[k] || []).push(r); });
     Object.keys(by).sort(function (a, b) { return by[b].length - by[a].length; }).slice(0, 4).forEach(function (k) {
       var a = k.split(":"), lvi = E.levelInfo(a[0], a[1]);
@@ -261,23 +263,25 @@
     if (idle.length) card("a-idle", "💤 " + idle.length + " " + pl(idle.length, "élève n’est pas venu", "élèves ne sont pas venus") + " depuis " + IDLE_DAYS + " jours ou plus", idle);
     var assigned = rows.filter(function (r) { var a = (view.assignments || {})[r.s.student_id]; return a && !a.done; });
     if (assigned.length) card("a-asg", assigned.length + " " + pl(assigned.length,"exercice donné","exercices donnés"), assigned);
-    [["a-asg","🎯 Exercices donnés"],["a-block","⚠️ Élèves bloqués ou en retard"],["a-idle","💤 En sommeil"]].forEach(function (group) {
+    [["a-asg","exercice donné à suivre","exercices donnés à suivre"],["a-block","élève bloqué ou en retard","élèves bloqués ou en retard"],["a-idle","élève en sommeil","élèves en sommeil"]].forEach(function (group) {
       if (!groups[group[0]]) return;
-      var fold = window.ZooPeda.compactDetails(group[1], "pb-alert-group", view.classId + ":" + group[0], view.folded);
+      var fold = window.ZooPeda.compactDetails(plurAlert(criteria[group[0]].size, group), "pb-alert-group", view.classId + ":" + group[0], view.folded);
       groups[group[0]].forEach(function (c) { fold.appendChild(c); }); grid.appendChild(fold);
     });
     if (!n) grid.appendChild(el("p", "pb-calm", "✅ Rien d’urgent aujourd’hui."));
     sec.appendChild(grid); return sec;
   }
   /* 2. Mes élèves : filtres, une ligne par élève, « Détails » sous la ligne */
-  var FILTERS = [["all", "Tous"], ["late", "En difficulté"], ["ahead", "En avance"], ["idle", "Pas venus"]];
+  var FILTERS = [["all", "Tous les élèves"], ["late", "En difficulté"], ["ahead", "En avance"], ["idle", "Pas venus"], ["a-asg", "Exercices donnés"], ["a-block", "Bloqués ou en retard"]];
   function keepRow(r, f) { return f === "all" || (f === "late" && r.color === "red") || (f === "ahead" && r.ahead && !r.inactive) || (f === "idle" && r.inactive); }
-  function listCalc(rows) {
-    var sec = window.ZooPeda.compactDetails("🧒 Les élèves · " + rows.length, "pb-sec pb-students", view.classId + ":students", view.folded), bar = el("div", "pb-filters"), list = el("div", "pb-kids"), tot = totalSteps();
-    bar.setAttribute("role", "group"); bar.setAttribute("aria-label", "Filtrer les élèves");
+  function listCalc(rows, criteria) {
+    var sec = section("🧒 Les élèves · " + rows.length), list = el("div", "pb-kids");
+    sec.classList.add("pb-students");
+    function matches(r, f) { return keepRow(r, f) || (criteria[f] && criteria[f].has(r)); }
+    window.ZooPeda.studentFilter(sec, rows, FILTERS, view.filter, matches, function (value) { view.filter = value; paint(); });
     function paint() {
       clear(list);
-      var shown = rows.filter(function (r) { return keepRow(r, view.filter); });
+      var shown = rows.filter(function (r) { return matches(r, view.filter); });
       shown.sort(function (a, b) { return String(a.s.nickname).localeCompare(b.s.nickname); });
       if (!shown.length) list.appendChild(el("p", "muted", "Aucun élève dans ce filtre."));
       shown.forEach(function (r) {
@@ -288,14 +292,8 @@
         b.addEventListener("click", function () { openDetail(r.s.student_id); });
         list.appendChild(b);
       });
-      Array.prototype.forEach.call(bar.children, function (b) { var on = b.getAttribute("data-f") === view.filter; b.classList.toggle("active", on); b.setAttribute("aria-pressed", String(on)); });
     }
     view.paint = paint;
-    FILTERS.forEach(function (f) {
-      var n = rows.filter(function (r) { return keepRow(r, f[0]); }).length, b = el("button", "pb-filter", f[1] + " (" + n + ")"); b.type = "button"; b.setAttribute("data-f", f[0]);
-      b.addEventListener("click", function () { view.filter = f[0]; paint(); }); bar.appendChild(b);
-    });
-    sec.appendChild(bar);
     sec.appendChild(el("p", "muted pb-legend", "🔴 en difficulté (bloqué sur une étape, ou " + LATE + " étapes de retard sur l’élève du milieu de la classe) · 🟡 avance normalement · 🟢 en avance de " + AHEAD + " étapes ou plus · ⚪ pas venu depuis " + IDLE_DAYS + " jours"));
     sec.appendChild(list); paint();
     /* changement de parcours de plusieurs élèves (même volet que la Lecture, matière « Calcul seul » proposée) */
