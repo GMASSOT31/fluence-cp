@@ -185,7 +185,7 @@
   });
   function renderProgress() {
     var box = $("#calcProgress"); clear(box);
-    box.appendChild(head("🏫", "Ma classe · calcul", "Écouter les nombres, additions et soustractions : ce qui demande votre attention, puis chaque élève. Les résultats de lecture sont dans l’espace Lecture."));
+    box.appendChild(head("🏫", "Ma classe · calcul"));
     var msg = el("p", "msg", "Chargement…"); msg.id = "calcMsg"; msg.setAttribute("role", "status"); box.appendChild(msg);
     var board = el("div", "calc-board pb-scope"); box.appendChild(board);
     Promise.all([rpc("lab_teacher_settings_get").catch(function () { return {}; }), rpc("lab_teacher_results"), rpc("lab_teacher_assignments").catch(function () { return null; })]).then(function (r) {
@@ -208,10 +208,10 @@
       sel.value = cls.id; sel.addEventListener("change", function () { view.classId = sel.value; view.open = {}; view.filter = "all"; paintBoard(board); });
       left.appendChild(el("span", "pb-lbl", "Classe")); left.appendChild(sel);
     } else { left.appendChild(el("span", "pb-lbl", "Classe")); left.appendChild(el("strong", "pb-cname", "📚 " + cls.name)); }
-    var acts = el("div", "pb-acts"), rl = el("button", "secondary pb-refresh", "↻"); rl.type = "button"; rl.title = "Actualiser les résultats"; rl.setAttribute("aria-label", rl.title); rl.addEventListener("click", renderProgress); left.appendChild(rl);
+    var acts = el("div", "pb-acts"), rl = el("button", "secondary pb-refresh", "↻"); rl.type = "button"; rl.title = "Actualiser les résultats"; rl.setAttribute("aria-label", rl.title); rl.addEventListener("click", renderProgress); var tools = el("div", "pb-class-tools"); tools.appendChild(rl); left.appendChild(tools);
     /* ⋯ Classe (ancien onglet « Mes classes ») : même menu que Ma classe de la Lecture */
     var fullCls = (ctx().allClasses || []).filter(function (x) { return x.id === cls.id; })[0];
-    if (fullCls && ctx().classMenu) left.appendChild(ctx().classMenu(fullCls));
+    if (fullCls && ctx().classMenu) tools.appendChild(ctx().classMenu(fullCls));
     var pc = ctx().allClasses && ctx().printLoginCards ? ctx().allClasses.filter(function (x) { return x.id === cls.id; })[0] : null;
     if (pc) { var cm = el("button", "secondary", "🖨️ QR codes"); cm.type = "button"; cm.title = "Fiches de connexion au Zoo de Calcul (adresse zoodelecture.fr/calcul et QR code), à donner aux familles"; cm.addEventListener("click", function () { ctx().printLoginCards(pc, "calcMsg", cm, true); }); acts.appendChild(cm); }
     if (ficheOK()) { var fa = el("button", "secondary"); fa.appendChild(el("span", "pb-pdf-icon", "PDF")); fa.appendChild(document.createTextNode(" Araignées de suivi")); fa.type = "button"; fa.title = "Une fiche par élève, avec sa toile des 6 compétences"; fa.addEventListener("click", function () { makeFiches(view.rows.slice().sort(function (a, b) { return String(a.s.nickname).localeCompare(b.s.nickname); }), cls.name, fa, "fiches-calcul-" + (ctx().pdfSlug(cls.name) || "classe")); }); acts.appendChild(fa); }

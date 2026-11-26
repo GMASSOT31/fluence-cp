@@ -138,8 +138,10 @@
     var rl = mk("button", "secondary pb-refresh", "↻"); rl.type = "button"; rl.title = "Actualiser les résultats"; rl.setAttribute("aria-label", rl.title);
     rl.onclick = function () { render(); };
     var when = mk("span", "pb-updated", ""); when.setAttribute("aria-live", "polite"); when.setAttribute("aria-label", "Heure de la dernière actualisation");
-    left.append(rl);
-    if (C.classMenu) left.append(C.classMenu(cls));   /* ⋯ Classe : code, ajouter un élève, créer une classe, renommer… (ancien onglet « Mes classes ») */
+    var tools = mk("div", "pb-class-tools");
+    tools.append(rl);
+    if (C.classMenu) tools.append(C.classMenu(cls));
+    left.append(tools);
     head.append(when);
     head.append(acts);
     box.append(head, mk("p", "msg", null));
