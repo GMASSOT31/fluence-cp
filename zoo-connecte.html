@@ -1330,6 +1330,32 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
 .vocab-answer .vocab-picture{font-size:1.75rem;font-size:max(1.35rem, min(6vw, 3rem));white-space:nowrap}
 .vocab-answer.vocab-correct{outline:3px solid #18865b;opacity:1}
 .vocab-feedback{min-height:1.4em}
+
+/* La galerie privilégie la capture et le titre lisible sur un petit écran. */
+.arcade-gallery { background: #fbf5e8; color: #164735; border: 1px solid #e7dcc8; border-radius: 20px; padding: 16px; max-width: 1000px; margin: 0 auto; }
+.gallery-top, .gallery-balances, .gallery-extras { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.gallery-top { justify-content: space-between; }
+.gallery-balances { justify-content: flex-end; }
+.gallery-pill, .arcade-price { display: inline-flex; align-items: center; gap: 4px; border-radius: 20px; font-weight: 800; }
+.gallery-pill { padding: 5px 8px; border: 1px solid #c4cfae; background: #fffaf0; font-size: .88rem; }
+.gallery-back { border: 0; border-radius: 50%; height: 44px; width: 44px; background: #e5ebd6; color: #164735; font-size: 1.45rem; }
+.gallery-title { text-align: center; color: inherit; font: 700 clamp(1.75rem, 6vw, 2.75rem)/1.1 Fredoka, system-ui, sans-serif; margin: 18px 0; }
+.gallery-hint { text-align: center; margin: 0 0 12px; font-size: .88rem; }
+.gallery-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.arcade-tile { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 5px; border: 1px solid #e1d6bd; padding: 0 0 9px; border-radius: 15px; overflow: hidden; background: #fffaf0; color: #164735; font: inherit; text-align: center; min-width: 0; box-shadow: none; }
+.arcade-tile img { display: block; width: 100%; height: auto; background: #e5ebd6; }
+.arcade-name { font: 650 1rem/1.2 Fredoka, system-ui, sans-serif; padding: 0 6px; margin-top: 3px; }
+.arcade-price, .arcade-action { padding: 4px 8px; font-weight: 800; font-size: .86rem; }
+.arcade-price { background: #f4e8c8; }
+.arcade-action { border-radius: 16px; background: #e5ebd6; }
+.arcade-tile:disabled { opacity: 1; cursor: default; }
+.arcade-tile:disabled .arcade-action { color: #445448; background: #ecece2; }
+.arcade-tile:focus, .gallery-back:focus { outline: 3px solid #31735a; outline-offset: 2px; }
+.gallery-extras { justify-content: center; margin-top: 15px; }
+@media (max-width: 650px) {
+  .arcade-gallery { padding: 10px; }
+  .gallery-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+}
 </style>
 <style>
 .exercise-preview-mode header,.exercise-preview-mode #panel-left,.exercise-preview-mode #panel-right,.exercise-preview-mode #bottom-nav,.exercise-preview-mode #nav{display:none!important}
@@ -1820,7 +1846,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
 </main>
 <div class="toast" id="toast" role="status"></div>
 
-<script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){if(/[?&]apercu=1(&|$)/.test(location.search))return;var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;/* Connexion élève : le jeton arrive aussi dans l’adresse (#zt=…) pour les appareils qui ne gardent pas sessionStorage d’une page à l’autre (application ajoutée à l’écran d’accueil) ; on le range puis on l’efface de l’adresse */var hm=location.hash.match(/[#&]zt=([0-9a-f]{64})/);if(hm&&!d){window.ZOO_HASH_TOKEN=hm[1];try{sessionStorage.setItem("zoo_student_token",hm[1])}catch(e){}try{history.replaceState(null,"",location.pathname+location.search)}catch(e){}}if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=28"><\/script>':'<script src="vendor/supabase.js?v=2.118.0"><\/script><script src="vendor/supabase-lite.js?v=1"><\/script>');})();</script>
+<script>/* Démo sans compte (?demo) : faux serveur dans le navigateur ; sinon la vraie bibliothèque Supabase */(function(){if(/[?&]apercu=1(&|$)/.test(location.search))return;var d=/[?&]demo(=|&|$)/.test(location.search);window.ZOO_DEMO=d;/* Connexion élève : le jeton arrive aussi dans l’adresse (#zt=…) pour les appareils qui ne gardent pas sessionStorage d’une page à l’autre (application ajoutée à l’écran d’accueil) ; on le range puis on l’efface de l’adresse */var hm=location.hash.match(/[#&]zt=([0-9a-f]{64})/);if(hm&&!d){window.ZOO_HASH_TOKEN=hm[1];try{sessionStorage.setItem("zoo_student_token",hm[1])}catch(e){}try{history.replaceState(null,"",location.pathname+location.search)}catch(e){}}if(!d){try{if(sessionStorage.getItem("zoo_student_token")==="demo"){sessionStorage.removeItem("zoo_student_token");sessionStorage.removeItem("zoo_student_name");}}catch(e){}}document.write(d?'<script src="demo.js?v=29"><\/script>':'<script src="vendor/supabase.js?v=2.118.0"><\/script><script src="vendor/supabase-lite.js?v=1"><\/script>');})();</script>
 <script src="profils.js?v=2"></script>
 <script>/* Filet de sécurité : si on ouvre la démo sur un appareil qui a déjà servi à un élève (profil « Qui es-tu ? » mémorisé), un écran demande d'abord « Tu es élève ? » (un élève en autonomie arrivait ici par erreur et croyait être dans sa classe). Enseignants et visiteurs : un seul bouton pour continuer. */
 (function(){
@@ -2296,7 +2322,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     wheels: [],
     playLog: [],
     maxPlays: 6,
-    shop: { packPrice: 10, wheelPrice: 7, rewards: [] },
+    shop: { packPrice: 10, wheelPrice: 7, gamePrice: 3, rewards: [] },
     vouchers: [],
     teacher: null,
     hi: {},
@@ -2434,6 +2460,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       evos:data.evos.filter(function(x){return x.sid===sid}),
       avatar:(studentById(sid)||{}).avatar||null,
       avatarStyle:(studentById(sid)||{}).avatarStyle||null,
+      arcadeUnlocked:arcadeUnlocks(sid),
       selSound:data.sel.sound||null, selKind:data.sel.kind||"s",
       shop:data.shop, maxPlays:data.maxPlays, reward:data.reward, sfx:data.sfx };
   }
@@ -2502,7 +2529,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   /* Cadeau du maître(sse) : pièces en attente sur le serveur, récupérées ici sans conflit de sauvegarde */
   var giftsChecking = false, giftsChecked = 0;
   async function claimGifts(force) {
-    if(!cloudToken||!cloudStudentId||cloudConflict||giftsChecking||(!force&&Date.now()-giftsChecked<10000))return;
+    if(!cloudToken||!cloudStudentId||cloudConflict||giftsChecking||arcadePurchase||(!force&&Date.now()-giftsChecked<10000))return;
     giftsChecking=true;giftsChecked=Date.now();
     try{
       if(!(await cloudSettle()))return;
@@ -2514,6 +2541,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
         data.coins[cloudStudentId]=Number(r.coins)||0;
         renderPanels();
         showGift(n);
+        if (!$("v-jeux").hidden) renderJeux();
       }
       /* Parties de jeu gagnées à la roue du Zoo de Calcul : elles attendent sur le serveur (pending_credits) comme les pièces */
       try{
@@ -2524,6 +2552,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
           cloudVersion=Number(cr.version);
           data.credits[cloudStudentId]=Number(cr.credits)||0;
           renderPanels();
+          if (!$("v-jeux").hidden) renderJeux();
           toast("🎮 Tu as gagné "+cr.claimed+(cr.claimed>1?" parties de jeu":" partie de jeu")+" !");
         }
       }catch(e2){
@@ -6043,86 +6072,107 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     body.appendChild(gc);
   }
 
-  function arcadeSign() {
-    var sign = el("div", "arcade-sign");
-    var bulbs = el("div", "a-bulbs"); bulbs.setAttribute("aria-hidden", "true");
-    for (var i = 0; i < 18; i++) bulbs.appendChild(el("i"));
-    sign.appendChild(bulbs);
-    sign.appendChild(el("div", "a-title", "Salle de jeux"));
-    sign.appendChild(el("div", "a-sub", "Bats tes records !"));
-    return sign;
+  function gamePrice(value) { return Number.isInteger(value) && value >= 1 && value <= 500 ? value : 3; }
+  function arcadeUnlocks(sid) {
+    var unlocked = (studentById(sid) || {}).arcadeUnlocked;
+    return Array.isArray(unlocked) ? GAMES.filter(function (g) { return unlocked.indexOf(g.id) >= 0; }).map(function (g) { return g.id; }) : [];
   }
-  function cabinet(g, sid, cr, lim) {
-    var off = cr <= 0 || lim;
-    var cab = el("div", "cab" + (off ? " off" : ""));
-    cab.style.setProperty("--neon", g.neon);
-    cab.appendChild(el("div", "cab-marquee", g.name));
-    var screen = el("div", "cab-screen");
-    var ico = el("span", "cab-ico", g.ico); ico.setAttribute("aria-hidden", "true");
-    screen.appendChild(ico); screen.appendChild(el("span", "cab-tag", "🎯 " + g.tag));
-    cab.appendChild(screen);
-    /* Records : 🏆 le tien, 👑 celui de la classe (la légende est en haut de la salle) */
-    var h = hiOf(sid, g.id);
-    var hi = el("div", "cab-hi cab-sym");
-    function symLine(sym, label, text, cls) {
-      var l = el("div", "cab-line" + (cls ? " " + cls : ""));
-      var sp = el("span", "cab-s", sym); sp.setAttribute("role", "img"); sp.setAttribute("aria-label", label); sp.title = label;
-      l.appendChild(sp); l.appendChild(el("b", "", text)); return l;
+  function arcadeUnlocked(sid, id) { return arcadeUnlocks(sid).indexOf(id) >= 0; }
+  var arcadePurchase = null, arcadeSavePending = null;
+  function arcadeSaveNeedsRetry() {
+    if (!arcadeSavePending || arcadeSavePending !== ses.sid) return false;
+    if (!cloudDirty && !cloudBusy) { arcadeSavePending = null; return false; }
+    return true;
+  }
+  async function unlockArcadeGame(g, sid, displayedPrice) {
+    var student = studentById(sid);
+    if (!student || ses.sid !== sid || !data.reward || arcadePurchase || cloudConflict || arcadeUnlocked(sid, g.id)) return;
+    if (displayedPrice !== gamePrice(data.shop.gamePrice)) { toast("Le prix a changé. Touche le jeu pour voir le nouveau prix."); return; }
+    if (coins(sid) < displayedPrice) { toast("Il te manque des pièces pour ouvrir ce jeu."); return; }
+    var pending = { sid: sid, id: g.id };
+    arcadePurchase = pending;
+    for (var i = 0; giftsChecking && i < 40; i++) await new Promise(function (resolve) { setTimeout(resolve, 150); });
+    if (cloudMode && (giftsChecking || !await cloudSettle())) {
+      if (arcadePurchase === pending) arcadePurchase = null;
+      toast("Vérifie ta connexion, puis réessaie.");
+      return;
     }
-    hi.appendChild(symLine("🏆", "Ton record", h.best !== null ? g.fmt(h.best) : "à établir"));
-    var a = absRecord(g.id), mates = cloudMode ? classSize : data.students.length;
-    if (a || mates >= 2) hi.appendChild(symLine("👑", "Record de la classe", a ? g.fmt(a.value) + " · " + (a.sid === sid ? "toi !" : holderName(a)) : "à établir", "abs"));
-    var lastTxt = h.lastTry ? "Dernière partie : " + nb(h.lastTry.stars, "étoile", "étoiles") + " sur " + h.lastTry.goal : (h.n ? "Dernier score : " + g.fmt(h.last) : "");
-    if (lastTxt) hi.appendChild(el("span", "last", lastTxt));
-    cab.appendChild(hi);
-    /* Les commandes décoratives ont été retirées pour libérer la place des boutons Jouer. */
-    var b = el("button", "cab-play", off ? (lim ? "Reviens demain" : "Il te faut une partie") : "Jouer !"); b.type = "button";
-    b.disabled = off;
-    b.setAttribute("aria-label", g.name + " : " + (h.best !== null ? "record " + g.fmt(h.best) : "pas encore de record") + (off ? ", indisponible" : ", jouer"));
-    b.addEventListener("click", function () { playGame(g.id, sid); });
-    cab.appendChild(b);
-    return cab;
+    if (ses.sid !== sid || studentById(sid) !== student || displayedPrice !== gamePrice(data.shop.gamePrice) ||
+        coins(sid) < displayedPrice || arcadeUnlocked(sid, g.id)) {
+      arcadePurchase = null;
+      if (!$("v-jeux").hidden) renderJeux();
+      return;
+    }
+    student.arcadeUnlocked = arcadeUnlocks(sid).concat(g.id);
+    data.coins[sid] = coins(sid) - displayedPrice;
+    save();
+    renderPanels();
+    if (!$("v-jeux").hidden) renderJeux();
+    var saved = !cloudMode || await cloudSettle();
+    if (arcadePurchase === pending) arcadePurchase = null;
+    if (!saved) arcadeSavePending = sid;
+    if (ses.sid !== sid) return;
+    if (!$("v-jeux").hidden) renderJeux();
+    toast(saved ? g.name + " est débloqué !" : "Achat en attente de sauvegarde. Garde ton Zoo ouvert.");
+  }
+  function arcadeCard(g, sid, cr, lim) {
+    var unlocked = arcadeUnlocked(sid, g.id), price = gamePrice(data.shop.gamePrice);
+    var pending = arcadePurchase && arcadePurchase.sid === sid && arcadePurchase.id === g.id;
+    var b = el("button", "arcade-tile"); b.type = "button"; b.dataset.game = g.id;
+    b.disabled = !data.reward || !!pending || (unlocked && (lim || cr <= 0));
+    var poster = document.createElement("img");
+    poster.src = "img/arcade/" + g.id + ".jpg"; poster.alt = ""; poster.width = 480; poster.height = 360;
+    b.appendChild(poster);
+    b.appendChild(el("span", "arcade-name", g.name));
+    if (pending) b.appendChild(el("span", "arcade-action", "Sauvegarde…"));
+    else if (unlocked) b.appendChild(el("span", "arcade-action", lim ? "Reviens demain" : cr ? "Jouer" : "Il te faut une partie"));
+    else {
+      var lock = el("span", "arcade-price", "🔒 ");
+      lock.appendChild(coinEl()); lock.appendChild(document.createTextNode(" " + price));
+      b.appendChild(lock);
+      b.setAttribute("aria-label", g.name + ", débloquer définitivement pour " + nb(price, "pièce", "pièces"));
+    }
+    b.onclick = function () {
+      if (unlocked) { playGame(g.id, sid); return; }
+      if (arcadePurchase) return;
+      var missing = price - coins(sid);
+      if (missing > 0) { toast("Il te manque " + nb(missing, "pièce", "pièces") + " pour débloquer ce jeu."); return; }
+      buyConfirm({ icon: g.ico, label: g.name, price: price, title: "Débloquer « " + g.name + " » ?", detail: "Tu paies une seule fois. Pour jouer, utilise ensuite une partie.", onBuy: function () { unlockArcadeGame(g, sid, price); } });
+    };
+    return b;
   }
   function renderJeux() {
-    if (cloudToken) { refreshClassRecords(); claimGifts(); }
-    var body = $("jeux-body");
+    if (cloudToken) { claimGifts(); refreshShopSettings(); }
+    var body = $("jeux-body"), sid = ses.sid;
     body.innerHTML = "";
-    var sid = ses.sid;
     if (!studentById(sid)) return;
     takeNote(body);
-    var room = el("div", "arcade");
-    /* En-tête compact : titre à gauche, légende des récompenses à droite, puis l’état des parties en deux pastilles */
-    var head = el("div", "arc-head"), headLeft = el("div", "arc-left");
-    headLeft.appendChild(arcadeSign());
-    head.appendChild(headLeft);
-    var legend = el("ul", "arc-legend"); legend.setAttribute("aria-label", "Pièces gagnées dans les jeux");
-    [["🎯", "Objectif réussi", "objectif", 1], ["🏆", "Ton record battu", "ton record", 3], ["👑", "Record pris à un camarade", "record de la classe", 10]].forEach(function (it) {
-      var li = el("li");
-      li.appendChild(el("span", "lg-sym", it[0]));
-      var lb = el("span", "lg-label"); lb.appendChild(el("span", "lg-long", it[1])); lb.appendChild(el("span", "lg-short", it[2])); li.appendChild(lb);
-      var gain = el("span", "lg-gain"); gain.appendChild(document.createTextNode("+" + it[3] + " ")); gain.appendChild(coinEl()); li.appendChild(gain);
-      legend.appendChild(li);
-    });
-    head.appendChild(legend);
-    room.appendChild(head);
-    var today = playsToday(sid);
+    var room = el("div", "arcade-gallery"), top = el("div", "gallery-top");
+    var back = el("button", "gallery-back", "←"); back.type = "button"; back.setAttribute("aria-label", "Retour à ma mission");
+    back.onclick = function () { show("home"); };
+    if (!document.documentElement.classList.contains("embed")) top.appendChild(back);
+    var balances = el("div", "gallery-balances"), wallet = el("span", "gallery-pill");
+    wallet.appendChild(coinEl()); wallet.appendChild(document.createTextNode(" " + nb(coins(sid), "pièce", "pièces")));
+    balances.appendChild(wallet);
     var cr = credits(sid), lim = limitReached(sid);
-    var status = el("div", "arc-status");
-    if (lim) status.appendChild(el("span", "arc-pill warn", "Tu as terminé tes parties pour aujourd’hui. Reviens demain !"));
-    else if (cr <= 0) status.appendChild(el("span", "arc-pill warn", "Tu n’as plus de partie. Va à la boutique ou gagne des parties en lecture et en écoute."));
-    else status.appendChild(el("span", "arc-pill", "🎮 " + nb(cr, "partie", "parties") + " à jouer"));
-    if (!lim) status.appendChild(el("span", "arc-pill soft", "📅 Aujourd’hui : " + today + (data.maxPlays > 0 ? " sur " + data.maxPlays : "")));
-    status.appendChild(musicBtn());   /* juste à côté du compteur « Aujourd’hui » */
-    headLeft.appendChild(status);
-    wheelCard(room, sid);
-    var floor = el("div", "cabs");
-    GAMES.forEach(function (g) { floor.appendChild(cabinet(g, sid, cr, lim)); });
+    balances.appendChild(el("span", "gallery-pill", "🎮 " + nb(cr, "partie", "parties")));
+    top.appendChild(balances); room.appendChild(top);
+    room.appendChild(el("h2", "gallery-title", "Salle de jeux"));
+    if (lim || !cr) room.appendChild(el("p", "gallery-hint", lim ? "Reviens demain pour jouer." : "Gagne une partie dans ta mission ou va à la boutique."));
+    var floor = el("div", "gallery-grid");
+    ["safari", "tiles", "tiles_e", "memory", "snake", "flap", "order", "simon", "stack"].forEach(function (id) {
+      floor.appendChild(arcadeCard(gameInfo(id), sid, cr, lim));
+    });
     room.appendChild(floor);
-    if (!lim && cr <= 0) room.appendChild(el("p", "arcade-hint", "Fais certifier une étape par ton maître ou ta maîtresse, ou réussis un son dans J’écoute, pour gagner des parties."));
+    var extras = el("div", "gallery-extras");
+    if (data.reward && pendingWheels(sid).length) {
+      var wheel = el("button", "secondary", "🎡 Lancer la roue"); wheel.type = "button";
+      wheel.onclick = function () { openWheel(sid); }; extras.appendChild(wheel);
+    }
+    extras.appendChild(musicBtn()); room.appendChild(extras);
     body.appendChild(room);
     Music.refresh();
   }
-
 
   /* Roue des récompenses : toutes les cases sont des gains */
   var SLICES = [
@@ -6565,7 +6615,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     } catch (e) {}
   }
   function playGame(gameId, sid) {
-    if (!data.reward || credits(sid) <= 0 || limitReached(sid)) return;
+    if (!data.reward || !arcadeUnlocked(sid, gameId) || credits(sid) <= 0 || limitReached(sid)) return;
+    if (cloudMode && (cloudConflict || arcadePurchase || arcadeSaveNeedsRetry())) { toast("Attends que ton Zoo soit sauvegardé."); return; }
     data.credits[sid] = credits(sid) - 1;
     G.objCoin = false;
     if (G.remed) { G.remed = false; $("game-back").textContent = "Retour aux jeux"; }
@@ -7774,17 +7825,31 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var card = el("div", "game-result-card");
     var preview = el("div", "bc-icon", it.icon || "🎁");
     card.appendChild(preview);
-    card.appendChild(el("h2", "gr-title", "Tu veux acheter « " + it.label + " » ?"));
+    var title = el("h2", "gr-title", it.title || "Tu veux acheter « " + it.label + " » ?");
+    title.id = "buy-confirm-title"; ov.setAttribute("aria-labelledby", title.id);
+    card.appendChild(title);
     var pr = el("p", "bc-price"); pr.appendChild(coinEl()); pr.appendChild(document.createTextNode(" " + nb(it.price, "pièce d’or", "pièces d’or"))); card.appendChild(pr);
+    if (it.detail) card.appendChild(el("p", "muted", it.detail));
     var acts = el("div", "gr-actions");
     var yes = el("button", "primary", "✅ Oui, j’achète"); yes.type = "button";
     var no = el("button", "secondary", "Non"); no.type = "button";
-    function close() { if (ov.parentNode) ov.parentNode.removeChild(ov); }
+    var trigger = document.activeElement;
+    function close() {
+      if (ov.parentNode) ov.parentNode.removeChild(ov);
+      if (trigger && trigger.isConnected) trigger.focus({ preventScroll: true });
+    }
+    ov.addEventListener("keydown", function (event) {
+      if (event.key === "Escape") { event.preventDefault(); close(); }
+      if (event.key === "Tab" && ((!event.shiftKey && event.target === no) || (event.shiftKey && event.target === yes))) {
+        event.preventDefault();
+        (event.shiftKey ? no : yes).focus();
+      }
+    });
     yes.addEventListener("click", function () { close(); it.onBuy(); });
     no.addEventListener("click", close);
     acts.appendChild(yes); acts.appendChild(no); card.appendChild(acts); ov.appendChild(card);
     document.body.appendChild(ov);
-    yes.focus({ preventScroll: true });
+    (it.detail ? no : yes).focus({ preventScroll: true });
   }
   var shopSettingsRefreshing=false,shopSettingsChecked=0;
   async function refreshShopSettings(){
@@ -7801,6 +7866,9 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       }
       if(Number.isInteger(settings.packPrice)&&settings.packPrice>0)data.shop.packPrice=settings.packPrice;
       if(Number.isInteger(settings.wheelPrice)&&settings.wheelPrice>0)data.shop.wheelPrice=settings.wheelPrice;
+      var price = gamePrice(settings.gamePrice), priceChanged = price !== data.shop.gamePrice;
+      data.shop.gamePrice = price;
+      if (priceChanged && ses.role === "student" && !$("v-jeux").hidden) renderJeux();
       if(typeof settings.allowRec==="boolean")data.allowRec=settings.allowRec;
     }catch(err){console.warn("Actualisation boutique",err);}
     finally{shopSettingsRefreshing=false;}
@@ -8904,7 +8972,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
 
       cloudStudentId=st.student_id;cloudClassId=st.class_id||null;
       p=voy2Fix(p,Number(data.thr.s)||25);
-      data.students=[{id:st.student_id,name:st.nickname,avatar:typeof p.avatar==="string"?p.avatar:undefined,avatarStyle:p.avatarStyle}];
+      data.students=[{id:st.student_id,name:st.nickname,avatar:typeof p.avatar==="string"?p.avatar:undefined,avatarStyle:p.avatarStyle,arcadeUnlocked:p.arcadeUnlocked}];
       data.results=Array.isArray(p.results)?cleanFraud(p.results):[];
       data.coins={[st.student_id]:Number(p.coins)||0};
       data.credits={[st.student_id]:Number(p.credits)||0};
@@ -8932,6 +9000,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       if(Array.isArray(teacherSettings.rewards))data.shop.rewards=teacherSettings.rewards;
       if(Number.isInteger(teacherSettings.packPrice)&&teacherSettings.packPrice>0)data.shop.packPrice=teacherSettings.packPrice;
       if(Number.isInteger(teacherSettings.wheelPrice)&&teacherSettings.wheelPrice>0)data.shop.wheelPrice=teacherSettings.wheelPrice;
+      data.shop.gamePrice=gamePrice(teacherSettings.gamePrice);
       if(Number.isInteger(p.maxPlays)&&p.maxPlays>=0&&teacherSettings.maxPlays==null)data.maxPlays=p.maxPlays;
       if(typeof p.reward==="boolean"&&teacherSettings.reward==null)data.reward=p.reward;
       if(typeof p.sfx==="boolean"&&teacherSettings.sfx==null)data.sfx=p.sfx;
