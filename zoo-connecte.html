@@ -5321,7 +5321,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     else if (a.type === "write") { goTo("dictee"); dicteeStart(sid, k); }
     else tilesRemed(sid, a.pair);
   }
-  var vocabRun = null;
+  var VOCAB_PASS = 4, vocabRun = null;
   function vocabStop() {
     if (vocabRun) listenStopVoice();
     vocabRun = null;
@@ -5409,7 +5409,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     function finish() {
       if (run.stage !== "test") return;
       run.stage = "result"; listenStopVoice();
-      var res = remedMark(sid, "vocabulaire", assigned.next, run.correct === 6);
+      var res = remedMark(sid, "vocabulaire", assigned.next, run.correct >= VOCAB_PASS);
       statExercise(sid, !!res);
       save(); renderPanels();
       var card = el("div", "card vocab-screen");
@@ -5420,7 +5420,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
         listenCoinBox(card, res.gained);
         card.appendChild(button("🎡 Tourner ma roue", "primary big-btn go-next", function () { openWheel(sid, "Bravo pour ton imagier !"); }));
       } else if (!res) {
-        card.appendChild(el("p", "", "Retrouve les six mots et réessaie ce bloc."));
+        card.appendChild(el("p", "", "Il faut " + VOCAB_PASS + " bonnes réponses. Revois les mots et réessaie."));
         card.appendChild(button("Revoir les mots", "primary big-btn go-next", vocabStart));
       }
       card.appendChild(button(res && !res.all ? "Bloc suivant" : "Ma mission", res && !res.gained ? "primary big-btn go-next" : "secondary", function () {
