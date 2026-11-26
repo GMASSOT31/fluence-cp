@@ -114,6 +114,7 @@
     var box = $("pedaBoard");
     if (!box || !C.currentUser) return;
     var classes = myClasses();
+    if (C.refreshVocabularyCatalog) await C.refreshVocabularyCatalog().catch(function () {});
     box.replaceChildren();
     box.classList.remove("pb-scope");
     if (!classes.length || !(C.allStudents || []).length) {
@@ -1117,7 +1118,7 @@
     }
     return Math.max(1, Math.min(YEAR_WEEKS, n / 5));
   }
-  function expected(total, now) { return Math.max(1, Math.round(total * schoolWeeks(now) / YEAR_WEEKS)); }
+  function expected(total, now) { return total > 0 ? Math.max(1, Math.round(total * schoolWeeks(now) / YEAR_WEEKS)) : 0; }
   function doneCount(o, need) {
     o = o && typeof o === "object" ? o : {};
     var done = o.done && typeof o.done === "object" ? o.done : {}, passes = o.passes && typeof o.passes === "object" ? o.passes : {};
@@ -1125,13 +1126,19 @@
     return order.filter(function (x, i) { return done[x.id] || (need && (Number(passes[x.id]) || 0) >= need(i, ir)); }).length;
   }
   function vocabularyAxis(progress, now) {
-    var catalog = ZooVocabulary.catalog;
-    var mastered = progress.remed && progress.remed.vocabCompleted;
-    var completed = catalog.filter(function (book) { return mastered && mastered[book.id]; }).length;
-    var target = catalog.length ? expected(catalog.length, now) : 0;
-    return { k: "vocabulaire", name: "Vocabulaire", v: target ? Math.round(completed * 100 / target) : null,
-      txt: target ? completed + " sur " + target + " corpus attendus" : "aucun corpus disponible",
-      tip: "Corpus terminés sur l’objectif à cette date" };
+    var remed = progress.remed || {}, total = new Set(), validated = new Set();
+    ZooVocabulary.catalog.forEach(function (book) {
+      var words = remed.vocabWords && remed.vocabWords[book.id];
+      book.words.forEach(function (card) {
+        var key = ZooVocabulary.wordKey(card[0]);
+        total.add(key);
+        if (Array.isArray(words) ? words.indexOf(key) >= 0 : remed.vocabCompleted && remed.vocabCompleted[book.id]) validated.add(key);
+      });
+    });
+    var target = expected(total.size, now);
+    return { k: "vocabulaire", name: "Vocabulaire", v: target ? Math.round(validated.size * 100 / target) : null,
+      txt: target ? validated.size + " / " + target + " mots attendus" : "aucun mot disponible",
+      tip: total.size ? total.size + " mots au catalogue" : "" };
   }
   function phonoAxis(r, now, lp) {
     var order = C.cfgSounds || [], X = exo(), p = r.p;
@@ -1184,7 +1191,7 @@
     var cfg = D.config(window.pedaGsCfg), list = D.radar(cfg, r.s.nickname, D.lecState(g.lecture), Array.isArray(g.series) ? g.series : [], schoolWeeks(now) / YEAR_WEEKS, D.diagnosticState(g.diagnostic));
     return { flu: [], exp: 0, gs: true, list: list.map(function (a) {
       return { k: a.k, name: a.name, v: a.v, txt: a.done + "/" + a.total + " étapes · attendu " + a.exp + " · " + GS_ST[a.status], tip: GS_TIP[a.k] || "" };
-    }) };
+    }).concat(vocabularyAxis(r.p || {}, now)) };
   }
   /* Toile de l'élève selon son parcours : GS (les lettres) ou CP (les sons) */
   function webAxes(r, now) { return trackOf(r.s.id) === "gs" ? gsAxes(r, now) : axes(r, now); }
@@ -1300,7 +1307,7 @@
       });
     }
     doc.setFontSize(7.5); doc.setTextColor(140);
-    if (gsm) doc.text(T("zoodelecture.fr · 100 % = étapes attendues à cette date pour chaque activité des lettres (semaine " + Math.round(schoolWeeks(now)) + " sur " + YEAR_WEEKS + "). Une étape = deux séries réussies."), M, 290);
+    if (gsm) doc.text(T("zoodelecture.fr · 100 % = objectif du jour pour les lettres et le vocabulaire (semaine " + Math.round(schoolWeeks(now)) + " sur " + YEAR_WEEKS + "). Une étape = deux séries réussies."), M, 290);
     else doc.text(T("zoodelecture.fr · 100 % = attendu à cette date : " + ax.exp + " sons sur les " + r.total + " de l’année (semaine " + Math.round(schoolWeeks(now)) + " sur " + YEAR_WEEKS + "). Vitesse : 3 dernières lectures / seuil."), M, 290);
   }
   function makeFiches(list, cls, btn, file) {
@@ -1310,7 +1317,7 @@
       title: list.length > 1 ? "Fiches de « " + cls.name + " »" : "Fiche de " + list[0].s.nickname,
       ok: "📄 " + (list.length > 1 ? list.length + " fiches de suivi pour « " + cls.name + " »" : "Fiche de suivi de " + list[0].s.nickname) + " : le PDF s’ouvre (sinon, regardez dans vos téléchargements).",
       build: async function (doc) {
-        if (C.refreshVocabularyCatalog) await C.refreshVocabularyCatalog().catch(function () {});
+        if (C.refreshVocabularyCatalog) await C.refreshVocabularyCatalog();
         var ref = classRef(now, false), refGs = classRef(now, true);
         list.forEach(function (r, i) { if (i) doc.addPage(); drawFiche(doc, r, cls, trackOf(r.s.id) === "gs" ? refGs : ref, now); });
       } });
@@ -1536,5 +1543,5 @@
 
   /* « Mes classes » › « Voir mes élèves » : ouvrir Ma classe sur cette classe */
   function pick(id) { if (id && id !== state.classId) { state.classId = id; state.open = {}; state.filter = "all"; } }
-  window.ZooPeda = { renameBtn: renameBtn, svgWeb: svgWeb, gsSettings: gsSettings, gsCalcSettings: gsCalcSettings, ce1CalcSettings: ce1CalcSettings, trackBox: trackBox, trackBulk: trackBulk, GS_ST: GS_ST, gsAxes: gsAxes, trackOf: trackOf, compactDetails: compactDetails, studentFilter: studentFilter, recordCriterion: recordCriterion, pick: pick, asgLabel: asgLabel, asgState: asgState, asgStatusText: asgStatusText, render: render, openDetail: openDetail, scrollToStudent: scrollToStudent, tilePairs: TILE_PAIRS, analyse: analyse, classify: classify, axes: axes, drawFiche: drawFiche, drawWeb: drawWeb, refOf: refOf, schoolWeeks: schoolWeeks, YEAR_WEEKS: YEAR_WEEKS, state: state };
+  window.ZooPeda = { renameBtn: renameBtn, svgWeb: svgWeb, gsSettings: gsSettings, gsCalcSettings: gsCalcSettings, ce1CalcSettings: ce1CalcSettings, trackBox: trackBox, trackBulk: trackBulk, GS_ST: GS_ST, gsAxes: gsAxes, trackOf: trackOf, compactDetails: compactDetails, studentFilter: studentFilter, recordCriterion: recordCriterion, pick: pick, asgLabel: asgLabel, asgState: asgState, asgStatusText: asgStatusText, render: render, openDetail: openDetail, scrollToStudent: scrollToStudent, tilePairs: TILE_PAIRS, analyse: analyse, classify: classify, axes: axes, drawFiche: drawFiche, drawWeb: drawWeb, refOf: refOf, schoolWeeks: schoolWeeks, expected: expected, YEAR_WEEKS: YEAR_WEEKS, state: state };
 })();

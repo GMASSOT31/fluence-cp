@@ -1846,7 +1846,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
 <script src="exo-data.js?v=7"></script>
 <script src="gs-data.js?v=7"></script>
 <script src="gs-lecture.js?v=7"></script>
-<script src="vocabulaire.js?v=4"></script>
+<script src="vocabulaire.js?v=5"></script>
 <script src="vendor/howler.core.min.js?v=2.2.4"></script>
 <script src="audio-lecture.js?v=3"></script>
 <script src="aide-ecoute.js?v=2"></script>
@@ -5220,12 +5220,17 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     return sons.length ? { type: a.type, sons: sons, pair: null, ts: Number(a.ts) } : null;
   }
   function remedClean(o) {
-    var r = { ts: 0, done: {}, ok: 0, tries: 0, hist: [], vocabCompleted: {}, vocabReview: ZooVocabulary.reviewHistory(o), individualDone: 0 };
+    var r = { ts: 0, done: {}, ok: 0, tries: 0, hist: [], vocabCompleted: {}, vocabWords: {}, vocabReview: ZooVocabulary.reviewHistory(o), individualDone: 0 };
     if (!o || typeof o !== "object") return r;
     r.ts = Number(o.ts) || 0; r.ok = Number(o.ok) || 0; r.individualDone = Number(o.individualDone) || 0; r.tries = listenInt(o.tries, 0, 99999, 0);
     if (o.done && typeof o.done === "object") Object.keys(o.done).slice(0, 10).forEach(function (k) { if (o.done[k]) r.done[k] = 1; });
     if (o.vocabCompleted && typeof o.vocabCompleted === "object") Object.keys(o.vocabCompleted).forEach(function (id) {
       if (/^[0-9a-f-]{36}$/.test(id) && o.vocabCompleted[id]) r.vocabCompleted[id] = 1;
+    });
+    Object.keys(o.vocabWords || {}).forEach(function (id) {
+      if (/^[0-9a-f-]{36}$/.test(id) && Array.isArray(o.vocabWords[id])) {
+        r.vocabWords[id] = o.vocabWords[id].filter(function (word) { return typeof word === "string"; }).slice(0, 18);
+      }
     });
     if (Array.isArray(o.hist)) r.hist = o.hist.filter(function (h) { return h && typeof h === "object" && REMED_NAMES[h.type]; }).slice(0, 10);
     return r;
@@ -5270,11 +5275,18 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     return next ? { a: a, R: R, steps: steps, next: next } : null;
   }
   /* Une série terminée : si elle fait partie de l’exercice donné et qu’elle est réussie, l’étape est faite (toutes faites = exercice réussi, +3 pièces) */
-  function remedMark(sid, type, id, ok) {
+  function remedMark(sid, type, id, ok, correctWords) {
     var cur = remedNow(sid), key = type === "tiles" ? "tiles" : id;
     if (!cur || cur.a.type !== type || (type === "vocabulaire" && cur.next !== key) || !cur.steps.some(function (x) { return x.id === key && x.st !== "done"; })) return null;
     cur.R.tries++;
     if (!ok) return null;
+    if (type === "vocabulaire" && correctWords) {
+      var book = ZooVocabulary.get(cur.a.corpus), known = cur.R.vocabWords[book.id];
+      if (!known) known = cur.R.vocabCompleted[book.id] ? book.words.map(function (card) { return ZooVocabulary.wordKey(card[0]); }) : [];
+      cur.R.vocabWords[book.id] = known.concat(correctWords).filter(function (word, index, all) {
+        return all.indexOf(word) === index && book.words.some(function (card) { return ZooVocabulary.wordKey(card[0]) === word; });
+      });
+    }
     cur.R.done[key] = 1;
     var all = cur.steps.every(function (x) { return x.id === key || x.st === "done"; }), gained = 0;
     if (type === "vocabulaire" && data.reward) {
@@ -5340,7 +5352,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     if (!assigned || assigned.a.type !== "vocabulaire") { goTo("home"); return; }
     var book = ZooVocabulary.get(assigned.a.corpus), groups = ZooVocabulary.blocks(book);
     var block = Number(assigned.next.slice(1)) - 1, words = groups[block];
-    var run = { stage: "learn", index: 0, correct: 0, prompts: [], selected: false };
+    var run = { stage: "learn", index: 0, correct: 0, correctWords: [], prompts: [], selected: false };
     vocabStop(); vocabRun = run;
     var body = $("vocabulaire-body");
     function button(text, cls, action) {
@@ -5387,7 +5399,10 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
           var b = button("", "secondary vocab-answer", function () {
             if (run.selected) return;
             run.selected = true;
-            if (answer === word) run.correct++;
+            if (answer === word) {
+              run.correct++;
+              run.correctWords.push(ZooVocabulary.wordKey(word[0]));
+            }
             Array.prototype.forEach.call(answers.children, function (choice) { choice.disabled = true; });
             feedback.textContent = answer === word ? "✅ Bravo !" : "La bonne image est mise en évidence.";
             Array.prototype.forEach.call(answers.children, function (choice) {
@@ -5412,7 +5427,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     function finish() {
       if (run.stage !== "test") return;
       run.stage = "result"; listenStopVoice();
-      var res = remedMark(sid, "vocabulaire", assigned.next, run.correct >= VOCAB_PASS);
+      var res = remedMark(sid, "vocabulaire", assigned.next, run.correct >= VOCAB_PASS, run.correctWords);
       statExercise(sid, !!res);
       save(); renderPanels();
       var card = el("div", "card vocab-screen");
