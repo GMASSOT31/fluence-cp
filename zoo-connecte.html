@@ -712,7 +712,6 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   body.mode-student .zoo-top-stat.zoo-top-gold strong { color: #ffdc51; }
   body.mode-student .zoo-top-stat .gold-coin { display: inline-block; width: 25px; height: 25px; flex-shrink: 0; }
   body.mode-student #panel-left .pcard.stats > .stat { display: none; }
-  body.mode-student #panel-left .pcard.stats:has(#btn-panel-wheel[hidden]) { display: none; }
   @media (max-width: 1000px) {
     body.mode-student header .zoo-hero { padding-right: 265px; }
     body.mode-student header .zoo-hero-art { display: none; }
@@ -1383,7 +1382,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
           <button type="button" class="ghost-sm" id="btn-back-teacher" hidden>Retour au maître(sse)</button>
         </div>
       </div>
-      <div class="pcard stats">
+      <div class="pcard stats" id="panel-wheel-card" hidden>
         <div class="stat needs-reward" id="st-coins" role="img"><span class="gold-coin" aria-hidden="true"></span><span id="pl-coins">0</span></div>
         <div class="stat needs-reward" id="st-games" role="img"><span class="sym" aria-hidden="true">🎮</span><span id="pl-games">0</span></div>
         <div class="stat" id="st-level" role="img"><span class="sym" aria-hidden="true">📚</span><span id="pl-level">N0</span></div>
@@ -4212,6 +4211,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     $("st-games").setAttribute("aria-label", nb(cr, "partie de jeu", "parties de jeu")); $("st-games").title = "Parties de jeu";
     var wb = $("btn-panel-wheel");
     wb.hidden = !(data.reward && pw > 0);
+    $("panel-wheel-card").hidden = wb.hidden;
     wb.textContent = pw > 1 ? "Lancer la roue (" + pw + ")" : "Lancer la roue";
     var pms = mission(sid);
     if (window.ZooGS && ZooGS.track(sid, "lecture") === "gs") $("pr-next").textContent = "les lettres"; else
