@@ -16,6 +16,17 @@
   window.pedaRecDec = window.pedaRecDec || {};   /* élèves allophones (réglage enseignant « allo ») */
 
   function mk(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function webIcon() {
+    var ns = "http://www.w3.org/2000/svg", icon = document.createElementNS(ns, "svg");
+    icon.setAttribute("class", "pb-web-icon");
+    icon.setAttribute("viewBox", "0 0 24 24");
+    icon.setAttribute("aria-hidden", "true");
+    icon.setAttribute("focusable", "false");
+    var web = document.createElementNS(ns, "path");
+    web.setAttribute("d", "M12 2 19 5 22 12 19 19 12 22 5 19 2 12 5 5Z M12 7 15.5 8.5 17 12 15.5 15.5 12 17 8.5 15.5 7 12 8.5 8.5Z M12 2V22 M2 12H22 M5 5 19 19 M5 19 19 5");
+    icon.appendChild(web);
+    return icon;
+  }
   function plur(n, a, b) { return n + " " + (C.pl ? C.pl(n, a, b) : (n > 1 ? b : a)); }
   function soundsOrder() { return (C.cfgSounds || []).filter(function (x) { return x && x.id && x.id !== "h" && x.id !== "sz"; }); }
   function soundName(id) { var x = (C.cfgSounds || []).find(function (z) { return z && z.id === id; }); return x ? (x.label || x.id) : id; }
@@ -185,7 +196,7 @@
     state.comprCatalog = reads[2].data || {};
     state.classVocab = Array.isArray(reads[1].data) ? reads[1].data : [];
     if (C.pdfMake) {
-      var fa = mk("button", "secondary"); fa.append(mk("span", "pb-pdf-icon", "PDF"), document.createTextNode(" Araignées de suivi")); fa.type = "button"; fa.title = "Une fiche par élève, avec sa toile des 7 compétences";
+      var fa = mk("button", "secondary"); fa.append(webIcon(), document.createTextNode(" Araignées de suivi")); fa.type = "button"; fa.title = "Une fiche par élève, avec sa toile des 7 compétences";
       fa.onclick = function () { makeFiches(rows.slice().sort(function (a, b) { return String(a.s.nickname).localeCompare(b.s.nickname); }), cls, fa, "fiches-suivi-" + (C.pdfSlug(cls.name) || "classe")); };
       acts.append(fa);
     }
@@ -1558,5 +1569,5 @@
 
   /* « Mes classes » › « Voir mes élèves » : ouvrir Ma classe sur cette classe */
   function pick(id) { if (id && id !== state.classId) { state.classId = id; state.open = {}; state.filter = "all"; } }
-  window.ZooPeda = { renameBtn: renameBtn, svgWeb: svgWeb, gsSettings: gsSettings, gsCalcSettings: gsCalcSettings, ce1CalcSettings: ce1CalcSettings, trackBox: trackBox, trackBulk: trackBulk, GS_ST: GS_ST, gsAxes: gsAxes, trackOf: trackOf, compactDetails: compactDetails, studentFilter: studentFilter, recordCriterion: recordCriterion, pick: pick, asgLabel: asgLabel, asgState: asgState, asgStatusText: asgStatusText, render: render, openDetail: openDetail, scrollToStudent: scrollToStudent, tilePairs: TILE_PAIRS, analyse: analyse, classify: classify, axes: axes, drawFiche: drawFiche, drawWeb: drawWeb, refOf: refOf, schoolWeeks: schoolWeeks, expected: expected, YEAR_WEEKS: YEAR_WEEKS, state: state };
+  window.ZooPeda = { renameBtn: renameBtn, svgWeb: svgWeb, webIcon: webIcon, gsSettings: gsSettings, gsCalcSettings: gsCalcSettings, ce1CalcSettings: ce1CalcSettings, trackBox: trackBox, trackBulk: trackBulk, GS_ST: GS_ST, gsAxes: gsAxes, trackOf: trackOf, compactDetails: compactDetails, studentFilter: studentFilter, recordCriterion: recordCriterion, pick: pick, asgLabel: asgLabel, asgState: asgState, asgStatusText: asgStatusText, render: render, openDetail: openDetail, scrollToStudent: scrollToStudent, tilePairs: TILE_PAIRS, analyse: analyse, classify: classify, axes: axes, drawFiche: drawFiche, drawWeb: drawWeb, refOf: refOf, schoolWeeks: schoolWeeks, expected: expected, YEAR_WEEKS: YEAR_WEEKS, state: state };
 })();

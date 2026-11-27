@@ -214,7 +214,7 @@
     if (fullCls && ctx().classMenu) tools.appendChild(ctx().classMenu(fullCls));
     var pc = ctx().allClasses && ctx().printLoginCards ? ctx().allClasses.filter(function (x) { return x.id === cls.id; })[0] : null;
     if (pc) { var cm = el("button", "secondary", "🖨️ QR codes"); cm.type = "button"; cm.title = "Fiches de connexion au Zoo de Calcul (adresse zoodelecture.fr/calcul et QR code), à donner aux familles"; cm.addEventListener("click", function () { ctx().printLoginCards(pc, "calcMsg", cm, true); }); acts.appendChild(cm); }
-    if (ficheOK()) { var fa = el("button", "secondary"); fa.appendChild(el("span", "pb-pdf-icon", "PDF")); fa.appendChild(document.createTextNode(" Araignées de suivi")); fa.type = "button"; fa.title = "Une fiche par élève, avec sa toile des 6 compétences"; fa.addEventListener("click", function () { makeFiches(view.rows.slice().sort(function (a, b) { return String(a.s.nickname).localeCompare(b.s.nickname); }), cls.name, fa, "fiches-calcul-" + (ctx().pdfSlug(cls.name) || "classe")); }); acts.appendChild(fa); }
+    if (ficheOK()) { var fa = el("button", "secondary"); fa.appendChild(window.ZooPeda.webIcon()); fa.appendChild(document.createTextNode(" Araignées de suivi")); fa.type = "button"; fa.title = "Une fiche par élève, avec sa toile des 6 compétences"; fa.addEventListener("click", function () { makeFiches(view.rows.slice().sort(function (a, b) { return String(a.s.nickname).localeCompare(b.s.nickname); }), cls.name, fa, "fiches-calcul-" + (ctx().pdfSlug(cls.name) || "classe")); }); acts.appendChild(fa); }
     hd.appendChild(left);
     if (view.loadedAt) {
       var tm = el("span", "pb-updated", view.loadedAt.getHours() + " h " + ("0" + view.loadedAt.getMinutes()).slice(-2));
