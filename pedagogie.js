@@ -79,6 +79,17 @@
     var pending = pendingRecs(p).filter(function (x) { return !window.pedaRecDec[x.id]; });
     var recs = pending.filter(function (x) { return !x.single; });
     var fluChecks = pending.filter(function (x) { return x.single; });
+    var legacyFlu = null;
+    if (!pending.length && trackOf(s.id) !== "gs") {
+      var readings = res.filter(function (r) { return !r.void && !r.short && !r.fraud && r.src !== "adj"; });
+      var lastMeasure = readings.reduce(function (last, r) {
+        return r.src === "train" ? last : Math.max(last, Number(r.reviewedAt || r.ts) || 0);
+      }, 0);
+      var training = readings.filter(function (r) {
+        return r.src === "train" && thr[r.k] && Number(r.ts) > lastMeasure && !(p.readOnce || {})[r.sound + ":" + r.k];
+      });
+      if (training.length >= 3) legacyFlu = training.reduce(function (last, r) { return Number(r.ts) >= Number(last.ts) ? r : last; });
+    }
     var curSent = !!cur && recs.some(function (x) { return x.sound === cur.id; });
     var blocked = !!cur && !curSent && ((answers >= 6 && err >= 40) || readTries >= 3);
     /* son en cours réussi en entraînement (⭐) mais pas encore envoyé : l’élève peut s’enregistrer pour la médaille */
@@ -86,7 +97,7 @@
     var flu = res.filter(function (r) { return !r.void && !r.short && !(Number(r.fraud) > 0) && r.src !== "adj" && r.src !== "train" && Number(r.mclm) > 0; })
       .sort(function (a, b) { return (Number(b.ts) || 0) - (Number(a.ts) || 0); })[0] || null;
     return { s: s, row: row || null, canRec: canRec, p: p, certified: cert, nValid: nValid, total: order.length, cur: cur, err: err, answers: answers, readTries: readTries, blocked: blocked,
-      fluChecks: fluChecks, recs: recs.length, recTabs: recs.map(function (x) { return Number(x.tab) || 0; }).filter(function (n, i, a) { return n && a.indexOf(n) === i; }).sort(function (a, b) { return a - b; }), curSent: curSent, secs: secs, exercises: exercises, successes: successes, series: series, idle: idle, flu: flu, conf: st.conf && typeof st.conf === "object" ? st.conf : {}, measured: Object.keys(days).length > 0,
+      fluChecks: fluChecks, legacyFlu: legacyFlu, recs: recs.length, recTabs: recs.map(function (x) { return Number(x.tab) || 0; }).filter(function (n, i, a) { return n && a.indexOf(n) === i; }).sort(function (a, b) { return a - b; }), curSent: curSent, secs: secs, exercises: exercises, successes: successes, series: series, idle: idle, flu: flu, conf: st.conf && typeof st.conf === "object" ? st.conf : {}, measured: Object.keys(days).length > 0,
       allo: window.pedaAllo.indexOf(s.id) >= 0, asg: currentAssignment(s.id), remed: p.remed && typeof p.remed === "object" ? p.remed : null };
   }
   function classify(rows) {
@@ -291,10 +302,11 @@
       }
       card("a-rec", "🎧 " + plur(nRec, "lecture à écouter", "lectures à écouter") + " pour la médaille", recs, where + " — sur la tablette de l’élève : « 🎧 Mon maître(sse) écoute »" + (mine.length ? ", ou décidez ici." : "."), panel);
     }
-    var checks = rows.filter(function (r) { return r.fluChecks.length; });
+    var checks = rows.filter(function (r) { return r.fluChecks.length || r.legacyFlu; });
     if (checks.length) {
       var list = mk("ul", "pb-now");
       checks.forEach(function (r) {
+        if (r.legacyFlu) list.append(mk("li", "pb-now-warn", r.s.nickname + " · " + legacyFluLabel(r)));
         r.fluChecks.forEach(function (v) {
           var li = recItem(r, v, C.currentUser && r.s.teacher_id === C.currentUser.id);
           li.firstChild.textContent = r.s.nickname + " · " + li.firstChild.textContent;
@@ -457,7 +469,7 @@
     /* pastilles : dernière venue, lectures à écouter, peut s’enregistrer, exercice donné */
     var chips = mk("div", "pb-tags");
     chips.append(mk("span", "pb-tag" + (r.inactive ? " warn" : ""), "🕒 " + whenText(r)));
-    if (r.fluChecks.length) chips.append(mk("span", "pb-tag alert", "⚡ Fluence à suivre"));
+    if (r.fluChecks.length || r.legacyFlu) chips.append(mk("span", "pb-tag alert", "⚡ Fluence à suivre"));
     if (r.recs) chips.append(mk("span", "pb-tag alert", "🎧 " + plur(r.recs, "lecture à écouter", "lectures à écouter") + (r.recTabs.length ? " · 📱 " + r.recTabs.join(", ") : "")));
     else if (r.canRec) { var cr = mk("span", "pb-tag next", "🎙 Peut enregistrer sa lecture"); cr.title = "Réussi en entraînement : " + r.s.nickname + " peut s’enregistrer (« 🎙 Je m’enregistre » dans son Zoo) pour gagner sa médaille 🏅."; chips.append(cr); }
     if (r.asg) { var ast = asgState(r.asg, r.remed); chips.append(mk("span", "pb-tag " + (ast.ok ? "ok" : "asg"), "🎯 " + asgLabel(r.asg) + " · " + asgStatusText(r.asg, r.remed))); }
@@ -939,6 +951,9 @@
     return svg;
   }
   /* Une lecture en attente : à écouter sur la tablette, OU validée / à refaire directement ici (le Zoo de l'élève l'applique à sa prochaine connexion) */
+  function legacyFluLabel(r) {
+    return "Fluence à mesurer en direct · " + KN[r.legacyFlu.k] + " du son « " + soundName(r.legacyFlu.sound) + " »";
+  }
   function recItem(r, v, own) {
     var li = mk("li", "pb-now-rec"), d = window.pedaRecDec[v.id], unit = v.kind === "s" ? "syllabes" : "mots", thr = thrOf()[v.kind];
     if (v.single) {
@@ -1054,6 +1069,7 @@
     function item(txt, cls) { items.append(mk("li", cls || null, txt)); }
     var recs = pendingRecs(r.p || {});
     recs.forEach(function (v) { items.append(recItem(r, v, own)); });
+    if (r.legacyFlu) item("⚡ " + legacyFluLabel(r), "pb-now-warn");
     if (!recs.length && r.canRec) item("🎙 Peut enregistrer sa lecture pour la médaille (« 🎙 Je m’enregistre » dans son Zoo).");
     if (r.blocked && r.cur) item("⚠️ Bloqué sur le son « " + soundName(r.cur.id) + " »" + (r.err !== null && r.answers >= 6 ? " (" + r.err + " % d’erreurs)" : " (" + r.readTries + " lectures sans réussite)") + " : un exercice peut l’aider.", "pb-now-warn");
     studentConf(r).forEach(function (c) { item("🔀 Confond « " + c[0].replace(" / ", " » et « ") + " » (" + c[1] + " fois)"); });

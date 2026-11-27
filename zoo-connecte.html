@@ -292,11 +292,6 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   .ms-step small { display: block; font-size: .8rem; font-weight: 600; }
   .ms-step.done { background: #e6f8ec; border-color: #a9dfbd; color: #1f6b3a; }
   .ms-step.done .ms-n { border-color: #a9dfbd; }
-  .reading-alert { display: block; width: 100%; margin: 10px 0 0; min-height: 44px; color: #fff; background: #a62337; border: 2px solid #ffb4bf; font-weight: 800; }
-  @media (prefers-reduced-motion: no-preference) {
-    .reading-alert { animation: reading-alert-pulse 2.5s ease-in-out infinite; }
-    @keyframes reading-alert-pulse { 50% { box-shadow: 0 0 0 5px rgba(225, 60, 88, .35); } }
-  }
   .ms-medal { width: 100%; margin: 0; text-align: left; cursor: pointer; background: #fff7e0; border: 2px dashed #e0a500; color: #6b4700; font-family: inherit; box-shadow: none; }
   .ms-medal .ms-n { border-color: #e0a500; }
   .home-next .ms-n { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; margin-right: 10px; border-radius: 50%; background: #fff; color: #333; font-size: .95rem; text-shadow: none; vertical-align: middle; }
@@ -1537,7 +1532,6 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
           <button type="button" class="primary go-next" id="btn-again" hidden>🔁 Je recommence</button>
           <button type="button" class="secondary" id="btn-discard">Ne pas enregistrer</button>
         </div>
-        <div id="r-reading-reminder"></div>
       </div>
       <div class="card result" id="rec-done" hidden>
         <div class="big-emoji" aria-hidden="true">🎧</div>
@@ -3558,7 +3552,6 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     badge.className = "badge" + (ok ? " ok" : "");
     $("btn-save").textContent = S.train ? "Enregistrer mon entraînement" : "Enregistrer";
     $("btn-save").hidden = false; $("btn-again").hidden = true; $("btn-discard").hidden = false; $("btn-discard").textContent = "Ne pas enregistrer";
-    $("r-reading-reminder").textContent = "";
     $("btn-save").classList.remove("go-next");
     renderResultPet(mclm, ok);
     /* L’entraînement est sauvegardé ; la mission décide de la suite, y compris pour la médaille. */
@@ -3570,8 +3563,6 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       $("btn-save").classList.toggle("go-next", ok);
       $("btn-again").hidden = ok;
       $("btn-discard").hidden = ok; $("btn-discard").textContent = "← Ma mission";
-      var reminder = readingReminder(S.sid, true);
-      if (reminder) $("r-reading-reminder").appendChild(reminder);
       if (ok) $("r-msg").textContent = wasPassed ? "Bravo pour ta lecture !" : "Bravo, tu as gagné une étoile ⭐ !";
       renderPanels();
     }
@@ -5868,32 +5859,10 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   function dayKey() { var d = new Date(); return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(); }
   function dayGet(sid) { try { var o = JSON.parse(localStorage.getItem("zoo_day_" + sid) || "{}"); return o && o.d === dayKey() ? o : { d: dayKey() }; } catch (e) { return { d: dayKey() }; } }
   function dayMark(sid, k) { if (previewMode) return; try { var o = dayGet(sid); o[k] = 1; localStorage.setItem("zoo_day_" + sid, JSON.stringify(o)); } catch (e) {} }
-  function readingReminder(sid, onlyAlert) {
-    var readings = data.results.filter(function (r) { return r.sid === sid && !r.void && !r.short && !r.fraud && r.src !== "adj"; });
-    var lastReview = readings.reduce(function (last, r) {
-      return r.src === "train" ? last : Math.max(last, Number(r.reviewedAt || r.ts) || 0);
-    }, 0);
-    var recent = readings.filter(function (r) { return r.src === "train" && Number(r.ts) > lastReview; });
-    var alert = recent.length >= 3, waiting = recCount(sid);
-    if (onlyAlert && !alert) return null;
-    var candidates = stepsList().filter(function (x) {
-      return !readOnce(sid, x.sound, x.kind) && !isValid(sid, x.sound, x.kind) && isTrained(sid, x.sound, x.kind) && !recPending(sid, x.sound);
-    });
-    var target = candidates[0];
-    if (!target && alert) {
-      var latest = recent[recent.length - 1];
-      target = { sound: latest.sound, kind: latest.k };
-      if (!hasContent(target.sound, target.kind) || !isUnlocked(sid, target.sound)) target = null;
-    }
-    if (!waiting && !target) return null;
-    var label = waiting ? "🎧 Mon maître ou ma maîtresse écoute" :
-      recSupport() ? "🏅 Je lis avec mon maître ou ma maîtresse" : "🎙 Je m’enregistre avec mon maître ou ma maîtresse";
-    var b = el("button", alert ? "reading-alert" : "secondary", label); b.type = "button";
-    if (alert) b.appendChild(el("small", "", " · Préviens ton enseignant"));
-    b.addEventListener("click", function () {
-      if (waiting) { ses.ear = false; RV.id = null; show("ecoute"); return; }
-      show("lecture"); lireLaunch("eval", target.sound, target.kind);
-    });
+  function recordingsToListen(sid) {
+    if (!recCount(sid)) return null;
+    var b = el("button", "secondary", "🎧 Mon maître ou ma maîtresse écoute"); b.type = "button";
+    b.addEventListener("click", function () { ses.ear = false; RV.id = null; show("ecoute"); });
     return b;
   }
 
@@ -5954,7 +5923,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       ms.steps.forEach(function (x, i) {
         if (x.st === "go") col.appendChild(bigRow(step, i + 1, !!wheels));
         else if (x.st === "done") col.appendChild(smallRow(" done", "✅", x.label || NAMES[x.k], ""));
-        else if (x.st === "medal") col.appendChild(smallRow(" done", "⭐", NAMES[x.k], "🎙 enregistre ta lecture pour ta médaille"));
+        else if (x.st === "medal") col.appendChild(smallRow(" done", "⭐", NAMES[x.k], ""));
         else if (x.st === "sent") col.appendChild(smallRow(" done", "⏳", NAMES[x.k], "ta lecture attend ton maître(sse)"));
         else col.appendChild(smallRow("", String(i + 1), x.label || NAMES[x.k], x.st === "lock" ? "🔒 après les entraînements du son d’avant" : ""));
       });
@@ -5966,7 +5935,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       doneRow.appendChild(sayBtn(say, "Écouter"));
       col.appendChild(doneRow);
     }
-    var recall = readingReminder(sid, false);
+    var recall = recordingsToListen(sid);
     if (recall) col.appendChild(recall);
     row.appendChild(col);
     card.appendChild(row);
