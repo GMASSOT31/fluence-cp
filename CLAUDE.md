@@ -21,6 +21,8 @@
 
 - **Axe Compréhension CP** : l’objectif à la date de la fiche repose sur les sons proposant « Je comprends » selon `ZooExo.comprHas` (ordre configuré et mots illustrés, y compris les ajouts). Les sons sans exercice disponible sont exclus des validations et de l’objectif. Aucune migration.
 
+- **Défi GS ludique** : une bonne réponse fait éclater la tuile et allume une étoile. Une erreur estompe la tuile et « Je ne sais pas » passe directement à la suite. Cinq bonnes lettres donnent un coffre d’une pièce. `progress.gs.diagnostic.chests` conserve les coffres ouverts et les réponses conservent les étoiles après pause. Une seule réponse par lettre et une roue finale offerte quel que soit le résultat. Aucun changement de base.
+
 ## 1. Objectif
 Appli web de fluence de lecture pour des classes de CP, en ligne sur https://zoodelecture.fr
 - **Élève** (eleve.html → zoo-connecte.html) : lecture d'1 minute par son et par niveau (syllabes, mots, texte), en entraînement ou évaluation ; exercice d'écoute « J'écoute » ; animaux qui éclosent et grandissent ; pièces, roue, 8 jeux, boutique.
