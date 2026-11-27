@@ -1855,7 +1855,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
 </script>
 <script src="exo-data.js?v=7"></script>
 <script src="gs-data.js?v=7"></script>
-<script src="gs-lecture.js?v=7"></script>
+<script src="gs-lecture.js?v=8"></script>
 <script src="vocabulaire.js?v=5"></script>
 <script src="vendor/howler.core.min.js?v=2.2.4"></script>
 <script src="audio-lecture.js?v=3"></script>
@@ -4529,7 +4529,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}
     if (window.ZooAudio) ZooAudio.stop();
   }
-  function listenSpeak(text, onEnd) {
+  function listenSpeak(text, onEnd, gesture) {
     try {
       if (window.ZooAudio) ZooAudio.stop();
       if (!window.speechSynthesis || !window.SpeechSynthesisUtterance) { if (onEnd) onEnd(); return; }
@@ -4544,10 +4544,11 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       if (fr) u.voice = fr;
       var mine = ++LS_SEQ;
       window.speechSynthesis.cancel();
-      setTimeout(function () {
-        if (mine !== LS_SEQ) return;   // une demande plus récente (ou un arrêt) a pris la place
+      function play() {
+        if (mine !== LS_SEQ) return;
         try { window.speechSynthesis.speak(u); } catch (e) { if (onEnd) onEnd(); }
-      }, 90);
+      }
+      if (gesture) play(); else setTimeout(play, 90);
     } catch (e) { if (onEnd) onEnd(); }
   }
   /* Voyelles é / è : quand l’élève se trompe, une phrase et une image pour retenir l’accent (fusée qui monte, flèche qui tombe) */
