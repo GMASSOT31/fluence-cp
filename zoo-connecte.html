@@ -197,20 +197,11 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   .ticket .ico { font-size: 1.8rem; }
   .wheel-card { text-align: center; position: relative; }
   .wheel-pet { font-size: 3.4rem; line-height: 1; margin-bottom: 4px; }
-  .wheel-wrap { --size: min(78vw, 340px); position: relative; width: var(--size); margin: 38px auto 26px; }
-  .wheel { width: 100%; aspect-ratio: 1; border-radius: 50%; box-shadow: 0 0 0 6px var(--ink); will-change: transform; }
-  .wheel svg { display: block; width: 100%; height: 100%; }
-  .pointer { position: absolute; top: -30px; left: 50%; transform: translateX(-50%); transform-origin: 50% 25%; transition: transform 0.06s; font-size: 2.6rem; line-height: 1; color: var(--ink); z-index: 3; }
-  .bulbs { position: absolute; top: 0; right: 0; bottom: 0; left: 0; pointer-events: none; }
-  .bulb { position: absolute; top: 50%; left: 50%; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: #8a7a3a; transform: rotate(var(--a)) translateY(calc(var(--size) / -2 - 16px)); }
-  .wheel-wrap.spinning .bulb, .wheel-wrap.suspense .bulb, .wheel-wrap.win .bulb { background: #ffd54a; box-shadow: 0 0 8px #ffd54a; }
   .announce { position: absolute; top: -16px; right: -16px; bottom: -16px; left: -16px; z-index: 4; border-radius: 28px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 14px; background: #1b2433; color: #fff; box-shadow: 0 0 0 4px #f5c542; }
   .announce.good { background: #2b3f9a; }
   .announce.jackpot { background: linear-gradient(135deg, #ffe27a, #f5c542 45%, #f0904a); color: #1b2433; box-shadow: 0 0 0 6px #fff, 0 0 44px 10px #f5c542; }
   .ann-lead { font-size: 1.5rem; font-weight: 800; }
   .announce.jackpot .ann-lead { font-size: max(2.2rem, min(11vw, 3.4rem)); line-height: 1; }
-  .ann-emoji { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; font-size: 2.4rem; line-height: 1.15; }
-  .ann-emoji .gold-coin { font-size: 2.1rem; }
   .ann-big { font-size: max(1.6rem, min(7.5vw, 2.4rem)); font-weight: 800; line-height: 1.1; }
   .ann-name { font-size: 1.2rem; font-weight: 600; }
   .big-btn { font-size: 1.3rem; padding: 16px 28px; }
@@ -218,15 +209,9 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   .confetti { position: fixed; top: 0; right: 0; bottom: 0; left: 0; overflow: hidden; pointer-events: none; z-index: 50; }
   @media (prefers-reduced-motion: reduce) { .confetti { display: none; } }
   @media (prefers-reduced-motion: no-preference) {
-    .wheel-wrap.spinning .bulb:nth-child(odd), .wheel-wrap.suspense .bulb:nth-child(odd) { animation: bulb-a 0.4s steps(1) infinite; }
-    .wheel-wrap.spinning .bulb:nth-child(even), .wheel-wrap.suspense .bulb:nth-child(even) { animation: bulb-b 0.4s steps(1) infinite; }
-    .wheel-wrap.win .bulb { animation: bulb-a 0.16s steps(1) infinite; }
-    @keyframes bulb-a { 0% { background: #ffd54a; box-shadow: 0 0 8px #ffd54a; } 50% { background: #8a7a3a; box-shadow: none; } }
-    @keyframes bulb-b { 0% { background: #8a7a3a; box-shadow: none; } 50% { background: #ffd54a; box-shadow: 0 0 8px #ffd54a; } }
     .announce:not([hidden]) { animation: ann-pop 0.55s cubic-bezier(0.2, 1.4, 0.4, 1); }
-    .announce.jackpot:not([hidden]) { animation: ann-pop 0.55s cubic-bezier(0.2, 1.4, 0.4, 1), ann-glow 0.7s ease-in-out 0.55s infinite alternate; }
+    .announce.jackpot:not([hidden]) { animation: ann-pop 0.42s ease-out; }
     @keyframes ann-pop { 0% { transform: scale(0.3) rotate(-6deg); opacity: 0; } 70% { transform: scale(1.08) rotate(2deg); opacity: 1; } 100% { transform: scale(1) rotate(0deg); } }
-    @keyframes ann-glow { from { box-shadow: 0 0 0 6px #fff, 0 0 30px 6px #f5c542; } to { box-shadow: 0 0 0 6px #fff, 0 0 60px 16px #ffd54a; } }
     .wheel-pet { animation: hop 0.8s ease 3; }
     .big-btn.pulse:not(:disabled) { animation: pulse 1.2s ease-in-out infinite; }
     @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.07); } }
@@ -1091,13 +1076,13 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   body.path-write, .go-yellow { --go1: #ffe14d; --go2: #f5b800; --go-bd: #b88700; --go-glow: 245, 184, 0; --go-glow2: 255, 205, 40; --go-pale: #fffbe6; }
   .go-green { --go1: #3ddc77; --go2: #16a34a; --go-bd: #15803d; --go-glow: 22, 163, 74; --go-glow2: 34, 197, 94; --go-pale: #effcf3; }
   .go-next, body.mode-student #btn-open:not(:disabled), body.mode-student #btn-start:not(:disabled), body.mode-student #btn-validate, body.mode-student #btn-save,
-  body.mode-student #btn-spin:not(:disabled), body.mode-student #btn-wheel-done, body.mode-student #btn-panel-wheel {
+  body.mode-student #btn-wheel-done, body.mode-student #btn-panel-wheel {
     background: linear-gradient(135deg, var(--go1), var(--go2)) !important; color: #fff !important; border-color: var(--go-bd) !important;
     text-shadow: 0 1px 2px rgba(0, 0, 0, .25); animation: go-pulse 1.4s ease-in-out infinite;
   }
   /* Parcours jaune (dictée) : texte foncé, le blanc serait illisible sur du jaune */
   body.path-write .go-next, .go-yellow.go-next, body.path-write.mode-student #btn-open:not(:disabled), body.path-write.mode-student #btn-start:not(:disabled), body.path-write.mode-student #btn-validate, body.path-write.mode-student #btn-save,
-  body.path-write.mode-student #btn-spin:not(:disabled), body.path-write.mode-student #btn-wheel-done, body.path-write.mode-student #btn-panel-wheel { color: #3d2c00 !important; text-shadow: none; }
+  body.path-write.mode-student #btn-wheel-done, body.path-write.mode-student #btn-panel-wheel { color: #3d2c00 !important; text-shadow: none; }
   body.path-write .zoo-card .go-badge, .go-yellow .go-badge { color: #3d2c00; }
   .go-next:disabled { animation: none; opacity: .6; }
   .go-next.go-calm { animation: none; opacity: .8; }   /* l'autre parcours, visible mais calme */
@@ -1251,7 +1236,6 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     #v-roue .wheel-pet { display: none; }
     #v-roue #wheel-title { margin: 0 0 4px; font-size: 1.25rem; }
     #v-roue #wheel-msg { margin: 0; font-size: 1rem; }
-    #v-roue .wheel-wrap { --size: min(78vw, 340px, max(180px, calc(100dvh - 330px))); margin: 26px auto 16px; }
     #v-roue .row { margin-top: 0; }
   }
   /* Salle de jeux : en-tête compact et symboles des récompenses */
@@ -1360,7 +1344,9 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
 <style>
 .exercise-preview-mode header,.exercise-preview-mode #panel-left,.exercise-preview-mode #panel-right,.exercise-preview-mode #bottom-nav,.exercise-preview-mode #nav{display:none!important}
 .exercise-preview-mode #layout{grid-template-columns:minmax(0,1fr)!important}
-</style></head>
+</style><link rel="stylesheet" href="reward-wheel.css?v=1">
+<script src="reward-wheel.js?v=1"></script>
+</head>
 <body>
 <main>
   <header>
@@ -1615,20 +1601,18 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     <div class="card wheel-card">
       <div class="wheel-pet" id="wheel-pet" aria-hidden="true" hidden></div>
       <h2 id="wheel-title">La roue des récompenses</h2>
-      <p class="instruction" id="wheel-msg" role="status">Touche le bouton pour lancer la roue !</p>
-      <div class="wheel-wrap" id="wheel-wrap">
-        <div class="bulbs" id="bulbs" aria-hidden="true"></div>
-        <div class="pointer" id="pointer" aria-hidden="true">▼</div>
-        <div class="wheel" id="wheel"></div>
-        <div class="announce" id="announce" aria-hidden="true" hidden>
+      <p class="instruction" id="wheel-msg" role="status">Touche le centre pour faire tourner la roue !</p>
+      <div class="reward-wheel-stage" id="wheel-wrap">
+        <div class="reward-wheel-pointer" aria-hidden="true">▼</div>
+        <div class="reward-wheel-disc" id="wheel"></div>
+        <button type="button" class="reward-wheel-hub" id="btn-spin" aria-label="Tourner la roue">Tourner</button>
+      </div>
+        <div class="announce wheel-reveal" id="announce" aria-hidden="true" hidden>
           <div class="ann-lead" id="ann-lead"></div>
-          <div class="ann-emoji" id="ann-emoji"></div>
           <div class="ann-big" id="ann-big"></div>
           <div class="ann-name" id="ann-name"></div>
         </div>
-      </div>
       <div class="row" style="justify-content:center">
-        <button type="button" class="primary big-btn pulse" id="btn-spin">Lancer la roue</button>
         <button type="button" class="secondary big-btn" id="btn-wheel-done" hidden>Continuer</button>
       </div>
     </div>
@@ -6481,26 +6465,11 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     requestAnimationFrame(step);
   }
 
-  (function buildBulbs() {
-    var box = $("bulbs"), n = 20;
-    for (var i = 0; i < n; i++) {
-      var b = document.createElement("span"); b.className = "bulb"; b.style.setProperty("--a", (i * 360 / n) + "deg"); box.appendChild(b);
-    }
-  })();
-
-  var W = { sid: null, spun: false, timers: [], raf: null };
+  var W = { sid: null, spun: false, animation: null, angle: 0 };
   function wheelCleanup() {
-    W.timers.forEach(clearTimeout); W.timers = [];
-    if (W.raf) { cancelAnimationFrame(W.raf); W.raf = null; }
+    if (W.animation) { W.animation.cancel(); W.animation = null; }
     try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}
     $("confetti").innerHTML = "";
-    $("pointer").style.transform = "translateX(-50%)";
-  }
-  function wheelTick() {
-    tone(1000, 0, 0.035, "square", 0.05);
-    var pt = $("pointer");
-    pt.style.transform = "translateX(-50%) rotate(-18deg)";
-    W.timers.push(setTimeout(function () { pt.style.transform = "translateX(-50%)"; }, 70));
   }
   function openWheel(sid, intro, pet) {
     if (!pendingWheels(sid).length) { show("jeux"); return; }
@@ -6508,21 +6477,21 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     W.sid = sid; W.spun = false;
     show("roue");
     $("wheel-title").textContent = "La roue de " + studentById(sid).name;
-    $("wheel-msg").textContent = (intro ? intro + " " : "") + "Touche le bouton pour lancer la roue !";
+    $("wheel-msg").textContent = (intro ? intro + " " : "") + "Touche le centre pour faire tourner la roue !";
     var hp = $("wheel-pet"); hp.textContent = pet || ""; hp.hidden = !pet;
-    $("announce").hidden = true; $("announce").className = "announce";
-    $("wheel-wrap").className = "wheel-wrap";
+    $("announce").hidden = true; $("announce").className = "announce wheel-reveal";
+    $("wheel-wrap").removeAttribute("data-phase");
+    $("wheel").style.transition = "none";
     $("wheel").style.transform = "rotate(0deg)";
+    W.angle = 0;
+    $("wheel").querySelectorAll(".reward-wheel-winner").forEach(function (path) { path.classList.remove("reward-wheel-winner"); });
     $("btn-wheel-done").hidden = true;
-    /* La consigne est dite à voix haute, et le bouton ne s'active qu'ensuite : pas de lancer par erreur pendant les félicitations */
-    var sp = $("btn-spin"), wait = !reduceMotion() && data.sfx;
-    sp.hidden = false; sp.disabled = wait; sp.textContent = wait ? "🔊 Écoute…" : "Lancer la roue";
-    if (wait) {
-      speak(($("wheel-msg").textContent || "").replace(/[🎡🏅👂✨✏\uFE0F]/g, ""));
-      W.timers.push(setTimeout(function () { sp.disabled = false; sp.textContent = "Lancer la roue"; }, 3200));
-    }
+    var sp = $("btn-spin");
+    sp.hidden = false; sp.disabled = false; sp.textContent = "Tourner";
+    sp.setAttribute("aria-label", "Tourner la roue");
+    if (data.sfx) speak("Touche le centre pour tourner la roue.");
   }
-  function reduceMotion() { try { return !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches); } catch (e) { return false; } }
+  function reduceMotion() { return ZooRewardWheel.reduce(); }
   $("btn-spin").addEventListener("click", function () {
     if (W.spun) return;
     var pend = pendingWheels(W.sid);
@@ -6535,59 +6504,38 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var k = Math.floor(Math.random() * SLICES.length), sl = SLICES[k];
     if (sl.t === "plays") data.credits[sid] = credits(sid) + sl.n; else data.coins[sid] = coins(sid) + sl.n;
     save();
-    var target = 360 * 5 + (360 - (k * (360 / SLICES.length) + 180 / SLICES.length)) + (Math.random() * 20 - 10);
-    var reduce = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-    var wheel = $("wheel"), wrap = $("wheel-wrap");
+    var wheel = $("wheel"), wrap = $("wheel-wrap"), spin = $("btn-spin");
     $("announce").hidden = true;
-    wrap.className = "wheel-wrap spinning";
+    spin.textContent = "…";
     $("wheel-msg").textContent = "La roue tourne…";
 
     function reveal() {
       var jackpot = sl.tier === "jackpot";
-      wrap.className = "wheel-wrap win";
       $("ann-lead").textContent = jackpot ? "JACKPOT !" : (sl.tier === "good" ? "Super !" : "Bravo !");
-      var em = $("ann-emoji");
-      em.innerHTML = "";
-      if (sl.t === "plays") em.textContent = new Array(Math.min(sl.n, 10) + 1).join("🎮");
-      else for (var ci = 0; ci < Math.min(sl.n, 10); ci++) em.appendChild(coinEl());
       $("ann-big").textContent = sl.big;
       $("ann-name").textContent = (jackpot ? "Incroyable " : "Bravo ") + name + " !";
-      $("announce").className = "announce " + sl.tier;
+      $("announce").className = "announce wheel-reveal " + sl.tier;
       $("announce").hidden = false;
       $("wheel-msg").textContent = sl.t === "plays"
         ? "Tu gagnes " + sl.n + (sl.n > 1 ? " parties" : " partie") + " de jeu !"
         : "Tu gagnes " + sl.n + " pièces d’or !";
       fanfare(sl);
-      if (!reduce) confetti(jackpot ? 140 : 70, sl.t === "coins");
+      speak("Et c’est… " + sl.spoken + " ! Bravo " + name + " !");
       try { if (data.sfx && navigator.vibrate) navigator.vibrate(jackpot ? [120, 60, 120, 60, 240] : [100]); } catch (e) {}
       var more = pendingWheels(sid).length > 0;
       /* Un seul gros bouton à la fois : « Relancer la roue » s'il reste des tours, sinon « Continuer » */
-      if (more) { W.spun = false; $("btn-spin").disabled = false; $("btn-spin").textContent = "Relancer la roue"; $("btn-spin").hidden = false; $("btn-wheel-done").hidden = true; }
+      if (more) { W.spun = false; $("btn-spin").disabled = false; $("btn-spin").textContent = "Encore"; $("btn-spin").setAttribute("aria-label", "Relancer la roue"); $("btn-spin").hidden = false; $("btn-wheel-done").hidden = true; }
       else { $("btn-spin").hidden = true; $("btn-wheel-done").hidden = false; $("btn-wheel-done").classList.add("go-next"); }
+      (more ? spin : $("btn-wheel-done")).focus({ preventScroll: true });
       renderPanels();
     }
-    function stopped() {
-      wrap.className = "wheel-wrap suspense";
-      $("wheel-msg").textContent = "Et c’est…";
-      var lead = sl.tier === "jackpot" ? "le jackpot ! " : "";
-      var close = sl.tier === "jackpot" ? "Incroyable " : (sl.tier === "good" ? "Super " : "Bravo ");
-      speak("Et c'est... " + lead + sl.spoken + " ! " + close + name + " !");
-      W.timers.push(setTimeout(reveal, reduce ? 50 : 1400));
-    }
-
-    if (reduce) { wheel.style.transform = "rotate(" + target + "deg)"; stopped(); return; }
-    var startTs = null, last = -1, DUR = 5000;
-    function frame(ts) {
-      if (startTs === null) startTs = ts;
-      var t = Math.min(1, (ts - startTs) / DUR);
-      var ang = target * (1 - Math.pow(1 - t, 4));
-      wheel.style.transform = "rotate(" + (t < 1 ? ang : target) + "deg)";
-      var idx = Math.floor((((-ang) % 360) + 360) % 360 / (360 / SLICES.length));
-      if (idx !== last) { if (last !== -1) wheelTick(); last = idx; }
-      if (t < 1) W.raf = requestAnimationFrame(frame);
-      else { W.raf = null; stopped(); }
-    }
-    W.raf = requestAnimationFrame(frame);
+    W.animation = ZooRewardWheel.spin({
+      stage: wrap, disc: wheel, count: SLICES.length, index: k, from: W.angle,
+      tick: data.sfx ? function () { tone(980, 0, .035, "triangle", .045); } : null,
+      stopped: function () { $("wheel-msg").textContent = "Et c’est…"; },
+      reveal: reveal
+    });
+    W.angle = W.animation.angle;
   });
   $("btn-wheel-done").addEventListener("click", function () { show(ses.role === "student" ? "home" : "jeux"); });   /* l'étape suivante (gros bouton) attend à l'accueil */
 
