@@ -59,26 +59,33 @@
   function audioStop() { try { if (A.howl) A.howl.stop(); } catch (e) {} A.cur = null; }
   function running() { try { return !window.Howler || !Howler.ctx || Howler.ctx.state === "running"; } catch (e) { return true; } }
   /* dit la clé enregistrée si elle existe (et si le son de la tablette est réveillé), sinon le texte avec la voix de l'appareil */
-  function say(key, text, done) {
+  function say(key, text, done, gesture) {
     var C = ctx();
     if (A.ok && A.map.sprite[key]) {
-      if (!running()) { try { Howler.ctx.resume(); } catch (e) {} }
-      if (running()) {
+      if (!running()) {
+        try { var resumed = Howler.ctx.resume(); if (resumed && resumed.catch) resumed.catch(function () {}); } catch (e) {}
+      }
+      if (gesture || running()) {
         try {
           C.listenStopVoice(); audioStop();
           var id = A.howl.play(key), fin = false; A.cur = id;
           var end = function () { if (fin) return; fin = true; if (done) done(); };
-          A.howl.once("end", end, id); A.howl.once("stop", end, id); A.howl.once("playerror", end, id);
+          A.howl.once("end", end, id); A.howl.once("stop", end, id);
+          A.howl.once("playerror", function () {
+            if (fin || A.cur !== id) return;
+            fin = true; A.cur = null;
+            C.listenSpeak(text, done);
+          }, id);
           return;
         } catch (e) {}
       }
     }
-    C.listenSpeak(text, done);
+    C.listenSpeak(text, done, gesture);
   }
   /* plusieurs morceaux à la suite : [[clé, texte], …] */
-  function sayAll(parts, done) {
+  function sayAll(parts, done, gesture) {
     var i = 0, tok = {}; sayAll.tok = tok;
-    function next() { if (sayAll.tok !== tok) return; if (i >= parts.length) { if (done) done(); return; } var p = parts[i++]; say(p[0], p[1], function () { later(next, 180); }); }
+    function next() { if (sayAll.tok !== tok) return; if (i >= parts.length) { if (done) done(); return; } var p = parts[i++]; say(p[0], p[1], function () { later(next, 180); }, gesture && i === 1); }
     next();
   }
   function letterPart(L) { return ["L:" + L, D.LETTER_SAY[L]]; }
@@ -98,16 +105,16 @@
   function diagnosticNeeded(G) {
     return !G.diagnostic.done && (Object.keys(G.diagnostic.answers).length || !G.series.length && !G.rituel.lecture);
   }
-  function diagnostic(sid, review) {
+  function diagnostic(sid, review, gesture) {
     var C = ctx(), G = mine(sid);
     var letters = Object.keys(D.LETTER_SAY).filter(function (L) {
       return review ? G.diagnostic.answers[L] === 1 : !Object.prototype.hasOwnProperty.call(G.diagnostic.answers,L);
     });
     if (!letters.length && review) { G.diagnostic.check = false; return false; }
-    R = { diagnostic: true, sid: sid, review: review, letters: letters };
+    R = { diagnostic: true, sid: sid, review: review, letters: letters, gesture: gesture };
     audioLoad(); C.goTo("gs"); return true;
   }
-  function diagnosticQuestion() {
+  function diagnosticQuestion(gesture) {
     var C = ctx(), run = R, sid = run.sid, G = mine(sid), d = G.diagnostic, body = C.$("gs-body");
     clear(); body.innerHTML = "";
     if (!run.letters.length) {
@@ -134,8 +141,18 @@
     var stopBtn = C.el("button","secondary","Faire une pause"); stopBtn.type = "button";
     stopBtn.onclick = function () { stop(); C.goTo("home"); }; top.appendChild(stopBtn); card.appendChild(top);
     var listen = C.el("button","listen-play","🔊 Écouter"); listen.type = "button";
-    function prompt() { if (R === run && !replied) sayAll([["c:touche","Touche la lettre"],letterPart(L)]); }
-    listen.onclick = prompt; card.appendChild(listen);
+    function prompt(gesture) {
+      if (R !== run || replied) return;
+      sayAll.tok = null;
+      var text = "Touche la lettre " + D.LETTER_SAY[L] + ".";
+      if (A.ok) sayAll([["c:touche", "Touche la lettre"], letterPart(L)], null, gesture);
+      else {
+        audioStop();
+        // Une seule phrase, appelée pendant le toucher si le fichier audio charge encore.
+        C.listenSpeak(text, null, gesture);
+      }
+    }
+    listen.onclick = function () { prompt(true); }; card.appendChild(listen);
     card.appendChild(C.el("p","instruction","Touche la lettre que tu entends."));
     var grid = C.el("div","gs-grid"), skip = C.el("button","secondary","Je ne sais pas"); skip.type = "button";
     function answer(good) {
@@ -151,12 +168,12 @@
       }
       run.letters.splice(run.letters.indexOf(L),1);
       if (run.letters.length) C.save();
-      diagnosticQuestion();
+      diagnosticQuestion(true);
     }
     q.opts.forEach(function (letter) { var b = letBtn(letter,"cap"); b.onclick = function () { answer(letter === L); }; grid.appendChild(b); });
     skip.onclick = function () { answer(false); };
     card.appendChild(grid); card.appendChild(skip); body.appendChild(card);
-    later(prompt,120);
+    if (gesture) prompt(true); else later(function () { prompt(false); }, 120);
   }
   /* ---------- accueil GS : une seule grande action ---------- */
   function home(body, sid, st) {
@@ -165,7 +182,7 @@
     var card = C.el("div", "card home-hero");
     card.appendChild(C.el("h2", "", "Bonjour " + st.name + " !"));
     var key, text, btn, go;
-    if (testing) { btn = "🔤 Le défi des lettres"; key = null; text = "Écoute le nom de la lettre, puis touche-la."; go = function () { diagnostic(sid, false); }; }
+    if (testing) { audioLoad(); btn = "🔤 Le défi des lettres"; key = null; text = "Écoute le nom de la lettre, puis touche-la."; go = function () { diagnostic(sid, false, true); }; }
     else if (wheels) { btn = "🎡 Lance ta roue !"; key = "c:roue"; text = "Une roue t’attend. Touche le gros bouton pour la lancer."; go = function () { C.openWheel(sid); }; }
     else if (first) { btn = "🎵 La comptine des lettres"; key = "c:rituel"; text = "D’abord, écoute la comptine des lettres. Touche le gros bouton."; go = function () { rituel(sid); }; }
     else if (i < 0) { btn = "🔤 Je m’entraîne avec les lettres"; key = "c:fini"; text = "Bravo, tu connais toutes les lettres ! Tu peux t’entraîner encore."; go = function () { start(sid); }; }
@@ -174,7 +191,7 @@
     var b = C.el("button", "primary big-btn go-next", btn); b.type = "button";
     b.addEventListener("click", function () { C.listenStopVoice(); audioStop(); go(); });
     var hear = C.el("button", "listen-play", "🔊"); hear.type = "button"; hear.setAttribute("aria-label", "Écouter la consigne");
-    hear.addEventListener("click", function () { C.listenSpeak("Bonjour " + st.name + " !", function () { say(key, text); }); });
+    hear.addEventListener("click", function () { if (testing) C.listenSpeak(text, null, true); else C.listenSpeak("Bonjour " + st.name + " !", function () { say(key, text); }); });
     var row = C.el("div", "row"); row.appendChild(b); row.appendChild(hear);
     card.appendChild(row);
     var small = C.el("div", "gs-small");
@@ -221,8 +238,8 @@
   /* ---------- une série ---------- */
   function start(sid) {
     var C = ctx(), G = mine(sid);
-    if (diagnosticNeeded(G)) { diagnostic(sid, false); return; }
-    if (G.diagnostic.check && diagnostic(sid, true)) return;
+    if (diagnosticNeeded(G)) { diagnostic(sid, false, true); return; }
+    if (G.diagnostic.check && diagnostic(sid, true, true)) return;
     var items = pathOf(sid), i = D.pathCurrent(G.lecture, items), free = i < 0;
     if (!items.length) items = pathOf(sid,true);
     if (!items.length) return;
@@ -244,7 +261,7 @@
     var C = ctx(); clear(); css();
     if (!R) { C.goTo("home"); return; }
     if (R.rituel) { renderRituel(); return; }
-    if (R.diagnostic) { C.listenFocus(true); diagnosticQuestion(); return; }
+    if (R.diagnostic) { var gesture = R.gesture; R.gesture = false; C.listenFocus(true); diagnosticQuestion(gesture); return; }
     C.listenFocus(true);
     if (R.aid && !R.demoDone) { demo(); return; }
     question();
