@@ -1,5 +1,7 @@
 # Aide automatique à l'écoute — avancement et passation
 
+**État au 27/11/2026.** La Lecture CP en un passage (#398) et la suppression du rappel rouge (#409) sont en ligne. Les mesures à faire ou à vérifier, y compris les anciens entraînements concernés, figurent dans « Ma classe → À faire aujourd’hui ». L’accès protégé reste disponible pour les audios déjà enregistrés. La PR #385 reste ouverte et concerne le rappel retiré. La reconnaissance avec des voix d’enfants reste à vérifier en classe.
+
 À lire avec `mesures.md` (résultats chiffrés et limites) et `CLAUDE.md` (règles du projet, §6 « Médaille = lecture enregistrée » et « Valider une lecture depuis la fiche »). Tenu à jour à chaque étape. Dernière mise à jour : 26/11/2026 (Claude).
 
 ## Mission Lecture CP en un seul passage
