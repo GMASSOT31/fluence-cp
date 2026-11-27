@@ -6285,7 +6285,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     });
     inputs.old.focus();
   }
-  /* Musique de la salle de jeux : composée ici avec Web Audio (aucun fichier). Elle joue dans la salle de jeux et pendant les parties,
+  /* La salle joue « Le Pas de la girafe » et les parties gardent la musique Web Audio composée ici. La musique
      se coupe avec le bouton 🎵/🔇 (choix gardé sur l’appareil) et n’existe pas si le maître(sse) l’a désactivée ou coupé les bruitages. */
   var Music = (function () {
     var BPM = 124, STEP = 60 / BPM / 2, LOOK = 0.35;
@@ -6293,7 +6293,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
     var THIRD = [4, 4, 3, 4, 4, 4, 4, 4];
     var MEL = [[76, 79, 76, 72, 76, 79, 81, 79], [74, 79, 74, 71, 74, 79, 83, 79], [72, 76, 72, 69, 72, 76, 81, 76], [77, 81, 77, 72, 77, 81, 84, 81],
                [79, 76, 79, 84, 79, 76, 72, 76], [79, 74, 79, 83, 79, 74, 71, 74], [81, 77, 81, 84, 81, 77, 72, 77], [79, 83, 79, 74, 79, 83, 84, 0]];
-    var running = false, timer = null, step = 0, next = 0, master = null, noise = null, ctx = null, view = "";
+    var running = false, timer = null, step = 0, next = 0, master = null, noise = null, ctx = null, view = "", lobby = null;
     function hz(m) { return 440 * Math.pow(2, (m - 69) / 12); }
     function voice(type, m, t, d, vol) {
       var o = ctx.createOscillator(), g = ctx.createGain();
@@ -6343,7 +6343,25 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       try { m.gain.cancelScheduledValues(ctx.currentTime); m.gain.setValueAtTime(Math.max(0.0001, m.gain.value), ctx.currentTime); m.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.3); } catch (e) {}
       setTimeout(function () { try { m.disconnect(); } catch (e) {} }, 500);
     }
-    function sync() { if (allowed() && (view === "jeux" || view === "jeu") && !document.hidden) start(); else stop(); refresh(); }
+    function sync() {
+      var enabled = allowed() && !document.hidden;
+      if (enabled && view === "jeu") start(); else stop();
+      if (enabled && view === "jeux") {
+        if (!lobby) {
+          lobby = document.createElement("audio");
+          lobby.loop = true;
+          lobby.preload = "none";
+          lobby.src = "audio/salle-le-pas-de-la-girafe.mp3";
+        }
+        if (lobby.paused) {
+          try {
+            var playing = lobby.play();
+            if (playing && playing.catch) playing.catch(function () { /* Safari : nouvel essai au prochain toucher. */ });
+          } catch (e) {}
+        }
+      } else if (lobby) lobby.pause();
+      refresh();
+    }
     function refresh() {
       var off = muted(), hide = !(data.sfx && data.music !== false);
       Array.prototype.forEach.call(document.querySelectorAll(".music-btn"), function (b) {
@@ -6354,9 +6372,13 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
       });
     }
     function toggle() { try { localStorage.setItem("zoo_music_off", muted() ? "0" : "1"); } catch (e) {} sync(); }
-    document.addEventListener("click", function (e) { var b = e.target.closest && e.target.closest(".music-btn"); if (b) toggle(); });
+    document.addEventListener("click", function (e) {
+      var b = e.target.closest && e.target.closest(".music-btn");
+      if (b) toggle();
+      else if (view === "jeux" && (!lobby || lobby.paused)) sync();
+    });
     document.addEventListener("visibilitychange", sync);
-    return { sync: function (v) { if (v !== undefined) view = v; sync(); }, refresh: refresh, isOn: function () { return running; } };
+    return { sync: function (v) { if (v !== undefined) view = v; sync(); }, refresh: refresh, isOn: function () { return running || !!(lobby && !lobby.paused); } };
   })();
   function musicBtn() { var b = el("button", "secondary music-btn"); b.type = "button"; return b; }
   /* Petits sons discrets : bonne réponse (deux notes qui montent), erreur (note grave qui descend) */
