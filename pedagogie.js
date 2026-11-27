@@ -165,7 +165,8 @@
     var seq = ++state.seq;
     var reads = await Promise.all([
       C.client.from("student_progress").select("student_id,progress,updated_at,pending_coins").in("student_id", studs.map(function (s) { return s.id; })),
-      Promise.resolve(C.client.rpc("teacher_class_vocabulary", { p_class: cls.id })).catch(function () { return {}; })
+      Promise.resolve(C.client.rpc("teacher_class_vocabulary", { p_class: cls.id })).catch(function () { return {}; }),
+      Promise.resolve(C.client.rpc("get_comprehension_exercises")).catch(function () { return {}; })
     ]);
     var q = reads[0];
     if (seq !== state.seq) return;   /* un chargement plus récent a pris la main */
@@ -181,6 +182,7 @@
       var d = window.pedaRecDec[id], row = rows.filter(function (x) { return x.s.id === d.sid; })[0];
       if (row && !pendingRecs(row.p || {}).some(function (v) { return v.id === id; })) delete window.pedaRecDec[id];
     });
+    state.comprCatalog = reads[2].data || {};
     state.classVocab = Array.isArray(reads[1].data) ? reads[1].data : [];
     if (C.pdfMake) {
       var fa = mk("button", "secondary"); fa.append(mk("span", "pb-pdf-icon", "PDF"), document.createTextNode(" Araignées de suivi")); fa.type = "button"; fa.title = "Une fiche par élève, avec sa toile des 7 compétences";
@@ -1159,13 +1161,23 @@
       txt: !target || (!cleared && !p.phono) ? "pas encore mesuré" : plur(cleared, "son", "sons") + " · " + target + " attendus",
       tip: "Étapes « J’entends » réussies ou considérées comme acquises dans le parcours" };
   }
+  function comprehensionAxis(progress, now) {
+    var order = (C.cfgSounds || []).map(function (sound) { return sound.id; });
+    var catalog = C.comprOverride || state.comprCatalog || {};
+    var offered = order.filter(function (id) { return exo().comprHas(id, order, catalog); });
+    var target = expected(offered.length, now), result = progress.compr;
+    var done = result && (result.done || result.passes) ? offered.filter(function (id) {
+      return (result.done && result.done[id]) || (result.passes && Number(result.passes[id]) >= 1);
+    }).length : null;
+    return { k: "compr", name: "Compréhension", v: target && done !== null ? Math.round(done * 100 / target) : null,
+      txt: !target ? "aucun exercice disponible" : done === null ? "pas encore mesuré" : plur(done, "son", "sons") + " · " + target + " attendus",
+      tip: "Associer un mot lu à son image" };
+  }
   function axes(r, now) {
     var p = r.p, tot = Math.max(1, r.total), thr = thrOf();
     var lp = Number(C.listenPasses) || 2, dp = Number(C.dicteePasses) || 1;
     var nL = doneCount(p.listen, function (i, ir) { return lp + (ir >= 0 && i >= ir ? 1 : 0); });
     var nD = doneCount(p.dictee, function () { return dp; });
-    var opt = function (o) { return o && typeof o === "object" && o.done && typeof o.done === "object" ? doneCount(o, null) : null; };
-    var nC = opt(p.compr);
     var flu = (Array.isArray(p.results) ? p.results : []).filter(function (x) { return x && !x.void && !x.short && !(Number(x.fraud) > 0) && x.src !== "adj" && x.src !== "train" && Number(x.mclm) > 0 && thr[x.k]; })
       .sort(function (a, b) { return (Number(b.ts) || 0) - (Number(a.ts) || 0); });
     var last3 = flu.slice(0, 3), sp = last3.length ? Math.round(last3.reduce(function (a, x) { return a + Math.min(1, Number(x.mclm) / thr[x.k]); }, 0) * 100 / last3.length) : null;
@@ -1176,7 +1188,7 @@
       { k: "ecoute", name: "Écoute", v: pct(nL), txt: sons(nL), tip: "Reconnaître l'écriture d'un son entendu" },
       { k: "dictee", name: "Dictée", v: pct(nD), txt: sons(nD), tip: "Écrire un son, une syllabe, un mot entendus" },
       { k: "lecture", name: "Lecture", v: pct(r.nValid), txt: sons(r.nValid), tip: "Lecture validée par l'enseignant" },
-      { k: "compr", name: "Compréhension", v: pct(nC), txt: sons(nC), tip: "Associer un mot lu à son image" },
+      comprehensionAxis(p, now),
       { k: "vitesse", name: "Vitesse", v: sp, txt: sp === null ? "pas encore de lecture" : sp + " % du seuil attendu", tip: "3 dernières lectures, par rapport au seuil de réussite de la classe" },
       vocabularyAxis(p, now)
     ] };
@@ -1317,6 +1329,9 @@
       title: list.length > 1 ? "Fiches de « " + cls.name + " »" : "Fiche de " + list[0].s.nickname,
       ok: "📄 " + (list.length > 1 ? list.length + " fiches de suivi pour « " + cls.name + " »" : "Fiche de suivi de " + list[0].s.nickname) + " : le PDF s’ouvre (sinon, regardez dans vos téléchargements).",
       build: async function (doc) {
+        var catalog = await C.client.rpc("get_comprehension_exercises");
+        if (catalog.error) throw catalog.error;
+        state.comprCatalog = catalog.data || {};
         if (C.refreshVocabularyCatalog) await C.refreshVocabularyCatalog();
         var ref = classRef(now, false), refGs = classRef(now, true);
         list.forEach(function (r, i) { if (i) doc.addPage(); drawFiche(doc, r, cls, trackOf(r.s.id) === "gs" ? refGs : ref, now); });
