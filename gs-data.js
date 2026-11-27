@@ -166,7 +166,9 @@
       if (n === 0 || n === 1 || n === 2) answers[letter] = n;
     });
     var done = raw.done === true && Object.keys(answers).length === Object.keys(LETTER_SAY).length;
-    return {answers:answers, done:done, check:done && raw.check === true};
+    var earned = Math.floor(Object.keys(answers).filter(function (letter) { return answers[letter] > 0; }).length / 5);
+    var claimed = Number.isInteger(raw.chests) ? Math.max(0, Math.min(5, raw.chests)) : (done ? earned : 0);
+    return {answers:answers, done:done, check:done && raw.check === true, chests:claimed};
   }
   function diagnosticQuestion(letter) {
     var alphabet = Object.keys(LETTER_SAY);

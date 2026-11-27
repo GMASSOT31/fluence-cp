@@ -34,6 +34,14 @@
       ".gs-abc span.seen{background:#dff3e8;color:#1d6b45}.gs-abc span.now{background:#2e9b6a;color:#fff}" +
       "@media (prefers-reduced-motion:reduce){.gs-abc span{transition:none}}" +
       "@media (max-width:600px){.gs-let{width:96px;height:96px;font-size:3rem;margin:6px}.gs-let.w-curs{height:136px;font-size:2.6rem}.gs-model .gs-let.w-curs{height:156px;font-size:3.1rem}.gs-demo{font-size:5.5rem}.gs-model .gs-let{width:120px;height:120px;font-size:3.8rem}.gs-slot{width:62px;height:72px;line-height:66px;font-size:2.1rem;margin:4px}.gs-stairs .gs-slot{width:52px;height:62px;line-height:56px;font-size:1.8rem;margin:3px 2px}.gs-step-arrow{font-size:1.3rem}.gs-pair{font-size:3.8rem}}";
+    s.textContent += ".gs-defi-stars{display:flex;align-items:center;justify-content:center;margin:8px 0;color:#68727e;font-size:1.65rem;line-height:1.3}" +
+      ".gs-defi-stars span{margin:0 3px}.gs-defi-stars .lit{color:#9a5900}.gs-defi-pet{font-size:1.8rem;margin-right:10px!important}.gs-defi-chest{text-align:center}.gs-defi-chest .gs-chest-icon{font-size:4rem;margin:10px 0}" +
+      ".gs-defi-effect{position:fixed!important;z-index:60;pointer-events:none;box-sizing:border-box;margin:0!important;transition:none!important}" +
+      ".gs-defi-effect.pop::after{content:'';position:absolute;top:50%;left:50%;width:6px;height:6px;border-radius:50%;box-shadow:22px 0 #efac41,-22px 0 #efac41,11px 18px #52a575,-11px 18px #52a575,11px -18px #52a575,-11px -18px #52a575}" +
+      ".gs-defi-effect.pop{animation:gs-defi-pop .32s ease-out both}.gs-defi-effect.fade{animation:gs-defi-fade .28s ease-out both}" +
+      "@keyframes gs-defi-pop{0%{transform:scale(1);opacity:1}35%{transform:scale(1.15);opacity:1}100%{transform:scale(1.5);opacity:0}}" +
+      "@keyframes gs-defi-fade{0%{opacity:1}100%{opacity:0;filter:blur(3px);transform:scale(.94)}}" +
+      "@media(prefers-reduced-motion:reduce){.gs-defi-effect.pop,.gs-defi-effect.fade{animation:none;opacity:0}}";
     document.head.appendChild(s);
     try { if (document.fonts && document.fonts.load) document.fonts.load("40px 'Marelle GS'"); } catch (e) {}   /* la cursive est prête avant la 1re question */
   }
@@ -114,9 +122,48 @@
     R = { diagnostic: true, sid: sid, review: review, letters: letters, gesture: gesture };
     audioLoad(); C.goTo("gs"); return true;
   }
+  function diagnosticStars(card, count, happy) {
+    var C = ctx(), row = C.el("div", "gs-defi-stars");
+    row.setAttribute("role", "img"); row.setAttribute("aria-label", count + (count === 1 ? " étoile sur 5" : " étoiles sur 5"));
+    row.appendChild(C.el("span", "gs-defi-pet", happy ? "😺" : "🐱"));
+    for (var i = 0; i < 5; i++) row.appendChild(C.el("span", i < count ? "lit" : "", i < count ? "★" : "☆"));
+    card.appendChild(row);
+  }
+  function diagnosticChest(body, run, d) {
+    var C = ctx(), card = C.el("div", "card listen-card gs-defi-chest"), opened = false;
+    card.appendChild(C.el("h2", "", "Un coffre pour tes cinq étoiles !"));
+    var icon = C.el("div", "gs-chest-icon", "🎁"); icon.setAttribute("aria-hidden", "true"); card.appendChild(icon);
+    diagnosticStars(card, 5, true);
+    var msg = C.el("p", "instruction"); msg.setAttribute("role", "status"); card.appendChild(msg);
+    var action = C.el("button", "primary big-btn go-next", "Ouvrir le coffre"); action.type = "button";
+    action.onclick = function () {
+      if (R !== run) return;
+      if (opened) { diagnosticQuestion(true); return; }
+      opened = true; d.chests++;
+      C.data.coins[run.sid] = (C.data.coins[run.sid] || 0) + 1;
+      C.save(); C.renderPanels(); C.sfxGood();
+      icon.textContent = "🪙"; msg.textContent = "Tu as gagné 1 pièce d’or !"; action.textContent = "Continuer";
+    };
+    var pause = C.el("button", "secondary", "Faire une pause"); pause.type = "button";
+    pause.onclick = function () { stop(); C.goTo("home"); };
+    card.appendChild(action); card.appendChild(pause); body.appendChild(card);
+  }
+  function diagnosticEffect(body, button, good, rect) {
+    var C = ctx(), tile = C.el("div", "gs-let gs-defi-effect " + (good ? "pop" : "fade"), good ? "✦" : button.textContent);
+    tile.setAttribute("aria-hidden", "true");
+    tile.style.top = rect.top + "px"; tile.style.left = rect.left + "px";
+    tile.style.width = rect.width + "px"; tile.style.height = rect.height + "px";
+    body.appendChild(tile);
+    later(function () { tile.remove(); }, 340);
+  }
   function diagnosticQuestion(gesture) {
     var C = ctx(), run = R, sid = run.sid, G = mine(sid), d = G.diagnostic, body = C.$("gs-body");
     clear(); body.innerHTML = "";
+    var correct = Object.keys(d.answers).filter(function (letter) { return d.answers[letter] > 0; }).length;
+    if (!run.review && C.data.reward && Math.floor(correct / 5) > d.chests) {
+      diagnosticChest(body, run, d);
+      return;
+    }
     if (!run.letters.length) {
       R = null; d.done = true; d.check = true;
       var wheel = C.data.reward && G.rw.indexOf("diagnostic") < 0;
@@ -140,6 +187,7 @@
     top.appendChild(C.el("span","listen-count",run.review ? "Une lettre à revoir" : (Object.keys(d.answers).length + 1) + " sur " + Object.keys(D.LETTER_SAY).length));
     var stopBtn = C.el("button","secondary","Faire une pause"); stopBtn.type = "button";
     stopBtn.onclick = function () { stop(); C.goTo("home"); }; top.appendChild(stopBtn); card.appendChild(top);
+    if (!run.review && C.data.reward) diagnosticStars(card, correct % 5, run.happy);
     var listen = C.el("button","listen-play","🔊 Écouter"); listen.type = "button";
     function prompt(gesture) {
       if (R !== run || replied) return;
@@ -155,8 +203,9 @@
     listen.onclick = function () { prompt(true); }; card.appendChild(listen);
     card.appendChild(C.el("p","instruction","Touche la lettre que tu entends."));
     var grid = C.el("div","gs-grid"), skip = C.el("button","secondary","Je ne sais pas"); skip.type = "button";
-    function answer(good) {
-      if (replied || R !== run) return;
+    function answer(good, button) {
+      if (replied || R !== run || Date.now() < (run.nextAt || 0)) return;
+      var rect = button && button.getBoundingClientRect();
       replied = true; clear(); sayAll.tok = null; audioStop(); C.listenStopVoice();
       d.answers[L] = good ? (run.review ? 2 : 1) : 0;
       if (run.review) {
@@ -167,10 +216,14 @@
         C.save(); start(sid); return;
       }
       run.letters.splice(run.letters.indexOf(L),1);
-      if (run.letters.length) C.save();
+      C.save();
+      run.happy = good;
+      if (button) run.nextAt = Date.now() + 280;
+      if (good) C.diagnosticPop();
       diagnosticQuestion(true);
+      if (rect) diagnosticEffect(body, button, good, rect);
     }
-    q.opts.forEach(function (letter) { var b = letBtn(letter,"cap"); b.onclick = function () { answer(letter === L); }; grid.appendChild(b); });
+    q.opts.forEach(function (letter) { var b = letBtn(letter,"cap"); b.onclick = function () { answer(letter === L, b); }; grid.appendChild(b); });
     skip.onclick = function () { answer(false); };
     card.appendChild(grid); card.appendChild(skip); body.appendChild(card);
     if (gesture) prompt(true); else later(function () { prompt(false); }, 120);

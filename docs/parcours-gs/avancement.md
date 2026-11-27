@@ -6,6 +6,8 @@
 
 - **Audio du défi GS sur iPhone** : le chargement des enregistrements commence à l’accueil GS. Le lancement, « Écouter » et la réponse qui ouvre la question suivante démarrent le son pendant le toucher. Tant que le fichier charge, la voix de l’appareil dit la consigne et la lettre dans la même phrase. En cas d’erreur de lecture du fichier, la voix prend le relais. Aucun changement de progression.
 
+- **Défi GS ludique** : une bonne réponse fait éclater la tuile et allume une étoile. Une erreur estompe la tuile et « Je ne sais pas » passe directement à la suite. Cinq bonnes lettres donnent un coffre d’une pièce. `progress.gs.diagnostic.chests` conserve les coffres ouverts et les réponses conservent les étoiles après pause. Une seule réponse par lettre et une roue finale offerte quel que soit le résultat. Aucun changement de base.
+
 ## Défi des lettres en entrée de GS Lecture (26/11/2026)
 - Le nouveau parcours commence par 26 choix rapides parmi quatre capitales. On peut répondre « Je ne sais pas » ou faire une pause. À la fin, une roue récompense la participation, même avec zéro bonne réponse, si les récompenses sont actives.
 - `progress.gs.diagnostic` conserve les réponses, la fin du défi et la prochaine vérification. Les capitales reconnues sortent provisoirement des séries. Une vérification au démarrage de séries ultérieures confirme une lettre ou la remet au programme. Les paliers restants de capitales centrés sur quelques lettres ont des séries plus courtes. Les autres activités gardent leur parcours et les élèves déjà engagés gardent leur progression.

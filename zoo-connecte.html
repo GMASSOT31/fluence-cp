@@ -1854,8 +1854,8 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
 })();
 </script>
 <script src="exo-data.js?v=7"></script>
-<script src="gs-data.js?v=7"></script>
-<script src="gs-lecture.js?v=8"></script>
+<script src="gs-data.js?v=8"></script>
+<script src="gs-lecture.js?v=9"></script>
 <script src="vocabulaire.js?v=5"></script>
 <script src="vendor/howler.core.min.js?v=2.2.4"></script>
 <script src="audio-lecture.js?v=3"></script>
@@ -8878,6 +8878,7 @@ html.booting body::after { content: "🐾 Chargement de ton Zoo…"; position: f
   /* Contexte donné au parcours GS (gs-lecture.js) : le grand script est fermé, comme ZooPedaCtx côté enseignant */
   window.ZooGSCtx = function () {
     return { get data() { return data; }, el: el, $: $, save: save, renderPanels: renderPanels, listenSpeak: listenSpeak, listenStopVoice: listenStopVoice,
+      diagnosticPop: function () { tone(245, 0, .07, "sine", .15); tone(760, .035, .10, "sine", .07); },
       sfxGood: sfxGood, sfxBad: sfxBad, confetti: confetti, openWheel: openWheel, pendingWheels: pendingWheels, uid: uid, goTo: goTo, quitAsk: quitAsk,
       listenFocus: listenFocus, studentById: studentById, statDay: statDay, statExercise: statExercise };
   };
