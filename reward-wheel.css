@@ -1,0 +1,89 @@
+.reward-wheel-stage {
+  position: relative;
+  width: 76vw;
+  max-width: 320px;
+  margin: 29px auto 14px;
+  isolation: isolate;
+}
+.reward-wheel-stage::before { content: ""; display: block; padding-top: 100%; }
+@media (max-height: 680px) {
+  .reward-wheel-stage { width: 47vh; max-width: 76vw; }
+}
+.reward-wheel-disc {
+  position: absolute;
+  inset: 0;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 0 0 4px #34465a;
+}
+.reward-wheel-disc svg { display: block; width: 100%; height: 100%; }
+.reward-wheel-stage[data-phase="spin"] .reward-wheel-disc { will-change: transform; }
+.reward-wheel-pointer {
+  position: absolute;
+  z-index: 2;
+  top: -23px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #34465a;
+  font-size: 30px;
+  line-height: 1;
+}
+.reward-wheel-stage[data-phase="win"] .reward-wheel-pointer { color: #9a560d; }
+.reward-wheel-disc .reward-wheel-winner { stroke: #fff6ce; stroke-width: 5; }
+.reward-wheel-stage .reward-wheel-hub {
+  position: absolute;
+  z-index: 3;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 76px;
+  height: 76px;
+  padding: 0;
+  border: 3px solid #fff7df;
+  border-radius: 50%;
+  background: #25434b !important;
+  color: #fff !important;
+  box-shadow: 0 2px 7px #172f36a6;
+  font: 800 .96rem/1.1 Figtree, system-ui, sans-serif;
+  animation: none !important;
+  text-shadow: none !important;
+}
+.reward-wheel-stage .reward-wheel-hub:not([hidden]):active { transform: translate(-50%, -50%); }
+.reward-wheel-stage .reward-wheel-hub:disabled { opacity: 1; cursor: default; background: #384c54 !important; }
+.reward-wheel-stage .reward-wheel-hub:focus { outline: 3px solid #1e333d; outline-offset: 2px; }
+.reward-wheel-stage + .wheel-reveal:not([hidden]) {
+  position: static;
+  margin: 10px auto 12px;
+  min-height: 0;
+  border-radius: 14px;
+  padding: 8px 14px;
+  box-shadow: none;
+  max-width: 360px;
+}
+.reward-wheel-stage + .wheel-reveal .ann-lead,
+.reward-wheel-stage + .wheel-reveal .ann-big { font-size: 1.35rem; }
+.reward-wheel-stage + .wheel-reveal .ann-name { font-size: .95rem; }
+@media (prefers-reduced-motion: no-preference) {
+  .reward-wheel-stage[data-phase="win"]::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    box-shadow: 90px -80px #f4bf47, -95px -62px #edab45, 112px -4px #fff1bb,
+      -112px 19px #fff1bb, 80px 86px #edab45, -73px 90px #f4bf47, 11px -116px #fff1bb;
+    pointer-events: none;
+    z-index: 4;
+    animation: reward-wheel-sparks .7s ease-out both;
+  }
+  @keyframes reward-wheel-sparks {
+    from { opacity: 1; transform: translate(-50%, -50%) scale(.55); }
+    to { opacity: 0; transform: translate(-50%, -50%) scale(1.35); }
+  }
+}

@@ -93,7 +93,7 @@ def main():
     shutil.copytree(os.path.join(ROOT, "fonts"), os.path.join(OUT, "fonts"), dirs_exist_ok=True)   # cursive Marelle du parcours GS
     make_test_voice(os.path.join(OUT, "audio", "test-voix", "on-test.wav"))
     shutil.copytree(os.path.join(ROOT, "vendor", "vosk"), os.path.join(OUT, "vendor", "vosk"), dirs_exist_ok=True)   # aide automatique à l'écoute (?aide=1)
-    for name in ["audio-lecture.js", "aide-ecoute.js", "test-syllabes.html"]:
+    for name in ["audio-lecture.js", "aide-ecoute.js", "test-syllabes.html", "reward-wheel.js", "reward-wheel.css"]:
         shutil.copy(os.path.join(ROOT, name), os.path.join(OUT, name))
     shutil.copytree(os.path.join(ROOT, "guides"), os.path.join(OUT, "guides"), dirs_exist_ok=True)
     for name in ["fake-supabase.js", "fake-auth.js", "fake-labo.js", "fake-labo-fetch.js"]:

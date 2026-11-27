@@ -126,9 +126,6 @@
   @media (max-width: 350px) { body.mode-student header .zoo-hero h1 { font-size: 1rem; } body.mode-student .zoo-top-stats { right: 3px; gap: 2px; } }   /* petit téléphone : la place revient aux 5 pastilles */
   /* roue de chaque étoile (1re et 2e) */
   .wheel-go { background: linear-gradient(135deg, #f5a623, #e2572c) !important; color: #fff !important; border-color: #e2572c !important; }
-  .cwheel-wrap { --size: min(78vw, 300px, 42vh); position: relative; width: var(--size); margin: 30px auto 18px; }
-  .cwheel { width: 100%; aspect-ratio: 1; border-radius: 50%; box-shadow: 0 0 0 6px var(--ink); will-change: transform; } .cwheel svg { display: block; width: 100%; height: 100%; }
-  .cwheel-ptr { position: absolute; top: -26px; left: 50%; transform: translateX(-50%); font-size: 2.2rem; line-height: 1; color: var(--ink); z-index: 3; }
   .cwheel-win { font-family: Fredoka, Figtree, sans-serif; font-size: 2rem; font-weight: 700; color: var(--calc-d); min-height: 2.4rem; }
   .nline b.st { outline: 3px solid var(--ink); outline-offset: -3px; } .nline b.s1 { background: #cfeeed; border-color: #0b7f7d; } .nline b.s2 { background: #ffe2b8; border-color: #c9740c; }
   /* aide « pour arriver à 10 » : deux mains, a doigts levés ; la taille suit la hauteur de la fenêtre (portable, tablette, téléphone) */
@@ -244,7 +241,9 @@ body.mode-student #zoo-top-stats .zoo-top-stat.wallet-raised{display:flex}
 <style>
 .exercise-preview-mode #layout{grid-template-columns:minmax(0,1fr)!important}
 .exercise-preview-mode header,.exercise-preview-mode #panel-left,.exercise-preview-mode #panel-right,.exercise-preview-mode #bottom-nav{display:none!important}
-</style></head>
+</style><link rel="stylesheet" href="reward-wheel.css?v=1">
+<script src="reward-wheel.js?v=1"></script>
+</head>
 <body class="mode-student calc">
 <main>
   <header>
@@ -1053,35 +1052,41 @@ body.mode-student #zoo-top-stats .zoo-top-stat.wallet-raised{display:flex}
   }
   function wheelScreen(onDone) {
     V.stop(); var box = $("view"); clear(box);
-    var card = el("div", "card calc-card stage"), reduce = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-    card.appendChild(el("h2", "", "🎡 La roue des récompenses")); var msg = el("p", "msg", "Tu as gagné une roue ! Touche le bouton pour la lancer."); msg.setAttribute("role", "status"); card.appendChild(msg);
-    var wrap = el("div", "cwheel-wrap"), wheel = el("div", "cwheel"); wheel.innerHTML = wheelSvg(); wrap.appendChild(el("div", "cwheel-ptr", "▼")); wrap.appendChild(wheel); card.appendChild(wrap);
+    var card = el("div", "card calc-card stage");
+    card.appendChild(el("h2", "", "🎡 La roue des récompenses")); var msg = el("p", "msg", "Tu as gagné une roue ! Touche le centre pour la faire tourner."); msg.setAttribute("role", "status"); card.appendChild(msg);
+    var wrap = el("div", "reward-wheel-stage"), wheel = el("div", "reward-wheel-disc"); wheel.innerHTML = wheelSvg(); var pointer = el("div", "reward-wheel-pointer", "▼"); pointer.setAttribute("aria-hidden", "true"); wrap.appendChild(pointer); wrap.appendChild(wheel); card.appendChild(wrap);
     var win = el("div", "cwheel-win"); card.appendChild(win);
-    var row = el("div", "crow"), spin = el("button", "primary big-btn go-next", "🎡 Lancer la roue"), done = el("button", "primary big-btn", "Continuer"); spin.type = done.type = "button"; done.hidden = true;
-    row.appendChild(spin); row.appendChild(done); card.appendChild(row); box.appendChild(card);
-    var turns = 0;
+    var row = el("div", "crow"), spin = el("button", "reward-wheel-hub", "Tourner"), done = el("button", "primary big-btn", "Continuer"); spin.type = done.type = "button"; done.hidden = true;
+    spin.setAttribute("aria-label", "Tourner la roue"); wrap.appendChild(spin); row.appendChild(done); card.appendChild(row); box.appendChild(card);
+    var angle = 0;
     done.addEventListener("click", function () { V.stop(); (onDone || function () { goTo("home"); })(); });
     spin.addEventListener("click", function () {
-      spin.disabled = true; msg.className = "msg"; msg.textContent = "La roue tourne…"; win.textContent = ""; done.hidden = true; done.classList.remove("go-next");
+      spin.disabled = true; spin.textContent = "…"; msg.className = "msg"; msg.textContent = "Un instant…"; win.textContent = ""; done.hidden = true; done.classList.remove("go-next");
       rpc("lab_student_spin_wheel", { p_token: token }).then(function (r) {
-        var k = Math.max(0, Math.min(7, Math.floor(Number(r.slice) || 0))); turns++;
-        var target = 360 * 5 * turns + (360 - (k * 45 + 22.5)) + (Math.random() * 20 - 10);
-        wheel.style.transition = reduce ? "none" : "transform 4.2s cubic-bezier(.17,.67,.2,1)"; wheel.style.transform = "rotate(" + target + "deg)";
-        setTimeout(function () {
-          var plays = r.kind === "plays", c = Math.floor(Number(plays ? r.plays : r.coins) || 0), big = c >= 10 || (plays && c >= 3);
-          var word = plays ? c + (c > 1 ? " parties de jeu" : " partie de jeu") : c + (c > 1 ? " pièces d’or" : " pièce d’or");
-          var said = (SAID[c] || c) + (plays ? (c > 1 ? " parties de jeu" : " partie de jeu") : (c > 1 ? " pièces d’or" : " pièce d’or"));
-          S.wheels = Math.max(0, Math.floor(Number(r.wheels) || 0));
-          msg.className = "msg good"; msg.textContent = (big ? "JACKPOT ! " : "Bravo ! ") + "Tu gagnes " + word + " !"; win.textContent = "";
-          if (plays) win.textContent = "+" + c + " 🎮"; else { win.appendChild(document.createTextNode("+" + c + " ")); win.appendChild(el("span", "gold-coin")); }
-          if (window.ZooFx) { if (!reduce) ZooFx.confetti(big ? 140 : 70, !plays); [523, 659, 784, 1047].forEach(function (f, i) { ZooFx.tone(f, i * 0.09, 0.25, "triangle", 0.12); }); }
-          if (S.settings.voice !== false) V.speak("Et c’est… " + said + " ! Bravo !");
-          if (r.shared) claimCoins();
-          else { if (plays) S.credits = Math.max(0, Math.floor(Number(r.test_credits) || 0)); renderPanels(); }
-          if (S.wheels > 0) { spin.disabled = false; spin.textContent = "🎡 Relancer la roue"; spin.hidden = false; } else spin.hidden = true;
-          spin.classList.remove("go-next"); done.classList.add("go-next"); done.hidden = false; done.focus({ preventScroll: true });
-        }, reduce ? 60 : 4400);
-      }).catch(function () { spin.disabled = false; spin.classList.add("go-next"); msg.className = "msg bad"; msg.textContent = "Un petit souci de connexion. Touche encore le bouton."; });
+        if (!document.documentElement.contains(wrap)) return;
+        var k = Math.max(0, Math.min(WHEEL.length - 1, Math.floor(Number(r.slice) || 0)));
+        msg.textContent = "La roue tourne…";
+        angle = ZooRewardWheel.spin({
+          stage: wrap, disc: wheel, count: WHEEL.length, index: k, from: angle,
+          tick: window.ZooFx && S.settings.voice !== false ? function () { ZooFx.tone(980, 0, .035, "triangle", .045); } : null,
+          stopped: function () { msg.textContent = "Et c’est…"; },
+          reveal: function () {
+            var plays = r.kind === "plays", c = Math.floor(Number(plays ? r.plays : r.coins) || 0), big = c >= 10 || (plays && c >= 3);
+            var word = plays ? c + (c > 1 ? " parties de jeu" : " partie de jeu") : c + (c > 1 ? " pièces d’or" : " pièce d’or");
+            var said = (SAID[c] || c) + (plays ? (c > 1 ? " parties de jeu" : " partie de jeu") : (c > 1 ? " pièces d’or" : " pièce d’or"));
+            S.wheels = Math.max(0, Math.floor(Number(r.wheels) || 0));
+            msg.className = "msg good"; msg.textContent = (big ? "JACKPOT ! " : "Bravo ! ") + "Tu gagnes " + word + " !"; win.textContent = "";
+            if (plays) win.textContent = "+" + c + " 🎮"; else { win.appendChild(document.createTextNode("+" + c + " ")); win.appendChild(el("span", "gold-coin")); }
+            if (window.ZooFx) [523, 659, 784, 1047].forEach(function (f, i) { ZooFx.tone(f, i * 0.09, 0.25, "triangle", 0.12); });
+            if (S.settings.voice !== false) V.speak("Et c’est… " + said + " ! Bravo !");
+            if (r.shared) claimCoins();
+            else { if (plays) S.credits = Math.max(0, Math.floor(Number(r.test_credits) || 0)); renderPanels(); }
+            if (S.wheels > 0) { spin.disabled = false; spin.textContent = "Encore"; spin.setAttribute("aria-label", "Relancer la roue"); spin.hidden = false; } else spin.hidden = true;
+            done.classList.add("go-next"); done.hidden = false;
+            (S.wheels > 0 ? spin : done).focus({ preventScroll: true });
+          }
+        }).angle;
+      }).catch(function () { spin.disabled = false; spin.textContent = "Tourner"; msg.className = "msg bad"; msg.textContent = "Un petit souci de connexion. Touche encore le bouton."; });
     });
   }
 
